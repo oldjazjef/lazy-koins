@@ -1,5 +1,6 @@
 const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
 const { join } = require('path');
+const { buildInfoPlugin } = require('./webpack.build-info');
 
 module.exports = {
   output: {
@@ -21,5 +22,6 @@ module.exports = {
       generatePackageJson: true,
       sourceMap: true,
     }),
+    buildInfoPlugin(),
   ],
 };
