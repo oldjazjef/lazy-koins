@@ -8,6 +8,7 @@ import {
   throttlerOptions,
 } from '../common/throttling/throttling';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import { AiModule } from '../ai/ai.module';
 import { AuthModule } from '../auth/auth.module';
 import { validateEnv } from '../config/env';
 import { FilesModule } from '../files/files.module';
@@ -38,6 +39,7 @@ import { AppController } from './app.controller';
     ProjectsModule,
     FilesModule,
     MappingsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

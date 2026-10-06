@@ -6,6 +6,7 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import type { FileKind } from '@lazykoins/engine';
 import { loadOwnProject } from '../../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import {
@@ -84,40 +85,69 @@ export class UploadProjectFileHandler implements ICommandHandler<
       );
     }
 
-    const sha256 = createHash('sha256').update(bytes).digest('hex');
-    const stored = await this.files.findStoredBySha(userId, sha256);
-    if (stored) {
-      const existing = await this.files.findInProject(projectId, stored.id);
-      if (existing) throw new DuplicateFileException(existing);
-    }
+    return storeInProject(this.files, this.analysis, {
+      userId,
+      projectId,
+      displayName,
+      kind,
+      bytes,
+    });
+  }
+}
 
-    const analysis = await orUnreadable(() =>
-      this.analysis.analyse(userId, { sha256, name: displayName, kind, bytes }),
-    );
-    const otherProject = stored
-      ? await this.files.firstOtherProjectUsing(stored.id, projectId)
+/**
+ * Stores the bytes (or reuses the owner's stored copy), reads them with the engine and adds them
+ * to the project — shared by the upload and by files the AI derives from a PDF (`origin` then
+ * names the source). Same bytes already in this project → `DuplicateFileException`.
+ */
+export async function storeInProject(
+  files: ProjectFileRepositoryPort,
+  analysis: FileAnalysisService,
+  input: {
+    readonly userId: string;
+    readonly projectId: string;
+    readonly displayName: string;
+    readonly kind: FileKind;
+    readonly bytes: Uint8Array;
+    readonly origin?: string;
+  },
+): Promise<ProjectFile> {
+  const { userId, projectId, displayName, kind, bytes } = input;
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  const stored = await files.findStoredBySha(userId, sha256);
+  if (stored) {
+    const existing = await files.findInProject(projectId, stored.id);
+    if (existing) throw new DuplicateFileException(existing);
+  }
+
+  const fileAnalysis = await orUnreadable(() =>
+    analysis.analyse(userId, { sha256, name: displayName, kind, bytes }),
+  );
+  const otherProject =
+    stored && input.origin === undefined
+      ? await files.firstOtherProjectUsing(stored.id, projectId)
       : undefined;
 
-    const result = await this.files.add({
-      ownerId: userId,
-      projectId,
-      stored: stored
-        ? { existingId: stored.id }
-        : {
-            create: {
-              sha256,
-              bytes,
-              mediaType: MEDIA_TYPES[kind],
-              kind,
-              originalName: displayName,
-            },
+  const result = await files.add({
+    ownerId: userId,
+    projectId,
+    stored: stored
+      ? { existingId: stored.id }
+      : {
+          create: {
+            sha256,
+            bytes,
+            mediaType: MEDIA_TYPES[kind],
+            kind,
+            originalName: displayName,
           },
-      displayName,
-      origin: otherProject ? `${FROM_PROJECT}${otherProject}` : UPLOADED,
-      analysis,
-    });
-    if ('duplicate' in result)
-      throw new DuplicateFileException(result.duplicate);
-    return result.created;
-  }
+        },
+    displayName,
+    origin:
+      input.origin ??
+      (otherProject ? `${FROM_PROJECT}${otherProject}` : UPLOADED),
+    analysis: fileAnalysis,
+  });
+  if ('duplicate' in result) throw new DuplicateFileException(result.duplicate);
+  return result.created;
 }

@@ -83,7 +83,11 @@ async function setup() {
   const files = new InMemoryProjectFileRepository();
   const mappings = new InMemoryImportMappingRepository(files);
   const analysis = new FileAnalysisService(new SourceFileReader(), mappings);
-  const views = new FileViews(projects as ProjectRepositoryPort, mappings);
+  const views = new FileViews(
+    projects as ProjectRepositoryPort,
+    mappings,
+    files,
+  );
   const base = {
     name: 'Steuern 2025',
     taxYear: 2025,
