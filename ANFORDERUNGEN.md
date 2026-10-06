@@ -7,6 +7,13 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F1.1** Web-App: im Browser nutzbar, mehrere Benutzer, jeder sieht nur seine Daten.
 - **F1.2** Lokal: als Desktop-App auf macOS und Windows, ein Benutzer, ohne Login, Daten nur auf dem eigenen Rechner. Gleicher Funktionsumfang wie die Web-App.
 - **F1.3** Ein Projekt lässt sich zwischen den Betriebsarten exportieren und importieren (Paket mit Daten und Originaldateien).
+- **F1.4** Jedes Release (vX.Y.Z, erstellt wie beim Produktions-Deploy – per „Run workflow“
+  oder von Hand veröffentlicht) baut die Desktop-App automatisch in der CI für **Windows**
+  (Installer `.exe`) und **macOS** (`.dmg`, Apple Silicon und Intel) und hängt die Dateien an
+  das GitHub-Release. Von dort lassen sie sich herunterladen und lokal installieren/ausführen.
+  Versionsnummer der App = Release-Tag. Solange nicht signiert wird (offene Entscheidung), steht
+  in den Release-Notes, wie man die Warnung von Windows SmartScreen bzw. macOS Gatekeeper
+  bestätigt.
 
 ## 2. Benutzer (nur Web-App)
 
@@ -112,11 +119,74 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
 - **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
 
-## 11. Einstellungen
+### Datenexport
+
+- **F10.7** Buchungen und Bestände eines Projekts (alle oder gefiltert nach Plattform/Wallet,
+  Asset, Art, Zeitraum) als CSV und Excel im **Standardformat** (F5.9) – mit angewendeten
+  Korrekturen, verwendeten Kursen und Kursquelle sowie Verweis auf Quelldatei und Zeile. Die
+  Datei lässt sich unverändert wieder importieren.
+- **F10.8** Projekt-Paket (ZIP): Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse,
+  Prüf-Notizen, erstellte Auszüge und eine Beschreibung des Inhalts (Manifest mit Version und
+  SHA-256 je Datei). Importierbar in Web-App und Desktop-App (= F1.3); beim Import werden
+  bereits vorhandene Dateien nicht doppelt gespeichert (F4.4).
+- **F10.9** Konto-Paket (ZIP): alle Projekte als Projekt-Pakete plus Mappings und Einstellungen
+  (ohne API-Schlüssel) – zum Herunterladen aller Daten eines Benutzers (= F2.3, Auskunft nach
+  DSG/DSGVO) und zum Umzug in die Desktop-App.
+
+## 11. Profil und Einstellungen
+
+Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Profil** und
+**Einstellungen** im Benutzermenü oben rechts.
+
+- **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
+  des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
+  steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
+  zuletzt geändert), suchen, ansehen (JSON), bearbeiten mit Vorschau, löschen (mit Bestätigung
+  und Hinweis auf betroffene Dateien), herunter- und hochladen. Je Mapping sichtbar, **welche
+  Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
+  anderen.
+- **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
+  Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
+  Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.
+- **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert: **AI** (Anbieter, Modell,
+  Schlüssel, Zustimmung, F5.13/F5.14), **Kurse** (Internet-Kurse ein/aus F11.3, CoinGecko-Schlüssel,
+  ESTV-Kursliste), **Wallets/Netzwerke** (API-Schlüssel wie Etherscan, F6.7), **Speicherort**
+  (Desktop, F3.1) und **Cloud-Verbindungen** (Web, F3.2). Schlüssel werden nie wieder angezeigt
+  (nur die letzten Zeichen).
+- Im Projekt bleiben nur projektbezogene Dinge (Dateien, die im Projekt genutzten Mappings mit
+  Link auf die Mappings-Seite, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
+  Exporte).
 
 - **F11.1** Persönliche Angaben für die Exporte (Name, Wohnkanton, Treuhänder).
-- **F11.2** Sprache (zunächst Deutsch/Schweiz), Zahlen- und Datumsformat.
+- **F11.2** Sprache, Zahlen- und Datumsformat. Die App ist vollständig übersetzbar; zunächst
+  **Deutsch (Schweiz)** und **Englisch**. Die Sprache wird im Benutzerprofil eingestellt und
+  gespeichert (Web: am Benutzer; Desktop: lokal) und gilt sofort, ohne Neuladen. Vorgabe beim
+  ersten Login: Browsersprache, sonst Deutsch. Exporte erscheinen in der eingestellten Sprache;
+  steuerliche Fachbegriffe und Formularverweise kommen aus den Landesregeln (F10.3). Weitere
+  Sprachen = eine neue Übersetzungsdatei.
 - **F11.3** Kursabfragen aus dem Internet ein-/ausschaltbar.
+
+## 11a. Dashboard
+
+Übersicht über das gesamte Krypto-Vermögen, ähnlich Koinly – **ohne** Einstandswert, ROI und
+realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
+
+- **F11.4** Startseite nach dem Login: Dashboard über **alle Projekte** eines Benutzers mit frei
+  wählbarem Zeitraum (Vorgabe: 01.01. des laufenden Jahres bis heute; Schnellwahl Steuerjahre).
+  Zusätzlich eine kompakte Version je Projekt für dessen Steuerjahr.
+- **F11.5** Gesamtwert in CHF zum Ende des Zeitraums mit Veränderung in % gegenüber dem Beginn,
+  und Verlauf als Liniendiagramm (Tageswerte = Bestände × Tageskurs).
+- **F11.6** Kennzahlen im Zeitraum: Einzahlungen (In), Auszahlungen (Out), Ertrag (mit Anteil am
+  Vermögen in %), Kosten/Verluste, Handelsgebühren – jeweils in CHF, anklickbar bis zu den
+  Buchungen (wie F7.5).
+- **F11.7** Verteilung nach Asset als gestapelter Balken (grösste Positionen benannt, Rest
+  zusammengefasst).
+- **F11.8** Bestände-Tabelle: Asset, Menge, Kurs CHF je Einheit, Marktwert CHF, Kursverlauf im
+  Zeitraum (Sparkline); sortier- und durchsuchbar; aufklappbar nach Plattform/Wallet;
+  Stichtag wählbar.
+- **F11.9** Werte stammen aus denselben Daten und Kursen wie die Steuerberechnung (keine zweite
+  Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
+  Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
 
 ## 12. Abnahme
 

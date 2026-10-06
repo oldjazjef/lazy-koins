@@ -16,7 +16,7 @@ import {
   type UserSettings,
 } from '../domain/user-settings';
 import { UserSettingsRepositoryPort } from '../ports/user-settings.repository.port';
-import { SecretBox } from './secret-box';
+import { SecretBox } from '../../common/crypto/secret-box';
 
 /** The SecretBox keyed by `SETTINGS_ENCRYPTION_KEY` (empty = keys cannot be stored). */
 @Injectable()

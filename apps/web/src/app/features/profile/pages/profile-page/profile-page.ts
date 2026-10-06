@@ -16,41 +16,36 @@ import { CH_CANTONS } from '../../../../core/api/api.types';
 import type { UpdateSettingsRequest } from '../../../../core/api/calculation.types';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
-import { SettingsPageService } from './settings-page.service';
+import { UserSettingsService } from '../../../settings/user-settings.service';
 
-export const SettingsSchema = z.object({
-  displayName: z.string().trim().max(120, 'settings.errors.tooLong'),
+export const ProfileSchema = z.object({
+  displayName: z.string().trim().max(120, 'profile.errors.tooLong'),
   canton: z.union([z.literal(''), z.enum(CH_CANTONS)]),
-  advisorName: z.string().trim().max(120, 'settings.errors.tooLong'),
+  advisorName: z.string().trim().max(120, 'profile.errors.tooLong'),
   advisorEmail: z.union([
     z.literal(''),
-    z.string().trim().email('settings.errors.email').max(200),
+    z.string().trim().email('profile.errors.email').max(200),
   ]),
-  onlineRates: z.boolean(),
-  coingeckoKey: z.string().trim().max(200, 'settings.errors.tooLong'),
-  etherscanKey: z.string().trim().max(200, 'settings.errors.tooLong'),
 });
 
-/** The form → the API's changes: an empty key field keeps the stored key. */
-export function settingsChanges(
-  value: z.infer<typeof SettingsSchema>,
+/** The form → the API's changes (F11.1). */
+export function profileChanges(
+  value: z.infer<typeof ProfileSchema>,
 ): UpdateSettingsRequest {
-  const keys: UpdateSettingsRequest['keys'] = {};
-  if (value.coingeckoKey) keys.coingecko = value.coingeckoKey;
-  if (value.etherscanKey) keys.etherscan = value.etherscanKey;
   return {
     displayName: value.displayName,
     canton: value.canton,
     advisorName: value.advisorName,
     advisorEmail: value.advisorEmail,
-    onlineRates: value.onlineRates,
-    ...(Object.keys(keys).length > 0 ? { keys } : {}),
   };
 }
 
-/** F11.1–F11.3, F6.7. */
+/**
+ * Profil (ANFORDERUNGEN §11, F11.1, F11.2): name, Wohnkanton and Treuhänder for the statements
+ * and the mail draft, number and date format (only de-CH so far; the language follows).
+ */
 @Component({
-  selector: 'lk-settings-page',
+  selector: 'lk-profile-page',
   imports: [
     ReactiveFormsModule,
     TranslatePipe,
@@ -61,11 +56,11 @@ export function settingsChanges(
     ...HlmLabelImports,
     ...HlmSkeletonImports,
   ],
-  templateUrl: './settings-page.html',
+  templateUrl: './profile-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SettingsPage {
-  protected readonly service = inject(SettingsPageService);
+export class ProfilePage {
+  protected readonly service = inject(UserSettingsService);
   protected readonly cantons = CH_CANTONS;
 
   protected readonly form = inject(FormBuilder).nonNullable.group(
@@ -74,11 +69,8 @@ export class SettingsPage {
       canton: [''],
       advisorName: [''],
       advisorEmail: [''],
-      onlineRates: [true],
-      coingeckoKey: [''],
-      etherscanKey: [''],
     },
-    { validators: zodValidator(SettingsSchema) },
+    { validators: zodValidator(ProfileSchema) },
   );
 
   constructor() {
@@ -90,21 +82,14 @@ export class SettingsPage {
         canton: settings.canton,
         advisorName: settings.advisorName,
         advisorEmail: settings.advisorEmail,
-        onlineRates: settings.onlineRates,
-        coingeckoKey: '',
-        etherscanKey: '',
       });
     });
   }
 
   protected submit(): void {
     this.form.markAllAsTouched();
-    const parsed = SettingsSchema.safeParse(this.form.getRawValue());
+    const parsed = ProfileSchema.safeParse(this.form.getRawValue());
     if (!parsed.success) return;
-    void this.service.save(settingsChanges(parsed.data)).catch(() => undefined);
-  }
-
-  protected remove(name: 'coingecko' | 'etherscan'): void {
-    void this.service.removeKey(name).catch(() => undefined);
+    void this.service.save(profileChanges(parsed.data)).catch(() => undefined);
   }
 }

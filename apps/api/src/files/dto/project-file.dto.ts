@@ -22,6 +22,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import {
+  derivedFromId,
   FROM_PROJECT,
   PROJECT_FILE_STATUSES,
   type ProjectFileStatus,
@@ -111,16 +112,25 @@ export class ProjectFileResponseDto {
   @ApiProperty() bookingCount!: number;
   @ApiProperty() holdingCount!: number;
   @ApiProperty() errorCount!: number;
-  @ApiProperty({ enum: ['uploaded', 'from_project'] })
-  origin!: 'uploaded' | 'from_project';
+  @ApiProperty({
+    enum: ['uploaded', 'from_project', 'derived'],
+    description:
+      'derived = a standard-format file the AI converted from another file of this project (a PDF)',
+  })
+  origin!: 'uploaded' | 'from_project' | 'derived';
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
   originProjectId!: string | null;
   @ApiProperty({ type: String, nullable: true })
   originProjectName!: string | null;
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
+  derivedFromFileId!: string | null;
+  @ApiProperty({ type: String, nullable: true })
+  derivedFromName!: string | null;
   @ApiProperty({ format: 'date-time' }) addedAt!: string;
 
   static from(file: ProjectFileView): ProjectFileResponseDto {
     const fromProject = file.origin.startsWith(FROM_PROJECT);
+    const derivedFrom = derivedFromId(file.origin) ?? null;
     return {
       id: file.id,
       sha256: file.sha256,
@@ -135,11 +145,17 @@ export class ProjectFileResponseDto {
       bookingCount: file.bookingCount,
       holdingCount: file.holdingCount,
       errorCount: file.errorCount,
-      origin: fromProject ? 'from_project' : 'uploaded',
+      origin: fromProject
+        ? 'from_project'
+        : derivedFrom
+          ? 'derived'
+          : 'uploaded',
       originProjectId: fromProject
         ? file.origin.slice(FROM_PROJECT.length)
         : null,
       originProjectName: file.originProjectName,
+      derivedFromFileId: derivedFrom,
+      derivedFromName: file.derivedFromName,
       addedAt: file.addedAt,
     };
   }

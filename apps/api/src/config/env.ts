@@ -121,19 +121,26 @@ export class Env {
   @IsIn(['', 'true', 'false'])
   API_DOCS = '';
 
-  // --- Settings, rates, exports ---
+  // --- Settings ---
 
   /**
-   * Seals the API keys users store in their settings (F6.7) with AES-256-GCM (settings/
-   * secret-box.ts). Any long random string; empty = storing keys is refused. Changing it makes
-   * stored keys unreadable (users enter them again).
+   * Encrypts secrets users save in their settings (the AI provider's API key) with AES-256-GCM
+   * (`common/crypto/secret-box.ts`); any long random string. Empty = keys cannot be saved — a
+   * provider without a key (local Ollama / LM Studio) still works. Changing it makes stored keys
+   * unreadable (users enter them again).
    */
-  @ValidateIf((env: Env) => env.SETTINGS_ENCRYPTION_KEY !== '')
   @IsString()
-  @MinLength(32, {
-    message: 'SETTINGS_ENCRYPTION_KEY must be at least 32 characters',
-  })
   SETTINGS_ENCRYPTION_KEY = '';
+
+  /**
+   * Whether users may point the AI plugin at private/loopback addresses (a local Ollama or LM
+   * Studio). The API sends the requests, so on a shared server that would reach its own network.
+   * Empty = allowed with AUTH_MODE `local` (desktop) and `dev`, refused with `firebase`.
+   */
+  @IsIn(['', 'true', 'false'])
+  AI_ALLOW_PRIVATE_URLS = '';
+
+  // --- Rates, exports ---
 
   /**
    * Chromium for the PDF exports (F10). Empty = the browser `playwright-core` installs
@@ -145,6 +152,15 @@ export class Env {
   /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
   @IsIn(['true', 'false'])
   RATES_ONLINE = 'true';
+}
+
+/** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */
+export function aiPrivateUrlsAllowed(
+  env: Pick<Env, 'AI_ALLOW_PRIVATE_URLS' | 'AUTH_MODE'>,
+): boolean {
+  return env.AI_ALLOW_PRIVATE_URLS === ''
+    ? env.AUTH_MODE !== 'firebase'
+    : env.AI_ALLOW_PRIVATE_URLS === 'true';
 }
 
 export function validateEnv(raw: Record<string, unknown>): Env {

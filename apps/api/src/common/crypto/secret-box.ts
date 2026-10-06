@@ -8,9 +8,10 @@ import {
 const PREFIX = 'enc:v1:';
 
 /**
- * AES-256-GCM for the API keys users store in their settings (F6.7). The key is SHA-256 of
- * SETTINGS_ENCRYPTION_KEY, so any long random string works. Format:
- * `enc:v1:<iv>:<auth tag>:<ciphertext>`, each base64.
+ * AES-256-GCM for secrets a user saves in the settings (the AI provider's API key; later the
+ * CoinGecko/Etherscan keys, F6.7). Ported from surf-lend's `settings/secret-box.ts`. The key is
+ * SHA-256 of `SETTINGS_ENCRYPTION_KEY`, so any long random string works. Format:
+ * `enc:v1:<iv>:<auth tag>:<ciphertext>`, each base64. A fresh 96-bit IV per seal.
  */
 export class SecretBox {
   private readonly key: Buffer | undefined;
@@ -22,6 +23,7 @@ export class SecretBox {
         : undefined;
   }
 
+  /** False without `SETTINGS_ENCRYPTION_KEY`: nothing can be sealed then. */
   get available(): boolean {
     return this.key !== undefined;
   }
@@ -52,4 +54,9 @@ export class SecretBox {
       return undefined;
     }
   }
+}
+
+/** What the settings page may show of a key: its last four characters. */
+export function secretHint(plain: string): string {
+  return plain.length <= 4 ? '…' : `…${plain.slice(-4)}`;
 }

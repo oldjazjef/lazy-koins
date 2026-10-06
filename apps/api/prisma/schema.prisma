@@ -63,6 +63,7 @@ model User {
   storedFiles StoredFile[]
   mappings    ImportMapping[]
   settings    UserSettings?
+  aiSettings  AiSettings?
 
   @@map("user")
 }
@@ -165,7 +166,8 @@ model ProjectFile {
   errorCount   Int      @default(0) @map("error_count")
   /// JSON array of coverage entries per platform/account (F5.8).
   coverage     String   @default("[]")
-  /// `uploaded`, or `from_project:<id>` when the bytes were already in another project (F4.4).
+  /// `uploaded`, `from_project:<id>` when the bytes were already in another project (F4.4), or
+  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF.
   origin       String   @default("uploaded")
   addedAt      DateTime @default(now()) @map("added_at")
 
@@ -304,4 +306,28 @@ model ProjectExport {
 
   @@index([projectId, createdAt])
   @@map("project_export")
+}
+
+/// The AI plugin's settings of one user (F5.13, F5.14) — its own table, one row per user, created
+/// on first save. The API key is stored only encrypted (AES-256-GCM with SETTINGS_ENCRYPTION_KEY,
+/// `ai/domain/secret-box.ts`) and never returned; `api_key_hint` keeps its last four characters.
+model AiSettings {
+  userId       String    @id @map("user_id")
+  enabled      Boolean   @default(false)
+  /// openai_compatible | anthropic. CHECK in the migration.
+  provider     String    @default("openai_compatible")
+  /// e.g. https://api.openai.com/v1 or http://localhost:11434/v1; empty = the provider's default.
+  baseUrl      String    @default("") @map("base_url")
+  /// Empty = the provider's default model.
+  model        String    @default("")
+  /// `enc:v1:<iv>:<tag>:<ciphertext>`; null = no key (e.g. a local Ollama).
+  apiKeyCipher String?   @map("api_key_cipher")
+  apiKeyHint   String?   @map("api_key_hint")
+  /// F5.14: when the user first agreed to send file excerpts to the provider; null = not yet.
+  consentAt    DateTime? @map("consent_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_settings")
 }

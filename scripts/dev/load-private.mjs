@@ -27,9 +27,17 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const dir = path.resolve(process.env.LK_PRIVATE_DIR ?? path.join(repo, 'private'));
-const api = (process.env.LK_API_URL ?? 'http://localhost:3333/api').replace(/\/$/, '');
+const repo = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
+const dir = path.resolve(
+  process.env.LK_PRIVATE_DIR ?? path.join(repo, 'private'),
+);
+const api = (process.env.LK_API_URL ?? 'http://localhost:3333/api').replace(
+  /\/$/,
+  '',
+);
 const user = process.env.LK_USER ?? 'anna@lazykoins.dev';
 const projectName = process.env.LK_PROJECT_NAME ?? 'Steuern 2025';
 const taxYear = Number(process.env.LK_TAX_YEAR ?? '2025');
@@ -45,7 +53,8 @@ function fail(message) {
 
 async function call(method, route, { json, bytes, query } = {}) {
   const url = new URL(`${api}${route}`);
-  for (const [key, value] of Object.entries(query ?? {})) url.searchParams.set(key, value);
+  for (const [key, value] of Object.entries(query ?? {}))
+    url.searchParams.set(key, value);
   const headers = { ...auth };
   let body;
   if (json !== undefined) {
@@ -59,7 +68,9 @@ async function call(method, route, { json, bytes, query } = {}) {
   try {
     response = await fetch(url, { method, headers, body });
   } catch {
-    fail(`the API at ${api} is not reachable — start it with \`pnpm start:full\``);
+    fail(
+      `the API at ${api} is not reachable — start it with \`pnpm start:full\``,
+    );
   }
   const text = await response.text();
   let data = null;
@@ -74,7 +85,9 @@ async function call(method, route, { json, bytes, query } = {}) {
 /** Error text of an API answer — the API's own message, never a file's content. */
 function reason(answer) {
   const message = answer.data?.message;
-  return Array.isArray(message) ? message.join('; ') : (message ?? `HTTP ${answer.status}`);
+  return Array.isArray(message)
+    ? message.join('; ')
+    : (message ?? `HTTP ${answer.status}`);
 }
 
 function walk(folder, relative = '') {
@@ -110,13 +123,15 @@ async function main() {
 
   // 1. The project (reused when it exists).
   const projects = await call('GET', '/projects');
-  if (!projects.ok) fail(`cannot list projects (${reason(projects)}) — is AUTH_MODE=dev?`);
+  if (!projects.ok)
+    fail(`cannot list projects (${reason(projects)}) — is AUTH_MODE=dev?`);
   let project = projects.data.find(
     (p) => p.name === projectName && p.taxYear === taxYear,
   );
   if (project) {
     console.log(`Projekt „${project.name}“ wird weiterverwendet.`);
-    if (project.status === 'closed') fail('the project is closed — reopen it first');
+    if (project.status === 'closed')
+      fail('the project is closed — reopen it first');
   } else {
     const created = await call('POST', '/projects', {
       json: { name: projectName, taxYear, country: 'CH', canton },
@@ -183,22 +198,31 @@ async function main() {
   // 4. Rates, then the calculation.
   if (process.env.LK_SKIP_RATES !== '1') {
     console.log('\nKurse aktualisieren …');
-    const refreshed = await call('POST', `/projects/${project.id}/rates/refresh`, {
-      json: {},
-    });
+    const refreshed = await call(
+      'POST',
+      `/projects/${project.id}/rates/refresh`,
+      {
+        json: {},
+      },
+    );
     if (refreshed.ok) {
       const counts = {};
-      for (const asset of refreshed.data.assets) counts[asset.status] = (counts[asset.status] ?? 0) + 1;
+      for (const asset of refreshed.data.assets)
+        counts[asset.status] = (counts[asset.status] ?? 0) + 1;
       console.log(
-        `  Devisen: ${refreshed.data.fx} Tage; Assets: ${Object.entries(counts)
-          .map(([status, n]) => `${n} ${status}`)
-          .join(', ') || 'keine'}`,
+        `  Devisen: ${refreshed.data.fx} Tage; Assets: ${
+          Object.entries(counts)
+            .map(([status, n]) => `${n} ${status}`)
+            .join(', ') || 'keine'
+        }`,
       );
     } else {
       console.log(`  übersprungen (${reason(refreshed)})`);
     }
   }
-  const result = await call('POST', `/projects/${project.id}/calculate`, { json: {} });
+  const result = await call('POST', `/projects/${project.id}/calculate`, {
+    json: {},
+  });
   if (!result.ok) fail(`calculation failed (${reason(result)})`);
   const totals = result.data.result.totals;
   console.log(`\nVermögen per 31.12.${taxYear}: CHF ${chf(totals.wealthChf)}`);

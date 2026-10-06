@@ -1,6 +1,11 @@
 import 'reflect-metadata';
 
-import { apiDocsEnabled, NodeEnv, validateEnv } from './env';
+import {
+  aiPrivateUrlsAllowed,
+  apiDocsEnabled,
+  NodeEnv,
+  validateEnv,
+} from './env';
 
 const BASE = { DATABASE_URL: 'file:./.data/lazykoins.db' };
 
@@ -89,5 +94,26 @@ describe('apiDocsEnabled', () => {
     expect(
       apiDocsEnabled({ API_DOCS: 'true', NODE_ENV: NodeEnv.Production }),
     ).toBe(true);
+  });
+});
+
+describe('aiPrivateUrlsAllowed (SSRF guard of the AI plugin)', () => {
+  it('allows local providers on the desktop and in dev, not on a Firebase server', () => {
+    const allowed = (AUTH_MODE: 'firebase' | 'dev' | 'local', flag = '') =>
+      aiPrivateUrlsAllowed({ AUTH_MODE, AI_ALLOW_PRIVATE_URLS: flag });
+    expect(allowed('local')).toBe(true);
+    expect(allowed('dev')).toBe(true);
+    expect(allowed('firebase')).toBe(false);
+    expect(allowed('firebase', 'true')).toBe(true);
+    expect(allowed('local', 'false')).toBe(false);
+  });
+
+  it('keeps SETTINGS_ENCRYPTION_KEY optional and checks the flag', () => {
+    expect(
+      validateEnv({ ...BASE, AUTH_MODE: 'dev' }).SETTINGS_ENCRYPTION_KEY,
+    ).toBe('');
+    expect(() =>
+      validateEnv({ ...BASE, AUTH_MODE: 'dev', AI_ALLOW_PRIVATE_URLS: 'yes' }),
+    ).toThrow('AI_ALLOW_PRIVATE_URLS');
   });
 });

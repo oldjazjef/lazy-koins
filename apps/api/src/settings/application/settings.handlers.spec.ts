@@ -2,7 +2,7 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Env } from '../../config/env';
 import { InMemoryUserSettingsRepository } from '../testing/in-memory-user-settings.repository';
-import { SecretBox } from './secret-box';
+import { SecretBox } from '../../common/crypto/secret-box';
 import {
   GetSettingsHandler,
   GetSettingsQuery,

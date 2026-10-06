@@ -1,0 +1,106 @@
+<lk-page-header
+  [title]="'profile.title' | translate"
+  [subtitle]="'profile.subtitle' | translate"
+/>
+
+@if (service.settings.hasValue()) {
+<form
+  class="flex max-w-3xl flex-col gap-6"
+  [formGroup]="form"
+  (ngSubmit)="submit()"
+>
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'profile.personalTitle' | translate }}</h2>
+      <p hlmCardDescription>{{ 'profile.personalHint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="grid gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="profile-name"
+          >{{ 'profile.fields.displayName' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="profile-name"
+          type="text"
+          formControlName="displayName"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="profile-canton"
+          >{{ 'profile.fields.canton' | translate }}</label
+        >
+        <select hlmInput id="profile-canton" formControlName="canton">
+          <option value="">{{ 'profile.noCanton' | translate }}</option>
+          @for (canton of cantons; track canton) {
+          <option [value]="canton">{{ canton }}</option>
+          }
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="profile-advisor"
+          >{{ 'profile.fields.advisorName' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="profile-advisor"
+          type="text"
+          formControlName="advisorName"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="profile-advisor-mail"
+          >{{ 'profile.fields.advisorEmail' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="profile-advisor-mail"
+          type="email"
+          formControlName="advisorEmail"
+        />
+        @if ( form.controls.advisorEmail.touched &&
+        form.controls.advisorEmail.errors?.['zod']; as error ) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'profile.formatTitle' | translate }}</h2>
+      <p hlmCardDescription>{{ 'profile.formatHint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="grid gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="profile-number"
+          >{{ 'profile.fields.numberFormat' | translate }}</label
+        >
+        <select hlmInput id="profile-number" disabled>
+          <option>{{ 'profile.numberFormats.deCH' | translate }}</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="profile-date"
+          >{{ 'profile.fields.dateFormat' | translate }}</label
+        >
+        <select hlmInput id="profile-date" disabled>
+          <option>{{ 'profile.dateFormats.ddMMyyyy' | translate }}</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex justify-end">
+    <button
+      hlmBtn
+      type="submit"
+      [disabled]="service.isSaving() || form.pristine"
+    >
+      {{ 'common.save' | translate }}
+    </button>
+  </div>
+</form>
+} @else {
+<hlm-skeleton class="h-96 w-full max-w-3xl" />
+}

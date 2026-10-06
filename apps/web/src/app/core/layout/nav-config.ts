@@ -1,4 +1,8 @@
-import { lucideFolderOpen, lucideSettings } from '@ng-icons/lucide';
+import {
+  lucideFolderOpen,
+  lucideSettings,
+  lucideUserRound,
+} from '@ng-icons/lucide';
 
 export interface NavItem {
   readonly path: string;
@@ -13,6 +17,15 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: 'nav.projects',
     icon: 'lucideFolderOpen',
   },
+];
+
+/** The user menu at the top right (ANFORDERUNGEN §11): Profil and Einstellungen. */
+export const USER_MENU_ITEMS: readonly NavItem[] = [
+  {
+    path: '/app/profile',
+    labelKey: 'nav.profile',
+    icon: 'lucideUserRound',
+  },
   {
     path: '/app/settings',
     labelKey: 'nav.settings',
@@ -20,4 +33,4 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
 ];
 
-export const NAV_ICONS = { lucideFolderOpen, lucideSettings };
+export const NAV_ICONS = { lucideFolderOpen, lucideSettings, lucideUserRound };

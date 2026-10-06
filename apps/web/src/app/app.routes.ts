@@ -21,6 +21,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/projects/projects.routes'),
       },
       {
+        path: 'profile',
+        loadChildren: () => import('./features/profile/profile.routes'),
+      },
+      {
         path: 'settings',
         loadChildren: () => import('./features/settings/settings.routes'),
       },

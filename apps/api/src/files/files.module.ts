@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { RawBodyMiddleware } from '../common/http/raw-body.middleware';
+import { AddDerivedFileHandler } from './application/commands/add-derived-file.command';
 import { ChangeProjectFileHandler } from './application/commands/change-project-file.command';
 import { ReapplyMappingHandler } from './application/commands/reapply-mapping.command';
 import { RemoveProjectFileHandler } from './application/commands/remove-project-file.command';
@@ -17,6 +18,7 @@ import {
   PreviewFileHandler,
 } from './application/queries/file-content.query';
 import { ListProjectFilesHandler } from './application/queries/list-project-files.query';
+import { PdfTextExtractor } from './application/pdf-text-extractor';
 import { PreviewMappingHandler } from './application/queries/preview-mapping.query';
 import { SourceFileReader } from './application/source-file-reader';
 import { FilesController } from './files.controller';
@@ -35,7 +37,9 @@ import { StandardFormatController } from './standard-format.controller';
     FileViews,
     FileAnalysisService,
     SourceFileReader,
+    PdfTextExtractor,
     UploadProjectFileHandler,
+    AddDerivedFileHandler,
     ChangeProjectFileHandler,
     RemoveProjectFileHandler,
     ReapplyMappingHandler,
@@ -44,7 +48,13 @@ import { StandardFormatController } from './standard-format.controller';
     PreviewFileHandler,
     PreviewMappingHandler,
   ],
-  exports: [FilesService],
+  exports: [
+    FilesService,
+    FileViews,
+    FileAnalysisService,
+    SourceFileReader,
+    PdfTextExtractor,
+  ],
 })
 export class FilesModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

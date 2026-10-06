@@ -33,6 +33,8 @@ export const MEDIA_TYPES: Readonly<Record<FileKind, string>> = {
 
 export const UPLOADED = 'uploaded';
 export const FROM_PROJECT = 'from_project:';
+/** A standard-format file the AI converted from another file of the project (a PDF statement). */
+export const DERIVED_FROM = 'derived_from:';
 
 export interface StoredFileMeta {
   readonly id: string;
@@ -89,7 +91,7 @@ export interface ProjectFile extends FileAnalysis {
   readonly size: number;
   readonly mediaType: string;
   readonly displayName: string;
-  /** `uploaded` or `from_project:<id>` (F5.5 "Herkunft"). */
+  /** `uploaded`, `from_project:<id>` or `derived_from:<project file id>` (F5.5 "Herkunft"). */
   readonly origin: string;
   readonly addedAt: string;
 }
@@ -98,6 +100,13 @@ export interface ProjectFile extends FileAnalysis {
 export function originProjectId(origin: string): string | undefined {
   return origin.startsWith(FROM_PROJECT)
     ? origin.slice(FROM_PROJECT.length)
+    : undefined;
+}
+
+/** The source project file inside a `derived_from:<id>` origin, else `undefined`. */
+export function derivedFromId(origin: string): string | undefined {
+  return origin.startsWith(DERIVED_FROM)
+    ? origin.slice(DERIVED_FROM.length)
     : undefined;
 }
 

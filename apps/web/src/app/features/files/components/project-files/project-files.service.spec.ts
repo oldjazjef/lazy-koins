@@ -39,6 +39,8 @@ const file = (over: Partial<ProjectFile> = {}): ProjectFile => ({
   origin: 'uploaded',
   originProjectId: null,
   originProjectName: null,
+  derivedFromFileId: null,
+  derivedFromName: null,
   addedAt: '2026-01-01T00:00:00.000Z',
   ...over,
 });

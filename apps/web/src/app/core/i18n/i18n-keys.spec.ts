@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SETTINGS_SECTIONS } from '../../features/settings/settings-shell';
 import { WORKSPACE_TABS } from '../../features/calculation/components/project-workspace/project-workspace.service';
 import {
   CHECK_KINDS,
@@ -85,6 +86,57 @@ const DYNAMIC_KEYS = [
   ),
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
+  ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
+  ...[
+    'failed',
+    'unreachable',
+    'closed',
+    'aiDisabled',
+    'aiNotConfigured',
+    'consentRequired',
+    'keyUnreadable',
+    'privateUrl',
+    'invalidUrl',
+    'encryptionUnavailable',
+    'noText',
+    'invalidAnswer',
+    'invalidKey',
+    'rateLimited',
+    'network',
+    'timeout',
+    'badResponse',
+    'providerError',
+    'modelNotFound',
+  ].map((code) => `ai.errors.${code}`),
+  ...['disabled', 'notConfigured'].map((reason) => `ai.notReady.${reason}`),
+  ...[
+    'invalidSpec',
+    'headerNotFound',
+    'noRecords',
+    'rowErrors',
+    'unknownKinds',
+  ].map((problem) => `ai.mapping.problems.${problem}`),
+  ...[
+    'notVerbatim',
+    'pageMismatch',
+    'invalidNumber',
+    'ambiguousSeparator',
+    'priceNotVerbatim',
+    'pageOutOfRange',
+    'invalidRecord',
+  ].map((issue) => `ai.statement.issues.${issue}`),
+  ...['openai_compatible', 'anthropic'].map(
+    (provider) => `settings.ai.providers.${provider}`,
+  ),
+  ...[
+    'openai',
+    'anthropic',
+    'mistral',
+    'groq',
+    'openrouter',
+    'ollama',
+    'lmstudio',
+  ].map((preset) => `settings.ai.presets.${preset}`),
 ];
 
 /** Keys that only exist in specs (fixtures of the copied ActionRunner spec). */

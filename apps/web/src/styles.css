@@ -127,6 +127,15 @@
     @apply bg-popover sticky -bottom-6 z-10 -mb-6 border-t pt-4 pb-6;
   }
 
+  /* The user menu at the top right. */
+  .lk-menu {
+    @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex w-56 flex-col overflow-hidden rounded-md border py-1 shadow-md;
+  }
+
+  .lk-menu-item {
+    @apply hover:bg-muted flex w-full items-center gap-2 px-3 py-2 text-left text-sm;
+  }
+
   /* Tabs of the project workspace. */
   .lk-tab {
     @apply text-muted-foreground hover:text-foreground -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium transition-colors;

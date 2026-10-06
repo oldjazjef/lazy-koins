@@ -8,6 +8,8 @@ import {
   FxRateSourcePort,
   UsdPriceSourcePort,
 } from '../rates/ports/rate-source.port';
+import { AiCompletionPort } from './ai/ai-completion.port';
+import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
 import { FirebaseIdentityTokenVerifier } from './firebase/firebase-identity-token.verifier';
 import { LocalIdentityVerifier } from './local-identity.verifier';
@@ -19,8 +21,10 @@ import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
 /**
  * External services behind ports, the counterpart of `PersistenceModule` for everything that is
  * not the database. The only place that decides *which* adapter backs a port — and the only code
- * that imports firebase-admin. Rate sources (Binance, CoinGecko, ECB/Frankfurter) and the PDF
- * renderer (Chromium) live here too. Later: one `ChainDataPort` adapter per wallet network.
+ * that imports firebase-admin. The AI plugin's `AiCompletionPort` (F5.13) dispatches per call to
+ * the OpenAI-compatible or the Anthropic adapter, from the user's settings. Rate sources
+ * (Binance, CoinGecko, ECB/Frankfurter) and the PDF renderer (Chromium) live here too. Later: one
+ * `ChainDataPort` adapter per wallet network.
  */
 @Global()
 @Module({
@@ -55,9 +59,14 @@ import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
           config.get('PDF_CHROMIUM_PATH', { infer: true }) ?? '',
         ),
     },
+    {
+      provide: AiCompletionPort,
+      useFactory: () => new ProviderSwitchingAiCompletion(),
+    },
   ],
   exports: [
     IdentityTokenVerifierPort,
+    AiCompletionPort,
     UsdPriceSourcePort,
     ChfPriceSourcePort,
     FxRateSourcePort,
