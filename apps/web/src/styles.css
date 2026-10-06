@@ -105,6 +105,24 @@
   h3 {
     @apply tracking-tight;
   }
+
+  /*
+   * Native <select> dropdowns: hlmInput gives the select a transparent background and the light
+   * foreground in dark mode; the options inherit that text colour but get the OS's light-grey list
+   * background (Windows), so they were unreadable. Give the list explicit theme colours.
+   */
+  select option,
+  select optgroup {
+    @apply bg-popover text-popover-foreground;
+  }
+
+  select option:checked {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  select option:disabled {
+    @apply text-muted-foreground;
+  }
 }
 
 @layer components {
