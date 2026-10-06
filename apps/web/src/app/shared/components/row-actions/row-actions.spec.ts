@@ -4,11 +4,14 @@ import { lucideDownload, lucideEye, lucideTrash2 } from '@ng-icons/lucide';
 import { provideTranslateService } from '@ngx-translate/core';
 import { type RowAction, RowActions } from './row-actions';
 
+/** Counts clicks that reach the "row" (the host) — the actions must not let any through. */
 @Component({
   imports: [RowActions],
-  template: `<div (click)="rowClicks = rowClicks + 1">
-    <lk-row-actions [actions]="actions()" (selected)="picked.push($event)" />
-  </div>`,
+  host: { '(click)': 'rowClicks = rowClicks + 1' },
+  template: `<lk-row-actions
+    [actions]="actions()"
+    (selected)="picked.push($event)"
+  />`,
 })
 class Host {
   readonly actions = signal<readonly RowAction[]>([]);

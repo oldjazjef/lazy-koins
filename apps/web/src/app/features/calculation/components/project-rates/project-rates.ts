@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -21,6 +22,12 @@ import type { RateSeries } from '../../../../core/api/calculation.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
 
 const ManualRateSchema = z.object({
   kind: z.enum(['price', 'fx']),
@@ -47,6 +54,9 @@ const ManualRateSchema = z.object({
     DatePipe,
     ReactiveFormsModule,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     QuantityPipe,
     EmptyState,
     ...HlmBadgeImports,
@@ -79,6 +89,34 @@ export class ProjectRates {
       (s) => term === '' || s.asset.includes(term),
     );
   });
+
+  protected readonly manualPager = paginate(
+    computed(() => this.view()?.manual ?? []),
+    { storageKey: 'manual-rates' },
+  );
+  protected readonly seriesPager = paginate(this.series, {
+    storageKey: 'rate-series',
+    resetOn: () => this.filter(),
+  });
+
+  /** One action each; none while the project is closed (F4.5). */
+  protected readonly manualActions = computed<readonly RowAction[]>(() => [
+    {
+      id: 'remove',
+      labelKey: 'rates.remove',
+      icon: lucideTrash2,
+      danger: true,
+      hidden: this.closed(),
+    },
+  ]);
+  protected readonly seriesActions = computed<readonly RowAction[]>(() => [
+    {
+      id: 'override',
+      labelKey: 'rates.override',
+      icon: lucidePencil,
+      hidden: this.closed(),
+    },
+  ]);
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     kind: ['price' as 'price' | 'fx'],

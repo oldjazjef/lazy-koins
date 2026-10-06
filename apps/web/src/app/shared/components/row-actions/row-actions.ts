@@ -73,7 +73,6 @@ export interface RowAction<Id extends string = string> {
         variant="ghost"
         size="icon-sm"
         type="button"
-        aria-haspopup="menu"
         [attr.aria-label]="'common.actions' | translate"
         [hlmDropdownMenuTrigger]="menu"
         align="end"

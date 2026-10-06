@@ -58,7 +58,7 @@ export function aiErrorInfo(error: unknown): AiErrorInfo {
   };
   const clean = Object.fromEntries(
     Object.entries(info).filter(([, value]) => value !== undefined),
-  ) as AiErrorInfo;
+  ) as unknown as AiErrorInfo;
   const hintKey = aiErrorHintKey(clean);
   return hintKey ? { ...clean, hintKey } : clean;
 }

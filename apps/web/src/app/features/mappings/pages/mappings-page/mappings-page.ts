@@ -20,6 +20,8 @@ import { HlmTableImports } from '@lazykoins/ui/table';
 import type { SpecIssue } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 import {
   MappingEditorForm,
   skeleton,
@@ -46,6 +48,8 @@ import {
     PageHeader,
     EmptyState,
     MappingEditorForm,
+    Paginator,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
@@ -63,6 +67,10 @@ export class MappingsPage {
   private readonly router = inject(Router);
   protected readonly sorts = MAPPING_SORTS;
   protected readonly skeletonRows = [1, 2, 3];
+  protected readonly pager = paginate(this.service.visible, {
+    storageKey: 'mappings',
+    resetOn: () => [this.service.search(), this.service.sort()],
+  });
 
   /** The "Neues Mapping" dialog. */
   protected readonly creating = signal(false);

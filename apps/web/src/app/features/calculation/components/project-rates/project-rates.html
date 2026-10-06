@@ -133,7 +133,14 @@
 <section class="mb-6 flex flex-col gap-2">
   <h3 class="font-medium">{{ 'rates.manualTitle' | translate }}</h3>
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-28" />
+        <col class="w-48" />
+        <col class="hidden w-32 md:table-column" />
+        <col class="w-14" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'rates.fields.asset' | translate }}</th>
@@ -141,45 +148,44 @@
           <th hlmTh class="text-right">
             {{ 'rates.fields.value' | translate }}
           </th>
-          <th hlmTh>{{ 'rates.fields.source' | translate }}</th>
-          <th hlmTh class="text-right">
-            <span class="sr-only"
-              >{{ 'rates.fields.actions' | translate }}</span
-            >
+          <th hlmTh class="hidden md:table-cell">
+            {{ 'rates.fields.source' | translate }}
+          </th>
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
           </th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (rate of view.manual; track rate.id) {
+        @for (rate of manualPager.visible(); track rate.id) {
         <tr hlmTr>
-          <td hlmTd>
-            {{ rate.asset }} · {{ 'rates.kind.' + rate.kind | translate }}
+          <td hlmTd class="max-w-0">
+            @let label = rate.asset + ' · ' + ('rates.kind.' + rate.kind |
+            translate);
+            <span [lkTruncate]="label">{{ label }}</span>
           </td>
           <td hlmTd class="tabular-nums">
             {{ rate.date | date: 'dd.MM.yyyy' }}
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ rate.value | lkQuantity: 10 }} {{ rate.currency }}
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @let value = (rate.value | lkQuantity: 10) + ' ' + rate.currency;
+            <span [lkTruncate]="value">{{ value }}</span>
           </td>
-          <td hlmTd>{{ 'rates.source.' + rate.source | translate }}</td>
-          <td hlmTd class="text-right">
-            @if (!closed()) {
-            <button
-              hlmBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              (click)="service.deleteManualRate(rate)"
-            >
-              {{ 'rates.remove' | translate }}
-            </button>
-            }
+          <td hlmTd class="hidden md:table-cell">
+            {{ 'rates.source.' + rate.source | translate }}
+          </td>
+          <td hlmTd class="lk-sticky-actions text-right">
+            <lk-row-actions
+              [actions]="manualActions()"
+              (selected)="service.deleteManualRate(rate)"
+            />
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="manualPager" />
 </section>
 }
 
@@ -199,42 +205,65 @@
   <lk-empty-state [message]="'rates.empty' | translate" />
   } @else {
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-28" />
+        <col class="hidden w-20 lg:table-column" />
+        <col class="hidden w-52 md:table-column" />
+        <col class="w-40" />
+        <col class="hidden w-36 lg:table-column" />
+        <col class="w-14" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'rates.fields.asset' | translate }}</th>
           <th hlmTh>{{ 'rates.fields.source' | translate }}</th>
-          <th hlmTh class="text-right">
+          <th hlmTh class="hidden text-right lg:table-cell">
             {{ 'rates.fields.points' | translate }}
           </th>
-          <th hlmTh>{{ 'rates.fields.range' | translate }}</th>
+          <th hlmTh class="hidden md:table-cell">
+            {{ 'rates.fields.range' | translate }}
+          </th>
           <th hlmTh class="text-right">
             {{ 'rates.fields.yearEnd' | translate: { year: taxYear() } }}
           </th>
-          <th hlmTh>{{ 'rates.fields.fetchedAt' | translate }}</th>
-          <th hlmTh class="text-right">
-            <span class="sr-only"
-              >{{ 'rates.fields.actions' | translate }}</span
-            >
+          <th hlmTh class="hidden lg:table-cell">
+            {{ 'rates.fields.fetchedAt' | translate }}
+          </th>
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
           </th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (s of series(); track s.kind + s.asset + s.currency + s.source) {
+        @for (s of seriesPager.visible(); track s.kind + s.asset + s.currency +
+        s.source) {
         <tr hlmTr>
-          <td hlmTd class="font-medium">
-            {{ s.asset }}
-            <span class="text-muted-foreground text-xs"
-              >{{ 'rates.kind.' + s.kind | translate }} · {{ s.currency }}</span
+          <td hlmTd class="max-w-0">
+            <span class="font-medium" [lkTruncate]="s.asset"
+              >{{ s.asset }}</span
+            >
+            @let kind = ('rates.kind.' + s.kind | translate) + ' · ' +
+            s.currency;
+            <span class="text-muted-foreground text-xs" [lkTruncate]="kind"
+              >{{ kind }}</span
             >
           </td>
-          <td hlmTd>{{ 'rates.source.' + s.source | translate }}</td>
-          <td hlmTd class="text-right tabular-nums">{{ s.points }}</td>
-          <td hlmTd class="tabular-nums whitespace-nowrap">
+          <td hlmTd class="max-w-0">
+            @let source = 'rates.source.' + s.source | translate;
+            <span [lkTruncate]="source">{{ source }}</span>
+          </td>
+          <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+            {{ s.points }}
+          </td>
+          <td hlmTd class="hidden tabular-nums md:table-cell">
             {{ s.from | date: 'dd.MM.yyyy' }} – {{ s.to | date: 'dd.MM.yyyy' }}
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            @if (s.yearEnd; as point) { {{ point.value | lkQuantity: 8 }}
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @if (s.yearEnd; as point) { @let value = point.value | lkQuantity:
+            8;
+            <span [lkTruncate]="value">{{ value }}</span>
             <span class="text-muted-foreground block text-xs"
               >{{ point.date | date: 'dd.MM.yyyy' }}</span
             >
@@ -244,27 +273,21 @@
             >
             }
           </td>
-          <td hlmTd class="text-muted-foreground text-xs">
+          <td hlmTd class="text-muted-foreground hidden text-xs lg:table-cell">
             {{ s.fetchedAt | date: 'dd.MM.yyyy HH:mm' }}
           </td>
-          <td hlmTd class="text-right">
-            @if (!closed()) {
-            <button
-              hlmBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              (click)="prefill(s)"
-            >
-              {{ 'rates.override' | translate }}
-            </button>
-            }
+          <td hlmTd class="lk-sticky-actions text-right">
+            <lk-row-actions
+              [actions]="seriesActions()"
+              (selected)="prefill(s)"
+            />
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="seriesPager" />
   }
 </section>
 } @else if (service.rates.error()) {
