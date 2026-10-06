@@ -19,7 +19,17 @@ import { EstvKurslisteRepositoryPort } from '../rates/ports/estv.port';
 import { ProjectRateRepositoryPort } from '../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
+import {
+  CarryoverRepositoryPort,
+  ProjectBundleRepositoryPort,
+} from '../carryover/ports/carryover.repository.port';
+import { UserRateRepositoryPort } from '../dashboard/ports/user-rate.repository.port';
 import { PrismaService } from './prisma/prisma.service';
+import {
+  CarryoverPrismaRepository,
+  ProjectBundlePrismaRepository,
+  UserRatePrismaRepository,
+} from './prisma/repositories/carryover.prisma.repository';
 import {
   CalculationSnapshotPrismaRepository,
   CorrectionPrismaRepository,
@@ -99,6 +109,12 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
       provide: ProjectSentRepositoryPort,
       useClass: ProjectSentPrismaRepository,
     },
+    { provide: CarryoverRepositoryPort, useClass: CarryoverPrismaRepository },
+    {
+      provide: ProjectBundleRepositoryPort,
+      useClass: ProjectBundlePrismaRepository,
+    },
+    { provide: UserRateRepositoryPort, useClass: UserRatePrismaRepository },
   ],
   exports: [
     UserRepositoryPort,
@@ -117,6 +133,9 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
     MailTemplateRepositoryPort,
     MailLogRepositoryPort,
     ProjectSentRepositoryPort,
+    CarryoverRepositoryPort,
+    ProjectBundleRepositoryPort,
+    UserRateRepositoryPort,
   ],
 })
 export class PersistenceModule {}

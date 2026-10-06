@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucidePlus } from '@ng-icons/lucide';
+import { lucidePlus, lucideUpload } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
@@ -37,7 +37,7 @@ import { ProjectsPageService } from './projects-page.service';
     ...HlmSkeletonImports,
     ...HlmTableImports,
   ],
-  providers: [provideIcons({ lucidePlus })],
+  providers: [provideIcons({ lucidePlus, lucideUpload })],
   templateUrl: './projects-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -54,6 +54,12 @@ export class ProjectsPage {
 
   constructor() {
     this.service.refresh();
+  }
+
+  protected importPackage(input: HTMLInputElement): void {
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) void this.service.importPackage(file).catch(() => undefined);
   }
 
   protected open(id: string): void {

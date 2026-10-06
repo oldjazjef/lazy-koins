@@ -11,6 +11,7 @@ import type {
 } from '../../../../core/api/api.types';
 import type { ProjectSentStatus } from '../../../../core/api/mail.types';
 import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
+import type { Carryover } from '../../../../core/api/dashboard.types';
 
 /**
  * Page-scoped: the project on screen (provided by the page, keyed by the route's id). The API
@@ -37,6 +38,36 @@ export class ProjectDetailPageService {
     const id = this.projectId();
     return id ? apiUrl(`/projects/${id}/sent`) : undefined;
   });
+
+  /** What this project took over, and from where (F4.4, F4.4a, F10.8). */
+  readonly carryovers = httpResource<Carryover[]>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/carryovers`) : undefined;
+  });
+
+  private readonly carriedItemAction = defineAction<
+    { id: string; carryover: Carryover; done: boolean },
+    unknown
+  >({
+    run: ({ id, carryover, done }) =>
+      firstValueFrom(
+        this.http.patch(apiUrl(`/projects/${id}/open-items`), {
+          key: `carried:${carryover.id}`,
+          done,
+        }),
+      ),
+    messages: { error: 'checks.saveFailed' },
+  });
+
+  /** A carried-over open item ticked off in this project. */
+  async setCarriedDone(carryover: Carryover, done: boolean): Promise<void> {
+    await this.actions.run(
+      this.carriedItemAction,
+      { id: this.requireId(), carryover, done },
+      { key: `carried:${carryover.id}` },
+    );
+    this.carryovers.reload();
+  }
 
   /** F4.5: read-only while closed. */
   readonly isClosed = computed(

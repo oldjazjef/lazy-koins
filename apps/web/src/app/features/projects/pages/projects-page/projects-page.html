@@ -2,6 +2,23 @@
   [title]="'projects.list.title' | translate"
   [subtitle]="'projects.list.subtitle' | translate"
 >
+  <input
+    #packageInput
+    type="file"
+    class="hidden"
+    accept=".zip,application/zip"
+    (change)="importPackage(packageInput)"
+  />
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    [disabled]="service.isImporting()"
+    (click)="packageInput.click()"
+  >
+    <ng-icon name="lucideUpload" size="16" aria-hidden="true" />
+    {{ 'projects.import.button' | translate }}
+  </button>
   <a hlmBtn routerLink="new">
     <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
     {{ 'projects.list.new' | translate }}

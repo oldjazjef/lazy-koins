@@ -1,18 +1,12 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   inject,
   input,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { HlmButtonImports } from '@lazykoins/ui/button';
-import { HlmDialogImports } from '@lazykoins/ui/dialog';
-import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
-import { HlmTableImports } from '@lazykoins/ui/table';
-import { QuantityPipe } from '../../../../shared/format/number-format';
+import { RecordsDialog } from '../../../../shared/components/records-dialog';
 import { ProjectFiles } from '../../../files/components/project-files';
 import { ProjectChecks } from '../project-checks/project-checks';
 import { ProjectCorrections } from '../project-corrections/project-corrections';
@@ -24,8 +18,6 @@ import {
   WORKSPACE_TABS,
   type WorkspaceTab,
 } from './project-workspace.service';
-import { paginate, Paginator } from '../../../../shared/components/paginator';
-import { Truncate } from '../../../../shared/components/truncate';
 
 /**
  * The project detail's working area as tabs: Dateien (+ Mappings), Kurse, Ergebnis, Prüfungen,
@@ -35,21 +27,14 @@ import { Truncate } from '../../../../shared/components/truncate';
 @Component({
   selector: 'lk-project-workspace',
   imports: [
-    DatePipe,
     TranslatePipe,
-    Paginator,
-    Truncate,
-    QuantityPipe,
+    RecordsDialog,
     ProjectFiles,
     ProjectRates,
     ProjectResult,
     ProjectChecks,
     ProjectCorrections,
     ProjectExports,
-    ...HlmButtonImports,
-    ...HlmDialogImports,
-    ...HlmSkeletonImports,
-    ...HlmTableImports,
   ],
   providers: [ProjectWorkspaceService],
   templateUrl: './project-workspace.html',
@@ -63,32 +48,11 @@ export class ProjectWorkspace {
   readonly closed = input(false);
   readonly taxYear = input.required<number>();
 
-  /** F7.5 drill-down: the records behind a figure, 10 per page. */
-  protected readonly recordsPager = paginate(
-    computed(() => this.service.records()?.records ?? []),
-    {
-      storageKey: 'records',
-      resetOn: () => this.service.recordsOf()?.figureId,
-    },
-  );
-
   constructor() {
     effect(() => this.service.projectId.set(this.projectId()));
   }
 
   protected select(tab: WorkspaceTab): void {
     this.service.tab.set(tab);
-  }
-
-  protected recordsState(): 'open' | 'closed' {
-    return this.service.recordsOf() ? 'open' : 'closed';
-  }
-
-  protected recordsChanged(state: 'open' | 'closed'): void {
-    if (state === 'closed') this.service.closeRecords();
-  }
-
-  protected rawEntries(raw: Record<string, string> | null): [string, string][] {
-    return raw ? Object.entries(raw) : [];
   }
 }

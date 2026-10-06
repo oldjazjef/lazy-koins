@@ -9,11 +9,14 @@ Two ways to run it with the **same features** (F1): a multi-user **web app** and
 **desktop app** (macOS + Windows, no login, data stays on the machine). A project moves between the
 two as a package (F1.3).
 
-> **Status (07.10.2026): files + mappings + AI plugin + calculation.** Nx monorepo with the NestJS API
+> **Status (08.10.2026): files + mappings + AI plugin + calculation + dashboard / carry-over /
+> packages.** Nx monorepo with the NestJS API
 > (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
 > storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
-> F7–F11 on top of the engine), the Angular web app (`apps/web`: login, project
+> F7–F11 on top of the engine, **dashboard** = F11.4–F11.9, **carryover** = F4.4/F4.4a,
+> **packages** = F10.8/F10.9, data export F10.7), the Angular web app (`apps/web`: login, the
+> **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Kurse · Ergebnis ·
 > Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main navigation;
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
@@ -24,7 +27,8 @@ two as a package (F1.3).
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
 > stored per user). **Desktop app** (`apps/desktop`, Electron, see Desktop) and the **release /
 > deploy pipeline** (`deploy/`, `.github/workflows/`) exist. **Not built yet:** bookings persisted
-> as rows, wallet lookups (F6), the dashboard. Update this file whenever the code makes a section concrete or wrong.
+> as rows, wallet lookups (F6) — wallets are no entity yet, so the follow-up project shows that group
+> disabled. Update this file whenever the code makes a section concrete or wrong.
 
 ## Stack
 
@@ -148,7 +152,11 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import;
                             #   F7.4a: automatic ESTV Kursliste (sync service + daily scheduler, matching)
     settings/               #   F11 profile data + CoinGecko/Etherscan keys (sealed), online rates on/off
-    exports/                #   F10: Excel (ExcelJS, formulas) + HTML → PDF, stored exports, mail draft
+    exports/                #   F10: Excel (ExcelJS, formulas) + HTML → PDF, stored exports, mail draft,
+                            #   data export in the standard format (F10.7, data-export.handlers.ts)
+    dashboard/              #   F11.4–F11.9: input across all projects, cache per input hash, user rate cache
+    carryover/              #   F4.4a follow-up project, F4.4 take-over, ProjectBundle (one transaction)
+    packages/               #   F10.8/F10.9: .lkproj.zip / account package (fflate), manifest + verification
     mail/                   #   F11.10/F10.6a: mailer + template settings, compose/send, send log
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
@@ -159,7 +167,8 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
-    features/<feature>/     #   login, projects, mappings (F11.0: list + detail), profile, settings
+    features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
+                            #   mappings (F11.0: list + detail), profile (+ account package), settings
                             #   (shell + rates/wallets/ai), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
                             #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
@@ -167,7 +176,9 @@ apps/web/                   # Angular app
                             #   components/mapping-workbench with a sample file)
     shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
-    shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
+    shared/files/           #   saveBlob / fileNameFrom — authenticated downloads; filesByPlatform
+    shared/charts/          #   hand-rolled SVG: lk-line-chart, lk-sparkline, lk-allocation-bar (no chart lib)
+    shared/components/      #   records-dialog = the F7.5 drill-down (workspace + dashboard), empty-state, …
     shared/                 #   components/<c>/index.ts, forms/zod-validator
 apps/desktop/               # Electron shell (see Desktop)
   src/main/                 #   main.ts (lifecycle, window, IPC, storage switch), api-host.ts, protocol.ts (app://)
@@ -189,7 +200,9 @@ libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angul
   src/rules/                #   CountryRules (F7.7): chRules — thresholds, pegged assets, labels (F10.3)
   src/rates/                #   RateTable, unitPriceChf (price priority), yearlyAverageChf, Kursliste
   src/corrections/          #   correction schema (zod) + applyCorrections (before/after)
-  src/calculation/          #   calculate() (F7/F8), balances.ts, analysis.ts (any date / range)
+  src/calculation/          #   calculate() (F7/F8), balances.ts, analysis.ts (any date / range), records.ts
+  src/dashboard/            #   dashboard() (F11.5–F11.8) + the cross-project rules (yearOwner, …)
+  src/standard/standard-export.ts # F10.7: records → standard rows + info columns (round trip)
   src/golden/golden.spec.ts #   A1 against private/golden.json — skips when absent
 libs/ui/<component>/        # spartan helm components (GENERATED — vendored)
 tools/eslint-rules/         # workspace lint rules (Prisma boundary, no hardcoded text/design values)
@@ -479,6 +492,81 @@ the internal report in separate cards, the list grouped „Auszüge für die Ste
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
 
+## Dashboard, carry-over, packages, data export (F4.4, F10.7–F10.9, F11.4–F11.9)
+
+**Dashboard** (`/app/dashboard`, the landing page after login; `GET /api/dashboard?from&to[&project]`,
+`GET /api/dashboard/records?…&kpi=`, `POST /api/dashboard/rates/refresh`). The engine's
+`dashboard()` (`libs/engine/src/dashboard/`) does all of it, from the same records, corrections and
+stored rates as the tax calculation (F11.9) — the API only assembles (`DashboardInputService`)
+and caches the answer per user + input hash (in memory, 16 entries; files, mapping versions,
+corrections, rates, period, engine version — same hash, no file read). Rules across projects:
+
+1. **One record set**: a stored file used in several projects (same SHA-256 → same record ids)
+   is read once, from the entry of the project with the newest tax year; `uniqueRecords` also
+   dedupes by id in the engine.
+2. **Corrections belong to the year of their project**: a correction counts only when the date it
+   concerns (reclassified booking's time, manual booking's time, manual holding's date, override
+   date) lies in a year its project _owns_ — `yearOwner`: the project of that tax year, else the
+   newest project before it, else the oldest after it. Overrides and ESTV values among the stored
+   rates follow the same rule (`dashboardRates`); fetched series of every project count.
+3. **Accounts without bookings** (statement-only wallets, manual positions) keep their latest
+   statement balance until the next one; accounts with bookings follow the ledger, statements win
+   on their own day (as `dailyBalances`).
+
+Daily value = Σ holdings × CHF price of the day (price priority of `unitPriceChf`, a statement's
+own price on its day); spam and negative balances are not counted; **missing prices are never 0**
+— each day lists them (`missing`), the chart marks those days, the holdings say "kein Kurs".
+KPIs: In/Out = `deposit`/`withdrawal` not matched as an internal transfer (`matchTransfers`, fiat
+always counts), Ertrag = income valued like F7.2 (net, `incomeLine`), Kosten/Verluste = losses +
+non-trade fees, Handelsgebühren = fees of trades (same `group`); each with its record ids → the
+shared `lk-records-dialog`. ESTV year-end values reach the dashboard as the projects' applied
+`estv` rows (F7.4a; same priority as in the calculation, only from the project owning that
+year) — the deployment-wide `estv_*` tables are not read directly. Rates: a **user rate cache**
+(`user_rate`, never `manual`/`estv`; unrelated to the deployment-wide `estv_rate`) filled
+by "Kurse aktualisieren" — FX first, then one request per asset without a price (the app shows
+progress), skipped when project or cache rates cover both ends of the period (±14 d) unless
+`force`; 409 when lookups are off (F11.3). Period ≤ 3660 days. The project detail shows a compact
+card for its tax year (`project` param: only that project). Charts are hand-rolled SVG in
+`shared/charts` (no dependency): decimal strings become numbers **only there**, for coordinates;
+tooltip + crosshair (mouse, arrow keys), a visually hidden table, colours from tokens (`--alloc-*`
+= a validated categorical palette, light + dark; `--positive`/`--negative`).
+
+**Carry-over** (`carryover/`): `GET|POST /projects/:id/follow-up` (F4.4a) — files preselected when
+their period reaches into the new year (linked, same stored file, origin `from_project:`),
+corrections offered only when they apply beyond the year (reclassify of a booking whose file
+reaches into the new year, manual bookings; never overrides or dated manual holdings), open items
+not done (latest snapshot + carried ones), notes; `GET|POST /projects/:id/take-over` (F4.4: files
+of other projects, already-linked ones skipped). Every item is recorded in `project_carryover`
+("aus Projekt X", `GET …/carryovers`); a carried open item is ticked via `open_item_state` with
+the key `carried:<carryover id>`. A closed source project is fine (only read). Writes go through
+`ProjectBundleRepositoryPort.write` — ONE interactive transaction (project, mappings, files,
+corrections with their history, rates, states, exports, carry-overs); the bundle references its
+own items by `key`. The previous year's closing positions reach the new project's checks through
+`CalculationInputService.previousYear` (same owner, year − 1, latest snapshot) — unchanged.
+
+**Data export** (F10.7, `GET /projects/:id/data-export?format=csv|xlsx&type=&platform&account&asset&kind&from&to`):
+`standardExport` in the engine → the template's columns (re-importable as is; corrections
+applied) + `Typ (Original)`, `Korrekturen`, `Kurs CHF verwendet`, `Kursquelle`, `Wert CHF`,
+`Quelldatei`, `Zeile`. CSV = one record type with a UTF-8 BOM; XLSX = both sheets, every cell
+text. Lost on a round trip: `rawType` (becomes the kind), `valueUsd`/`feeValueUsd`.
+
+**Packages** (`packages/`, fflate): `GET /projects/:id/package` → `<name>-<year>.lkproj.zip`;
+`POST /projects/import-package` (raw body) → a new project; `GET /account/package`,
+`POST /account/import-package` (Profil). `manifest.json` = format + version, app version
+(`APP_VERSION`), created, project facts, files (SHA-256, size, role original/derived, analysis,
+mapping key), mappings, exports, counts, and `entries` = **every** other ZIP entry with SHA-256 +
+size. Import verifies before writing: ZIP directory limits (package ≤ 200 MB, inflated ≤ 1 GB,
+entry ≤ 200 MB, ≤ 20 000 entries; nginx in front allows 50 MB), safe paths only (no `..`,
+absolute, backslash, drive — zip-slip), entries exactly as listed with matching hashes (else 422
+"tampered"), every JSON by zod, mappings by `validateMappingSpec`, corrections by the engine
+schema, files re-read (kind from bytes, analysis again). Mappings reused when fingerprint AND
+spec (canonical JSON) are equal, else stored as `copied`; stored files deduplicated by SHA-256 per
+owner; the same name + year gets ` (2)`; an imported closed project comes back as `reviewed`
+(snapshots do not travel — recalculate). The account package nests the project packages (stored)
+plus all mappings, `settings.json` **without any key** and `profile.json`; its import writes the
+mappings, then each project in its own transaction, and settings only when the account has none.
+Built in memory (SQLite BLOBs are in memory anyway) — the limits keep that bounded.
+
 **ESTV Kursliste, automatic (F7.4a)** — once per **deployment**, not per user: tables
 `estv_kursliste` (PK year: the newest `THIRD.INIT.<n>` export downloaded — type, export date,
 file hash, schema version, counts), `estv_rate` (year-end values: `crypto` / `currency` from
@@ -573,6 +661,11 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `estv_rate` (kind CHECK, positive plain decimal, cascade with its year), `estv_check` (outcome
   CHECK). Deployment-wide: no user/project column. Prisma writes `AUTOINCREMENT` for the `Int @id`
   year keys — harmless, the year is always given. `estv.persistence.integration.spec.ts`.
+- **Dashboard / carry-over** (migration `20261008110000_dashboard_carryover`): `user_rate` (unique
+  `(user, kind, asset, currency, date, source)`; source only `binance|coingecko|ecb`, decimal/date
+  CHECKs; cascade with the user) and `project_carryover` (kind CHECK, `json_valid(data)`; cascade
+  with the project; `source_project_id` is no FK — the source may be deleted later, its name stays).
+  `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -817,6 +910,9 @@ etx), so no `project.json` has a `test` target, deliberately.
   against a real SQLite file with the real migrations — owner listing, empty updates, cascade,
   CHECK constraints. `scripts/dev/with-test-db.mjs` points them at `tmp/lazykoins-test.db`
   (never your dev database) unless `DATABASE_URL` is already set.
+- Dashboard / carry-over / packages: `bundleSetup()` (`carryover/testing/bundle-fixture.ts`) adds
+  the bundle, carry-over, export and user-rate doubles to the calculation fixture; package specs
+  build tampered / zip-slip ZIPs with fflate; the data-export spec re-uploads its own CSV.
 - **Golden** (`libs/engine/src/golden/golden.spec.ts`, A1): part of `pnpm test`, `describe.skipIf`
   `private/golden.json` does not exist (CI, other machines). Today it only checks existence.
 - `libs/engine` has a `typecheck` target (Vitest's esbuild does not type-check); `pnpm check`

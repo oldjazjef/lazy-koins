@@ -17,6 +17,7 @@ import type { UpdateSettingsRequest } from '../../../../core/api/calculation.typ
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { UserSettingsService } from '../../../settings/user-settings.service';
+import { ProfilePageService } from './profile-page.service';
 
 export const ProfileSchema = z.object({
   displayName: z.string().trim().max(120, 'profile.errors.tooLong'),
@@ -56,11 +57,13 @@ export function profileChanges(
     ...HlmLabelImports,
     ...HlmSkeletonImports,
   ],
+  providers: [ProfilePageService],
   templateUrl: './profile-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfilePage {
   protected readonly service = inject(UserSettingsService);
+  protected readonly data = inject(ProfilePageService);
   protected readonly cantons = CH_CANTONS;
 
   protected readonly form = inject(FormBuilder).nonNullable.group(
@@ -84,6 +87,16 @@ export class ProfilePage {
         advisorEmail: settings.advisorEmail,
       });
     });
+  }
+
+  protected downloadAll(): void {
+    void this.data.downloadAll();
+  }
+
+  protected importAccount(input: HTMLInputElement): void {
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) void this.data.importPackage(file).catch(() => undefined);
   }
 
   protected submit(): void {

@@ -89,6 +89,8 @@ const FX_FILL_DAYS = 14;
 
 export class RateTable {
   private readonly series = new Map<string, Point[]>();
+  /** `kind|ASSET|currency|date` → the winning point of that day. */
+  private readonly byDay = new Map<string, Point>();
 
   constructor(entries: readonly RateEntry[]) {
     const best = new Map<string, Point>();
@@ -105,6 +107,7 @@ export class RateTable {
         best.set(dayKey, point);
     }
     for (const [dayKey, point] of best) {
+      this.byDay.set(dayKey, point);
       const key = dayKey.slice(0, dayKey.lastIndexOf('|'));
       const list = this.series.get(key) ?? [];
       list.push(point);
@@ -126,18 +129,38 @@ export class RateTable {
     tolerance: number,
     sources?: readonly RateSource[],
   ): Point | undefined {
-    const list = this.series.get(`${kind}|${asset.toUpperCase()}|${currency}`);
+    const key = `${kind}|${asset.toUpperCase()}|${currency}`;
+    const list = this.series.get(key);
     if (!list) return undefined;
-    const usable = sources
-      ? list.filter((p) => sources.includes(p.source))
-      : list;
+    if (sources && tolerance === 0) {
+      // Same day only (overrides, ESTV): one map lookup instead of a scan — the dashboard asks
+      // this for every day of a range.
+      const point = this.byDay.get(`${key}|${date}`);
+      return point && sources.includes(point.source) ? point : undefined;
+    }
     let before: Point | undefined;
     let after: Point | undefined;
-    for (const point of usable) {
-      if (point.date <= date) before = point;
-      else {
-        after = point;
-        break;
+    if (!sources) {
+      // Binary search: the last point on or before the day.
+      let low = 0;
+      let high = list.length - 1;
+      let found = -1;
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if ((list[mid] as Point).date <= date) {
+          found = mid;
+          low = mid + 1;
+        } else high = mid - 1;
+      }
+      before = found >= 0 ? list[found] : undefined;
+      after = list[found + 1];
+    } else {
+      for (const point of list.filter((p) => sources.includes(p.source))) {
+        if (point.date <= date) before = point;
+        else {
+          after = point;
+          break;
+        }
       }
     }
     if (before && daysBetween(before.date, date) <= tolerance) return before;

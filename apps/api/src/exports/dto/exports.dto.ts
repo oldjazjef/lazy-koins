@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 import {
   EXPORT_KINDS,
   type ExportKind,
@@ -34,4 +40,45 @@ export class MailDraftResponseDto {
   to!: string;
   @ApiProperty() subject!: string;
   @ApiProperty() body!: string;
+}
+
+export class DataExportQueryDto {
+  @ApiProperty({ enum: ['csv', 'xlsx'] })
+  @IsIn(['csv', 'xlsx'])
+  format!: 'csv' | 'xlsx';
+
+  @ApiPropertyOptional({
+    enum: ['bookings', 'holdings'],
+    description: 'CSV only: which record type (default bookings)',
+  })
+  @IsOptional()
+  @IsIn(['bookings', 'holdings'])
+  type?: 'bookings' | 'holdings';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  platform?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  account?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  asset?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(40) kind?: string;
+
+  @ApiPropertyOptional({ description: 'ISO date, inclusive' })
+  @IsOptional()
+  @Matches(/^(\d{4}-\d{2}-\d{2})?$/)
+  from?: string;
+
+  @ApiPropertyOptional({ description: 'ISO date, inclusive' })
+  @IsOptional()
+  @Matches(/^(\d{4}-\d{2}-\d{2})?$/)
+  to?: string;
 }
