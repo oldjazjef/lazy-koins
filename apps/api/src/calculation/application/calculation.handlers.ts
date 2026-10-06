@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   CommandHandler,
@@ -19,6 +20,7 @@ import {
   type RecordSummary,
   validateCorrectionData,
 } from '@lazykoins/engine';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -72,6 +74,7 @@ export class CalculateProjectHandler implements ICommandHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly inputs: CalculationInputService,
     private readonly snapshots: CalculationSnapshotRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -88,6 +91,8 @@ export class CalculateProjectHandler implements ICommandHandler<
       result,
       records,
     });
+    // Open items, positions without a price, hints, "seit dem Versand geändert" (F11.12).
+    await this.projectNotifications?.calculated(userId, project.id);
     return { snapshot: meta, stale: false, result, files: assembled.files };
   }
 }
@@ -305,6 +310,7 @@ export class UpdateOpenItemHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly states: OpenItemStateRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -315,10 +321,13 @@ export class UpdateOpenItemHandler implements ICommandHandler<
   }: UpdateOpenItemCommand): Promise<OpenItemState> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     assertProjectOpen(project);
-    return this.states.save(project.id, itemKey, {
+    const saved = await this.states.save(project.id, itemKey, {
       done: changes.done,
       note: changes.note?.trim(),
     });
+    // The last open item ticked off resolves "offene Punkte" (F11.11).
+    await this.projectNotifications?.openItemsChanged(userId, project.id);
+    return saved;
   }
 }
 
@@ -381,6 +390,7 @@ export class CreateCorrectionHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly corrections: CorrectionRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -402,10 +412,13 @@ export class CreateCorrectionHandler implements ICommandHandler<
     }
     const trimmed = reason.trim();
     if (trimmed === '') throw new BadRequestException('reason is required');
-    return this.corrections.create(project.id, {
+    const created = await this.corrections.create(project.id, {
       data: validation.data,
       reason: trimmed,
     });
+    // A correction after sending: "seit dem Versand geändert" (F4.7 → F11.12).
+    await this.projectNotifications?.sentChanged(userId, project.id);
+    return created;
   }
 }
 
@@ -427,6 +440,7 @@ export class SetCorrectionUndoneHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly corrections: CorrectionRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -443,6 +457,7 @@ export class SetCorrectionUndoneHandler implements ICommandHandler<
     }
     const updated = await this.corrections.setUndone(correctionId, undone);
     if (!updated) throw new NotFoundException('No such correction');
+    await this.projectNotifications?.sentChanged(userId, project.id);
     return updated;
   }
 }

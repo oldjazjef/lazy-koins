@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   HostListener,
   inject,
@@ -26,6 +27,8 @@ import { HlmButtonImports } from '@lazykoins/ui/button';
 import { ChatService } from '../assistant/chat.service';
 import { ChatSidebar } from '../assistant/chat-sidebar';
 import { AuthService } from '../auth/auth.service';
+import { NotificationBell } from '../notification-centre/notification-bell';
+import { NotificationCentreService } from '../notification-centre/notification-centre.service';
 import { ThemeService } from '../theme/theme.service';
 import { AppVersionService } from '../version/app-version.service';
 import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
@@ -44,6 +47,7 @@ import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
     NgIcon,
     TranslatePipe,
     ChatSidebar,
+    NotificationBell,
     ...HlmButtonImports,
   ],
   providers: [
@@ -74,6 +78,13 @@ export class AppShell {
   // A template literal: i18n-keys.spec.ts reads quoted dotted literals as translation keys.
   protected readonly logo = `favicon.svg`;
   private readonly router = inject(Router);
+  private readonly centre = inject(NotificationCentreService);
+
+  constructor() {
+    // Signed in: the bell polls (F11.11) until signing out.
+    this.centre.start();
+    inject(DestroyRef).onDestroy(() => this.centre.stop());
+  }
 
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);

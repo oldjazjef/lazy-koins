@@ -10,6 +10,7 @@ import {
   ipcMain,
   Menu,
   type MenuItemConstructorOptions,
+  Notification,
   session,
   shell,
 } from 'electron';
@@ -41,6 +42,10 @@ import {
   writeConfig,
 } from './lib/storage';
 import { removeMcpEndpoint, writeMcpEndpoint } from './lib/mcp-endpoint';
+import {
+  parseOsNotification,
+  systemNotificationsEnabled,
+} from './lib/os-notification';
 import { detectSyncProvider } from './lib/sync-folder';
 import { APP_ORIGIN } from './lib/web-protocol';
 import { MESSAGES } from './messages';
@@ -58,6 +63,9 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 registerAppScheme();
+
+// Windows shows OS notifications (F11.13) only for an app with its user model id (= appId).
+if (process.platform === 'win32') app.setAppUserModelId('ch.lazykoins.desktop');
 
 /** main.js, preload.js, api/, web/ and migrations/ sit next to each other (scripts/stage.mjs). */
 const appDir = __dirname;
@@ -329,6 +337,50 @@ function registerIpc(userData: string): void {
       env: { ELECTRON_RUN_AS_NODE: '1', LAZYKOINS_DATA_DIR: dataDir },
     })),
   );
+
+  // --- F11.13: OS notifications (Einstellungen → System) ---
+  ipcMain.handle(
+    IPC.notificationsEnabled,
+    guard(() => systemNotificationsEnabled(readConfig(userData))),
+  );
+  ipcMain.handle(
+    IPC.notificationsSetEnabled,
+    (event: IpcMainInvokeEvent, on: unknown) => {
+      if (!fromApp(event)) throw new Error('IPC refused: not the app window');
+      if (typeof on !== 'boolean') throw new Error('IPC refused: not a flag');
+      writeConfig(userData, {
+        ...readConfig(userData),
+        systemNotifications: on,
+      });
+      return on;
+    },
+  );
+  ipcMain.handle(
+    IPC.notificationsShow,
+    (event: IpcMainInvokeEvent, input: unknown) => {
+      if (!fromApp(event)) throw new Error('IPC refused: not the app window');
+      const parsed = parseOsNotification(input);
+      if (
+        !parsed ||
+        !Notification.isSupported() ||
+        !systemNotificationsEnabled(readConfig(userData))
+      ) {
+        return;
+      }
+      const shown = new Notification({
+        title: parsed.title,
+        body: parsed.body,
+        silent: parsed.kind !== 'error',
+      });
+      shown.on('click', () => {
+        if (!mainWindow) return;
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+      });
+      shown.show();
+    },
+  );
 }
 
 function storageInfo(userData: string): StorageInfo {
@@ -425,7 +477,8 @@ async function switchDataDir(
       }
     }
     const isDefault = sameFolder(target, defaultDataDir(userData));
-    writeConfig(userData, isDefault ? {} : { dataDir: target });
+    const { dataDir: _old, ...kept } = readConfig(userData);
+    writeConfig(userData, isDefault ? kept : { ...kept, dataDir: target });
   } catch (error) {
     // The API is already stopped: relaunch on the old folder rather than leave a dead window.
     reportError(

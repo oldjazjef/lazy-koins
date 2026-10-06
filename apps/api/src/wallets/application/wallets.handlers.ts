@@ -1,4 +1,6 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import { Optional, UnprocessableEntityException } from '@nestjs/common';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -334,6 +336,7 @@ export class FetchWalletHandler implements ICommandHandler<
     private readonly sources: ChainDataSourcesPort,
     private readonly derived: WalletDerivedFiles,
     private readonly views: WalletViews,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({ userId, walletId }: FetchWalletCommand): Promise<WalletView> {
@@ -341,6 +344,8 @@ export class FetchWalletHandler implements ICommandHandler<
     await this.gate.assertOnline(userId);
     const connection = await this.gate.connection(userId);
     const previous = await this.wallets.listData([wallet.id]);
+    const failures: { network: NetworkId; code: string }[] = [];
+    let succeeded = 0;
     for (const network of wallet.networks) {
       const adapter = this.sources.forFamily(networkInfo(network).family);
       const fetchedAt = new Date().toISOString();
@@ -360,8 +365,10 @@ export class FetchWalletHandler implements ICommandHandler<
           info: history.info,
           fetchedAt,
         });
+        succeeded += 1;
       } catch (error) {
         if (!(error instanceof ChainDataError)) throw error;
+        failures.push({ network, code: error.code });
         const old = previous.find((d) => d.network === network);
         await this.wallets.saveData({
           walletId: wallet.id,
@@ -376,7 +383,50 @@ export class FetchWalletHandler implements ICommandHandler<
       }
     }
     await this.derived.syncAll(userId, wallet);
+    await this.notify(userId, wallet, failures, succeeded);
     return this.views.one(wallet);
+  }
+
+  /**
+   * F11.12 "Wallet-Abruf fehlgeschlagen" (label, networks, first code — never the address) and,
+   * on a 401/403, "Schlüssel prüfen"; a fetch without failures settles both.
+   */
+  private async notify(
+    userId: string,
+    wallet: { readonly id: string; readonly label: string },
+    failures: readonly { network: NetworkId; code: string }[],
+    succeeded: number,
+  ): Promise<void> {
+    if (!this.notifications) return;
+    await this.notifications.toggle(
+      userId,
+      Topics.walletFetchFailed(wallet.id),
+      failures.length > 0,
+      {
+        kind: 'error',
+        params: {
+          label: wallet.label,
+          networks: failures.map((f) => f.network),
+          reason: failures[0]?.code ?? null,
+        },
+        action: {
+          labelKey: 'notifications.action.retry',
+          route: `/app/wallets/${wallet.id}`,
+        },
+      },
+    );
+    if (failures.some((f) => f.code === 'invalidKey')) {
+      await this.notifications.raise(userId, Topics.keyInvalid('chain'), {
+        kind: 'action',
+        params: { service: 'Netzwerk-Abfragen' },
+        action: {
+          labelKey: 'notifications.action.checkKey',
+          route: '/app/settings/wallets',
+        },
+      });
+    } else if (succeeded > 0) {
+      await this.notifications.resolve(userId, Topics.keyInvalid('chain'));
+    }
   }
 }
 

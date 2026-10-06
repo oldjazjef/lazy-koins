@@ -337,6 +337,15 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   automatisch als Meldung in der Zentrale. Desktop: optional zusätzlich als System-Benachrichtigung
   (ein-/ausschaltbar in den Einstellungen); Web: nur in der App. Keine Meldung enthält Schlüssel,
   Passwörter oder Buchungsdetails.
+  Präzisiert (08.10.2026): Je Ursache gibt es **eine** Meldung (stabiler Schlüssel, z. B. „Kurse
+  für Projekt X“); tritt sie erneut auf, wird diese aktualisiert statt verdoppelt. Ein Zustand
+  (offene Punkte, Positionen ohne Kurs) wird nur bei einer Änderung wieder als ungelesen
+  gemeldet; „Ausblenden“ gilt, bis sich die Ursache ändert. Erledigte Meldungen werden nach
+  30 Tagen gelöscht. Aus der Aktivitätsanzeige landen Fehler immer, erfolgreiche Aufgaben nur,
+  wenn man die Seite inzwischen verlassen hat (sonst genügt die Erfolgsmeldung). System-
+  Benachrichtigungen (Desktop) nur für Fehler und Handlungsbedarf, standardmässig ein
+  (Einstellungen › System). „Einrichtung unvollständig“ (F11.0s) meldet, sobald der Assistent
+  gebaut ist.
 
 ## 11c. AI-Assistent und MCP
 

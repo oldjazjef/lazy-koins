@@ -1,4 +1,7 @@
 import { Logger } from '@nestjs/common';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
+import { InMemoryNotificationRepository } from '../../notifications/testing/in-memory-notification.repository';
 import type { ConfigService } from '@nestjs/config';
 import type { CommandBus } from '@nestjs/cqrs';
 import { SecretBox } from '../../common/crypto/secret-box';
@@ -92,6 +95,10 @@ async function setup() {
     userSettings,
     chainSettings,
     updateSettings,
+    gate,
+    sources,
+    derived,
+    views,
     create: new CreateWalletHandler(wallets, views),
     update: new UpdateWalletHandler(wallets, views, derived),
     remove: new DeleteWalletHandler(wallets, projects, derived),
@@ -499,5 +506,36 @@ describe('Einstellungen › Wallets & Netzwerke (F6.7)', () => {
       (await t.getSettings.execute(new GetChainSettingsQuery('anna'))).keys
         .etherscan,
     ).toBe('…1234');
+  });
+});
+
+describe('wallet fetch notifications (F11.12)', () => {
+  it('a network that fails raises "Wallet-Abruf fehlgeschlagen" — without the address', async () => {
+    const t = await setup();
+    const repository = new InMemoryNotificationRepository();
+    const fetch = new FetchWalletHandler(
+      t.wallets,
+      t.gate,
+      t.sources,
+      t.derived,
+      t.views,
+      new NotificationService(repository),
+    );
+    const wallet = await t.create.execute(
+      new CreateWalletCommand('anna', {
+        label: 'Ledger',
+        address: EVM,
+        networks: ['ethereum', 'bsc'],
+      }),
+    );
+    await fetch.execute(new FetchWalletCommand('anna', wallet.id));
+    expect(repository.topic(Topics.walletFetchFailed(wallet.id))).toMatchObject(
+      {
+        kind: 'error',
+        params: { label: 'Ledger', networks: 'bsc', reason: 'chainNotOnPlan' },
+        action: { route: `/app/wallets/${wallet.id}` },
+      },
+    );
+    expect(JSON.stringify(repository.all())).not.toContain(EVM);
   });
 });

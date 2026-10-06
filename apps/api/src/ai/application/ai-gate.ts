@@ -3,8 +3,11 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { SecretBox } from '../../common/crypto/secret-box';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import {
   type AiConnection,
   type AiErrorDetails,
@@ -114,6 +117,7 @@ export class AiGate {
   constructor(
     private readonly settings: AiSettingsRepositoryPort,
     private readonly runtime: AiRuntime,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async settingsOf(userId: string): Promise<AiSettings> {
@@ -235,12 +239,34 @@ export class AiGate {
    * redacted details (`status`, `providerMessage`, `providerType`, `providerCode`, `url`,
    * `model`, `cause`, `timeoutMs`, a one-line `detail`) — logged the same way at warn level.
    * `connection` lets the key be redacted once more, whatever the adapter missed.
+   *
+   * `context` (F11.12): whose call it was — a failure becomes "AI-Aufruf fehlgeschlagen" (code
+   * and HTTP status, never the key or the provider's text) and a 401/403 "Schlüssel prüfen"; a
+   * success resolves both. A connection test (`test`) only resolves: its failure is on screen.
    */
-  async call<T>(work: () => Promise<T>, connection?: AiConnection): Promise<T> {
+  async call<T>(
+    work: () => Promise<T>,
+    connection?: AiConnection,
+    context?: { readonly userId: string; readonly test?: boolean },
+  ): Promise<T> {
     try {
-      return await work();
+      const result = await work();
+      if (context && this.notifications) {
+        await this.notifications.resolve(context.userId, [
+          Topics.aiCallFailed(),
+          Topics.keyInvalid('ai'),
+        ]);
+      }
+      return result;
     } catch (error) {
       if (error instanceof AiProviderError) {
+        if (context && !context.test && this.notifications) {
+          await this.notifyFailure(
+            context.userId,
+            error.code,
+            error.details.status,
+          );
+        }
         const details = redactDetails(
           {
             ...(connection
@@ -264,6 +290,29 @@ export class AiGate {
         });
       }
       throw error;
+    }
+  }
+
+  private async notifyFailure(
+    userId: string,
+    code: string,
+    status: number | undefined,
+  ): Promise<void> {
+    const settings = {
+      labelKey: 'notifications.action.checkSettings',
+      route: '/app/settings/ai',
+    };
+    await this.notifications?.raise(userId, Topics.aiCallFailed(), {
+      kind: 'error',
+      params: { code, status: status ?? null },
+      action: settings,
+    });
+    if (code === 'invalidKey') {
+      await this.notifications?.raise(userId, Topics.keyInvalid('ai'), {
+        kind: 'action',
+        params: { service: 'AI' },
+        action: { ...settings, labelKey: 'notifications.action.checkKey' },
+      });
     }
   }
 }

@@ -13,6 +13,7 @@ import {
   GetEstvStatusHandler,
   StartEstvUpdateHandler,
 } from './application/estv.handlers';
+import { EstvNotifier } from './application/estv-notifier';
 import { EstvProjectRatesService } from './application/estv-project-rates.service';
 import {
   EstvScheduler,
@@ -49,6 +50,7 @@ import { RatesService } from './rates.service';
     SetManualRateHandler,
     DeleteManualRateHandler,
     ImportKurslisteHandler,
+    EstvNotifier,
     EstvSyncService,
     EstvScheduler,
     EstvProjectRatesService,

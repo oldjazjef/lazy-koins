@@ -1,4 +1,4 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import { Optional, UnprocessableEntityException } from '@nestjs/common';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -6,6 +6,8 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import { secretHint } from '../../common/crypto/secret-box';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import {
   AiCompletionPort,
   type AiProviderKind,
@@ -98,6 +100,7 @@ export class SaveAiSettingsHandler implements ICommandHandler<
     private readonly settings: AiSettingsRepositoryPort,
     private readonly gate: AiGate,
     private readonly runtime: AiRuntime,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({
@@ -146,6 +149,10 @@ export class SaveAiSettingsHandler implements ICommandHandler<
       apiKeyHint,
       consentAt: input.revokeConsent ? null : current.consentAt,
     });
+    // A new or removed key settles "Schlüssel prüfen" until the next failure (F11.11).
+    if (key !== undefined) {
+      await this.notifications?.resolve(userId, Topics.keyInvalid('ai'));
+    }
     return settingsView(saved, this.runtime);
   }
 }
@@ -208,6 +215,8 @@ export class TestAiConnectionHandler implements ICommandHandler<
           timeoutMs: 30_000,
         }),
       connection,
+      // Only a test of the saved key may settle "Schlüssel prüfen" (F11.12).
+      draft?.apiKey === undefined ? { userId, test: true } : undefined,
     );
     return {
       ok: true,

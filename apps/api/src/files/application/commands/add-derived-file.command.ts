@@ -1,4 +1,6 @@
+import { Optional } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import {
   cleanFileName,
@@ -36,6 +38,7 @@ export class AddDerivedFileHandler implements ICommandHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
     private readonly analysis: FileAnalysisService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -53,7 +56,7 @@ export class AddDerivedFileHandler implements ICommandHandler<
       sourceProjectFileId,
     );
     assertOpen(project);
-    return storeInProject(this.files, this.analysis, {
+    const stored = await storeInProject(this.files, this.analysis, {
       userId,
       projectId: project.id,
       displayName: cleanFileName(name) || 'abgeleitet.csv',
@@ -61,5 +64,7 @@ export class AddDerivedFileHandler implements ICommandHandler<
       bytes,
       origin: `${DERIVED_FROM}${source.id}`,
     });
+    await this.projectNotifications?.filesChanged(userId, project.id);
+    return stored;
   }
 }

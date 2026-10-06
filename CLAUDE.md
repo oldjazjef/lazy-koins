@@ -162,6 +162,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     tools/                  #   F11.14/F11.16: the ONE tool layer — registry, executor (policy + audit), definitions/
     assistant/              #   F11.14/F11.15: chat conversations, ChatEngine (tool loop, proposals), prompt
     mcp/                    #   F11.16: /api/mcp (SDK, stateless), PATs, MCP settings + audit endpoints
+    notifications/          #   F11.11–F11.13: NotificationService (raise/resolve by topic), ProjectNotifications,
+                            #   list/count/read/dismiss, activity + sync-conflict reports (global module)
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
@@ -170,7 +172,8 @@ apps/web/                   # Angular app
   public/i18n/de-CH.json    #   messages
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
-    core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
+    core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/ (toasts),
+                            #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/
     features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
                             #   mappings (F11.0: list + detail), profile (+ account package), settings
                             #   (shell + rates/wallets/ai), files and calculation (components only:
@@ -555,6 +558,86 @@ response, command, code }`, **redacted** (`redact.ts`: password, its base64, the
   Tests: fake transport (`mail/testing/mail-doubles.ts`) for handlers, the real nodemailer adapter
   against an in-process `smtp-server` sink — never a real mail.
 
+## Notifications (F11.11–F11.13)
+
+The bell in the header (`core/notification-centre/notification-bell`, next to the theme toggle)
+with the unread badge; its panel (dialog layout: header with "Erledigte ausblenden", the only
+scrolling list grouped by project, footer "Alle als gelesen" / "Alle anzeigen"; Escape and a
+click outside close it, focus back on the bell) and the page `/app/notifications`
+(`features/notifications`, table pattern: truncate, row actions open/read/dismiss, paginator,
+filters kind / project / status). Slice `notifications/` (API), global module.
+
+- **Model** (`notification`, migration `20261008160000_notifications`, new table only): per user,
+  `kind` `error | action | info | success`, **topic** (unique per user — the dedupe key), project
+  (nullable, cascade), `title_key` (`notifications.%`) + `params` (JSON object), `action` (JSON
+  `{ labelKey, route under /app/, query?, fragment?, named? }`), `created_at` (first raise),
+  `occurred_at` (last raise — the sort key), `read_at`, `resolved_at`, `dismissed_at`. CHECKs in the
+  CREATE TABLE; `notifications.persistence.integration.spec.ts`.
+- **Topic naming**: `<area>.<what>[:<subject>]`, built only through `Topics` in
+  `notifications/domain/notification.ts`; the title key is `notifications.title.<area>.<what>`
+  (`TITLE_BASES`, mirrored in the web's `NOTIFICATION_TITLE_BASES`; a spec checks de-CH has every
+  one). Project topics end in the project id, file topics in the project file id.
+- **`NotificationService`** (`raise`, `resolve`, `resolveWhere`, `toggle`): upsert by topic. An
+  `event` (error/info/success) is news on every raise (unread, back from resolved/dismissed); a
+  `condition` (`action`) only when its content changed or it had been resolved — a recalculation
+  with the same 3 open items does not ring again, a dismissed one stays hidden. Params pass
+  `sanitizeParams` (flat values, ≤ 200 chars, keys/tokens/passwords/seed phrases/private keys →
+  `[…]`), actions `sanitizeAction` (app routes only). Storage errors are logged, never thrown into
+  the triggering operation. Resolved/dismissed rows older than 30 days are pruned on the next raise.
+  Handlers get it (and `ProjectNotifications`) as `@Optional()` last constructor parameters, so
+  specs that do not care construct them as before.
+- **`ProjectNotifications`** re-derives a project's conditions from stored state after every change
+  that can affect them, raising what is true and resolving the rest: `filesChanged` (upload,
+  derived file, assignment, remove, re-apply, mapping deleted, carry-over, package import),
+  `hintsChanged`, `calculated`, `openItemsChanged`, `sentChanged` (send, mark, undo, export,
+  correction). A hint marked done/ignored settles the matching file topic.
+- **Triggers** (F11.12):
+
+  | Topic                                             | Kind            | Raised by / resolved by                                                                                            |
+  | ------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+  | `rates.fetchFailed:<p>` (assets)                  | error           | "Kurse aktualisieren" with failed assets / a clean refresh; `retry:rates`                                          |
+  | `key.invalid:coingecko`                           | action          | CoinGecko 401/403 in a refresh / key accepted or saved                                                             |
+  | `estv.fetchFailed:<year>`                         | error           | scheduler **and** manual check fails (owners of the year's open projects + requester) / next success; `retry:estv` |
+  | `estv.newVersion:<p>`                             | info            | a new Kursliste stored / the project applies it (`EstvProjectRatesService`)                                        |
+  | `ai.callFailed`, `key.invalid:ai`                 | error / action  | `AiGate.call` with a context (code + HTTP status only) / a successful call, saved key                              |
+  | `mail.sendFailed:<p>`, `key.invalid:mail`         | error / action  | failed send (kind; auth → key) / successful send, test with the saved password, settings saved                     |
+  | `mail.sent:<p>`                                   | success         | successful send                                                                                                    |
+  | `export.failed:<p>`                               | error           | statement creation failed / next one succeeds                                                                      |
+  | `package.importFailed`                            | error           | project/account package import (its code) / next import                                                            |
+  | `file.needsMapping:<pf>`, `file.rowErrors:<pf>`   | action          | `ProjectNotifications.fileTopics` / file mapped, hint settled, file gone                                           |
+  | `file.readFailed:<p>`                             | error           | upload that cannot be read (422; the name only)                                                                    |
+  | `hints.open:<p>`                                  | action          | open F5.8 coverage hints (warnings/errors) / none left                                                             |
+  | `checks.openItems:<p>`, `rates.missingPrices:<p>` | action          | after a calculation (count) / ticked off, recalculated without                                                     |
+  | `project.changedSinceSent:<p>`                    | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
+  | `desktop.syncConflict`                            | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
+  | `task.done:<label>[:<p>]`, `task.failed:…`        | success / error | the app's activity report (below)                                                                                  |
+
+  Plus `wallet.fetchFailed:<wallet>` (error: label, failed networks, first code — never the
+  address; resolved by a fetch without failures) and `key.invalid:chain` (a network's 401/403 →
+  Einstellungen › Wallets) from `FetchWalletHandler`. Not wired yet: "Einrichtung unvollständig"
+  (F11.0s, not in `dev`) — add a topic + trigger when it lands.
+
+- **API**: `GET /api/notifications?status=unread|all&includeResolved&kind&projectId&offset&limit`
+  (newest first, ≤ 500, `{ items, total, unread }`), `GET …/count`, `POST …/:id/read`,
+  `POST …/read-all`, `POST …/:id/dismiss` (someone else's id → 404), `POST …/activity`,
+  `PUT …/sync-conflict`.
+- **Web** (`NotificationCentreService`, root): polls the list every 60 s while the shell lives
+  and after every finished task; translates code params (`reason` → `notifications.reason.*`,
+  `code` → `ai.errors.*`, `kind` → `exports.kind.*`, `reasons` → `projects.sent.reason.*`, `task`
+  → the activity label); `open()` marks read, runs a named action (`retry:rates` posts the refresh
+  through the ActivityService, `retry:estv` starts the update) and navigates — `?tab=` opens a
+  workspace tab (`ProjectDetailPage.tab` → `ProjectWorkspace.initialTab`), `#file-<id>` marks the
+  file row. **F11.13**: `ActivityService.finished` emits every ended task with the URL at start and
+  end; the centre reports failures and tasks finished after the user left their page
+  (`POST /api/notifications/activity`; the server skips a failure it already notified within 2
+  min, checks project ownership, accepts only `activity.*` labels).
+- **Desktop**: `window.lazykoinsDesktop.notifications` (`enabled`, `setEnabled`, `show`) →
+  Electron `Notification` for new unread `error`/`action` items (never what was there at start),
+  only while "System-Benachrichtigungen" (Einstellungen › System, stored in
+  `desktop-config.json` as `systemNotifications`, default on) is on; input validated by
+  `lib/os-notification.ts`; click focuses the window; `setAppUserModelId` on Windows. Never in the
+  web.
+
 ## Calculation, rates, checks, corrections, exports (F7–F10)
 
 **Engine** (`libs/engine/src/calculation/calculate.ts`, pure): `calculate(input)` takes the
@@ -869,6 +952,10 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
 - **Assistant / MCP** (migration `20261008180000_ai_chat_mcp`): see "Tool layer, AI assistant,
   MCP server".
+- **Notifications** (migration `20261008160000_notifications`, new table only): `notification`
+  (unique `(user_id, topic)`, index `(user_id, occurred_at)`; CHECKs: kind, topic 1–300,
+  `title_key LIKE 'notifications.%'`, params a JSON object ≤ 4000, action null or a JSON object;
+  cascade with user and project); `notifications.persistence.integration.spec.ts`.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   assetsNeedingPrices,
   calculate,
@@ -17,6 +17,7 @@ import {
 import { COINGECKO_IDS, RATE_ALIASES } from '../domain/project-rate';
 import { EstvKurslisteRepositoryPort } from '../ports/estv.port';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
+import { EstvNotifier } from './estv-notifier';
 
 /** What applying the stored Kursliste to a project did (shown after "Kurse aktualisieren"). */
 export interface EstvApplySummary {
@@ -64,6 +65,7 @@ export class EstvProjectRatesService {
     private readonly store: EstvKurslisteRepositoryPort,
     private readonly rates: ProjectRateRepositoryPort,
     private readonly inputs: CalculationInputService,
+    @Optional() private readonly notifier?: EstvNotifier,
   ) {}
 
   /** Applies the list; `assets` defaults to the project's own (one calculation). */
@@ -113,6 +115,7 @@ export class EstvProjectRatesService {
       }
     }
     await this.rates.upsertMany(project.id, entries);
+    await this.notifier?.applied(project.ownerId, project.id);
     return {
       year,
       label: estvSourceLabel(year, version.exportDate),

@@ -2,11 +2,19 @@ import { createHash } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  Optional,
   PayloadTooLargeException,
+  UnprocessableEntityException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import type { FileKind } from '@lazykoins/engine';
+import { NotificationService } from '../../../notifications/application/notification.service';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
+import {
+  projectRoute,
+  Topics,
+} from '../../../notifications/domain/notification';
 import { loadOwnProject } from '../../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import {
@@ -58,6 +66,8 @@ export class UploadProjectFileHandler implements ICommandHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
     private readonly analysis: FileAnalysisService,
+    @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -85,13 +95,38 @@ export class UploadProjectFileHandler implements ICommandHandler<
       );
     }
 
-    return storeInProject(this.files, this.analysis, {
-      userId,
-      projectId,
-      displayName,
-      kind,
-      bytes,
-    });
+    let stored: ProjectFile;
+    try {
+      stored = await storeInProject(this.files, this.analysis, {
+        userId,
+        projectId,
+        displayName,
+        kind,
+        bytes,
+      });
+    } catch (error) {
+      if (error instanceof UnprocessableEntityException) {
+        // F11.12: "Datei konnte nicht gelesen werden" — the name only, never its content.
+        await this.notifications?.raise(
+          userId,
+          Topics.fileReadFailed(project.id),
+          {
+            kind: 'error',
+            projectId: project.id,
+            params: { name: displayName },
+            action: projectRoute(
+              project.id,
+              'notifications.action.toFiles',
+              'files',
+            ),
+          },
+        );
+      }
+      throw error;
+    }
+    // Needs a mapping, row errors, coverage hints, "seit dem Versand geändert" (F11.12).
+    await this.projectNotifications?.filesChanged(userId, project.id);
+    return stored;
   }
 }
 
