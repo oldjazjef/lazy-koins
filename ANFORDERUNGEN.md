@@ -115,7 +115,12 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 ## 11. Einstellungen
 
 - **F11.1** Persönliche Angaben für die Exporte (Name, Wohnkanton, Treuhänder).
-- **F11.2** Sprache (zunächst Deutsch/Schweiz), Zahlen- und Datumsformat.
+- **F11.2** Sprache, Zahlen- und Datumsformat. Die App ist vollständig übersetzbar; zunächst
+  **Deutsch (Schweiz)** und **Englisch**. Die Sprache wird im Benutzerprofil eingestellt und
+  gespeichert (Web: am Benutzer; Desktop: lokal) und gilt sofort, ohne Neuladen. Vorgabe beim
+  ersten Login: Browsersprache, sonst Deutsch. Exporte erscheinen in der eingestellten Sprache;
+  steuerliche Fachbegriffe und Formularverweise kommen aus den Landesregeln (F10.3). Weitere
+  Sprachen = eine neue Übersetzungsdatei.
 - **F11.3** Kursabfragen aus dem Internet ein-/ausschaltbar.
 
 ## 11a. Dashboard
