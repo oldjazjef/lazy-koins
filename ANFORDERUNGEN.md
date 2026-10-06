@@ -33,13 +33,42 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 ## 5. Dateien
 
 - **F5.1** Upload per Drag & Drop oder Dateiauswahl, mehrere Dateien gleichzeitig (CSV, XLSX, PDF).
-- **F5.2** Plattform und Dateityp werden automatisch erkannt. Mindestens: Kraken Ledger und Kontoauszug · Binance Transaktions-, Ein- und Auszahlungshistorie, Account Statement · Bitfinex Ledger · Bittrex Transaction History und Order History · Revolut Krypto-Kontoauszug. Nicht Erkanntes ordnet der User manuell zu oder markiert es als „nur Beleg“.
+- **F5.2** Dateien werden über das Standardformat (F5.9) oder ein passendes Mapping (F5.11) erkannt – keine plattformspezifischen Parser im Code. Die Exporte von mindestens Kraken (Ledger, Kontoauszug), Binance (Transaktions-, Ein- und Auszahlungshistorie, Account Statement), Bitfinex (Ledger), Bittrex (Transaction/Order History) und Revolut (Krypto-Kontoauszug) müssen so einlesbar sein. Ohne passendes Mapping: Mapping per AI (F5.13) oder manuell erstellen, oder als „nur Beleg“ markieren.
 - **F5.3** Originaldateien bleiben unverändert erhalten und sind jederzeit herunterladbar.
 - **F5.4** Doppelte Uploads werden erkannt und abgelehnt bzw. verknüpft.
 - **F5.5** Dateiübersicht gruppiert nach Plattform/Wallet mit Typ, erkanntem Zeitraum, Anzahl Buchungen, Upload-Datum und Herkunft (neu / aus Projekt X).
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
 - **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
 - **F5.8** Fehlende Dateien anzeigen, z. B. „Kraken-Kontoauszug Dezember fehlt“ oder „Binance-Historie endet am 30.06.“, mit Anleitung, wo der Export zu finden ist.
+
+## 5a. Standardformat, Mappings und AI-Umwandlung
+
+Entscheid 06.10.2026: **keine plattformspezifischen Parser** im Code (Wartungsaufwand). Alle
+Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingelesen.
+
+- **F5.9** Standardformat „lazy-koins Buchungen“ als Vorlage in der App herunterladbar (CSV und
+  Excel). Excel mit Erklärungsblatt, Beispielzeilen und Auswahllisten. Zwei Teile:
+  **Buchungen** (Datum mit Zeitzone, Plattform/Wallet, Art, Asset, Menge, Gebühr, Gebühr-Asset,
+  optional Kurs CHF/USD, Referenz, Notiz) und **Bestände per Stichtag** (Plattform/Wallet,
+  Asset, Menge, Stichtag, optional Kurs, Beleg).
+- **F5.10** Eine befüllte Vorlage wird wie jeder andere Export hochgeladen, erkannt und geprüft;
+  Fehler werden pro Zeile angezeigt.
+- **F5.11** Mapping: eine JSON-Datei, die beschreibt, wie ein beliebiger Export (CSV/XLSX) ins
+  Standardformat übersetzt wird (Kopfzeile, Spalten, Datumsformat, Zeitzone, Vorzeichen,
+  Gebühren, Arten, Asset-Schreibweisen, Filter). Die App wendet es deterministisch an; jede
+  Buchung verweist auf die Zeile der Originaldatei (F7.5).
+- **F5.12** Mappings sind **im Projekt sichtbar** (Name, Plattform, Herkunft AI/manuell, welche
+  Dateien es nutzen), als JSON einsehbar, herunter- und hochladbar und bearbeitbar. Eine neue
+  Datei mit gleichem Aufbau (Fingerabdruck) wird automatisch mit dem passenden Mapping
+  eingelesen – **ohne AI**.
+- **F5.13** AI-Plugin: ein beliebiger Anbieter lässt sich anbinden (OpenAI-kompatible API – z. B.
+  OpenAI, Mistral, Groq, lokal Ollama/LM Studio – sowie Anthropic), konfiguriert in den
+  Einstellungen (Anbieter, Adresse, Modell, API-Schlüssel). Für eine Datei ohne passendes Mapping
+  erstellt die AI das **Mapping**, nicht die Buchungen; nach Vorschau und Bestätigung wird es
+  gespeichert und künftig wiederverwendet (spart Tokens).
+- **F5.14** Datenschutz: Vor dem ersten Senden an einen externen Anbieter ausdrückliche
+  Zustimmung; es wird angezeigt, was gesendet wird (Kopfzeile + wenige Beispielzeilen).
+  AI-Nutzung ist ein-/ausschaltbar; ohne AI funktioniert alles mit Vorlage und Mappings.
 
 ## 6. Wallets
 
