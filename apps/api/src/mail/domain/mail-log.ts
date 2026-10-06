@@ -1,3 +1,5 @@
+import { INTERNAL_KINDS } from '../../exports/domain/project-export';
+
 /**
  * The protocol of mails sent from a project (F10.6a): when, to whom, subject, attachments and
  * whether it went out — never a password, and not the body.
@@ -34,9 +36,13 @@ export type NewMailLogEntry = Omit<
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 
 /**
- * Exports meant for the user, not for the Treuhänder (e.g. an internal working report): offered,
- * but never preselected and shown with a warning.
+ * Exports meant for the user, not for the Treuhänder (the internal check report, F10.2a —
+ * `internal_report_pdf|xlsx`): offered, but never preselected and shown with a warning. Any kind
+ * named `internal…` counts, so a future internal kind is safe by default.
  */
 export function isInternalExportKind(kind: string): boolean {
-  return kind === 'internal_report' || kind.startsWith('internal');
+  return (
+    (INTERNAL_KINDS as readonly string[]).includes(kind) ||
+    kind.startsWith('internal')
+  );
 }

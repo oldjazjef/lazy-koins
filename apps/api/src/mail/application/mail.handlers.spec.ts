@@ -101,6 +101,7 @@ async function setup(options: { allowPrivate?: boolean; key?: string } = {}) {
     t.states,
     settings,
     users,
+    t.files,
     t.inputs,
     calculation,
   );
@@ -454,7 +455,12 @@ describe('compose (F10.6a)', () => {
       10,
       'Steuern-2025_ausfuehrlich.xlsx',
     );
-    const internal = await addExport(t, 'internal_report', 10, 'intern.pdf');
+    const internal = await addExport(
+      t,
+      'internal_report_pdf',
+      10,
+      'intern.pdf',
+    );
 
     const mail = await t.compose.execute(
       new ComposeMailQuery('anna', t.project.id),

@@ -184,7 +184,8 @@ describe('mailer settings', () => {
   });
 
   it('treats internal reports as internal', () => {
-    expect(isInternalExportKind('internal_report')).toBe(true);
+    expect(isInternalExportKind('internal_report_pdf')).toBe(true);
+    expect(isInternalExportKind('internal_report_xlsx')).toBe(true);
     expect(isInternalExportKind('simple_pdf')).toBe(false);
   });
 });

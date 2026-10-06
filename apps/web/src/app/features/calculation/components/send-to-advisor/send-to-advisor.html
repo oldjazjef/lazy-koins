@@ -136,145 +136,147 @@
       </p>
     </hlm-dialog-header>
 
-    @if (step() === 'compose') {
-    <form class="flex flex-col gap-4" [formGroup]="form">
-      @if (!mail.mailerReady) {
-      <p class="text-sm">
-        <a class="underline" routerLink="/app/settings/mail"
-          >{{ 'mail.send.setUpMailer' | translate }}</a
-        >
-      </p>
-      } @if (!mail.calculated) {
-      <p class="text-sm lk-warning-text">
-        {{ 'mail.send.notCalculated' | translate }}
-      </p>
-      } @if (mail.unknownPlaceholders.length > 0) {
-      <p class="text-destructive text-sm" role="alert">
-        {{ 'settings.mail.template.unknown' | translate: { names:
-        mail.unknownPlaceholders.join(', ') } }}
-      </p>
-      }
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="send-to">{{ 'mail.send.to' | translate }}</label>
-        <input
-          hlmInput
-          id="send-to"
-          type="email"
-          formControlName="to"
-          [placeholder]="'mail.send.toPlaceholder' | translate"
-        />
-        @if (form.controls.to.touched && !canContinue() &&
-        form.controls.to.value.trim() === '') {
-        <p class="text-destructive text-sm">
-          {{ 'mail.send.toRequired' | translate }}
-        </p>
-        }
-      </div>
-      @if (mail.mailerReady) {
-      <label class="flex items-center gap-2 text-sm">
-        <input type="checkbox" formControlName="ccMe" />
-        {{ 'mail.send.ccMe' | translate: { address: mail.ownAddress } }}
-      </label>
-      }
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="send-subject"
-          >{{ 'mail.send.subject' | translate }}</label
-        >
-        <input
-          hlmInput
-          id="send-subject"
-          type="text"
-          formControlName="subject"
-        />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="send-body"
-          >{{ 'mail.send.body' | translate }}</label
-        >
-        <textarea
-          hlmTextarea
-          id="send-body"
-          rows="14"
-          formControlName="body"
-        ></textarea>
-        @if (form.controls.body.dirty) {
-        <p class="text-muted-foreground text-xs">
-          {{ 'mail.send.bodyEdited' | translate }}
-        </p>
-        }
-      </div>
-
-      @if (mail.mailerReady) {
-      <fieldset class="flex flex-col gap-2">
-        <legend class="mb-1 text-sm font-medium">
-          {{ 'mail.send.attachments' | translate }}
-        </legend>
-        @for (item of mail.attachments; track item.id) {
-        <label class="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            class="mt-1"
-            [checked]="item.selected"
-            (change)="toggle(item)"
-          />
-          <span>
-            {{ item.fileName }}
-            <span class="text-muted-foreground text-xs"
-              >· {{ 'exports.kind.' + item.kind | translate }} · {{
-              bytes(item.size) }} · {{ item.createdAt | date: 'dd.MM.yyyy HH:mm'
-              }}</span
-            >
-            @if (item.internal) {
-            <span class="text-destructive block text-xs"
-              >{{ 'mail.send.internalWarning' | translate }}</span
-            >
-            }
-          </span>
-        </label>
-        } @empty {
-        <p class="text-muted-foreground text-sm">
-          {{ 'mail.send.noAttachments' | translate }}
-        </p>
-        }
-        <p
-          class="text-xs"
-          [class.text-destructive]="tooLarge()"
-          [class.text-muted-foreground]="!tooLarge()"
-        >
-          {{ (tooLarge() ? 'mail.send.tooLarge' : 'mail.send.total') |
-          translate: { total: bytes(totalBytes()), max:
-          bytes(mail.maxAttachmentBytes) } }}
-        </p>
-      </fieldset>
-      }
-    </form>
-    } @else {
-    <div class="flex flex-col gap-3 text-sm">
-      <dl class="lk-facts">
-        <dt>{{ 'mail.send.to' | translate }}</dt>
-        <dd>{{ form.controls.to.value }}</dd>
-        @if (form.controls.ccMe.value) {
-        <dt>{{ 'mail.send.cc' | translate }}</dt>
-        <dd>{{ mail.ownAddress }}</dd>
-        }
-        <dt>{{ 'mail.send.subject' | translate }}</dt>
-        <dd>{{ form.controls.subject.value }}</dd>
-        <dt>{{ 'mail.send.attachments' | translate }}</dt>
-        <dd>
-          @for (item of selected(); track item.id) {
-          <span class="block"
-            >{{ item.fileName }} ({{ bytes(item.size) }})</span
+    <div class="lk-dialog-body">
+      @if (step() === 'compose') {
+      <form class="flex flex-col gap-4" [formGroup]="form">
+        @if (!mail.mailerReady) {
+        <p class="text-sm">
+          <a class="underline" routerLink="/app/settings/mail"
+            >{{ 'mail.send.setUpMailer' | translate }}</a
           >
-          } @empty { {{ 'mail.send.noneSelected' | translate }} }
-        </dd>
-      </dl>
-      <pre class="lk-panel p-3 text-sm break-words whitespace-pre-wrap">
+        </p>
+        } @if (!mail.calculated) {
+        <p class="text-sm lk-warning-text">
+          {{ 'mail.send.notCalculated' | translate }}
+        </p>
+        } @if (mail.unknownPlaceholders.length > 0) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'settings.mail.template.unknown' | translate: { names:
+          mail.unknownPlaceholders.join(', ') } }}
+        </p>
+        }
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="send-to">{{ 'mail.send.to' | translate }}</label>
+          <input
+            hlmInput
+            id="send-to"
+            type="email"
+            formControlName="to"
+            [placeholder]="'mail.send.toPlaceholder' | translate"
+          />
+          @if (form.controls.to.touched && !canContinue() &&
+          form.controls.to.value.trim() === '') {
+          <p class="text-destructive text-sm">
+            {{ 'mail.send.toRequired' | translate }}
+          </p>
+          }
+        </div>
+        @if (mail.mailerReady) {
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" formControlName="ccMe" />
+          {{ 'mail.send.ccMe' | translate: { address: mail.ownAddress } }}
+        </label>
+        }
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="send-subject"
+            >{{ 'mail.send.subject' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="send-subject"
+            type="text"
+            formControlName="subject"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="send-body"
+            >{{ 'mail.send.body' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="send-body"
+            rows="14"
+            formControlName="body"
+          ></textarea>
+          @if (form.controls.body.dirty) {
+          <p class="text-muted-foreground text-xs">
+            {{ 'mail.send.bodyEdited' | translate }}
+          </p>
+          }
+        </div>
+
+        @if (mail.mailerReady) {
+        <fieldset class="flex flex-col gap-2">
+          <legend class="mb-1 text-sm font-medium">
+            {{ 'mail.send.attachments' | translate }}
+          </legend>
+          @for (item of mail.attachments; track item.id) {
+          <label class="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              class="mt-1"
+              [checked]="item.selected"
+              (change)="toggle(item)"
+            />
+            <span>
+              {{ item.fileName }}
+              <span class="text-muted-foreground text-xs"
+                >· {{ 'exports.kind.' + item.kind | translate }} · {{
+                bytes(item.size) }} · {{ item.createdAt | date: 'dd.MM.yyyy
+                HH:mm' }}</span
+              >
+              @if (item.internal) {
+              <span class="text-destructive block text-xs"
+                >{{ 'mail.send.internalWarning' | translate }}</span
+              >
+              }
+            </span>
+          </label>
+          } @empty {
+          <p class="text-muted-foreground text-sm">
+            {{ 'mail.send.noAttachments' | translate }}
+          </p>
+          }
+          <p
+            class="text-xs"
+            [class.text-destructive]="tooLarge()"
+            [class.text-muted-foreground]="!tooLarge()"
+          >
+            {{ (tooLarge() ? 'mail.send.tooLarge' : 'mail.send.total') |
+            translate: { total: bytes(totalBytes()), max:
+            bytes(mail.maxAttachmentBytes) } }}
+          </p>
+        </fieldset>
+        }
+      </form>
+      } @else {
+      <div class="flex flex-col gap-3 text-sm">
+        <dl class="lk-facts">
+          <dt>{{ 'mail.send.to' | translate }}</dt>
+          <dd>{{ form.controls.to.value }}</dd>
+          @if (form.controls.ccMe.value) {
+          <dt>{{ 'mail.send.cc' | translate }}</dt>
+          <dd>{{ mail.ownAddress }}</dd>
+          }
+          <dt>{{ 'mail.send.subject' | translate }}</dt>
+          <dd>{{ form.controls.subject.value }}</dd>
+          <dt>{{ 'mail.send.attachments' | translate }}</dt>
+          <dd>
+            @for (item of selected(); track item.id) {
+            <span class="block"
+              >{{ item.fileName }} ({{ bytes(item.size) }})</span
+            >
+            } @empty { {{ 'mail.send.noneSelected' | translate }} }
+          </dd>
+        </dl>
+        <pre class="lk-panel p-3 text-sm break-words whitespace-pre-wrap">
 {{ form.controls.body.value }}</pre>
-      @if (service.sendError(); as error) {
-      <lk-smtp-error [detail]="error" />
+        @if (service.sendError(); as error) {
+        <lk-smtp-error [detail]="error" />
+        }
+      </div>
       }
     </div>
-    }
 
     <hlm-dialog-footer>
       @if (step() === 'compose') {
@@ -327,7 +329,7 @@
       <h3 hlmDialogTitle>{{ 'projects.sent.markTitle' | translate }}</h3>
       <p hlmDialogDescription>{{ 'projects.sent.markHint' | translate }}</p>
     </hlm-dialog-header>
-    <form class="flex flex-col gap-4" [formGroup]="markForm">
+    <form class="lk-dialog-body" [formGroup]="markForm">
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-1">
           <label hlmLabel for="mark-date"
