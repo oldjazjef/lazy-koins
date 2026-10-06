@@ -21,6 +21,12 @@ RUN pnpm nx build web
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS production
 
+# Version labels (the app itself shows the API's GET /api/version — same commit).
+ARG LK_VERSION=
+ARG LK_COMMIT=
+LABEL org.opencontainers.image.version="${LK_VERSION}" \
+      org.opencontainers.image.revision="${LK_COMMIT}"
+
 # envsubst, used by entrypoint.sh to put the /api upstream into the nginx config.
 RUN apk add --no-cache gettext
 

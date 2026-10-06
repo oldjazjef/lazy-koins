@@ -4,7 +4,11 @@
  * container the entrypoint rewrites env.js at start (apps/web/entrypoint.sh).
  */
 
-export type AuthMode = 'firebase' | 'dev';
+/**
+ * `local` = the desktop app (F1.2): no sign-in at all, the API acts as its one local user
+ * (`AUTH_MODE=local`). The desktop shell generates its env.js with this mode.
+ */
+export type AuthMode = 'firebase' | 'dev' | 'local';
 
 /** The web config from Firebase console → Project settings → Your apps. Public by design. */
 export interface FirebaseWebConfig {
@@ -48,7 +52,10 @@ export function runtimeEnv(): RuntimeEnv {
       /\/+$/,
       '',
     ),
-    authMode: provided.authMode === 'firebase' ? 'firebase' : DEFAULTS.authMode,
+    authMode:
+      provided.authMode === 'firebase' || provided.authMode === 'local'
+        ? provided.authMode
+        : DEFAULTS.authMode,
     firebase: {
       apiKey: readString(firebase.apiKey, DEFAULTS.firebase.apiKey),
       authDomain: readString(firebase.authDomain, DEFAULTS.firebase.authDomain),

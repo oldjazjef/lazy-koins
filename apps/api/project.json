@@ -29,6 +29,22 @@
         }
       }
     },
+    "build-desktop": {
+      "lk-note": "The API as a library for the desktop app (src/desktop.ts → dist/apps/desktop-api/main.js + package.json). See apps/desktop and CLAUDE.md, Desktop.",
+      "executor": "nx:run-commands",
+      "dependsOn": ["db:generate"],
+      "options": {
+        "commands": [
+          "webpack-cli build --config webpack.desktop.config.js",
+          "node ../../scripts/build/complete-api-package-json.mjs dist/apps/desktop-api"
+        ],
+        "parallel": false,
+        "env": {
+          "NODE_ENV": "production"
+        },
+        "cwd": "apps/api"
+      }
+    },
     "db:generate": {
       "executor": "nx:run-commands",
       "cache": true,

@@ -1,0 +1,87 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'settings.storage.subtitle' | translate"
+/>
+
+@if (service.info(); as info) {
+<section hlmCard class="max-w-3xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle class="flex items-center gap-2">
+      {{ 'settings.storage.title' | translate }} @if (info.isDefault) {
+      <span hlmBadge variant="secondary"
+        >{{ 'settings.storage.default' | translate }}</span
+      >
+      } @if (info.syncProvider; as provider) {
+      <span hlmBadge variant="outline"
+        >{{ 'settings.storage.synced' | translate: { provider } }}</span
+      >
+      }
+    </h2>
+    <p hlmCardDescription>{{ 'settings.storage.intro' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-5">
+    <dl class="lk-facts">
+      <dt>{{ 'settings.storage.folder' | translate }}</dt>
+      <dd class="font-mono break-all">{{ info.dataDir }}</dd>
+      <dt>{{ 'settings.storage.database' | translate }}</dt>
+      <dd class="font-mono break-all">{{ info.databaseFile }}</dd>
+      <dt>{{ 'settings.storage.version' | translate }}</dt>
+      <dd>{{ info.appVersion }}</dd>
+    </dl>
+
+    @if (info.syncProvider; as provider) {
+    <p class="text-sm">
+      {{ 'settings.storage.syncWarning' | translate: { provider } }}
+    </p>
+    } @if (info.conflictCopies.length > 0) {
+    <div class="text-destructive flex flex-col gap-1 text-sm">
+      <p>{{ 'settings.storage.conflicts' | translate }}</p>
+      <ul class="font-mono">
+        @for (file of info.conflictCopies; track file) {
+        <li>{{ file }}</li>
+        }
+      </ul>
+    </div>
+    }
+
+    <p class="text-muted-foreground text-xs">
+      {{ 'settings.storage.hint' | translate }}
+    </p>
+
+    @if (service.restarting()) {
+    <p class="text-sm font-medium">
+      {{ 'settings.storage.restarting' | translate }}
+    </p>
+    }
+
+    <div class="flex flex-wrap justify-end gap-2">
+      <button hlmBtn variant="outline" type="button" (click)="service.reveal()">
+        {{ 'settings.storage.reveal' | translate }}
+      </button>
+      @if (!info.isDefault) {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.busy()"
+        (click)="service.useDefault()"
+      >
+        {{ 'settings.storage.useDefault' | translate }}
+      </button>
+      }
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.busy()"
+        (click)="service.choose()"
+      >
+        {{ 'settings.storage.choose' | translate }}
+      </button>
+    </div>
+  </div>
+</section>
+} @else if (service.loadFailed()) {
+<lk-empty-state [message]="'settings.storage.loadFailed' | translate" />
+} @else {
+<div hlmSkeleton class="h-48 max-w-3xl"></div>
+}

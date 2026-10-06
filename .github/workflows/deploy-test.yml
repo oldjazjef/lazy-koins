@@ -1,0 +1,33 @@
+# main → test: after CI passes on main, build the images once and deploy them to "test".
+name: Deploy test
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  images:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    uses: ./.github/workflows/_images.yml
+    with:
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+    secrets: inherit
+
+  deploy:
+    needs: images
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      environment: test
+      source-tag: ${{ needs.images.outputs.tag }}
+    secrets: inherit
