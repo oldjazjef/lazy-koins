@@ -6,6 +6,7 @@ import type {
 } from '../domain/project-file';
 import {
   type AddProjectFileInput,
+  type MappingUse,
   ProjectFileRepositoryPort,
 } from '../ports/project-file.repository.port';
 
@@ -76,6 +77,22 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     return [...this.entries.values()]
       .filter((e) => e.analysis.mappingId === mappingId)
       .map((e) => this.toFile(e));
+  }
+
+  async countByMappings(mappingIds: readonly string[]): Promise<MappingUse[]> {
+    const counts = new Map<string, MappingUse>();
+    for (const entry of this.entries.values()) {
+      const mappingId = entry.analysis.mappingId;
+      if (!mappingId || !mappingIds.includes(mappingId)) continue;
+      const key = `${mappingId}|${entry.projectId}`;
+      const files = (counts.get(key)?.files ?? 0) + 1;
+      counts.set(key, { mappingId, projectId: entry.projectId, files });
+    }
+    return [...counts.values()].sort((a, b) =>
+      a.mappingId === b.mappingId
+        ? a.projectId.localeCompare(b.projectId)
+        : a.mappingId.localeCompare(b.mappingId),
+    );
   }
 
   async add(

@@ -1,21 +1,15 @@
 <section hlmCard>
   <div hlmCardHeader>
     <h2 hlmCardTitle>{{ 'mappings.title' | translate }}</h2>
-    <p hlmCardDescription>{{ 'mappings.subtitle' | translate }}</p>
+    <p hlmCardDescription>
+      {{ 'mappings.subtitle' | translate }}
+      <a routerLink="/app/mappings" class="text-primary hover:underline"
+        >{{ 'mappings.allMappings' | translate }}</a
+      >
+    </p>
   </div>
   <div hlmCardContent class="flex flex-col gap-4">
     <div class="flex flex-wrap gap-2">
-      <button
-        hlmBtn
-        variant="outline"
-        size="sm"
-        type="button"
-        [disabled]="closed()"
-        (click)="editor.openNew()"
-      >
-        <ng-icon name="lucidePencil" size="14" aria-hidden="true" />
-        {{ 'mappings.new' | translate }}
-      </button>
       <button
         hlmBtn
         variant="outline"
@@ -72,7 +66,13 @@
         <tbody hlmTBody>
           @for (entry of entries; track entry.mapping.id) {
           <tr hlmTr>
-            <td hlmTd class="font-medium">{{ entry.mapping.name }}</td>
+            <td hlmTd class="font-medium">
+              <a
+                class="hover:underline"
+                [routerLink]="['/app/mappings', entry.mapping.id]"
+                >{{ entry.mapping.name }}</a
+              >
+            </td>
             <td hlmTd>{{ entry.mapping.platform }}</td>
             <td hlmTd>
               <span hlmBadge variant="outline"
@@ -93,33 +93,24 @@
                 variant="ghost"
                 size="icon"
                 type="button"
-                [attr.aria-label]="'mappings.actions.view' | translate"
-                (click)="viewing.set(entry.mapping)"
-              >
-                <ng-icon name="lucideFileJson" size="16" aria-hidden="true" />
-              </button>
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                type="button"
                 [attr.aria-label]="'mappings.actions.download' | translate"
                 (click)="service.downloadMapping(entry.mapping)"
               >
                 <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
               </button>
-              @if (!closed()) {
-              <button
+              <a
                 hlmBtn
                 variant="ghost"
                 size="icon"
-                type="button"
-                [attr.aria-label]="'mappings.actions.edit' | translate"
-                (click)="edit(entry)"
+                [routerLink]="['/app/mappings', entry.mapping.id]"
+                [attr.aria-label]="'mappings.openPage' | translate"
               >
-                <ng-icon name="lucidePencil" size="16" aria-hidden="true" />
-              </button>
-              }
+                <ng-icon
+                  name="lucideExternalLink"
+                  size="16"
+                  aria-hidden="true"
+                />
+              </a>
             </td>
           </tr>
           }
@@ -130,102 +121,28 @@
   </div>
 </section>
 
-<!-- JSON viewer -->
-<hlm-dialog [state]="viewState()" (stateChanged)="viewChanged($event)">
-  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
-    @if (viewing(); as mapping) {
-    <hlm-dialog-header>
-      <h3 hlmDialogTitle>{{ mapping.name }}</h3>
-      <p hlmDialogDescription>
-        {{ 'mappings.viewDescription' | translate: { platform: mapping.platform,
-        fingerprint: mapping.fingerprint } }}
-      </p>
-    </hlm-dialog-header>
-    <pre
-      class="bg-muted max-h-[60vh] overflow-auto rounded p-4 font-mono text-xs"
-    >
-{{ mapping.spec | json }}</pre>
-    <hlm-dialog-footer>
-      <button
-        hlmBtn
-        variant="outline"
-        type="button"
-        (click)="service.downloadMapping(mapping)"
-      >
-        {{ 'mappings.actions.download' | translate }}
-      </button>
-    </hlm-dialog-footer>
-    }
-  </hlm-dialog-content>
-</hlm-dialog>
-
-<!-- Editor -->
+<!-- Editor of a new mapping for one file (from the files table) -->
 <hlm-dialog [state]="editorState()" (stateChanged)="editorChanged($event)">
   <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
     <hlm-dialog-header>
-      <h3 hlmDialogTitle>
-        {{ (editor.mapping() ? 'mappings.editor.editTitle' :
-        'mappings.editor.newTitle') | translate }}
-      </h3>
+      <h3 hlmDialogTitle>{{ 'mappings.editor.newTitle' | translate }}</h3>
       <p hlmDialogDescription>
         {{ 'mappings.editor.description' | translate }}
       </p>
     </hlm-dialog-header>
-    <div class="grid gap-4 lg:grid-cols-2">
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium" for="mapping-json"
-          >{{ 'mappings.editor.json' | translate }}</label
-        >
-        <textarea
-          hlmTextarea
-          id="mapping-json"
-          class="min-h-96 font-mono text-xs"
-          spellcheck="false"
-          [ngModel]="editor.text()"
-          (ngModelChange)="editor.text.set($event)"
-        ></textarea>
-        @if (editor.invalidJson()) {
-        <p class="text-destructive text-sm">
-          {{ 'mappings.editor.invalidJson' | translate }}
-        </p>
-        } @if (editor.issues().length > 0) {
-        <div class="text-destructive text-sm">
-          <p class="font-medium">{{ 'mappings.editor.issues' | translate }}</p>
-          <ul class="list-disc pl-5">
-            @for (issue of editor.issues(); track $index) {
-            <li class="font-mono text-xs">
-              {{ issue.path || '/' }}: {{ issue.message }}
-            </li>
-            }
-          </ul>
-        </div>
-        }
-      </div>
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium" for="mapping-check-file"
-          >{{ 'mappings.editor.checkFile' | translate }}</label
-        >
-        <select
-          hlmInput
-          id="mapping-check-file"
-          [ngModel]="editor.checkFileId()"
-          (ngModelChange)="editor.checkFileId.set($event)"
-        >
-          @for (file of service.tableFiles(); track file.id) {
-          <option [value]="file.id">{{ file.displayName }}</option>
-          }
-        </select>
-        @if (editor.preview(); as preview) {
-        <lk-mapping-preview [preview]="preview" />
-        } @else {
-        <p class="text-muted-foreground text-sm">
-          {{ 'mappings.editor.checkHint' | translate }}
-        </p>
-        }
-      </div>
-    </div>
+    <lk-mapping-editor-form
+      [idPrefix]="'project-mapping'"
+      [text]="editor.text()"
+      (textChange)="editor.text.set($event)"
+      [checkFileId]="editor.checkFileId()"
+      (checkFileIdChange)="editor.checkFileId.set($event)"
+      [checkFiles]="editor.checkFiles()"
+      [issues]="editor.issues()"
+      [invalidJson]="editor.invalidJson()"
+      [preview]="editor.preview()"
+    />
     <hlm-dialog-footer>
-      @if (!editor.mapping() && editor.targetFile()) {
+      @if (editor.targetFile()) {
       <button hlmBtn variant="outline" type="button" (click)="editorWithAi()">
         <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
         {{ 'mappings.withAi' | translate }}
@@ -247,27 +164,6 @@
         (click)="editor.save()"
       >
         {{ 'common.save' | translate }}
-      </button>
-    </hlm-dialog-footer>
-  </hlm-dialog-content>
-</hlm-dialog>
-
-<!-- Re-apply after an edit -->
-<hlm-dialog [state]="reapplyState()" (stateChanged)="reapplyChanged($event)">
-  <hlm-dialog-content *hlmDialogPortal>
-    <hlm-dialog-header>
-      <h3 hlmDialogTitle>{{ 'mappings.reapplyTitle' | translate }}</h3>
-      <p hlmDialogDescription>
-        {{ 'mappings.reapplyBody' | translate: { count:
-        editor.reapplyOffer()?.files ?? 0 } }}
-      </p>
-    </hlm-dialog-header>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="outline" type="button" hlmDialogClose>
-        {{ 'mappings.reapplyLater' | translate }}
-      </button>
-      <button hlmBtn type="button" (click)="editor.reapply()">
-        {{ 'mappings.reapply' | translate }}
       </button>
     </hlm-dialog-footer>
   </hlm-dialog-content>

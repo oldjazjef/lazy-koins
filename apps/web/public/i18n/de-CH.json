@@ -19,6 +19,7 @@
   "nav": {
     "label": "Hauptnavigation",
     "projects": "Projekte",
+    "mappings": "Mappings",
     "signOut": "Abmelden",
     "toggleTheme": "Hell/Dunkel umschalten",
     "settings": "Einstellungen",
@@ -239,20 +240,17 @@
   },
   "mappings": {
     "title": "Mappings",
-    "subtitle": "Ein Mapping übersetzt den Export einer Plattform ins Standardformat. Hier siehst du, welche dieses Projekt verwendet.",
-    "new": "Neues Mapping",
+    "subtitle": "Ein Mapping übersetzt den Export einer Plattform ins Standardformat. Hier siehst du, mit welchen Mappings die Dateien dieses Projekts gelesen werden – bearbeiten und löschen kannst du sie auf der Mappings-Seite.",
     "withAi": "Mit AI erstellen",
     "empty": "Dieses Projekt verwendet noch kein Mapping.",
     "saved": "Mapping gespeichert",
     "saveFailed": "Mapping konnte nicht gespeichert werden",
     "checkFailed": "Prüfung fehlgeschlagen",
-    "reapplied": "Dateien neu gelesen",
     "reapplyFailed": "Dateien konnten nicht neu gelesen werden",
     "reapplyTitle": "Dateien neu lesen?",
     "reapplyBody": "{{count}} Datei(en) verwenden dieses Mapping. Sollen sie mit der neuen Fassung neu gelesen werden? Abgeschlossene Projekte bleiben unverändert.",
     "reapplyLater": "Später",
     "reapply": "Neu lesen",
-    "viewDescription": "Plattform {{platform}} · erkennt Dateien mit den Spalten {{fingerprint}}",
     "upload": {
       "button": "Mapping hochladen (.json)",
       "notJson": "Die Datei ist kein JSON",
@@ -271,20 +269,18 @@
       "copied": "hochgeladen"
     },
     "actions": {
-      "view": "JSON ansehen",
-      "download": "Als JSON herunterladen",
-      "edit": "Bearbeiten"
+      "download": "Als JSON herunterladen"
     },
     "editor": {
       "newTitle": "Neues Mapping",
-      "editTitle": "Mapping bearbeiten",
       "description": "Das Mapping als JSON. «Prüfen» validiert es und zeigt, was es aus der gewählten Datei liest.",
       "json": "Mapping (JSON)",
       "invalidJson": "Das ist kein gültiges JSON.",
       "issues": "Das Mapping ist noch nicht gültig:",
       "checkFile": "Prüfen mit Datei",
       "checkHint": "Noch keine Vorschau – «Prüfen» wählen.",
-      "check": "Prüfen"
+      "check": "Prüfen",
+      "noCheckFile": "Noch keine Datei wird mit diesem Mapping gelesen, deshalb gibt es keine Vorschau. «Speichern» prüft das Mapping trotzdem vollständig."
     },
     "preview": {
       "totals": "{{bookings}} Buchungen, {{holdings}} Bestände, {{errors}} Fehler, {{notes}} Hinweise.",
@@ -300,6 +296,57 @@
       "holdings": "Bestände",
       "errors": "Zeilen mit Fehlern",
       "errorAt": "Zeile {{row}}, Spalte {{column}}:"
+    },
+    "allMappings": "Alle Mappings",
+    "openPage": "Mapping öffnen",
+    "list": {
+      "subtitle": "Alle deine Mappings. Sie gelten für alle deine Projekte: Dateien mit denselben Spalten werden beim Hochladen automatisch damit gelesen.",
+      "new": "Neues Mapping",
+      "newDescription": "Das Mapping als JSON. «Speichern» prüft es vollständig; die Vorschau mit einer Datei gibt es auf der Seite des Mappings, sobald eine Datei es nutzt.",
+      "search": "Suchen",
+      "searchPlaceholder": "Name oder Plattform",
+      "sort": "Sortieren nach",
+      "sortBy": {
+        "name": "Name",
+        "platform": "Plattform",
+        "updated": "Zuletzt geändert",
+        "files": "Anzahl Dateien"
+      },
+      "empty": "Noch keine Mappings. Ein Mapping übersetzt den Export einer Plattform (zum Beispiel das Kraken-Ledger) ins Standardformat von lazy-koins. Ein Mapping, das du in einem Projekt erstellst – von Hand, hochgeladen oder mit AI –, steht in allen deinen Projekten zur Verfügung.",
+      "noMatch": "Kein Mapping passt zu deiner Suche.",
+      "loadFailed": "Die Mappings konnten nicht geladen werden.",
+      "usage": "{{files}} Datei(en) in {{projects}} Projekt(en)",
+      "unused": "nicht genutzt",
+      "version": "Version",
+      "usedBy": "Genutzt von"
+    },
+    "detail": {
+      "factsTitle": "Angaben",
+      "fingerprint": "Erkennt Spalten",
+      "created": "Erstellt",
+      "jsonTitle": "Mapping (JSON)",
+      "edit": "Bearbeiten",
+      "editHint": "Ändere das JSON, prüfe es mit einer Datei, die das Mapping nutzt, und speichere. Die Dateien behalten ihr bisheriges Ergebnis, bis du sie neu lesen lässt.",
+      "usageTitle": "Wird genutzt in",
+      "usageEmpty": "Noch keine Datei wird mit diesem Mapping gelesen. Lade in einem Projekt einen Export mit diesen Spalten hoch – er wird automatisch damit gelesen.",
+      "project": "Projekt",
+      "taxYear": "Steuerjahr",
+      "status": "Status",
+      "files": "Dateien",
+      "notFound": "Dieses Mapping gibt es nicht (mehr).",
+      "loadFailed": "Das Mapping konnte nicht geladen werden.",
+      "backToList": "Zu den Mappings",
+      "delete": "Löschen",
+      "deleteTitle": "Mapping löschen?",
+      "deleteBody": "«{{name}}» wird endgültig gelöscht.",
+      "deleteFiles": "Diese Dateien werden danach nicht mehr gelesen und brauchen wieder ein Mapping:",
+      "deleteNoFiles": "Keine Datei nutzt dieses Mapping.",
+      "deleteClosed": "Ein abgeschlossenes Projekt nutzt dieses Mapping. Öffne das Projekt wieder, dann kannst du das Mapping löschen.",
+      "deleted": "Mapping gelöscht",
+      "deleteFailed": "Das Mapping konnte nicht gelöscht werden",
+      "reapplyClosed": "Davon in abgeschlossenen Projekten: {{count}} – sie bleiben unverändert.",
+      "reapplied": "{{reapplied}} Datei(en) neu gelesen.",
+      "reappliedSkipped": "{{reapplied}} Datei(en) neu gelesen, {{skipped}} in abgeschlossenen Projekten unverändert gelassen."
     }
   },
   "ai": {

@@ -1,5 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { apiUrl } from '../../../../core/api/api-url';
 import type {
@@ -48,6 +49,7 @@ export class AiAssistState {
   private readonly http = inject(HttpClient);
   private readonly files = inject(ProjectFilesService);
   private readonly notifications = inject(NotificationService);
+  private readonly router = inject(Router);
 
   readonly step = signal<AiStep>('closed');
   readonly mode = signal<AiMode>('mapping');
@@ -200,13 +202,18 @@ export class AiAssistState {
     if (!file || spec === undefined) return;
     this.busy.set(true);
     try {
-      await firstValueFrom(
+      const saved = await firstValueFrom(
         this.http.post<{ mapping: Mapping; file: ProjectFile }>(
           apiUrl(`${this.base(file)}/accept`),
           { spec },
         ),
       );
-      this.notifications.success('ai.mapping.saved');
+      // The mapping is mine now, usable in every project (F11.0): link to its page.
+      this.notifications.success('ai.mapping.saved', {
+        labelKey: 'mappings.openPage',
+        onClick: () =>
+          void this.router.navigate(['/app/mappings', saved.mapping.id]),
+      });
       this.close();
       this.files.reload();
     } catch (error) {

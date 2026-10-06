@@ -5,7 +5,19 @@ import {
   MAPPING_ORIGINS,
   type MappingOrigin,
 } from '../domain/import-mapping';
-import type { ProjectMapping } from '../application/queries/mapping.queries';
+import {
+  PROJECT_FILE_STATUSES,
+  type ProjectFileStatus,
+} from '../../files/domain/project-file';
+import {
+  PROJECT_STATUSES,
+  type ProjectStatus,
+} from '../../projects/domain/project';
+import type {
+  MappingSummary,
+  MappingUsageProject,
+  ProjectMapping,
+} from '../application/queries/mapping.queries';
 
 /** `ai` is set by the AI flow (next phase) only, never by a client. */
 const CLIENT_ORIGINS = ['manual', 'copied'] as const;
@@ -59,6 +71,46 @@ export class MappingResponseDto {
       spec: mapping.spec as unknown as Record<string, unknown>,
       createdAt: mapping.createdAt,
       updatedAt: mapping.updatedAt,
+    };
+  }
+}
+
+export class MappingSummaryResponseDto extends MappingResponseDto {
+  @ApiProperty({ description: 'Project files read with it (all my projects)' })
+  filesUsing!: number;
+  @ApiProperty({ description: 'Projects holding such a file' })
+  projectsUsing!: number;
+
+  static fromSummary(summary: MappingSummary): MappingSummaryResponseDto {
+    return {
+      ...MappingResponseDto.from(summary.mapping),
+      filesUsing: summary.filesUsing,
+      projectsUsing: summary.projectsUsing,
+    };
+  }
+}
+
+export class MappingUsageFileDto {
+  @ApiProperty({ format: 'uuid', description: 'The project file' })
+  id!: string;
+  @ApiProperty() displayName!: string;
+  @ApiProperty({ enum: PROJECT_FILE_STATUSES }) status!: ProjectFileStatus;
+}
+
+export class MappingUsageProjectDto {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() taxYear!: number;
+  @ApiProperty({ enum: PROJECT_STATUSES }) status!: ProjectStatus;
+  @ApiProperty({ type: [MappingUsageFileDto] }) files!: MappingUsageFileDto[];
+
+  static from(project: MappingUsageProject): MappingUsageProjectDto {
+    return {
+      id: project.id,
+      name: project.name,
+      taxYear: project.taxYear,
+      status: project.status,
+      files: project.files.map((file) => ({ ...file })),
     };
   }
 }

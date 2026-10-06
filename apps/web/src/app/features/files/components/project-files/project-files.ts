@@ -1,16 +1,20 @@
 import { DatePipe, DecimalPipe, UpperCasePipe } from '@angular/common';
 import {
+  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
+  DOCUMENT,
   effect,
   inject,
   input,
   type OnDestroy,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideDownload,
@@ -59,6 +63,7 @@ type Dialog =
     DecimalPipe,
     UpperCasePipe,
     FormsModule,
+    RouterLink,
     NgIcon,
     TranslatePipe,
     EmptyState,
@@ -95,6 +100,8 @@ export class ProjectFiles implements OnDestroy {
   private readonly editor = inject(MappingEditorState);
   protected readonly ai = inject(AiAssistState);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly document = inject(DOCUMENT);
+  private readonly fragment = toSignal(inject(ActivatedRoute).fragment);
 
   readonly projectId = input.required<string>();
   /** F4.5: no uploads, removals or assignments while closed. */
@@ -113,8 +120,26 @@ export class ProjectFiles implements OnDestroy {
 
   protected readonly skeletonRows = [1, 2, 3];
 
+  /** `#file-<id>` (a link from the mapping page, F11.0): that file's row is marked. */
+  protected readonly highlighted = computed(() => {
+    const fragment = this.fragment();
+    return fragment?.startsWith('file-') ? fragment.slice(5) : null;
+  });
+  private scrolledTo: string | null = null;
+
   constructor() {
     effect(() => this.service.projectId.set(this.projectId()));
+    // The rows arrive after the route did its own (anchor-less) scrolling: scroll once they exist.
+    afterRenderEffect(() => {
+      const id = this.highlighted();
+      if (!id || id === this.scrolledTo || !this.service.overview.hasValue()) {
+        return;
+      }
+      const row = this.document.getElementById(`file-${id}`);
+      if (!row) return;
+      this.scrolledTo = id;
+      row.scrollIntoView({ block: 'center' });
+    });
   }
 
   ngOnDestroy(): void {
