@@ -49,17 +49,19 @@ enum Country {
 ///
 /// Created on the first authenticated request (see auth/principal.service.ts).
 model User {
-  id             String    @id @default(uuid(7))
+  id             String   @id @default(uuid(7))
   /// Firebase uid, `dev:<email>` or `local:owner`.
-  identityUid    String    @unique @map("identity_uid")
+  identityUid    String   @unique @map("identity_uid")
   email          String
-  displayName    String    @map("display_name")
+  displayName    String   @map("display_name")
   /// Firebase's `sign_in_provider` claim (`password`, `google.com`), or `dev` / `local`.
-  signInProvider String    @map("sign_in_provider")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  signInProvider String   @map("sign_in_provider")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  projects Project[]
+  projects    Project[]
+  storedFiles StoredFile[]
+  mappings    ImportMapping[]
 
   @@map("user")
 }
@@ -81,6 +83,92 @@ model Project {
   /// Deleting an account deletes its projects (F2.2).
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
+  files ProjectFile[]
+
   @@index([ownerId, taxYear])
   @@map("project")
+}
+
+/// An original file, byte for byte (F5.3), content-addressed by SHA-256 **per owner**: the same
+/// bytes uploaded twice by one user are one row (F5.4, F4.4), two users never share a row. It is
+/// deleted when no project_file references it any more (F5.7) — in the same transaction.
+model StoredFile {
+  id           String   @id @default(uuid(7))
+  ownerId      String   @map("owner_id")
+  /// Lower-case hex SHA-256 of `bytes` — also the `sourceFileId` every record carries (F7.5).
+  sha256       String
+  bytes        Bytes
+  size         Int
+  /// `text/csv`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/pdf`.
+  mediaType    String   @map("media_type")
+  /// csv | xlsx | pdf — decided from the bytes, not the name. CHECK in the migration.
+  kind         String
+  /// The name of the first upload; the download uses it.
+  originalName String   @map("original_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  projectFiles ProjectFile[]
+
+  @@unique([ownerId, sha256])
+  @@map("stored_file")
+}
+
+/// A mapping spec (libs/engine `mapping/`): turns one export layout into standard records.
+/// Owner-scoped; `spec` is the validated JSON as text (CHECK json_valid).
+model ImportMapping {
+  id          String   @id @default(uuid(7))
+  ownerId     String   @map("owner_id")
+  name        String
+  platform    String
+  spec        String
+  /// The spec's normalised headers, sorted (`mappingFingerprint`), for listing and lookup.
+  fingerprint String
+  /// Spec format version (`MAPPING_VERSION`).
+  version     Int
+  /// ai | manual | copied. CHECK in the migration.
+  origin      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  files ProjectFile[]
+
+  @@index([ownerId])
+  @@map("import_mapping")
+}
+
+/// A stored file as part of one project (F5.5): how it was read and what it contributed.
+model ProjectFile {
+  id           String   @id @default(uuid(7))
+  projectId    String   @map("project_id")
+  fileId       String   @map("file_id")
+  displayName  String   @map("display_name")
+  /// standard | mapped | needs_mapping | evidence_only. CHECK in the migration.
+  status       String
+  /// `standard-v1` or `mapping:<id>` — the importer that read it; null otherwise.
+  importerId   String?  @map("importer_id")
+  mappingId    String?  @map("mapping_id")
+  /// The platform(s) the records name, comma-separated in order of appearance.
+  platform     String?
+  /// ISO dates over bookings and balances (F5.5).
+  periodFrom   String?  @map("period_from")
+  periodTo     String?  @map("period_to")
+  bookingCount Int      @default(0) @map("booking_count")
+  holdingCount Int      @default(0) @map("holding_count")
+  errorCount   Int      @default(0) @map("error_count")
+  /// JSON array of coverage entries per platform/account (F5.8).
+  coverage     String   @default("[]")
+  /// `uploaded`, or `from_project:<id>` when the bytes were already in another project (F4.4).
+  origin       String   @default("uploaded")
+  addedAt      DateTime @default(now()) @map("added_at")
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  mapping ImportMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, fileId])
+  @@index([fileId])
+  @@index([mappingId])
+  @@map("project_file")
 }

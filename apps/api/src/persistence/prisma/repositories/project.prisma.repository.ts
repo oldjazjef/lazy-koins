@@ -69,8 +69,23 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
     return count === 0 ? undefined : this.findById(id);
   }
 
+  /**
+   * Deletes the project with its file entries, and — in the same transaction — every stored file
+   * of the owner that no project references any more (F5.7).
+   */
   async delete(id: string): Promise<boolean> {
-    const { count } = await this.prisma.project.deleteMany({ where: { id } });
-    return count > 0;
+    return this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.findUnique({
+        where: { id },
+        select: { ownerId: true },
+      });
+      if (!project) return false;
+      await tx.projectFile.deleteMany({ where: { projectId: id } });
+      await tx.project.delete({ where: { id } });
+      await tx.storedFile.deleteMany({
+        where: { ownerId: project.ownerId, projectFiles: { none: {} } },
+      });
+      return true;
+    });
   }
 }

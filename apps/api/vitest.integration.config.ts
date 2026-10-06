@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
@@ -17,6 +18,10 @@ import { defineConfig } from 'vitest/config';
 // the config's location. `__dirname` is not an option — this file is loaded as CJS but written as ESM.
 export default defineConfig({
   cacheDir: 'node_modules/.vite/apps/api-integration',
+  // Relative to the repo root, like every path here.
+  resolve: {
+    alias: { '@lazykoins/engine': resolve('libs/engine/src/index.ts') },
+  },
   plugins: [
     swc.vite({
       module: { type: 'es6' },
