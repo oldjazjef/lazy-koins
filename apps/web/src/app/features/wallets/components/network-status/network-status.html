@@ -1,21 +1,33 @@
 <div hlmTableContainer class="lk-panel">
-  <table hlmTable>
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col class="w-32" />
+      <col class="w-40" />
+      <col class="hidden w-48 lg:table-column" />
+      <col />
+      <col class="w-28" />
+      <col class="hidden w-36 md:table-column" />
+    </colgroup>
     <thead hlmTHead>
       <tr hlmTr>
         <th hlmTh>{{ 'wallets.fields.network' | translate }}</th>
         <th hlmTh>{{ 'wallets.fields.used' | translate }}</th>
-        <th hlmTh>{{ 'wallets.fields.coverage' | translate }}</th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'wallets.fields.coverage' | translate }}
+        </th>
         <th hlmTh>{{ 'wallets.fields.fetch' | translate }}</th>
         <th hlmTh class="text-right">
           {{ 'wallets.fields.movements' | translate }}
         </th>
-        <th hlmTh>{{ 'wallets.fields.today' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'wallets.fields.today' | translate }}
+        </th>
       </tr>
     </thead>
     <tbody hlmTBody>
       @for (net of wallet().perNetwork; track net.network) {
       <tr hlmTr [class.text-muted-foreground]="!net.selected">
-        <td hlmTd class="whitespace-nowrap">
+        <td hlmTd class="max-w-0">
           <span class="font-medium"
             >{{ 'wallets.network.' + net.network | translate }}</span
           >
@@ -25,7 +37,7 @@
           >
           }
         </td>
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
           @if (net.used === true) {
           <span hlmBadge variant="secondary"
             >{{ 'wallets.used.yes' | translate }}</span
@@ -38,9 +50,10 @@
           <span hlmBadge variant="outline"
             >{{ 'wallets.used.no' | translate }}</span
           >
-          } @else if (net.checkError) {
-          <span class="text-destructive block max-w-56 text-xs whitespace-normal"
-            >{{ 'wallets.errors.' + net.checkError | translate }}</span
+          } @else if (net.checkError) { @let checkText = 'wallets.errors.' +
+          net.checkError | translate;
+          <span class="text-destructive text-xs" [lkTruncate]="checkText"
+            >{{ checkText }}</span
           >
           } @else {
           <span class="text-muted-foreground text-sm"
@@ -48,22 +61,25 @@
           >
           }
         </td>
-        <td hlmTd class="text-sm whitespace-normal">
-          {{ 'wallets.coverage.' + net.coverage | translate }}
+        <td hlmTd class="hidden max-w-0 text-sm lg:table-cell">
+          @let coverage = 'wallets.coverage.' + net.coverage | translate;
+          <span [lkTruncate]="coverage">{{ coverage }}</span>
         </td>
-        <td hlmTd class="text-sm whitespace-normal">
+        <td hlmTd class="max-w-0 text-sm">
           @if (net.status === 'ok') {
           <span
             >{{ 'wallets.fetchStatus.ok' | translate: { date: (net.fetchedAt |
             date: 'dd.MM.yyyy HH:mm') } }}</span
           >
-          } @else if (net.status === 'error') {
-          <span class="text-destructive block max-w-64 text-xs"
-            >{{ 'wallets.errors.' + (net.errorCode ?? 'failed') | translate
-            }}</span
+          } @else if (net.status === 'error') { @let errorText =
+          'wallets.errors.' + (net.errorCode ?? 'failed') | translate;
+          <span class="text-destructive" [lkTruncate]="errorText"
+            >{{ errorText }}</span
           >
           @if (net.errorDetail) {
-          <span class="text-muted-foreground block text-xs break-all"
+          <span
+            class="text-muted-foreground text-xs"
+            [lkTruncate]="net.errorDetail"
             >{{ net.errorDetail }}</span
           >
           } } @else {
@@ -80,9 +96,10 @@
             net.info.addressesScanned, used: net.info.addressesUsed ?? 0 }
             }}</span
           >
-          } @for (note of net.info.notes ?? []; track note) {
-          <span class="text-muted-foreground block text-xs"
-            >{{ 'wallets.notes.' + note | translate }}</span
+          } @for (note of net.info.notes ?? []; track note) { @let noteText =
+          'wallets.notes.' + note | translate;
+          <span class="text-muted-foreground text-xs" [lkTruncate]="noteText"
+            >{{ noteText }}</span
           >
           }
         </td>
@@ -94,7 +111,7 @@
           >
           }
         </td>
-        <td hlmTd class="text-sm tabular-nums">
+        <td hlmTd class="hidden text-sm tabular-nums md:table-cell">
           @for (balance of net.info.currentBalances ?? []; track balance.asset)
           {
           <span class="block"

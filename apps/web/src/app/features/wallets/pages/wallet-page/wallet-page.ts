@@ -19,11 +19,26 @@ import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
+import { lucideShieldCheck, lucideUndo2 } from '@ng-icons/lucide';
 import type {
   AddressKind,
   NetworkId,
+  TokenVerdict,
 } from '../../../../core/api/wallets.types';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
+import { Truncate } from '../../../../shared/components/truncate';
+
+type TokenAction = 'notSpam' | 'reset';
+
+interface TokenRow extends TokenVerdict {
+  readonly network: NetworkId;
+  readonly rowKey: string;
+}
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { NetworkStatus } from '../../components/network-status';
 import { WalletPageService } from './wallet-page.service';
@@ -43,6 +58,9 @@ import { WalletFormSchema } from './wallet.schema';
     TranslatePipe,
     PageHeader,
     NetworkStatus,
+    Paginator,
+    RowActions,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -76,6 +94,52 @@ export class WalletPage {
   protected readonly confirmDelete = signal(false);
 
   protected readonly isNew = computed(() => this.id() === undefined);
+
+  /** F6.6: every token of every network in one paged table. */
+  protected readonly tokenRows = computed<TokenRow[]>(() =>
+    this.service.tokens.hasValue()
+      ? this.service.tokens.value().flatMap((group) =>
+          group.tokens.map((token) => ({
+            ...token,
+            network: group.network,
+            rowKey: `${group.network}|${token.tokenKey}`,
+          })),
+        )
+      : [],
+  );
+  protected readonly tokenPager = paginate(this.tokenRows, {
+    storageKey: 'wallet-tokens',
+  });
+  protected readonly tokenActions = computed(
+    () =>
+      new Map<string, readonly RowAction<TokenAction>[]>(
+        this.tokenRows().map((token) => [
+          token.rowKey,
+          [
+            {
+              id: 'notSpam',
+              labelKey: 'wallets.tokens.markNotSpam',
+              icon: lucideShieldCheck,
+              hidden: !token.spam,
+            },
+            {
+              id: 'reset',
+              labelKey: 'wallets.tokens.undo',
+              icon: lucideUndo2,
+              hidden: !token.overridden,
+            },
+          ],
+        ]),
+      ),
+  );
+
+  protected tokenAct(action: string, token: TokenRow): void {
+    void this.service.setToken(
+      token.network,
+      token.tokenKey,
+      action === 'notSpam',
+    );
+  }
 
   constructor() {
     effect(() => this.service.walletId.set(this.id()));

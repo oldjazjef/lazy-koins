@@ -128,7 +128,15 @@ service.overview.value();
         </p>
         @if (entry.balances.length > 0) {
         <div hlmTableContainer class="lk-panel">
-          <table hlmTable>
+          <table hlmTable class="table-fixed">
+            <colgroup>
+              <col class="w-32" />
+              <col class="w-24" />
+              <col class="w-40" />
+              <col class="hidden w-28 md:table-column" />
+              <col />
+              <col class="w-14" />
+            </colgroup>
             <thead hlmTHead>
               <tr hlmTr>
                 <th hlmTh>{{ 'wallets.fields.network' | translate }}</th>
@@ -136,11 +144,13 @@ service.overview.value();
                 <th hlmTh class="text-right">
                   {{ 'wallets.balances.quantity' | translate }}
                 </th>
-                <th hlmTh>{{ 'wallets.balances.date' | translate }}</th>
+                <th hlmTh class="hidden md:table-cell">
+                  {{ 'wallets.balances.date' | translate }}
+                </th>
                 <th hlmTh>{{ 'wallets.balances.evidence' | translate }}</th>
-                <th hlmTh>
+                <th hlmTh class="lk-sticky-actions text-right">
                   <span class="sr-only"
-                    >{{ 'wallets.tokens.action' | translate }}</span
+                    >{{ 'common.actions' | translate }}</span
                   >
                 </th>
               </tr>
@@ -151,28 +161,25 @@ service.overview.value();
                 <td hlmTd>
                   {{ 'wallets.network.' + balance.network | translate }}
                 </td>
-                <td hlmTd>{{ balance.asset }}</td>
+                <td hlmTd class="max-w-0">
+                  <span [lkTruncate]="balance.asset">{{ balance.asset }}</span>
+                </td>
                 <td hlmTd class="text-right tabular-nums">
                   {{ balance.quantity | lkQuantity: 18 }}
                 </td>
-                <td hlmTd class="tabular-nums">{{ balance.asOf }}</td>
-                <td hlmTd class="text-sm whitespace-normal">
-                  {{ balance.evidenceName ?? ('wallets.balances.noEvidence' |
-                  translate) }}
+                <td hlmTd class="hidden tabular-nums md:table-cell">
+                  {{ balance.asOf }}
                 </td>
-                <td hlmTd class="text-right">
-                  @if (!closed()) {
-                  <button
-                    hlmBtn
-                    variant="ghost"
-                    size="sm"
-                    type="button"
-                    [disabled]="service.busy() !== null"
-                    (click)="service.removeBalance(wallet.id, balance.id)"
-                  >
-                    {{ 'wallets.balances.remove' | translate }}
-                  </button>
-                  }
+                <td hlmTd class="max-w-0 text-sm">
+                  @let evidence = balance.evidenceName ??
+                  ('wallets.balances.noEvidence' | translate);
+                  <span [lkTruncate]="evidence">{{ evidence }}</span>
+                </td>
+                <td hlmTd class="lk-sticky-actions text-right">
+                  <lk-row-actions
+                    [actions]="balanceActions()"
+                    (selected)="service.removeBalance(wallet.id, balance.id)"
+                  />
                 </td>
               </tr>
               }

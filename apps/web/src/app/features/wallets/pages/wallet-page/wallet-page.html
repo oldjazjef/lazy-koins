@@ -188,47 +188,57 @@
     <p class="text-muted-foreground max-w-3xl text-sm">
       {{ 'wallets.tokens.hint' | translate }}
     </p>
-    @if (service.tokens.hasValue()) { @for (group of service.tokens.value();
-    track group.network) { @if (group.tokens.length > 0) {
-    <h3 class="text-sm font-medium">
-      {{ 'wallets.network.' + group.network | translate }}
-    </h3>
+    @if (tokenRows().length > 0) {
     <div hlmTableContainer class="lk-panel">
-      <table hlmTable>
+      <table hlmTable class="table-fixed">
+        <colgroup>
+          <col />
+          <col class="w-32" />
+          <col class="hidden w-48 md:table-column" />
+          <col class="w-56" />
+          <col class="hidden w-24 md:table-column" />
+          <col class="w-14" />
+        </colgroup>
         <thead hlmTHead>
           <tr hlmTr>
             <th hlmTh>{{ 'wallets.tokens.asset' | translate }}</th>
-            <th hlmTh>{{ 'wallets.tokens.contract' | translate }}</th>
+            <th hlmTh>{{ 'wallets.fields.network' | translate }}</th>
+            <th hlmTh class="hidden md:table-cell">
+              {{ 'wallets.tokens.contract' | translate }}
+            </th>
             <th hlmTh>{{ 'wallets.tokens.verdict' | translate }}</th>
-            <th hlmTh class="text-right">
+            <th hlmTh class="hidden text-right md:table-cell">
               {{ 'wallets.fields.movements' | translate }}
             </th>
-            <th hlmTh>
-              <span class="sr-only"
-                >{{ 'wallets.tokens.action' | translate }}</span
-              >
+            <th hlmTh class="lk-sticky-actions text-right">
+              <span class="sr-only">{{ 'common.actions' | translate }}</span>
             </th>
           </tr>
         </thead>
         <tbody hlmTBody>
-          @for (token of group.tokens; track token.tokenKey) {
+          @for (token of tokenPager.visible(); track token.rowKey) {
           <tr hlmTr>
-            <td hlmTd class="max-w-64 whitespace-normal">
-              <span class="font-medium">{{ token.asset }}</span>
+            <td hlmTd class="max-w-0">
+              <span class="font-medium" [lkTruncate]="token.asset"
+                >{{ token.asset }}</span
+              >
               @if (token.tokenName) {
-              <span class="text-muted-foreground block text-xs break-words"
+              <span
+                class="text-muted-foreground text-xs"
+                [lkTruncate]="token.tokenName"
                 >{{ token.tokenName }}</span
               >
               }
             </td>
-            <td hlmTd class="max-w-48">
-              <span
-                class="block truncate font-mono text-xs"
-                [title]="token.tokenKey"
+            <td hlmTd class="text-sm">
+              {{ 'wallets.network.' + token.network | translate }}
+            </td>
+            <td hlmTd class="hidden max-w-0 md:table-cell">
+              <span class="font-mono text-xs" [lkTruncate]="token.tokenKey"
                 >{{ token.tokenKey }}</span
               >
             </td>
-            <td hlmTd class="text-sm whitespace-normal">
+            <td hlmTd class="max-w-0 text-sm">
               @if (token.spam) {
               <span hlmBadge variant="destructive"
                 >{{ 'wallets.tokens.spam' | translate }}</span
@@ -241,46 +251,33 @@
               <span hlmBadge variant="outline"
                 >{{ 'wallets.tokens.ok' | translate }}</span
               >
-              } @for (reason of token.reasons; track reason) {
-              <span class="text-muted-foreground block text-xs"
-                >{{ 'wallets.spamReason.' + reason | translate }}</span
+              } @for (reason of token.reasons; track reason) { @let text =
+              'wallets.spamReason.' + reason | translate;
+              <span class="text-muted-foreground text-xs" [lkTruncate]="text"
+                >{{ text }}</span
               >
               }
             </td>
-            <td hlmTd class="text-right tabular-nums">{{ token.movements }}</td>
-            <td hlmTd class="text-right">
-              @if (token.spam) {
-              <button
-                hlmBtn
-                variant="outline"
-                size="sm"
-                type="button"
-                (click)="service.setToken(group.network, token.tokenKey, true)"
-              >
-                {{ 'wallets.tokens.markNotSpam' | translate }}
-              </button>
-              } @else if (token.overridden) {
-              <button
-                hlmBtn
-                variant="ghost"
-                size="sm"
-                type="button"
-                (click)="service.setToken(group.network, token.tokenKey, false)"
-              >
-                {{ 'wallets.tokens.undo' | translate }}
-              </button>
-              }
+            <td hlmTd class="hidden text-right tabular-nums md:table-cell">
+              {{ token.movements }}
+            </td>
+            <td hlmTd class="lk-sticky-actions text-right">
+              <lk-row-actions
+                [actions]="tokenActions().get(token.rowKey) ?? []"
+                (selected)="tokenAct($event, token)"
+              />
             </td>
           </tr>
           }
         </tbody>
       </table>
     </div>
-    } } @empty {
+    <lk-paginator [pager]="tokenPager" />
+    } @else if (service.tokens.hasValue()) {
     <p class="text-muted-foreground text-sm">
       {{ 'wallets.tokens.none' | translate }}
     </p>
-    } }
+    }
   </section>
   }
 </div>

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -19,7 +20,13 @@ import type {
   NetworkId,
   ProjectWallet,
 } from '../../../../core/api/wallets.types';
+import { lucideTrash2 } from '@ng-icons/lucide';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
+import { Truncate } from '../../../../shared/components/truncate';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 import { NetworkStatus } from '../network-status';
 import { ProjectWalletsService } from './project-wallets.service';
@@ -55,6 +62,8 @@ const EMPTY_DRAFT: BalanceDraft = {
     QuantityPipe,
     EmptyState,
     NetworkStatus,
+    RowActions,
+    Truncate,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmInputImports,
@@ -73,6 +82,17 @@ export class ProjectWallets {
   readonly closed = input(false);
 
   protected readonly toAdd = signal('');
+  /** F6.5: removing a manual balance (none on a closed project, F4.5). */
+  protected readonly balanceActions = computed<readonly RowAction[]>(() => [
+    {
+      id: 'remove',
+      labelKey: 'wallets.balances.remove',
+      icon: lucideTrash2,
+      danger: true,
+      hidden: this.closed(),
+      disabled: this.service.busy() !== null,
+    },
+  ]);
   /** The wallet whose balance form is open, and its values. */
   protected readonly editing = signal<string | null>(null);
   protected readonly draft = signal<BalanceDraft>({ ...EMPTY_DRAFT });

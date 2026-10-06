@@ -4,6 +4,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import type { Wallet } from '../../../../core/api/wallets.types';
+import { Truncate } from '../../../../shared/components/truncate';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 
 /**
@@ -17,6 +18,7 @@ import { QuantityPipe } from '../../../../shared/format/number-format';
     DatePipe,
     TranslatePipe,
     QuantityPipe,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmTableImports,
   ],

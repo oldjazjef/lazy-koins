@@ -120,6 +120,12 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F6.6** Spam-/Scam-Tokens werden erkannt und ausgeblendet; manuell überschreibbar.
 - **F6.7** Benötigte API-Schlüssel (z. B. Etherscan) in den Einstellungen hinterlegen.
 
+Umsetzung (Stand 08.10.2026): automatisch abgerufen werden Bitcoin (Adresse oder xpub/ypub/zpub),
+die EVM-Netzwerke Ethereum, BNB Chain, Polygon, Arbitrum, Optimism, Base (Etherscan V2; was der
+Plan des Schlüssels nicht abdeckt, wird manuell erfasst) und Solana; bei Cardano und Polkadot nur
+die Staking-Erträge (Saldo per 31.12. manuell mit Beleg), Cosmos ganz manuell. Abgerufenes wird
+als abgeleitete Datei im Standardformat Teil des Projekts.
+
 ## 7. Berechnung
 
 - **F7.1** Bestand per 31.12. je Plattform/Wallet und Asset, bewertet in CHF.

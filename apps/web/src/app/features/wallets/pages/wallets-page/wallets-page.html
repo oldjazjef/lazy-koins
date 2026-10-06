@@ -44,58 +44,66 @@
 <lk-empty-state [message]="'wallets.list.noMatch' | translate" />
 } @else {
 <div hlmTableContainer class="lk-panel">
-  <table hlmTable>
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-56" />
+      <col class="hidden w-40 md:table-column" />
+      <col class="hidden w-48 lg:table-column" />
+      <col class="w-14" />
+    </colgroup>
     <thead hlmTHead>
       <tr hlmTr>
         <th hlmTh>{{ 'wallets.fields.label' | translate }}</th>
-        <th hlmTh>{{ 'wallets.fields.address' | translate }}</th>
-        <th hlmTh>{{ 'wallets.fields.networks' | translate }}</th>
         <th hlmTh>{{ 'wallets.fields.usedOn' | translate }}</th>
-        <th hlmTh>{{ 'wallets.fields.fetchedAt' | translate }}</th>
-        <th hlmTh>{{ 'wallets.fields.projects' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'wallets.fields.fetchedAt' | translate }}
+        </th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'wallets.fields.projects' | translate }}
+        </th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
       </tr>
     </thead>
     <tbody hlmTBody>
-      @for (wallet of service.visible(); track wallet.id) {
+      @for (wallet of pager.visible(); track wallet.id) {
       <tr hlmTr class="cursor-pointer" (click)="open(wallet.id)">
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
           <a
             class="font-medium hover:underline"
             [routerLink]="wallet.id"
+            [lkTruncate]="wallet.label"
             (click)="$event.stopPropagation()"
             >{{ wallet.label }}</a
           >
-        </td>
-        <td hlmTd class="max-w-64">
           <span
-            class="block truncate font-mono text-xs"
-            [title]="wallet.address"
+            class="text-muted-foreground font-mono text-xs"
+            [lkTruncate]="wallet.address"
             >{{ wallet.address }}</span
           >
         </td>
-        <td hlmTd class="text-sm whitespace-normal">
-          @for (network of wallet.networks; track network) {
-          <span hlmBadge variant="outline" class="mr-1 mb-1"
-            >{{ 'wallets.network.' + network | translate }}</span
-          >
-          }
-        </td>
-        <td hlmTd class="text-sm whitespace-normal">
+        <td hlmTd class="max-w-0 text-sm">
           @if (wallet.checkedAt === null) {
           <span class="text-muted-foreground"
             >{{ 'wallets.list.notChecked' | translate }}</span
           >
-          } @else { @for (network of used(wallet); track network) {
-          <span class="mr-1"
-            >{{ 'wallets.network.' + network | translate }}</span
-          >
-          } @empty {
-          <span class="text-muted-foreground"
-            >{{ 'wallets.list.nowhere' | translate }}</span
-          >
-          } }
+          } @else {
+          <div class="flex min-w-0 flex-wrap gap-1">
+            @for (network of used(wallet); track network) {
+            <span hlmBadge variant="outline" class="shrink-0"
+              >{{ 'wallets.network.' + network | translate }}</span
+            >
+            } @empty {
+            <span class="text-muted-foreground"
+              >{{ 'wallets.list.nowhere' | translate }}</span
+            >
+            }
+          </div>
+          }
         </td>
-        <td hlmTd class="text-sm tabular-nums">
+        <td hlmTd class="hidden text-sm tabular-nums md:table-cell">
           @if (fetchedAt(wallet); as at) { {{ at | date: 'dd.MM.yyyy HH:mm' }} }
           @else {
           <span class="text-muted-foreground"
@@ -108,21 +116,23 @@
           >
           }
         </td>
-        <td hlmTd class="text-sm whitespace-normal">
-          @for (project of wallet.projects; track project.id) {
-          <a
-            class="mr-2 hover:underline"
-            [routerLink]="['/app/projects', project.id]"
-            (click)="$event.stopPropagation()"
-            >{{ project.name }}</a
-          >
-          } @empty {
+        <td hlmTd class="hidden max-w-0 text-sm lg:table-cell">
+          @let projects = projectNames(wallet); @if (projects) {
+          <span [lkTruncate]="projects">{{ projects }}</span>
+          } @else {
           <span class="text-muted-foreground">–</span>
           }
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions()"
+            (selected)="act($event, wallet)"
+          />
         </td>
       </tr>
       }
     </tbody>
   </table>
 </div>
+<lk-paginator [pager]="pager" />
 } }

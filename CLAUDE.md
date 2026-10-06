@@ -23,8 +23,9 @@ two as a package (F1.3).
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
 > stored per user). **Desktop app** (`apps/desktop`, Electron, see Desktop) and the **release /
-> deploy pipeline** (`deploy/`, `.github/workflows/`) exist. **Not built yet:** bookings persisted
-> as rows, wallet lookups (F6), the dashboard. Update this file whenever the code makes a section concrete or wrong.
+> deploy pipeline** (`deploy/`, `.github/workflows/`) exist, and **wallets** (F6, see Wallets).
+> **Not built yet:** bookings persisted as rows, the dashboard. Update this file whenever the code
+> makes a section concrete or wrong.
 
 ## Stack
 
@@ -391,7 +392,7 @@ result — amounts as decimal strings, every figure with the `recordIds` behind 
 - **Checks** (F8.1) with lights + **open items** with a stable `key`, reason, params and CHF
   impact (F8.2): ledger = statement (exact) + running-balance consistency + negative balances,
   Earn gap, withdrawals ↔ deposits across own accounts (±2 %, −1 h … +7 d, fiat ignored), opening =
-  previous closing, missing prices, unclassified bookings, wallet networks (placeholder, yellow).
+  previous closing, missing prices, unclassified bookings, wallet networks (F6.4, see Wallets).
 - `analysis.ts`: `balancesAt`, `dailyBalances` (one sweep), `flowsBetween`, `dailyPricesChf` —
   the same rules for any date/range (for the dashboard).
 
@@ -473,6 +474,63 @@ divided by `denomination`) and `estv_check` (last check per year, outcome `updat
   no shared activity snackbar yet); Einstellungen › Kurse shows the status table and the button;
   the project's Kurse tab the version in use, "Neuen Stand übernehmen", "ESTV-Kursliste
   aktualisieren" (download + apply) and ambiguous assets; the ESTV label replaces the source.
+
+## Wallets (F6.1–F6.7)
+
+A wallet = a **public** address (or a Bitcoin xpub/ypub/zpub) of one user with label, networks,
+notes (`wallet`); projects include wallets (`project_wallet`). Web: **Wallets** in the main
+navigation (`features/wallets`: list, `/app/wallets/new|:id` with form, network check, fetch, per
+network status `lk-network-status`, tokens with spam verdict), the project tab **Wallets**
+(`components/project-wallets`: include/remove, check, fetch, manual balances with a PDF receipt)
+and **Einstellungen › Wallets & Netzwerke** (keys + URLs, "Testen" per service on the form's
+unsaved values, the precise error: code, HTTP status, provider words).
+
+- **F6.2 secrets** (`libs/engine/src/wallets/secrets.ts`, `detectSecret`): BIP-39 runs of ≥ 12
+  English list words (bundled `@scure/bip39` word list), 64 hex (± `0x`), WIF, `x/y/z/t/u/vprv…`,
+  Solana base58-64-byte keys and 64-byte JSON arrays — in address, label and notes, before anything
+  else. 422 `{ code: 'secretRefused', kind }` — never the input, a word of it or its length; the web
+  clears the fields and explains. `POST /api/wallets/inspect` classifies without storing.
+- **Networks** (`libs/engine/src/wallets/networks.ts`): bitcoin; EVM ethereum (1), bsc (56),
+  polygon (137), arbitrum (42161), optimism (10), base (8453); solana; cardano, polkadot (coverage
+  `income`: rewards fetched, balance by hand); cosmos (`manual`). `classifyAddress` →
+  `networksForAddress` = what F6.4 checks.
+- **Adapters** (`integrations/chains/`, port `wallets/ports/chain-data.port.ts`
+  `ChainDataPort` per family, `ChainDataSourcesPort` bound in `IntegrationsModule`; `ChainSources.fake()`
+  with **`LK_CHAINS_FAKE=1`**, refused in production): `ChainHttpClient` = serial gate per provider,
+  5-min cache of successful answers (keyed per secret hash), JSON with numbers as source text,
+  errors → `ChainDataError(code, detail, status)` with keys **redacted**. Etherscan API V2
+  (`txlist`/`txlistinternal`/`tokentx` paged by start block, activity = probes + nonce; "not on
+  your plan" → `chainNotOnPlan`), Esplora (mempool.space default; xpub/ypub/zpub derived with
+  `@scure/bip32` + `@scure/base`, gap limit 20 on receive + change — BIP84 test vectors in the
+  spec), Solana JSON-RPC (Helius URL from the key, a custom URL or the public endpoint;
+  signatures + `getTransaction jsonParsed`, SOL by pre/post balances, SPL by owner), Koios
+  (rewards by spendable epoch), Subscan (rewards, `x-api-key`), Cosmos LCD (activity + balance).
+  Limits: Etherscan 50 pages × 1000 per list, Solana 3000 tx, Bitcoin 400 addresses — beyond
+  that the fetch says `truncated`.
+- **Gate** (`wallets/application/chain-gate.ts`): only explicit actions (check, fetch, test),
+  never in the calculation; F11.3 (the user's online switch and `RATES_ONLINE`) → 409 `offline`;
+  user URLs pass the AI SSRF check; keys opened only for the call. Settings: Etherscan key stays
+  in `user_settings` (saved through `UpdateSettingsCommand`), Helius/Subscan sealed in
+  `chain_settings` with Esplora/Koios/LCD/Solana-RPC URLs (`GET|PUT /api/settings/wallets`,
+  `POST …/test`).
+- **Derived files** (the pipeline stays unchanged): `wallet_network_data` keeps the last fetch per
+  network (normalised `ChainMovement[]`, decimal strings; a failed fetch keeps the old movements +
+  the error). `WalletDerivedFiles.sync` writes per project `<label>.wallet-buchungen.csv`
+  (`walletBookingRows`: Plattform = label, Konto = network, Referenz = tx hash, row = movement
+  index; deposit/withdrawal/fee/income_staking/income_airdrop/spam, gas in Gebühr, failed tx →
+  `fee`) and `<label>.wallet-bestaende.csv` (F6.5 manual balances = statement holdings for that
+  wallet/network, Beleg = the PDF's name) with origin **`wallet:<walletId>`** (migration
+  `20261008140000_wallets` widens the `project_file.origin` CHECK). Same bytes → same file; new
+  bytes → added, the old one removed (F5.7). Closed projects are never touched; deleting a wallet
+  used by a closed project → 409 `usedByClosedProject`. Synced on fetch, add/remove, label/network
+  change, "kein Spam" and balance changes.
+- **F6.6 spam** (`tokenVerdicts`): scam names ("Claim", URLs), zero-value only, address poisoning
+  (look-alike of a recipient), unverified incoming-only, impersonated symbols; spam rows get asset
+  `SPAM:<sym>` and kind `spam`; "kein Spam" per token in `wallet_token_override`.
+- **F8.1 check** (`calculation/wallet-check.ts`): the input gets `wallets: WalletState[]`
+  (`wallets/domain/wallet-states.ts`, also part of the input hash); red = used but not selected, or
+  selected + used and neither fetched nor a manual balance; yellow = not checked on every network,
+  fetch failed, income-only network without manual balance; grey = no wallets. ENGINE_VERSION 2.
 
 ## Database (SQLite)
 
