@@ -1,42 +1,35 @@
 ---
 name: add-importer
-description: Add or extend an importer in libs/engine for one exchange/wallet export type (Kraken ledger, Binance history, Revolut statement, ...) - detection, parsing to bookings with file+row traceability, synthetic fixtures, tests. Use when a platform or file type is not recognised yet or parses wrongly.
+description: Support a new exchange/wallet export (Kraken ledger, Binance history, Revolut statement, ...) in lazy-koins - by writing a declarative mapping spec (JSON) to the standard format, never per-platform parser code; plus synthetic fixtures and tests. Use when a platform or file type is not recognised yet or reads wrongly.
 ---
 
-# Add an importer to libs/engine
+# Support a platform export (mapping spec, not code)
 
-1. **Look first.** `ls libs/engine/src/importers/` and read the closest existing importer of the
-   same file kind (CSV / XLSX / PDF), plus the contract in `importers/importer.ts` (`Importer`,
-   `SourceFile`, `ImportResult`). Check F5.2 in `ANFORDERUNGEN.md` for the required types. For
-   the shape of a real export, run `pnpm private:inspect` (headers and row counts only) — never
-   open files under `private/`.
+lazy-koins has **no per-platform importer code** (decided 06.10.2026). Every export becomes the
+standard format "lazy-koins Buchungen v1" either directly or through a **mapping spec**
+(`libs/engine/src/mapping/mapping-spec.ts`). Supporting a platform = writing a mapping JSON.
 
-2. **One folder per platform**, one module per export type:
+1. **Look first.** Read `mapping-spec.ts` (every field is described) and an example under
+   `libs/engine/src/mapping/fixtures/*.mapping.json`. For the shape of a real export, run
+   `pnpm private:inspect` (headers and row counts only) — never open files under `private/`.
 
-   ```
-   importers/<platform>/<export-type>.ts       # detect() + parse()
-   importers/<platform>/<export-type>.spec.ts
-   importers/<platform>/fixtures/*.csv          # SYNTHETIC only
-   ```
+2. **Write the spec**: `match.headers` (the fingerprint — enough columns to tell it from the
+   platform's other exports), `source.headerRow`/`sheet` if the header is not found by search,
+   `bookings.timestamp` (format + zone; `timeZoneFromFileName` when the name says it),
+   `quantity` (signed / inOut / side), `fee` (+ `assetColumn`), `kind.rules` (first match wins;
+   anything unmapped stays `unknown` — never drop rows), `assets` (rewrites, aliases), `filters`
+   (e.g. pending duplicates), optional `holdings`. State the source's time zone in `description`.
 
-   Add it to `IMPORTERS` in `importers/registry.ts` so automatic detection (F5.2) tries it; the
-   registry picks the single best match and reports near-ties as `ambiguous`.
+3. **Try it** on a file in the app (mapping editor → "Prüfen") or with
+   `POST /api/projects/:id/files/:fileId/mapping-preview` and `{ "spec": … }`; save it with
+   `POST /api/mappings`. Users can download/upload mappings as `.json`.
 
-3. **detect()** decides from headers/structure alone, returns a confidence 0 … 1 (0 = not mine),
-   and never throws on a foreign file. Two importers must not both claim the same file — add a test for the nearest
-   lookalike.
+4. **Test it** (when it belongs in the repo as an example): a **synthetic** fixture next to the
+   spec in `libs/engine/src/mapping/fixtures/` — copy the _shape_ (headers, quirks, odd rows) of
+   a real export, never values, addresses, txids or account ids from `private/` — and cases in
+   `apply-mapping.spec.ts`: matching (yes + the nearest lookalike no), every kind, fees, a
+   multi-leg trade (`group`), row numbers, 18-decimal quantities kept exactly.
 
-4. **parse()** returns `Booking[]` and the detected period (F5.5, F5.8):
-   - every booking has `sourceFileId` + `row` (1-based, as a spreadsheet shows it; page for PDFs);
-   - quantities and fees as `Decimal` from the **original string** with `parseDecimal`
-     (`money/decimal.ts`) — never through `number` (there is no `fromNumber`);
-   - timestamps as UTC ISO strings; state the source's time zone in the code;
-   - keep the platform's own type/sub-type verbatim next to the mapped kind, so a
-     reclassification (F9.2) can be explained.
-
-5. **Fixtures are synthetic.** Copy the _shape_ (headers, quirks, odd rows) of a real export,
-   never values, addresses, txids or account ids from `private/`.
-
-6. **Test**: detection (yes + lookalike no), every booking kind the format has, fees, a
-   multi-line trade, and the row numbers. Then `pnpm check`, and — if `private/` exists — the
-   golden test (A1).
+5. If the spec language cannot express a format, extend the spec (schema + `applyMapping` +
+   tests, bump nothing unless it breaks old specs) — still no platform-specific branch in code.
+   Then `pnpm check`, and — if `private/` exists — the golden test (A1).

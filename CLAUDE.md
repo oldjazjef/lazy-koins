@@ -9,14 +9,17 @@ Two ways to run it with the **same features** (F1): a multi-user **web app** and
 **desktop app** (macOS + Windows, no login, data stays on the machine). A project moves between the
 two as a package (F1.3).
 
-> **Status (06.10.2026): scaffolded.** Nx monorepo with the NestJS API (`apps/api`: auth, users,
-> the **projects** slice = F4.1/F4.2/F4.5 basics), the Angular web app (`apps/web`: login,
-> project list / form / detail), the pure engine (`libs/engine`: money helpers, `Booking`, the
-> importer contract + an empty registry, the golden test) and the infrastructure — all ported
-> from `surf-lend` (itself on the `etx-working-time-manager` stack). When in doubt about a
-> convention, look at how surf-lend does it. **Not built yet:** `apps/desktop` (Electron), real
-> importers, files, wallets, rates, checks, corrections, exports. Update this file whenever the
-> code makes a section concrete or wrong.
+> **Status (06.10.2026): files + mappings.** Nx monorepo with the NestJS API (`apps/api`: auth,
+> users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8 storage/upload/preview,
+> **mappings** = declarative mapping specs), the Angular web app (`apps/web`: login, project list /
+> form / detail with the files area and the project's mappings), the pure engine (`libs/engine`:
+> money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
+> **mapping spec** and its applier, F5.8 coverage hints, the golden test) and the infrastructure
+> — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
+> **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
+> stored per user). **Not built yet:** `apps/desktop` (Electron), AI-generated mappings (next
+> phase), bookings persisted as rows, PDF text extraction, wallets, rates, checks, corrections,
+> exports. Update this file whenever the code makes a section concrete or wrong.
 
 ## Stack
 
@@ -115,6 +118,10 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
     projects/               #   the reference feature slice — copy its shape
+    files/                  #   F5: upload (raw body), list, download, preview, assignment, templates
+      application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
+    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing
+    common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
 apps/web/                   # Angular app
   public/env.js             #   runtime configuration (window.__LK_ENV__) — see Runtime configuration
@@ -122,12 +129,18 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
-    features/<feature>/     #   login, projects
+    features/<feature>/     #   login, projects, files (components only: embedded in the project detail)
+    shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
     shared/                 #   components/<c>/index.ts, forms/zod-validator
 libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angular/Prisma/network/fs/clock
   src/money/                #   decimal.js helpers: parseDecimal (strings only), roundTo, format*
-  src/bookings/booking.ts   #   Booking + BookingKind (F7.2 income categories)
-  src/importers/            #   importer.ts (Importer, SourceFile) + registry.ts (IMPORTERS, detection)
+  src/bookings/booking.ts   #   Booking, Holding, BookingKind (the closed list of the standard format)
+  src/importers/            #   importer.ts (Importer, SourceFile, ImportResult) + registry.ts + table.ts
+    text/                   #     pure decoding: bytes→text (UTF-8/16, cp1252), CSV, numbers, timestamps
+  src/standard/             #   standard format v1: German columns, zod row validation, template content
+  src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints
+    fixtures/               #     SYNTHETIC exports + example mapping JSON (test data, not product code)
+  src/coverage/             #   coverage per platform/account + F5.8 missing-file hints
   src/golden/golden.spec.ts #   A1 against private/golden.json — skips when absent
 libs/ui/<component>/        # spartan helm components (GENERATED — vendored)
 tools/eslint-rules/         # workspace lint rules (Prisma boundary, no hardcoded text/design values)
@@ -169,6 +182,42 @@ Handler specs run against **port doubles** — real in-memory implementations of
 (`projects/testing/in-memory-project.repository.ts`), not ORM mocks. There is no tenant scoping
 and no `AsyncLocalStorage`: every handler receives the acting user id in its command/query.
 
+## Files and mappings (F5)
+
+The **single input model** is the standard format "lazy-koins Buchungen v1"
+(`libs/engine/src/standard/`): **Buchungen** (Zeitpunkt with zone → UTC, Plattform, Konto, Art from
+the closed `BOOKING_KINDS`, Asset, signed Menge, Gebühr + Gebühr-Asset, Preis CHF/USD, Referenz =
+trade group, Notiz) and **Bestände** (Plattform, Konto, Asset, Menge, Stichtag, prices, Beleg).
+CSV holds one record type (recognised by its header); XLSX has a `Buchungen` and a `Bestände`
+sheet. Templates: `GET /api/standard-format/template.csv?type=bookings|holdings` and
+`template.xlsx` (explanation sheet, examples, number columns as text, a list for `Art`).
+
+Every other export is read through a **mapping spec** (`libs/engine/src/mapping/mapping-spec.ts`,
+zod, every field described so `GET /api/mappings/schema` can go into an LLM prompt): fingerprint
+(`match.headers` + optional file-name regex), header row below a preamble, delimiter/encoding,
+date format + zone (fixed, IANA, or from the file name), sign rules (signed / in-out / side),
+fee + fee asset, kind lookup rules (first match wins, default `unknown` — rows are never dropped),
+asset rewrites + aliases, exclude filters, balances (`rows` or `lastPerAsset` from a running
+balance column). `applyMapping` is pure and deterministic; every record keeps `sourceFileId` (the
+SHA-256), the 1-based row and the raw row (F7.5). Bad rows become `errors` with row + column.
+
+Upload flow (`files/application/commands/upload-project-file.command.ts`): kind from the bytes
+(`%PDF-`, ZIP with `xl/`, text) → SHA-256 → duplicate in the same project = **409** with
+`existing` → standard format, else the owner's mappings by fingerprint (standard wins; among
+mappings: surest, then most recently changed) → status `standard | mapped | needs_mapping`; a PDF
+is `evidence_only`. Same bytes in another project of the owner: stored once, origin
+`from_project:<id>`. Only counts, period and per-account **coverage** are stored on the
+`project_file` row — bookings are not persisted as rows yet. F5.8 hints are computed from that
+coverage (`coverage/missing-files.ts`), no platform knowledge.
+
+Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
+one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
+are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
+
+To support a new platform: write (or later: let the AI write) a mapping JSON, check it with the
+preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
+fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
+
 ## Database (SQLite)
 
 One file, no database server. Prisma talks to it through `@prisma/adapter-better-sqlite3`, a
@@ -191,7 +240,12 @@ prisma/schema.prisma` must still report **no difference**.
   (`scripts/dev/seed.mjs`) must use exactly that format.
 - Ids are `uuid(7)` generated client-side; raw inserts (seed) supply their own.
 - `user.identity_uid` is the Firebase uid, `dev:<email>` or `local:owner`. Deleting a user
-  cascades to their projects (F2.2).
+  cascades to their projects, stored files and mappings (F2.2).
+- **Files** (migration `20261006120000_files_and_mappings`): `stored_file` (BLOB, unique
+  `(owner_id, sha256)`, CHECKs: hex SHA-256, kind, `size = length(bytes)`), `import_mapping`
+  (spec as JSON text, `json_valid` CHECK) and `project_file` (status/origin/count/period CHECKs,
+  `mapped` needs a `mapping_id`). A stored file is deleted with its **last** `project_file` — in the
+  same transaction, also when a project is deleted (`ProjectPrismaRepository.delete`).
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -280,7 +334,9 @@ etx), so no `project.json` has a `test` target, deliberately.
 
 - **Unit**: pure domain functions, handlers against **port doubles**, the module graph
   (`app.module.spec.ts` compiles every provider), page services with `HttpTestingController`,
-  the engine's money helpers and importer registry.
+  the engine (money, text decoding, standard format, mapping specs applied to the synthetic
+  Kraken/Binance/Bitfinex/Revolut fixtures, coverage). `files.handlers.spec.ts` runs the real
+  engine + exceljs against in-memory ports.
 - **Integration** (`*.integration.spec.ts`, excluded from `pnpm test`): the Prisma adapters
   against a real SQLite file with the real migrations — owner listing, empty updates, cascade,
   CHECK constraints. `scripts/dev/with-test-db.mjs` points them at `tmp/lazykoins-test.db`
@@ -421,6 +477,19 @@ A1). It is git-ignored and must stay that way.
 - The Nx daemon is disabled (`useDaemonProcess: false`) — its cold start costs minutes on Windows.
 
 ## Environment gotchas
+
+- **The engine is consumed by path alias**: webpack resolves `@lazykoins/engine` through
+  tsconfig paths; the API's Vitest configs alias it explicitly (`apps/api/vitest*.config.ts`).
+- **Uploads are raw bodies**: `RawBodyMiddleware` is bound to exactly `POST
+projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parser's 413 into a
+  Nest exception. The web sends `application/octet-stream` with `?name=`.
+- Angular's fetch backend (`withFetch()`) emits **no upload progress** events; the files area
+  shows per-file state and the batch's progress instead.
+- `hlmBtn` styles `button`/`a` only — a `<label hlmBtn>` renders unstyled; use a button that
+  clicks a hidden `<input type="file">`.
+- `HttpTestingController.match()` **removes** what it matches; jsdom's `File` has no `text()`.
+- DatePipe formats like `'dd.MM.yyyy'` look like i18n keys; `i18n-keys.spec.ts` skips them.
+- Keep `\uFEFF` and other invisible characters as escapes in source (`no-irregular-whitespace`).
 
 - `better-sqlite3` is a native module: it is in `allowBuilds` (pnpm-workspace.yaml), and the API
   image installs a C++ toolchain in the build stage and `libstdc++` at runtime for it.
