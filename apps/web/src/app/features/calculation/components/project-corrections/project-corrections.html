@@ -1,0 +1,338 @@
+@if (!closed()) {
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'corrections.newTitle' | translate }}</h3>
+    <p hlmCardDescription>{{ 'corrections.newHint' | translate }}</p>
+  </div>
+  <div hlmCardContent>
+    <form
+      class="grid gap-4 sm:grid-cols-2"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+    >
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-type"
+          >{{ 'corrections.fields.type' | translate }}</label
+        >
+        <select hlmInput id="corr-type" formControlName="type">
+          @for (type of types; track type) {
+          <option [value]="type">
+            {{ 'corrections.type.' + type | translate }}
+          </option>
+          }
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-reason"
+          >{{ 'corrections.fields.reason' | translate }}</label
+        >
+        <input hlmInput id="corr-reason" type="text" formControlName="reason" />
+      </div>
+
+      @switch (form.controls.type.value) { @case ('price_override') {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-asset"
+          >{{ 'corrections.fields.asset' | translate }}</label
+        >
+        <input hlmInput id="corr-asset" type="text" formControlName="asset" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-date"
+          >{{ 'corrections.fields.date' | translate }}</label
+        >
+        <input hlmInput id="corr-date" type="date" formControlName="date" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-price"
+          >{{ 'corrections.fields.priceChf' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-price"
+          type="text"
+          formControlName="priceChf"
+        />
+      </div>
+      } @case ('reclassify') {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-booking"
+          >{{ 'corrections.fields.bookingId' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-booking"
+          type="text"
+          formControlName="bookingId"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-kind"
+          >{{ 'corrections.fields.kind' | translate }}</label
+        >
+        <select hlmInput id="corr-kind" formControlName="kind">
+          @for (kind of kinds; track kind) {
+          <option [value]="kind">
+            {{ 'bookings.kind.' + kind | translate }}
+          </option>
+          }
+        </select>
+      </div>
+      } @case ('manual_booking') {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-platform"
+          >{{ 'corrections.fields.platform' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-platform"
+          type="text"
+          formControlName="platform"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-account"
+          >{{ 'corrections.fields.account' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-account"
+          type="text"
+          formControlName="accountId"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-ts"
+          >{{ 'corrections.fields.timestamp' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-ts"
+          type="datetime-local"
+          formControlName="timestamp"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-kind2"
+          >{{ 'corrections.fields.kind' | translate }}</label
+        >
+        <select hlmInput id="corr-kind2" formControlName="kind">
+          @for (kind of kinds; track kind) {
+          <option [value]="kind">
+            {{ 'bookings.kind.' + kind | translate }}
+          </option>
+          }
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-asset2"
+          >{{ 'corrections.fields.asset' | translate }}</label
+        >
+        <input hlmInput id="corr-asset2" type="text" formControlName="asset" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-qty"
+          >{{ 'corrections.fields.quantity' | translate }}</label
+        >
+        <input hlmInput id="corr-qty" type="text" formControlName="quantity" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-fee"
+          >{{ 'corrections.fields.fee' | translate }}</label
+        >
+        <input hlmInput id="corr-fee" type="text" formControlName="fee" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-price2"
+          >{{ 'corrections.fields.priceChfOptional' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-price2"
+          type="text"
+          formControlName="priceChf"
+        />
+      </div>
+      } @case ('manual_holding') {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-platform3"
+          >{{ 'corrections.fields.platform' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-platform3"
+          type="text"
+          formControlName="platform"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-account3"
+          >{{ 'corrections.fields.account' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-account3"
+          type="text"
+          formControlName="accountId"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-asset3"
+          >{{ 'corrections.fields.asset' | translate }}</label
+        >
+        <input hlmInput id="corr-asset3" type="text" formControlName="asset" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-qty3"
+          >{{ 'corrections.fields.quantity' | translate }}</label
+        >
+        <input hlmInput id="corr-qty3" type="text" formControlName="quantity" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-date3"
+          >{{ 'corrections.fields.asOf' | translate }}</label
+        >
+        <input hlmInput id="corr-date3" type="date" formControlName="date" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="corr-price3"
+          >{{ 'corrections.fields.priceChfOptional' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-price3"
+          type="text"
+          formControlName="priceChf"
+        />
+      </div>
+      <div class="flex flex-col gap-2 sm:col-span-2">
+        <label hlmLabel for="corr-evidence"
+          >{{ 'corrections.fields.evidence' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="corr-evidence"
+          type="text"
+          formControlName="evidence"
+        />
+      </div>
+      } } @if (error(); as key) {
+      <p class="text-destructive text-sm sm:col-span-2" role="alert">
+        {{ key | translate }}
+      </p>
+      }
+      <div class="flex flex-wrap justify-end gap-2 sm:col-span-2">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          (click)="newOf(form.controls.type.value)"
+        >
+          {{ 'corrections.clear' | translate }}
+        </button>
+        <button hlmBtn type="submit" [disabled]="service.isBusy()">
+          {{ 'corrections.submit' | translate }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+} @else {
+<p class="text-muted-foreground mb-4 text-sm">
+  {{ 'corrections.closedHint' | translate }}
+</p>
+}
+
+<section class="flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'corrections.historyTitle' | translate }}</h3>
+  @if (service.corrections.hasValue()) { @if (service.corrections.value().length
+  === 0) {
+  <lk-empty-state [message]="'corrections.empty' | translate" />
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'corrections.fields.createdAt' | translate }}</th>
+          <th hlmTh>{{ 'corrections.fields.type' | translate }}</th>
+          <th hlmTh>{{ 'corrections.fields.reason' | translate }}</th>
+          <th hlmTh>{{ 'corrections.fields.before' | translate }}</th>
+          <th hlmTh>{{ 'corrections.fields.after' | translate }}</th>
+          <th hlmTh>{{ 'corrections.fields.status' | translate }}</th>
+          <th hlmTh class="text-right">
+            <span class="sr-only"
+              >{{ 'corrections.fields.actions' | translate }}</span
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (correction of service.corrections.value(); track correction.id) {
+        <tr hlmTr [class.text-muted-foreground]="correction.undoneAt">
+          <td hlmTd class="tabular-nums whitespace-nowrap">
+            {{ correction.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+          </td>
+          <td hlmTd>{{ 'corrections.type.' + correction.type | translate }}</td>
+          <td hlmTd>{{ correction.reason }}</td>
+          <td hlmTd class="text-xs">
+            @for (entry of entries(correction.applied?.before); track entry[0])
+            {
+            <span class="block"
+              ><span class="text-muted-foreground">{{ entry[0] }}</span> {{
+              entry[1] }}</span
+            >
+            } @empty { – }
+          </td>
+          <td hlmTd class="text-xs">
+            @if (correction.applied) { @for (entry of
+            entries(correction.applied.after); track entry[0]) {
+            <span class="block"
+              ><span class="text-muted-foreground">{{ entry[0] }}</span> {{
+              entry[1] }}</span
+            >
+            } } @else {
+            <code class="break-all">{{ correction.data | json }}</code>
+            }
+          </td>
+          <td hlmTd>
+            @if (correction.undoneAt) {
+            <span hlmBadge variant="outline"
+              >{{ 'corrections.status.undone' | translate }}</span
+            >
+            } @else if (correction.applied?.status === 'targetMissing') {
+            <span hlmBadge variant="destructive"
+              >{{ 'corrections.status.targetMissing' | translate }}</span
+            >
+            } @else if (correction.applied) {
+            <span hlmBadge variant="secondary"
+              >{{ 'corrections.status.applied' | translate }}</span
+            >
+            } @else {
+            <span hlmBadge variant="outline"
+              >{{ 'corrections.status.pending' | translate }}</span
+            >
+            }
+          </td>
+          <td hlmTd class="text-right">
+            @if (!closed()) {
+            <button
+              hlmBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              [disabled]="service.isBusy()"
+              (click)="undo(correction, !correction.undoneAt)"
+            >
+              {{ (correction.undoneAt ? 'corrections.redo' : 'corrections.undo')
+              | translate }}
+            </button>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } } @else {
+  <hlm-skeleton class="h-32 w-full" />
+  }
+</section>

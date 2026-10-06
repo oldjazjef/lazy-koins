@@ -106,17 +106,15 @@
         <dt>{{ 'projects.fields.updatedAt' | translate }}</dt>
         <dd>{{ project.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
       </dl>
-      <p class="text-muted-foreground mt-6 text-sm">
-        {{ 'projects.detail.comingSoon' | translate }}
-      </p>
     </div>
   </section>
 </div>
 
-<lk-project-files
-  class="mt-6 flex flex-col gap-6"
+<lk-project-workspace
+  class="mt-6 block"
   [projectId]="project.id"
   [closed]="service.isClosed()"
+  [taxYear]="project.taxYear"
 />
 
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">

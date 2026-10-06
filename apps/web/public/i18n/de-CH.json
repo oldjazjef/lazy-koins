@@ -9,7 +9,9 @@
     "back": "Zurück",
     "cancel": "Abbrechen",
     "retry": "Erneut versuchen",
-    "save": "Speichern"
+    "save": "Speichern",
+    "close": "Schliessen",
+    "chf": "CHF"
   },
   "countries": {
     "CH": "Schweiz"
@@ -18,7 +20,8 @@
     "label": "Hauptnavigation",
     "projects": "Projekte",
     "signOut": "Abmelden",
-    "toggleTheme": "Hell/Dunkel umschalten"
+    "toggleTheme": "Hell/Dunkel umschalten",
+    "settings": "Einstellungen"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -54,7 +57,9 @@
       "status": "Status",
       "notes": "Notizen",
       "createdAt": "Erstellt",
-      "updatedAt": "Zuletzt geändert"
+      "updatedAt": "Zuletzt geändert",
+      "wealth": "Vermögen CHF",
+      "income": "Ertrag CHF"
     },
     "list": {
       "title": "Projekte",
@@ -82,7 +87,6 @@
       "editTitle": "Angaben",
       "factsTitle": "Übersicht",
       "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",
-      "comingSoon": "Buchungen, Prüfungen und Auszüge folgen hier.",
       "saved": "Gespeichert",
       "saveFailed": "Änderung konnte nicht gespeichert werden",
       "reopen": "Wieder öffnen",
@@ -291,6 +295,372 @@
       "holdings": "Bestände",
       "errors": "Zeilen mit Fehlern",
       "errorAt": "Zeile {{row}}, Spalte {{column}}:"
+    }
+  },
+  "workspace": {
+    "label": "Bereiche des Projekts",
+    "tabs": {
+      "files": "Dateien",
+      "rates": "Kurse",
+      "result": "Ergebnis",
+      "checks": "Prüfungen",
+      "corrections": "Korrekturen",
+      "exports": "Exporte"
+    }
+  },
+  "calculation": {
+    "calculated": "Neu berechnet",
+    "calculateFailed": "Berechnung fehlgeschlagen"
+  },
+  "records": {
+    "title": "Zugrunde liegende Buchungen",
+    "count": "{{shown}} von {{total}} Einträgen",
+    "file": "Datei",
+    "row": "Zeile",
+    "at": "Zeitpunkt (UTC)",
+    "kind": "Art",
+    "asset": "Plattform · Asset",
+    "quantity": "Menge",
+    "fee": "Gebühr",
+    "raw": "Originalzeile",
+    "correction": "Korrektur (manuell)",
+    "unknownFile": "Datei nicht mehr im Projekt",
+    "holding": "Bestand"
+  },
+  "result": {
+    "calculatedAt": "Berechnet am {{date}}",
+    "stale": "Daten geändert – neu berechnen",
+    "calculate": "Neu berechnen",
+    "wealth": "Steuerwert per 31.12.{{year}}",
+    "income": "Ertrag {{year}}",
+    "missingPrices": "{{count}} Werte ohne Kurs – siehe Prüfungen und Kurse.",
+    "missingShort": "{{count}} ohne Kurs",
+    "wealthTitle": "Vermögen je Plattform/Wallet",
+    "incomeTitle": "Ertrag je Kategorie",
+    "earnGapTitle": "Earn-Lücke (Differenzmethode)",
+    "earnGapHint": "Lücke = (Bestand Ende − Bestand Anfang) − Buchungen des Jahres ohne interne Umbuchungen. Nur positive Lücken zählen als Ertrag (Jahresmittelkurs).",
+    "oneOffTitle": "Einmalereignisse (Hardforks, Airdrops, Verluste)",
+    "noPositions": "Keine Positionen per 31.12.",
+    "notCalculated": "Noch nicht berechnet. Lade Dateien hoch, aktualisiere die Kurse und berechne.",
+    "loadFailed": "Das Ergebnis konnte nicht geladen werden.",
+    "recordsFailed": "Buchungen konnten nicht geladen werden",
+    "estvMissing": "ESTV-Kurs nachtragen",
+    "total": "Total",
+    "fields": {
+      "platform": "Plattform/Wallet",
+      "positions": "Positionen",
+      "valueChf": "Wert CHF",
+      "asset": "Asset",
+      "account": "Konto",
+      "quantity": "Menge",
+      "priceChf": "Kurs CHF",
+      "source": "Quelle",
+      "actions": "Aktionen",
+      "category": "Kategorie",
+      "bookings": "Buchungen",
+      "date": "Datum",
+      "netQuantity": "Menge netto",
+      "grossChf": "Brutto CHF",
+      "start": "Anfang",
+      "end": "Ende",
+      "booked": "Gebucht",
+      "gap": "Lücke",
+      "event": "Ereignis"
+    },
+    "actions": {
+      "overridePrice": "Kurs überschreiben",
+      "setQuantity": "Menge erfassen",
+      "reclassify": "Umklassieren"
+    },
+    "status": {
+      "ok": "ok",
+      "missingPrice": "Kurs fehlt",
+      "spam": "Spam (ausgeblendet)",
+      "negative": "Negativ"
+    },
+    "gapStatus": {
+      "negative": "negativ – prüfen",
+      "missingPrice": "Kurs fehlt"
+    },
+    "quantitySource": {
+      "statement": "Kontoauszug",
+      "ledger": "Ledger",
+      "manual": "Manuell"
+    },
+    "priceOrigin": {
+      "home": "CHF",
+      "override": "Überschrieben",
+      "estv": "ESTV-Kursliste",
+      "recordChf": "Kurs CHF laut Beleg",
+      "recordUsd": "Kurs USD laut Beleg",
+      "recordValueUsd": "USD-Wert der Plattform",
+      "pegged": "Stablecoin = 1 USD",
+      "fx": "Devisenkurs",
+      "tableChf": "Tageskurs CHF",
+      "tableUsd": "Tagesschluss USD"
+    },
+    "category": {
+      "interest": "Zinsen / Earn",
+      "staking": "Staking",
+      "airdrop": "Airdrop",
+      "launchpool": "Launchpool",
+      "hardfork": "Hardfork",
+      "earn_gap": "Earn-Lücke"
+    }
+  },
+  "checks": {
+    "title": "Prüfungen",
+    "items": "{{count}} offene Punkte",
+    "openItems": "Offene Punkte ({{count}} nicht erledigt)",
+    "noItems": "Keine offenen Punkte.",
+    "loadFailed": "Die Prüfungen konnten nicht geladen werden.",
+    "saveFailed": "Offener Punkt konnte nicht gespeichert werden",
+    "showRecords": "Buchungen anzeigen",
+    "fields": {
+      "done": "Erledigt",
+      "item": "Punkt",
+      "impact": "Auswirkung CHF (geschätzt)",
+      "note": "Notiz"
+    },
+    "light": {
+      "green": "grün",
+      "yellow": "gelb",
+      "red": "rot",
+      "grey": "nicht anwendbar"
+    },
+    "kind": {
+      "ledgerVsStatement": "Saldo laut Ledger = Saldo laut Kontoauszug",
+      "earnGap": "Fehlende Earn-Erträge ausgewiesen",
+      "unmatchedWithdrawals": "Auszahlungen ohne Gegenbuchung",
+      "unmatchedDeposits": "Zuflüsse ohne Gegenbuchung (möglicher Ertrag)",
+      "openingBalance": "Anfangsbestand = Endbestand des Vorjahres",
+      "missingPrices": "Positionen ohne Kurs",
+      "unclassified": "Nicht zugeordnete Buchungen",
+      "walletNetworks": "Wallets auf allen Netzwerken geprüft"
+    },
+    "reason": {
+      "balanceDiffers": "Ledger {{actual}} ≠ Kontoauszug {{expected}} (Differenz {{difference}})",
+      "ledgerBalanceDiffers": "Summe der Buchungen {{actual}} ≠ Saldo-Spalte {{expected}}",
+      "negativeBalance": "Negativer Bestand {{quantity}} – Buchungen fehlen",
+      "negativeEarnGap": "Negative Earn-Lücke {{gap}} – Bestand oder Historie prüfen",
+      "earnGapWithoutPrice": "Earn-Lücke {{gap}} ohne Jahresmittelkurs",
+      "withdrawalWithoutDeposit": "Auszahlung {{quantity}} am {{date}} ohne Eingang auf einem eigenen Konto",
+      "depositWithoutWithdrawal": "Zufluss {{quantity}} am {{date}} ohne Herkunft – möglicher Ertrag",
+      "openingDiffers": "Anfangsbestand {{actual}} ≠ Endbestand Vorjahr {{expected}}",
+      "positionWithoutPrice": "Kein Kurs per 31.12. – ESTV-Kurs nachtragen oder Kurs überschreiben",
+      "incomeWithoutPrice": "{{count}} Ertragsbuchungen ohne Kurs",
+      "oneOffWithoutPrice": "Einmalereignis ohne Kurs – ESTV-Kurs nachtragen",
+      "unclassifiedBookings": "{{count}} Buchungen „{{rawType}}“ ohne Zuordnung – Mapping oder Korrektur",
+      "walletNetworksNotAvailable": "Die automatische Prüfung der Wallets auf allen Netzwerken ist noch nicht verfügbar – bitte manuell prüfen."
+    },
+    "comparison": {
+      "title": "Vergleich mit {{year}}",
+      "wealth": "Vermögen (Vorjahr → Veränderung)",
+      "income": "Ertrag (Vorjahr → Veränderung)",
+      "new": "Neue Positionen",
+      "removed": "Weggefallene Positionen",
+      "hint": "Aus dem letzten berechneten Projekt des Vorjahres."
+    }
+  },
+  "corrections": {
+    "newTitle": "Neue Korrektur",
+    "newHint": "Korrekturen ändern keine Originaldaten; sie werden bei jeder Berechnung angewendet und sind rückgängig machbar.",
+    "submit": "Korrektur erfassen",
+    "clear": "Leeren",
+    "closedHint": "Das Projekt ist abgeschlossen – keine neuen Korrekturen.",
+    "historyTitle": "Verlauf",
+    "empty": "Noch keine Korrekturen.",
+    "undo": "Rückgängig",
+    "redo": "Wieder anwenden",
+    "created": "Korrektur erfasst",
+    "createFailed": "Korrektur konnte nicht erfasst werden",
+    "changed": "Korrektur geändert",
+    "changeFailed": "Korrektur konnte nicht geändert werden",
+    "type": {
+      "price_override": "Kurs überschreiben",
+      "reclassify": "Buchung umklassieren",
+      "manual_booking": "Manuelle Buchung",
+      "manual_holding": "Manueller Bestand"
+    },
+    "status": {
+      "applied": "angewendet",
+      "undone": "rückgängig gemacht",
+      "targetMissing": "Buchung nicht gefunden",
+      "pending": "noch nicht berechnet"
+    },
+    "fields": {
+      "type": "Art der Korrektur",
+      "reason": "Begründung",
+      "asset": "Asset",
+      "date": "Datum",
+      "priceChf": "Kurs CHF",
+      "priceChfOptional": "Kurs CHF (optional)",
+      "bookingId": "Buchung (Kennung)",
+      "kind": "Neue Art",
+      "platform": "Plattform/Wallet",
+      "account": "Konto",
+      "timestamp": "Zeitpunkt (UTC)",
+      "quantity": "Menge (mit Vorzeichen)",
+      "fee": "Gebühr (optional)",
+      "asOf": "Stichtag",
+      "evidence": "Beleg",
+      "createdAt": "Erfasst",
+      "before": "Vorher",
+      "after": "Nachher",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "errors": {
+      "required": "Bitte alle Pflichtfelder ausfüllen.",
+      "reason": "Bitte eine Begründung angeben.",
+      "reasonTooLong": "Die Begründung ist zu lang.",
+      "decimal": "Bitte eine Zahl mit Punkt als Dezimaltrennzeichen eingeben.",
+      "positive": "Bitte eine positive Zahl mit Punkt als Dezimaltrennzeichen eingeben.",
+      "date": "Bitte ein Datum wählen.",
+      "kind": "Bitte eine Art wählen.",
+      "tooLong": "Der Text ist zu lang."
+    }
+  },
+  "rates": {
+    "online": "Kursabfragen aus dem Internet: ein",
+    "offline": "Kursabfragen aus dem Internet: aus (Einstellungen)",
+    "refresh": "Kurse aktualisieren",
+    "refreshAll": "Alle neu abrufen",
+    "estvImport": "ESTV-Kursliste importieren",
+    "hint": "Kurse werden pro Projekt gespeichert (EZB-Devisen, Binance-Tagesschluss, CoinGecko mit Schlüssel). Die Berechnung liest nur gespeicherte Kurse; Überschreibungen und ESTV-Werte haben Vorrang. Kursliste: XML von ictax.admin.ch oder CSV asset;kurs_chf;datum.",
+    "summary": "Abgerufen: {{fx}} Devisenkurse",
+    "refreshed": "Kurse aktualisiert",
+    "refreshFailed": "Kurse konnten nicht aktualisiert werden",
+    "overridden": "Kurs gespeichert",
+    "overrideFailed": "Kurs konnte nicht gespeichert werden",
+    "removed": "Kurs entfernt",
+    "removeFailed": "Kurs konnte nicht entfernt werden",
+    "estvFailed": "Kursliste konnte nicht importiert werden",
+    "estvImported": "{{count}} ESTV-Kurse importiert",
+    "loadFailed": "Die Kurse konnten nicht geladen werden.",
+    "overrideTitle": "Kurs überschreiben",
+    "overrideHint": "Z. B. USD/CHF per 31.12. laut ESTV oder der Kurs eines Assets. Gilt vor allen anderen Quellen.",
+    "override": "Überschreiben",
+    "remove": "Entfernen",
+    "manualTitle": "Überschriebene Kurse und ESTV-Werte",
+    "seriesTitle": "Gespeicherte Kursreihen",
+    "search": "Asset suchen",
+    "empty": "Noch keine Kurse gespeichert.",
+    "noYearEnd": "kein Kurs",
+    "fields": {
+      "kind": "Art",
+      "asset": "Asset / Währung",
+      "currency": "In",
+      "date": "Datum",
+      "value": "Wert",
+      "source": "Quelle",
+      "actions": "Aktionen",
+      "points": "Tage",
+      "range": "Zeitraum",
+      "yearEnd": "Kurs 31.12.{{year}}",
+      "fetchedAt": "Abgerufen"
+    },
+    "kind": {
+      "price": "Kurs",
+      "fx": "Devisenkurs"
+    },
+    "currency": {
+      "CHF": "CHF",
+      "USD": "USD"
+    },
+    "source": {
+      "manual": "Überschrieben",
+      "estv": "ESTV-Kursliste",
+      "binance": "Binance",
+      "coingecko": "CoinGecko",
+      "ecb": "EZB"
+    },
+    "status": {
+      "fetched": "abgerufen",
+      "cached": "schon gespeichert",
+      "notFound": "nicht gefunden",
+      "failed": "Fehler"
+    },
+    "errors": {
+      "asset": "Bitte ein Asset-Kürzel eingeben.",
+      "date": "Bitte ein Datum wählen.",
+      "value": "Bitte einen positiven Wert mit Punkt als Dezimaltrennzeichen eingeben."
+    }
+  },
+  "exports": {
+    "createTitle": "Auszug erstellen",
+    "createHint": "Aus dem aktuellen Ergebnis (bei geänderten Daten wird zuerst neu berechnet). Jeder Auszug wird mit Datum gespeichert.",
+    "listTitle": "Erstellte Auszüge",
+    "empty": "Noch keine Auszüge erstellt.",
+    "loadFailed": "Die Auszüge konnten nicht geladen werden.",
+    "created": "Auszug erstellt",
+    "createFailed": "Auszug konnte nicht erstellt werden",
+    "download": "Herunterladen",
+    "downloadFailed": "Download fehlgeschlagen",
+    "kind": {
+      "simple_pdf": "Einfach (PDF)",
+      "simple_xlsx": "Einfach (Excel)",
+      "detailed_pdf": "Ausführlich (PDF)",
+      "detailed_xlsx": "Ausführlich (Excel)"
+    },
+    "fields": {
+      "createdAt": "Erstellt",
+      "kind": "Auszug",
+      "wealth": "Vermögen CHF",
+      "income": "Ertrag CHF",
+      "actions": "Aktionen"
+    },
+    "mail": {
+      "open": "Mail an Treuhänder",
+      "title": "Mail-Entwurf an den Treuhänder",
+      "hint": "Text zum Kopieren – es wird nichts gesendet. Name und Adresse kommen aus den Einstellungen.",
+      "to": "An",
+      "subject": "Betreff",
+      "body": "Text",
+      "copy": "Kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "copyFailed": "Kopieren fehlgeschlagen",
+      "failed": "Mail-Entwurf nicht verfügbar – zuerst berechnen"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "Angaben für die Auszüge, Format und Kursabfragen.",
+    "personalTitle": "Persönliche Angaben",
+    "personalHint": "Erscheinen im Kopf der Auszüge und im Mail-Entwurf.",
+    "formatTitle": "Sprache und Format",
+    "ratesTitle": "Kurse und API-Schlüssel",
+    "ratesHint": "Schlüssel werden verschlüsselt gespeichert und nie wieder angezeigt (nur die letzten Zeichen).",
+    "keysUnavailable": "Schlüssel können auf diesem Server nicht gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
+    "noCanton": "Kein Kanton",
+    "noKey": "Kein Schlüssel gespeichert",
+    "removeKey": "Schlüssel entfernen",
+    "saved": "Einstellungen gespeichert",
+    "saveFailed": "Einstellungen konnten nicht gespeichert werden",
+    "fields": {
+      "displayName": "Name",
+      "canton": "Wohnkanton",
+      "advisorName": "Treuhänder",
+      "advisorEmail": "E-Mail Treuhänder",
+      "language": "Sprache",
+      "numberFormat": "Zahlenformat",
+      "dateFormat": "Datumsformat",
+      "onlineRates": "Kursabfragen aus dem Internet erlauben",
+      "coingeckoKey": "CoinGecko API-Schlüssel",
+      "etherscanKey": "Etherscan API-Schlüssel"
+    },
+    "languages": {
+      "deCH": "Deutsch (Schweiz)"
+    },
+    "numberFormats": {
+      "deCH": "1’234.56"
+    },
+    "dateFormats": {
+      "ddMMyyyy": "31.12.2025"
+    },
+    "errors": {
+      "tooLong": "Der Text ist zu lang.",
+      "email": "Bitte eine gültige E-Mail-Adresse eingeben."
     }
   }
 }

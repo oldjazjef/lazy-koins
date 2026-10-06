@@ -1,0 +1,183 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'settings.subtitle' | translate"
+/>
+
+@if (service.settings.hasValue()) { @let settings = service.settings.value();
+<form
+  class="flex max-w-3xl flex-col gap-6"
+  [formGroup]="form"
+  (ngSubmit)="submit()"
+>
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'settings.personalTitle' | translate }}</h2>
+      <p hlmCardDescription>{{ 'settings.personalHint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="grid gap-4 sm:grid-cols-2">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-name"
+          >{{ 'settings.fields.displayName' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="set-name"
+          type="text"
+          formControlName="displayName"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-canton"
+          >{{ 'settings.fields.canton' | translate }}</label
+        >
+        <select hlmInput id="set-canton" formControlName="canton">
+          <option value="">{{ 'settings.noCanton' | translate }}</option>
+          @for (canton of cantons; track canton) {
+          <option [value]="canton">{{ canton }}</option>
+          }
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-advisor"
+          >{{ 'settings.fields.advisorName' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="set-advisor"
+          type="text"
+          formControlName="advisorName"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-advisor-mail"
+          >{{ 'settings.fields.advisorEmail' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="set-advisor-mail"
+          type="email"
+          formControlName="advisorEmail"
+        />
+        @if (form.controls.advisorEmail.touched &&
+        form.controls.advisorEmail.errors?.['zod']; as error) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'settings.formatTitle' | translate }}</h2>
+    </div>
+    <div hlmCardContent class="grid gap-4 sm:grid-cols-3">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-language"
+          >{{ 'settings.fields.language' | translate }}</label
+        >
+        <select hlmInput id="set-language" disabled>
+          <option>{{ 'settings.languages.deCH' | translate }}</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-number"
+          >{{ 'settings.fields.numberFormat' | translate }}</label
+        >
+        <select hlmInput id="set-number" disabled>
+          <option>{{ 'settings.numberFormats.deCH' | translate }}</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-date"
+          >{{ 'settings.fields.dateFormat' | translate }}</label
+        >
+        <select hlmInput id="set-date" disabled>
+          <option>{{ 'settings.dateFormats.ddMMyyyy' | translate }}</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'settings.ratesTitle' | translate }}</h2>
+      <p hlmCardDescription>{{ 'settings.ratesHint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      <label class="flex items-center gap-2 text-sm" for="set-online">
+        <input id="set-online" type="checkbox" formControlName="onlineRates" />
+        {{ 'settings.fields.onlineRates' | translate }}
+      </label>
+      @if (!settings.keyStorageAvailable) {
+      <p class="text-destructive text-sm" role="note">
+        {{ 'settings.keysUnavailable' | translate }}
+      </p>
+      }
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="set-cg"
+            >{{ 'settings.fields.coingeckoKey' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="set-cg"
+            type="password"
+            autocomplete="off"
+            formControlName="coingeckoKey"
+            [placeholder]="settings.keys.coingecko ?? ('settings.noKey' | translate)"
+          />
+          @if (settings.keys.coingecko) {
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            class="self-start"
+            (click)="remove('coingecko')"
+          >
+            {{ 'settings.removeKey' | translate }}
+          </button>
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="set-es"
+            >{{ 'settings.fields.etherscanKey' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="set-es"
+            type="password"
+            autocomplete="off"
+            formControlName="etherscanKey"
+            [placeholder]="settings.keys.etherscan ?? ('settings.noKey' | translate)"
+          />
+          @if (settings.keys.etherscan) {
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            class="self-start"
+            (click)="remove('etherscan')"
+          >
+            {{ 'settings.removeKey' | translate }}
+          </button>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="flex justify-end">
+    <button
+      hlmBtn
+      type="submit"
+      [disabled]="service.isSaving() || form.pristine"
+    >
+      {{ 'common.save' | translate }}
+    </button>
+  </div>
+</form>
+} @else {
+<hlm-skeleton class="h-96 w-full max-w-3xl" />
+}

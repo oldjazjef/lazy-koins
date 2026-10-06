@@ -7,6 +7,7 @@ import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { ChfPipe } from '../../../../shared/format/number-format';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { ProjectStatusBadge } from '../../components/project-status-badge';
 import { ProjectsPageService } from './projects-page.service';
@@ -19,6 +20,7 @@ import { ProjectsPageService } from './projects-page.service';
     TranslatePipe,
     PageHeader,
     EmptyState,
+    ChfPipe,
     ProjectStatusBadge,
     ...HlmButtonImports,
     ...HlmSkeletonImports,

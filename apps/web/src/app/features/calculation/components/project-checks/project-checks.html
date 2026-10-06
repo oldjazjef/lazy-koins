@@ -1,0 +1,145 @@
+@if (view(); as view) { @if (view.snapshot) {
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'checks.title' | translate }}</h3>
+  <ul class="lk-panel divide-y">
+    @for (check of view.checks; track check.kind) {
+    <li class="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+      <span
+        [class]="'lk-light lk-light-' + check.light"
+        role="img"
+        [attr.aria-label]="'checks.light.' + check.light | translate"
+      ></span>
+      <span class="flex-1">{{ 'checks.kind.' + check.kind | translate }}</span>
+      <span class="text-muted-foreground"
+        >{{ 'checks.items' | translate: { count: check.items } }}</span
+      >
+      <span class="w-32 text-right tabular-nums"
+        >{{ 'common.chf' | translate }} {{ check.impactChf | lkChf }}</span
+      >
+    </li>
+    }
+  </ul>
+</section>
+
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">
+    {{ 'checks.openItems' | translate: { count: openCount() } }}
+  </h3>
+  @if (view.items.length === 0) {
+  <lk-empty-state [message]="'checks.noItems' | translate" />
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'checks.fields.done' | translate }}</th>
+          <th hlmTh>{{ 'checks.fields.item' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'checks.fields.impact' | translate }}
+          </th>
+          <th hlmTh>{{ 'checks.fields.note' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (item of view.items; track item.key) {
+        <tr hlmTr [class.text-muted-foreground]="item.done">
+          <td hlmTd>
+            <input
+              type="checkbox"
+              [checked]="item.done"
+              [disabled]="closed()"
+              [attr.aria-label]="'checks.fields.done' | translate"
+              (change)="toggle(item, $event)"
+            />
+          </td>
+          <td hlmTd>
+            <span
+              [class]="'lk-light lk-light-' + item.light + ' mr-2 align-middle'"
+            ></span>
+            <span class="font-medium">{{ where(item) }}</span>
+            <span class="block"
+              >{{ 'checks.reason.' + item.reason | translate: { expected:
+              (item.params['expected'] | lkQuantity: 18), actual:
+              (item.params['actual'] | lkQuantity: 18), difference:
+              (item.params['difference'] | lkQuantity: 18), quantity:
+              (item.params['quantity'] | lkQuantity: 18), gap:
+              (item.params['gap'] | lkQuantity: 18), count:
+              item.params['count'], rawType: item.params['rawType'], date:
+              item.date } }}</span
+            >
+            @if (item.recordIds.length > 0) {
+            <button
+              hlmBtn
+              variant="link"
+              size="sm"
+              type="button"
+              class="h-auto p-0"
+              (click)="records(item)"
+            >
+              {{ 'checks.showRecords' | translate }}
+            </button>
+            }
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ item.impactChf | lkChf }}
+          </td>
+          <td hlmTd>
+            <input
+              hlmInput
+              class="w-full min-w-40"
+              type="text"
+              [value]="item.note"
+              [disabled]="closed()"
+              [attr.aria-label]="'checks.fields.note' | translate"
+              (change)="saveNote(item, $event)"
+            />
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</section>
+
+@if (view.comparison; as comparison) {
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">
+    {{ 'checks.comparison.title' | translate: { year: comparison.previousTaxYear
+    } }}
+  </h3>
+  <dl class="lk-facts lk-panel p-4">
+    <dt>{{ 'checks.comparison.wealth' | translate }}</dt>
+    <dd class="tabular-nums">
+      {{ comparison.previousWealthChf | lkChf }} → {{ comparison.wealthDeltaChf
+      | lkChf }}
+    </dd>
+    <dt>{{ 'checks.comparison.income' | translate }}</dt>
+    <dd class="tabular-nums">
+      {{ comparison.previousIncomeChf | lkChf }} → {{ comparison.incomeDeltaChf
+      | lkChf }}
+    </dd>
+    <dt>{{ 'checks.comparison.new' | translate }}</dt>
+    <dd>
+      @for (p of comparison.newPositions; track p.platform + p.accountId +
+      p.asset; let last = $last) { {{ p.platform }} {{ p.asset }}@if (!last) {,
+      } } @empty { – }
+    </dd>
+    <dt>{{ 'checks.comparison.removed' | translate }}</dt>
+    <dd>
+      @for (p of comparison.removedPositions; track p.platform + p.accountId +
+      p.asset; let last = $last) { {{ p.platform }} {{ p.asset }}@if (!last) {,
+      } } @empty { – }
+    </dd>
+  </dl>
+  <p class="text-muted-foreground text-xs">
+    {{ 'checks.comparison.hint' | translate }}
+  </p>
+</section>
+} } @else {
+<lk-empty-state [message]="'result.notCalculated' | translate" />
+} } @else if (service.checks.error()) {
+<lk-empty-state [message]="'checks.loadFailed' | translate" />
+} @else {
+<hlm-skeleton class="h-64 w-full" />
+}

@@ -23,7 +23,7 @@ import {
   type ProjectStatus,
 } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
-import { ProjectFiles } from '../../../files/components/project-files';
+import { ProjectWorkspace } from '../../../calculation/components/project-workspace/project-workspace';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { ProjectStatusBadge } from '../../components/project-status-badge';
@@ -42,8 +42,8 @@ const ProjectEditSchema = z.object({
 type Confirm = 'reopen' | 'delete';
 
 /**
- * The project's data (name, notes, status) and its files with the mappings they use (F5).
- * Bookings, checks and exports arrive here later (F7–F10).
+ * The project's data (name, notes, status) and its workspace: files and mappings (F5), rates,
+ * result, checks, corrections and exports (F7–F10).
  */
 @Component({
   selector: 'lk-project-detail-page',
@@ -55,7 +55,7 @@ type Confirm = 'reopen' | 'delete';
     PageHeader,
     EmptyState,
     ProjectStatusBadge,
-    ProjectFiles,
+    ProjectWorkspace,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,
