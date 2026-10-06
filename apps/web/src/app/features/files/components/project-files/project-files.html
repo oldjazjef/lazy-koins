@@ -183,8 +183,10 @@
                 @if (file.origin === 'from_project') { {{
                 'files.origin.fromProject' | translate: { name:
                 file.originProjectName ?? ('files.origin.unknownProject' |
-                translate) } }} } @else { {{ 'files.origin.uploaded' | translate
-                }} }
+                translate) } }} } @else if (file.origin === 'derived') { {{
+                'files.origin.derived' | translate: { name: file.derivedFromName
+                ?? ('files.origin.unknownFile' | translate) } }} } @else { {{
+                'files.origin.uploaded' | translate }} }
               </td>
               <td hlmTd class="text-right whitespace-nowrap">
                 <button
@@ -207,7 +209,31 @@
                 >
                   <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
                 </button>
-                @if (!closed()) {
+                @if (!closed()) { @if (file.kind === 'pdf') {
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.aiStatement' | translate"
+                  [attr.title]="'files.actions.aiStatement' | translate"
+                  (click)="withAi(file)"
+                >
+                  <ng-icon name="lucideScanText" size="16" aria-hidden="true" />
+                </button>
+                } @else if (file.status === 'needs_mapping') {
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.aiMapping' | translate"
+                  [attr.title]="'files.actions.aiMapping' | translate"
+                  (click)="withAi(file)"
+                >
+                  <ng-icon name="lucideSparkles" size="16" aria-hidden="true" />
+                </button>
+                }
                 <button
                   hlmBtn
                   variant="ghost"
@@ -258,6 +284,8 @@
 </section>
 
 <lk-project-mappings [closed]="closed()" />
+
+<lk-ai-assist />
 
 <!-- Preview (F5.6) -->
 <hlm-dialog
@@ -404,6 +432,25 @@
         (click)="newMappingFor(current.file)"
       >
         {{ 'files.assign.newMapping' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="withAi(current.file)"
+      >
+        <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+        {{ 'mappings.withAi' | translate }}
+      </button>
+      } @else {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="withAi(current.file)"
+      >
+        <ng-icon name="lucideScanText" size="14" aria-hidden="true" />
+        {{ 'files.actions.aiStatement' | translate }}
       </button>
       }
       <button

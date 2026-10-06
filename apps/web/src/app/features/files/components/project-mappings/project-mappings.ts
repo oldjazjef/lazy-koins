@@ -24,14 +24,15 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import type { Mapping, ProjectMapping } from '../../../../core/api/api.types';
+import { AiAssistState } from '../ai-assist';
 import { MappingPreviewView } from '../mapping-preview';
 import { ProjectFilesService } from '../project-files/project-files.service';
 import { MappingEditorState } from './mapping-editor.state';
 
 /**
  * The mappings a project's files are read with — visible in the project: name, platform,
- * origin, files, the JSON itself; download, upload (`.json`), a minimal editor. Creating one
- * with AI is the next phase (the button is a placeholder).
+ * origin, files, the JSON itself; download, upload (`.json`), a minimal editor, and "Mit AI
+ * erstellen" for a file without a mapping (`AiAssistState`).
  */
 @Component({
   selector: 'lk-project-mappings',
@@ -65,6 +66,7 @@ import { MappingEditorState } from './mapping-editor.state';
 export class ProjectMappings {
   protected readonly service = inject(ProjectFilesService);
   protected readonly editor = inject(MappingEditorState);
+  protected readonly ai = inject(AiAssistState);
 
   readonly closed = input(false);
 
@@ -79,6 +81,13 @@ export class ProjectMappings {
 
   protected edit(entry: ProjectMapping): void {
     this.editor.openEdit(entry.mapping, entry.files);
+  }
+
+  /** From the editor of a new mapping for a file: let the AI write it instead. */
+  protected editorWithAi(): void {
+    const file = this.editor.targetFile();
+    this.editor.close();
+    if (file) void this.ai.start(file, 'mapping');
   }
 
   protected viewState(): 'open' | 'closed' {

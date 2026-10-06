@@ -39,8 +39,8 @@
         variant="outline"
         size="sm"
         type="button"
-        disabled
-        [attr.title]="'mappings.aiSoon' | translate"
+        [disabled]="closed()"
+        (click)="ai.openPicker()"
       >
         <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
         {{ 'mappings.withAi' | translate }}
@@ -225,16 +225,12 @@
       </div>
     </div>
     <hlm-dialog-footer>
-      <button
-        hlmBtn
-        variant="outline"
-        type="button"
-        disabled
-        [attr.title]="'mappings.aiSoon' | translate"
-      >
+      @if (!editor.mapping() && editor.targetFile()) {
+      <button hlmBtn variant="outline" type="button" (click)="editorWithAi()">
         <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
         {{ 'mappings.withAi' | translate }}
       </button>
+      }
       <button
         hlmBtn
         variant="outline"
