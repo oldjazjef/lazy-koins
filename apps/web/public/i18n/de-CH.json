@@ -165,6 +165,39 @@
         "open_item": "Offener Punkt",
         "notes": "Notizen"
       }
+    },
+    "sent": {
+      "badge": "An Treuhänder gesendet am {{date}}",
+      "changedSince": "seit dem Versand geändert",
+      "notYet": "Noch nicht an den Treuhänder gesendet.",
+      "exports": "{{count}} Auszüge",
+      "reason": {
+        "calculation": "neue Berechnung",
+        "export": "neuer Auszug",
+        "correction": "Korrektur",
+        "file": "neue Datei"
+      },
+      "via": {
+        "mail": "per Mail",
+        "post": "per Post",
+        "personal": "persönlich",
+        "other": "anders"
+      },
+      "mark": "Als gesendet markieren",
+      "markTitle": "Als gesendet markieren",
+      "markHint": "Wenn du die Unterlagen anders zugestellt hast (Post, persönlich, eigenes Mailprogramm).",
+      "date": "Datum",
+      "way": "Weg",
+      "recipient": "Empfänger",
+      "note": "Notiz",
+      "whichExports": "Welche Auszüge",
+      "marked": "Als gesendet markiert",
+      "undo": "Rückgängig",
+      "undoTitle": "Versand-Status zurücksetzen?",
+      "undoBody": "Das Projekt gilt wieder als nicht gesendet. Das Mail-Protokoll bleibt erhalten.",
+      "undone": "Versand-Status zurückgesetzt",
+      "failed": "Versand-Status konnte nicht geändert werden",
+      "dateInvalid": "Datum fehlt oder liegt in der Zukunft"
     }
   },
   "bookings": {
@@ -684,7 +717,8 @@
       "wallets": "Wallets",
       "ai": "AI-Plugin",
       "storage": "Speicherort",
-      "system": "System"
+      "system": "System",
+      "mail": "Mail"
     },
     "system": {
       "title": "System",
@@ -712,6 +746,72 @@
       "title": "Wallet-Abfragen",
       "subtitle": "Schlüssel für die Abfrage von Wallets",
       "hint": "Etherscan API V2 – ein Schlüssel für alle EVM-Netzwerke. Die automatische Wallet-Abfrage folgt; der Schlüssel wird verschlüsselt gespeichert."
+    },
+    "mail": {
+      "title": "Mailer (SMTP)",
+      "subtitle": "Mail an den Treuhänder: Mailer und Text-Vorlage",
+      "intro": "Damit „An Treuhänder senden“ die Auszüge direkt mailen kann. Ohne Mailer bleibt es beim Text zum Kopieren und dem Mailprogramm (ohne Anhänge).",
+      "loadFailed": "Die Mail-Einstellungen konnten nicht geladen werden.",
+      "enabled": "Mailer verwenden",
+      "status": {
+        "off": "aus",
+        "ready": "bereit",
+        "notConfigured": "unvollständig"
+      },
+      "host": "Server (SMTP)",
+      "hostPlaceholder": "z. B. smtp.mein-anbieter.ch",
+      "port": "Port",
+      "security": "Verschlüsselung",
+      "securities": {
+        "starttls": "STARTTLS (meist Port 587)",
+        "tls": "TLS/SSL (meist Port 465)",
+        "none": "Keine (nur lokal/zum Testen)"
+      },
+      "securityHint": "Zertifikate werden immer geprüft. Die Angaben findest du bei deinem Mail-Anbieter.",
+      "privateHostsHint": "Lokale Server (localhost, Heimnetz) sind auf diesem Server nicht erlaubt.",
+      "username": "Benutzer",
+      "password": "Passwort",
+      "passwordPlaceholder": "Passwort eingeben",
+      "passwordKeep": "leer lassen = gespeichertes Passwort behalten",
+      "passwordStored": "Gespeichert (verschlüsselt), endet auf {{hint}}. Es wird nie wieder angezeigt.",
+      "passwordNone": "Kein Passwort gespeichert.",
+      "passwordRemove": "Passwort entfernen",
+      "passwordRemoved": "Passwort entfernt",
+      "noEncryption": "Auf diesem Server kann kein Passwort gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
+      "fromName": "Absendername",
+      "fromAddress": "Absenderadresse",
+      "test": "Test-Mail an mich senden ({{to}})",
+      "testing": "Test-Mail wird gesendet …",
+      "testOk": "Test-Mail an {{to}} gesendet ({{millis}} ms).",
+      "saved": "Mail-Einstellungen gespeichert",
+      "form": {
+        "hostInvalid": "Nur der Servername, z. B. smtp.example.ch (ohne smtp:// und Port)",
+        "portInvalid": "Port zwischen 1 und 65535",
+        "addressInvalid": "Keine gültige E-Mail-Adresse",
+        "tooLong": "Zu lang"
+      },
+      "template": {
+        "title": "Text-Vorlage für den Treuhänder",
+        "intro": "Betreff und Text der Mail an den Treuhänder. Platzhalter werden beim Senden mit den Werten des Projekts gefüllt. Die Vorlage gilt für alle Projekte.",
+        "default": "Standard",
+        "subject": "Betreff",
+        "body": "Text",
+        "placeholders": "Platzhalter",
+        "placeholdersHint": "Klick fügt den Platzhalter an der Cursorposition ein.",
+        "preview": "Vorschau",
+        "previewHint": "Mit Beispielwerten.",
+        "unknown": "Unbekannte Platzhalter: {{names}}",
+        "resetAction": "Auf Standard zurücksetzen",
+        "resetTitle": "Vorlage zurücksetzen?",
+        "resetBody": "Deine eigene Vorlage wird gelöscht; es gilt wieder die Standardvorlage.",
+        "saved": "Vorlage gespeichert",
+        "reset": "Standardvorlage wiederhergestellt",
+        "loadFailed": "Die Vorlage konnte nicht geladen werden.",
+        "subjectRequired": "Betreff fehlt",
+        "subjectTooLong": "Betreff zu lang (max. 300 Zeichen)",
+        "bodyRequired": "Text fehlt",
+        "bodyTooLong": "Text zu lang (max. 20 000 Zeichen)"
+      }
     }
   },
   "workspace": {
@@ -1363,6 +1463,97 @@
       "download": "herunterladen",
       "parse": "lesen",
       "store": "speichern"
+    }
+  },
+  "mail": {
+    "placeholders": {
+      "name": "Dein Name (Profil)",
+      "treuhaender": "Name des Treuhänders (Profil)",
+      "steuerjahr": "Steuerjahr des Projekts",
+      "kanton": "Kanton des Projekts",
+      "vermoegen": "Steuerwert per 31.12. in CHF (letzte Berechnung)",
+      "ertrag": "Ertrag in CHF (letzte Berechnung)",
+      "anhaenge": "Liste der Anhänge (eine Zeile pro Datei)",
+      "offene_punkte": "Offene Punkte der Prüfungen, die nicht abgehakt sind",
+      "datum": "Heutiges Datum",
+      "projekt": "Name des Projekts"
+    },
+    "smtp": {
+      "kind": {
+        "auth": "Anmeldung abgelehnt – Benutzer oder Passwort prüfen.",
+        "tls": "Verschlüsselung fehlgeschlagen – Verschlüsselung/Port oder Zertifikat des Servers prüfen.",
+        "connection": "Keine Verbindung zum Server – Servername und Port prüfen.",
+        "dns": "Der Servername ist unbekannt.",
+        "timeout": "Der Server antwortet nicht (Zeitüberschreitung).",
+        "rejected": "Der Server hat die Mail abgelehnt (Absender, Empfänger oder Grösse).",
+        "protocol": "Unerwartete Antwort – ist das ein SMTP-Server, stimmen Port und Verschlüsselung?",
+        "unknown": "Die Mail konnte nicht gesendet werden."
+      },
+      "server": "Server",
+      "code": "SMTP-Code",
+      "command": "Befehl",
+      "errorCode": "Fehlercode",
+      "response": "Antwort des Servers"
+    },
+    "errors": {
+      "failed": "Mail-Anfrage fehlgeschlagen",
+      "unreachable": "Server nicht erreichbar",
+      "mailDisabled": "Der Mailer ist ausgeschaltet (Einstellungen › Mail)",
+      "mailNotConfigured": "Zuerst Server und Absenderadresse einrichten (Einstellungen › Mail)",
+      "passwordUnreadable": "Das gespeicherte Passwort ist nicht mehr lesbar – bitte neu eingeben",
+      "privateHost": "Lokale Server sind auf diesem Server nicht erlaubt",
+      "invalidHost": "Ungültiger Servername",
+      "invalidAddress": "Keine gültige E-Mail-Adresse",
+      "encryptionUnavailable": "Passwörter können auf diesem Server nicht gespeichert werden",
+      "confirmationRequired": "Bitte das Senden bestätigen",
+      "attachmentsTooLarge": "Anhänge zusammen grösser als 20 MB",
+      "unknownExport": "Ein Anhang gehört nicht zu diesem Projekt",
+      "emptyMail": "Betreff und Text dürfen nicht leer sein",
+      "unknownPlaceholders": "Die Vorlage enthält unbekannte Platzhalter",
+      "smtpFailed": "Der Mail-Server hat die Mail nicht angenommen"
+    },
+    "send": {
+      "cardTitle": "An Treuhänder",
+      "cardHint": "Die Auszüge per Mail an den Treuhänder senden – oder festhalten, dass du sie anders zugestellt hast.",
+      "open": "An Treuhänder senden",
+      "title": "An Treuhänder senden",
+      "hint": "Text aus deiner Vorlage – hier noch änderbar. Gesendet wird erst nach der Bestätigung.",
+      "noMailerHint": "Kein Mailer eingerichtet: Text kopieren oder im Mailprogramm öffnen (Anhänge dort selbst hinzufügen).",
+      "setUpMailer": "Mailer einrichten (Einstellungen › Mail)",
+      "notCalculated": "Noch nicht berechnet – Vermögen und Ertrag fehlen im Text.",
+      "to": "An",
+      "toPlaceholder": "E-Mail des Treuhänders",
+      "toRequired": "Empfänger fehlt",
+      "cc": "CC",
+      "ccMe": "CC an mich ({{address}})",
+      "subject": "Betreff",
+      "body": "Text",
+      "bodyEdited": "Text geändert: die Anhänge-Liste im Text wird nicht mehr automatisch angepasst.",
+      "attachments": "Anhänge",
+      "noAttachments": "Noch keine Auszüge erstellt.",
+      "noneSelected": "keine",
+      "internalWarning": "Interner Bericht – nicht für den Treuhänder gedacht.",
+      "total": "Zusammen {{total}} (max. {{max}})",
+      "tooLarge": "Zusammen {{total}} – mehr als {{max}} erlaubt",
+      "continue": "Weiter zur Kontrolle",
+      "confirmTitle": "Mail kontrollieren und senden",
+      "confirmHint": "So geht die Mail hinaus. Erst „Jetzt senden“ verschickt sie.",
+      "back": "Zurück",
+      "sendNow": "Jetzt senden",
+      "sending": "Wird gesendet …",
+      "sent": "Mail an den Treuhänder gesendet",
+      "mailto": "Im Mailprogramm öffnen"
+    },
+    "log": {
+      "title": "Gesendete Mails",
+      "when": "Wann",
+      "to": "An",
+      "cc": "CC: {{cc}}",
+      "subject": "Betreff",
+      "attachments": "Anhänge",
+      "status": "Status",
+      "sent": "gesendet",
+      "failed": "fehlgeschlagen"
     }
   }
 }

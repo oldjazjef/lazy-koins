@@ -27,6 +27,7 @@ import type { DataExportFilter } from '../../../../core/api/dashboard.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
+import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
 
 /** How often a running rate refresh is asked for its progress. */
 const REFRESH_POLL_MS = 1000;
@@ -75,6 +76,8 @@ export class ProjectWorkspaceService {
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
   private readonly translate = inject(TranslateService);
+  /** F4.7: calculations and exports can make a project "seit dem Versand geändert". */
+  private readonly sentEvents = inject(ProjectSentEvents);
   readonly estv = inject(EstvService);
 
   readonly projectId = signal<string | undefined>(undefined);
@@ -276,6 +279,7 @@ export class ProjectWorkspaceService {
     );
     this.result.set(view);
     this.reloadDerived();
+    this.sentEvents.changed();
   }
 
   /** "Kurse aktualisieren (12/40)": the API reports its progress while the request runs. */
@@ -445,6 +449,7 @@ export class ProjectWorkspaceService {
     });
     this.exports.reload();
     this.result.reload();
+    this.sentEvents.changed();
   }
 
   /**

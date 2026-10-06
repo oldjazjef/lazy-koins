@@ -16,6 +16,7 @@ import { ChfPipe } from '../../../../shared/format/number-format';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
+import { ProjectSentBadge } from '../../components/project-sent-badge';
 import { ProjectStatusBadge } from '../../components/project-status-badge';
 import { ProjectsPageService } from './projects-page.service';
 
@@ -29,6 +30,7 @@ import { ProjectsPageService } from './projects-page.service';
     EmptyState,
     ChfPipe,
     ProjectStatusBadge,
+    ProjectSentBadge,
     Paginator,
     Truncate,
     ...HlmButtonImports,

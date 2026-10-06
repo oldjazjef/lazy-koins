@@ -157,6 +157,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     dashboard/              #   F11.4–F11.9: input across all projects, cache per input hash, user rate cache
     carryover/              #   F4.4a follow-up project, F4.4 take-over, ProjectBundle (one transaction)
     packages/               #   F10.8/F10.9: .lkproj.zip / account package (fflate), manifest + verification
+    mail/                   #   F11.10/F10.6a: mailer + template settings, compose/send, send log
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
@@ -394,6 +395,56 @@ keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement
 - Live without an account: `node scripts/dev/fake-ai-server.mjs` (OpenAI-compatible stub on
   `http://localhost:11435/v1`; answers the synthetic fixtures' mappings and simple statements).
 
+## Mail to the Treuhänder (F11.10, F10.6a, F4.7)
+
+Optional: without a mailer the "An Treuhänder senden" dialog offers the text to copy and a
+`mailto:` link (no attachments). Slice `mail/` (API) + `features/settings/pages/mail-settings-page`
+and `features/calculation/components/send-to-advisor` (web).
+
+- **Mailer** (`mail_settings`, Einstellungen › Mail `/app/settings/mail`): host, port, security
+  `starttls | tls | none`, user, password **sealed with SecretBox** (hint only, never returned or
+  logged), sender name/address, on/off. `MailTransportPort` (`integrations/mail/`) → nodemailer,
+  one connection per mail: 15 s connect/greeting, 60 s socket timeout, TLS certificates always
+  verified, `requireTLS` for STARTTLS, file/URL access off. Failures become `MailTransportError`
+  with `{ kind: auth|tls|connection|dns|timeout|rejected|protocol|unknown, host, port, smtpCode,
+response, command, code }`, **redacted** (`redact.ts`: password, its base64, the AUTH PLAIN
+  token, anything after `AUTH …`) → 502 `code: smtpFailed`, `smtp: {…}`; the app shows them
+  (`lk-smtp-error`). **SSRF guard**: private/loopback SMTP hosts refused unless
+  `MAIL_ALLOW_PRIVATE_HOSTS` (empty = allowed with `AUTH_MODE=local|dev`, refused with
+  `firebase`), literal host check like the AI plugin. "Test-Mail an mich senden"
+  (`POST /api/mail/settings/test`) works on the **unsaved form values** (a typed password is used,
+  never stored) and goes to the account's address (the sender address for `*.local` accounts).
+- **Template** (`mail_template` per user + language; no row = the built-in default in
+  `mail/domain/mail-template.ts`, the F10.6 draft with the open questions): placeholders
+  `{{name}} {{treuhaender}} {{steuerjahr}} {{kanton}} {{vermoegen}} {{ertrag}} {{anhaenge}}
+{{offene_punkte}} {{datum}} {{projekt}}`. The renderer is **logic-less and one-pass**: known
+  names are replaced by values made safe for plain text (control characters out, the subject on
+  one line — no header injection), unknown ones stay as typed and are reported; saving a template
+  with unknown placeholders is a 422 (`unknownPlaceholders`). Live preview with invented sample
+  values (`POST /api/mail/template/preview`, debounced), reset = `DELETE /api/mail/template`.
+- **Send** (`POST /api/projects/:id/mail/compose` → dialog → `…/mail/send`): recipient from the
+  profile (editable), CC me, subject/body from the template with the latest snapshot (no
+  recalculation; `–` before the first one), the stored statements as attachments — the latest
+  per kind preselected, internal reports (`internal_report_*`) never, with a warning; ≤ 20 MB
+  together (422 `attachmentsTooLarge`); changing the selection re-renders `{{anhaenge}}` unless
+  the text was edited. Compose → **confirmation step** → send (`confirmed: true` required, else
+  400). Every attempt is logged in `mail_log` (to, cc, subject, attachment names/sizes,
+  sent/failed + redacted error; never the password, not the body); allowed on closed projects
+  like the exports. 20 sends / 10 min per account.
+- **F4.7** (`project_sent_state`, `projects/…/sent.handlers.ts`): set automatically by a
+  successful send (via `mail`, recipient, exports, log id) or by hand (`PUT /api/projects/:id/sent`:
+  date — today = now, earlier = end of that day — way `mail|post|personal|other`, note, exports);
+  `DELETE` = rückgängig (the log stays). Allowed on closed projects. "Seit dem Versand geändert"
+  (`changesSinceSent`, pure): a newer snapshot with a **different input hash** than at sending,
+  a statement created afterwards that was not sent, a correction made/undone or a file added
+  afterwards. The list carries `sent: { sentAt, via, changedSince }`; badge
+  `lk-project-sent-badge` in list and detail header; `ProjectSentEvents` (web) refreshes the
+  detail page's status after sends, marks, exports and calculations.
+- Live: `node scripts/dev/smtp-sink.mjs [port]` (127.0.0.1:2525, security "Keine", any user;
+  user `reject` → auth error, recipient `bounce@…` → 550) writes each mail to `tmp/smtp-sink/`.
+  Tests: fake transport (`mail/testing/mail-doubles.ts`) for handlers, the real nodemailer adapter
+  against an in-process `smtp-server` sink — never a real mail.
+
 ## Calculation, rates, checks, corrections, exports (F7–F10)
 
 **Engine** (`libs/engine/src/calculation/calculate.ts`, pure): `calculate(input)` takes the
@@ -616,6 +667,11 @@ prisma/schema.prisma` must still report **no difference**.
   (spec as JSON text, `json_valid` CHECK) and `project_file` (status/origin/count/period CHECKs,
   `mapped` needs a `mapping_id`). A stored file is deleted with its **last** `project_file` — in the
   same transaction, also when a project is deleted (`ProjectPrismaRepository.delete`).
+- **Mail** (migration `20261008130000_mail`, new tables only): `mail_settings` (PK `user_id`;
+  security/port CHECKs, password sealed `enc:v1:%`, hint ≤ 8), `mail_template` (PK
+  `(user_id, language)`, language/length CHECKs), `mail_log` (status, `json_valid` array,
+  `failed` needs an error) and `project_sent_state` (PK `project_id`; way CHECK, exports JSON
+  array) — all cascade; `mail.persistence.integration.spec.ts` tests them.
 - **AI** (migration `20261007090000_ai_settings`): `ai_settings` (PK `user_id`, cascade with the
   user, CHECKs: provider, key sealed `enc:v1:%`, hint ≤ 8 chars). The same migration **redefines
   `project_file`** only to widen its origin CHECK to `derived_from:_%` — all other CHECKs copied.

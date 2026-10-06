@@ -8,6 +8,7 @@ import { InMemoryProjectFileRepository } from '../../files/testing/in-memory-pro
 import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memory-import-mapping.repository';
 import { ListMyProjectsHandler } from '../../projects/application/queries/list-my-projects.query';
 import { InMemoryProjectRepository } from '../../projects/testing/in-memory-project.repository';
+import { InMemoryProjectSentRepository } from '../../projects/testing/in-memory-project-sent.repository';
 import { InMemoryProjectRateRepository } from '../../rates/testing/in-memory-project-rate.repository';
 import { CalculationInputService } from '../application/calculation-input.service';
 import {
@@ -145,6 +146,10 @@ export async function calculationSetup() {
     ),
     createCorrection: new CreateCorrectionHandler(projects, corrections),
     undo: new SetCorrectionUndoneHandler(projects, corrections),
-    list: new ListMyProjectsHandler(projects, snapshots),
+    list: new ListMyProjectsHandler(
+      projects,
+      snapshots,
+      new InMemoryProjectSentRepository(),
+    ),
   };
 }

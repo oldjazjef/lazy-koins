@@ -19,6 +19,14 @@ import {
   QUANTITY_SOURCES,
 } from '../api/calculation.types';
 import {
+  CHANGE_REASONS,
+  MAIL_ERROR_CODES,
+  MAIL_PLACEHOLDERS,
+  MAIL_SECURITIES,
+  SENT_VIA,
+  SMTP_ERROR_KINDS,
+} from '../api/mail.types';
+import {
   CARRYOVER_KINDS,
   HOLDING_STATUSES,
   KPI_KINDS,
@@ -117,6 +125,14 @@ const DYNAMIC_KEYS = [
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
   ...['statements', 'internal'].map((group) => `exports.groups.${group}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
+  ...MAIL_SECURITIES.map((security) => `settings.mail.securities.${security}`),
+  ...MAIL_PLACEHOLDERS.map((name) => `mail.placeholders.${name}`),
+  ...SMTP_ERROR_KINDS.map((kind) => `mail.smtp.kind.${kind}`),
+  ...[...MAIL_ERROR_CODES, 'failed', 'unreachable'].map(
+    (code) => `mail.errors.${code}`,
+  ),
+  ...SENT_VIA.map((way) => `projects.sent.via.${way}`),
+  ...CHANGE_REASONS.map((reason) => `projects.sent.reason.${reason}`),
   ...['name', 'platform', 'updated', 'files'].map(
     (sort) => `mappings.list.sortBy.${sort}`,
   ),

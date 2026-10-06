@@ -1,0 +1,439 @@
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'mail.send.cardTitle' | translate }}</h3>
+    <p hlmCardDescription>{{ 'mail.send.cardHint' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-4">
+    @if (service.sent.hasValue()) { @let status = service.sent.value(); @if
+    (status.sent; as sent) {
+    <div class="flex flex-wrap items-center gap-2 text-sm">
+      <span hlmBadge variant="secondary"
+        >{{ 'projects.sent.badge' | translate: { date: (sent.sentAt | date:
+        'dd.MM.yyyy') } }}</span
+      >
+      <span
+        >{{ 'projects.sent.via.' + sent.via | translate }} @if (sent.sentTo) { ·
+        {{ sent.sentTo }} } @if (sent.exportIds.length > 0) { · {{
+        'projects.sent.exports' | translate: { count: sent.exportIds.length } }}
+        }</span
+      >
+      @if (sent.note) {
+      <span class="text-muted-foreground">· {{ sent.note }}</span>
+      }
+    </div>
+    @if (status.changes.length > 0) {
+    <p class="text-sm lk-warning-text" role="status">
+      {{ 'projects.sent.changedSince' | translate }}: @for (reason of
+      status.changes; track reason; let last = $last) { {{
+      'projects.sent.reason.' + reason | translate }}@if (!last) {, } }
+    </p>
+    } } @else {
+    <p class="text-muted-foreground text-sm">
+      {{ 'projects.sent.notYet' | translate }}
+    </p>
+    } }
+
+    <div class="flex flex-wrap gap-2">
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.busy()"
+        (click)="openSend()"
+      >
+        {{ 'mail.send.open' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.busy()"
+        (click)="openMark()"
+      >
+        {{ 'projects.sent.mark' | translate }}
+      </button>
+      @if (service.isSent()) {
+      <button
+        hlmBtn
+        variant="ghost"
+        type="button"
+        [disabled]="service.busy()"
+        (click)="confirmUndo.set(true)"
+      >
+        {{ 'projects.sent.undo' | translate }}
+      </button>
+      }
+    </div>
+
+    @if (service.log.hasValue() && service.log.value().length > 0) {
+    <div class="flex flex-col gap-2">
+      <h4 class="text-sm font-medium">{{ 'mail.log.title' | translate }}</h4>
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col class="w-36" />
+            <col />
+            <col class="hidden w-48 lg:table-column" />
+            <col class="w-32" />
+          </colgroup>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh>{{ 'mail.log.when' | translate }}</th>
+              <th hlmTh>{{ 'mail.log.subject' | translate }}</th>
+              <th hlmTh class="hidden lg:table-cell">
+                {{ 'mail.log.attachments' | translate }}
+              </th>
+              <th hlmTh>{{ 'mail.log.status' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (entry of logPager.visible(); track entry.id) {
+            <tr hlmTr>
+              <td hlmTd class="tabular-nums whitespace-nowrap">
+                {{ entry.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+              </td>
+              <td hlmTd class="max-w-0">
+                <span [lkTruncate]="entry.subject">{{ entry.subject }}</span>
+                @let recipients = entry.cc ? entry.to + ' · ' + ('mail.log.cc' |
+                translate: { cc: entry.cc }) : entry.to;
+                <span
+                  class="text-muted-foreground text-xs"
+                  [lkTruncate]="recipients"
+                  >{{ recipients }}</span
+                >
+                @if (entry.error) {
+                <span
+                  class="text-destructive text-xs"
+                  [lkTruncate]="entry.error"
+                  >{{ entry.error }}</span
+                >
+                }
+              </td>
+              <td hlmTd class="hidden max-w-0 text-xs lg:table-cell">
+                @for (file of entry.attachments; track file.exportId) {
+                <span [lkTruncate]="file.fileName">{{ file.fileName }}</span>
+                } @empty { – }
+              </td>
+              <td hlmTd>
+                @if (entry.status === 'sent') {
+                <span hlmBadge variant="secondary"
+                  >{{ 'mail.log.sent' | translate }}</span
+                >
+                } @else {
+                <span hlmBadge variant="destructive"
+                  >{{ 'mail.log.failed' | translate }}</span
+                >
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <lk-paginator [pager]="logPager" />
+    </div>
+    }
+  </div>
+</section>
+
+<!-- F10.6a: compose → confirm → send (or copy / mailto without a mailer) -->
+<hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
+    @if (service.composition(); as mail) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ (step() === 'confirm' ? 'mail.send.confirmTitle' : 'mail.send.title')
+        | translate }}
+      </h3>
+      <p hlmDialogDescription>
+        {{ (step() === 'confirm' ? 'mail.send.confirmHint' : mail.mailerReady ?
+        'mail.send.hint' : 'mail.send.noMailerHint') | translate }}
+      </p>
+    </hlm-dialog-header>
+
+    <div class="lk-dialog-body">
+      @if (step() === 'compose') {
+      <form class="flex flex-col gap-4" [formGroup]="form">
+        @if (!mail.mailerReady) {
+        <p class="text-sm">
+          <a class="underline" routerLink="/app/settings/mail"
+            >{{ 'mail.send.setUpMailer' | translate }}</a
+          >
+        </p>
+        } @if (!mail.calculated) {
+        <p class="text-sm lk-warning-text">
+          {{ 'mail.send.notCalculated' | translate }}
+        </p>
+        } @if (mail.unknownPlaceholders.length > 0) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'settings.mail.template.unknown' | translate: { names:
+          mail.unknownPlaceholders.join(', ') } }}
+        </p>
+        }
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="send-to">{{ 'mail.send.to' | translate }}</label>
+          <input
+            hlmInput
+            id="send-to"
+            type="email"
+            formControlName="to"
+            [placeholder]="'mail.send.toPlaceholder' | translate"
+          />
+          @if (form.controls.to.touched && !canContinue() &&
+          form.controls.to.value.trim() === '') {
+          <p class="text-destructive text-sm">
+            {{ 'mail.send.toRequired' | translate }}
+          </p>
+          }
+        </div>
+        @if (mail.mailerReady) {
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" formControlName="ccMe" />
+          {{ 'mail.send.ccMe' | translate: { address: mail.ownAddress } }}
+        </label>
+        }
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="send-subject"
+            >{{ 'mail.send.subject' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="send-subject"
+            type="text"
+            formControlName="subject"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="send-body"
+            >{{ 'mail.send.body' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="send-body"
+            rows="14"
+            formControlName="body"
+          ></textarea>
+          @if (form.controls.body.dirty) {
+          <p class="text-muted-foreground text-xs">
+            {{ 'mail.send.bodyEdited' | translate }}
+          </p>
+          }
+        </div>
+
+        @if (mail.mailerReady) {
+        <fieldset class="flex flex-col gap-2">
+          <legend class="mb-1 text-sm font-medium">
+            {{ 'mail.send.attachments' | translate }}
+          </legend>
+          @for (item of mail.attachments; track item.id) {
+          <label class="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              class="mt-1"
+              [checked]="item.selected"
+              (change)="toggle(item)"
+            />
+            <span>
+              {{ item.fileName }}
+              <span class="text-muted-foreground text-xs"
+                >· {{ 'exports.kind.' + item.kind | translate }} · {{
+                bytes(item.size) }} · {{ item.createdAt | date: 'dd.MM.yyyy
+                HH:mm' }}</span
+              >
+              @if (item.internal) {
+              <span class="text-destructive block text-xs"
+                >{{ 'mail.send.internalWarning' | translate }}</span
+              >
+              }
+            </span>
+          </label>
+          } @empty {
+          <p class="text-muted-foreground text-sm">
+            {{ 'mail.send.noAttachments' | translate }}
+          </p>
+          }
+          <p
+            class="text-xs"
+            [class.text-destructive]="tooLarge()"
+            [class.text-muted-foreground]="!tooLarge()"
+          >
+            {{ (tooLarge() ? 'mail.send.tooLarge' : 'mail.send.total') |
+            translate: { total: bytes(totalBytes()), max:
+            bytes(mail.maxAttachmentBytes) } }}
+          </p>
+        </fieldset>
+        }
+      </form>
+      } @else {
+      <div class="flex flex-col gap-3 text-sm">
+        <dl class="lk-facts">
+          <dt>{{ 'mail.send.to' | translate }}</dt>
+          <dd>{{ form.controls.to.value }}</dd>
+          @if (form.controls.ccMe.value) {
+          <dt>{{ 'mail.send.cc' | translate }}</dt>
+          <dd>{{ mail.ownAddress }}</dd>
+          }
+          <dt>{{ 'mail.send.subject' | translate }}</dt>
+          <dd>{{ form.controls.subject.value }}</dd>
+          <dt>{{ 'mail.send.attachments' | translate }}</dt>
+          <dd>
+            @for (item of selected(); track item.id) {
+            <span class="block"
+              >{{ item.fileName }} ({{ bytes(item.size) }})</span
+            >
+            } @empty { {{ 'mail.send.noneSelected' | translate }} }
+          </dd>
+        </dl>
+        <pre class="lk-panel p-3 text-sm break-words whitespace-pre-wrap">
+{{ form.controls.body.value }}</pre>
+        @if (service.sendError(); as error) {
+        <lk-smtp-error [detail]="error" />
+        }
+      </div>
+      }
+    </div>
+
+    <hlm-dialog-footer>
+      @if (step() === 'compose') {
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      @if (mail.mailerReady) {
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!canContinue()"
+        (click)="toConfirm()"
+      >
+        {{ 'mail.send.continue' | translate }}
+      </button>
+      } @else {
+      <button hlmBtn variant="outline" type="button" (click)="copy()">
+        {{ 'exports.mail.copy' | translate }}
+      </button>
+      <a hlmBtn [href]="mailto()">{{ 'mail.send.mailto' | translate }}</a>
+      } } @else {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.busy()"
+        (click)="step.set('compose')"
+      >
+        {{ 'mail.send.back' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.busy()"
+        (click)="sendNow()"
+      >
+        {{ (service.busy() ? 'mail.send.sending' : 'mail.send.sendNow') |
+        translate }}
+      </button>
+      }
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- F4.7: als gesendet markieren -->
+<hlm-dialog [state]="markState()" (stateChanged)="markChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'projects.sent.markTitle' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'projects.sent.markHint' | translate }}</p>
+    </hlm-dialog-header>
+    <form class="lk-dialog-body" [formGroup]="markForm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="mark-date"
+            >{{ 'projects.sent.date' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mark-date"
+            type="date"
+            [max]="today()"
+            formControlName="date"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="mark-via"
+            >{{ 'projects.sent.way' | translate }}</label
+          >
+          <select hlmInput id="mark-via" formControlName="via">
+            @for (way of ways; track way) {
+            <option [value]="way">
+              {{ 'projects.sent.via.' + way | translate }}
+            </option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="mark-to"
+          >{{ 'projects.sent.recipient' | translate }}</label
+        >
+        <input hlmInput id="mark-to" type="text" formControlName="to" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="mark-note"
+          >{{ 'projects.sent.note' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="mark-note"
+          rows="3"
+          formControlName="note"
+        ></textarea>
+      </div>
+      @if (workspace.exports.hasValue() && workspace.exports.value().length > 0)
+      {
+      <fieldset class="flex flex-col gap-1">
+        <legend class="mb-1 text-sm font-medium">
+          {{ 'projects.sent.whichExports' | translate }}
+        </legend>
+        @for (item of workspace.exports.value(); track item.id) {
+        <label class="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            [checked]="markExports().has(item.id)"
+            (change)="toggleMarkExport(item.id)"
+          />
+          {{ item.fileName }}
+          <span class="text-muted-foreground text-xs"
+            >{{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span
+          >
+        </label>
+        }
+      </fieldset>
+      }
+    </form>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="button" [disabled]="service.busy()" (click)="mark()">
+        {{ 'projects.sent.mark' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- F4.7: rückgängig -->
+<hlm-dialog [state]="undoState()" (stateChanged)="undoChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'projects.sent.undoTitle' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'projects.sent.undoBody' | translate }}</p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="button" [disabled]="service.busy()" (click)="undo()">
+        {{ 'projects.sent.undo' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

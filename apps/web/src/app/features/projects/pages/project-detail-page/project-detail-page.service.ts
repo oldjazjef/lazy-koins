@@ -9,6 +9,8 @@ import type {
   Project,
   UpdateProjectRequest,
 } from '../../../../core/api/api.types';
+import type { ProjectSentStatus } from '../../../../core/api/mail.types';
+import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
 import type { Carryover } from '../../../../core/api/dashboard.types';
 
 /**
@@ -21,12 +23,20 @@ export class ProjectDetailPageService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly actions = inject(ActionRunner);
+  private readonly sentEvents = inject(ProjectSentEvents);
 
   readonly projectId = signal<string | undefined>(undefined);
 
   readonly project = httpResource<Project>(() => {
     const id = this.projectId();
     return id ? apiUrl(`/projects/${id}`) : undefined;
+  });
+
+  /** F4.7: sent to the Treuhänder; follows sends, marks, exports and calculations. */
+  readonly sent = httpResource<ProjectSentStatus>(() => {
+    this.sentEvents.version();
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/sent`) : undefined;
   });
 
   /** What this project took over, and from where (F4.4, F4.4a, F10.8). */

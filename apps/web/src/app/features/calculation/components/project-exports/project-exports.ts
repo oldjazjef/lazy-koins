@@ -35,6 +35,7 @@ import {
   type RowAction,
   RowActions,
 } from '../../../../shared/components/row-actions';
+import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
 
 /**
  * Exporte (F10): create the simple and the detailed statement as PDF or Excel — asking first while
@@ -53,6 +54,7 @@ import {
     RowActions,
     ChfPipe,
     EmptyState,
+    SendToAdvisor,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,

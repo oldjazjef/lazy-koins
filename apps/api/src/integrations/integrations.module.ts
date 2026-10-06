@@ -14,6 +14,8 @@ import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
 import { FirebaseIdentityTokenVerifier } from './firebase/firebase-identity-token.verifier';
 import { LocalIdentityVerifier } from './local-identity.verifier';
+import { MailTransportPort } from './mail/mail-transport.port';
+import { NodemailerTransport } from './mail/nodemailer.transport';
 import { registeredHostPdfPrinter } from './pdf/host-pdf.renderer';
 import { selectPdfRenderer } from './pdf/select-pdf-renderer';
 import { BinanceKlinesSource } from './rates/binance-klines.source';
@@ -26,8 +28,9 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
  * not the database. The only place that decides *which* adapter backs a port — and the only code
  * that imports firebase-admin. The AI plugin's `AiCompletionPort` (F5.13) dispatches per call to
  * the OpenAI-compatible or the Anthropic adapter, from the user's settings. Rate sources
- * (Binance, CoinGecko, ECB/Frankfurter) and the PDF renderer (Chromium) live here too. Later: one
- * `ChainDataPort` adapter per wallet network.
+ * (Binance, CoinGecko, ECB/Frankfurter) and the PDF renderer (Chromium) live here too, and so does
+ * the mailer (`MailTransportPort` → nodemailer, F11.10). Later: one `ChainDataPort` adapter per
+ * wallet network.
  */
 @Global()
 @Module({
@@ -78,6 +81,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
       provide: AiCompletionPort,
       useFactory: () => new ProviderSwitchingAiCompletion(),
     },
+    { provide: MailTransportPort, useFactory: () => new NodemailerTransport() },
   ],
   exports: [
     IdentityTokenVerifierPort,
@@ -87,6 +91,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     FxRateSourcePort,
     EstvKurslisteSourcePort,
     PdfRendererPort,
+    MailTransportPort,
   ],
 })
 export class IntegrationsModule {}

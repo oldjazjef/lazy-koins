@@ -140,6 +140,15 @@ export class Env {
   @IsIn(['', 'true', 'false'])
   AI_ALLOW_PRIVATE_URLS = '';
 
+  /**
+   * Whether users may point their mailer (F11.10) at private/loopback SMTP hosts (a local relay,
+   * a dev SMTP sink). The API opens the connection, so on a shared server that would reach its
+   * own network. Empty = allowed with AUTH_MODE `local` (desktop) and `dev`, refused with
+   * `firebase` — the same rule as `AI_ALLOW_PRIVATE_URLS`.
+   */
+  @IsIn(['', 'true', 'false'])
+  MAIL_ALLOW_PRIVATE_HOSTS = '';
+
   // --- Rates, exports ---
 
   /**
@@ -183,6 +192,15 @@ export function aiPrivateUrlsAllowed(
   return env.AI_ALLOW_PRIVATE_URLS === ''
     ? env.AUTH_MODE !== 'firebase'
     : env.AI_ALLOW_PRIVATE_URLS === 'true';
+}
+
+/** Whether SMTP hosts may be private or loopback (see `MAIL_ALLOW_PRIVATE_HOSTS`). */
+export function mailPrivateHostsAllowed(
+  env: Pick<Env, 'MAIL_ALLOW_PRIVATE_HOSTS' | 'AUTH_MODE'>,
+): boolean {
+  return env.MAIL_ALLOW_PRIVATE_HOSTS === ''
+    ? env.AUTH_MODE !== 'firebase'
+    : env.MAIL_ALLOW_PRIVATE_HOSTS === 'true';
 }
 
 export function validateEnv(raw: Record<string, unknown>): Env {

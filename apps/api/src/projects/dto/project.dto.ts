@@ -19,6 +19,7 @@ import {
   type ProjectStatus,
 } from '../domain/project';
 import type { ProjectListEntry } from '../application/queries/list-my-projects.query';
+import { ProjectSentSummaryDto } from './project-sent.dto';
 
 const CANTON = /^[A-Z]{2}$/;
 const NAME_MAX = 120;
@@ -116,13 +117,21 @@ export class ProjectListItemDto extends ProjectResponseDto {
   @ApiProperty({ nullable: true, format: 'date-time' })
   calculatedAt!: string | null;
 
+  @ApiProperty({
+    type: ProjectSentSummaryDto,
+    nullable: true,
+    description: 'F4.7: sent to the Treuhänder (null = not yet)',
+  })
+  sent!: ProjectSentSummaryDto | null;
+
   static fromEntry(entry: ProjectListEntry): ProjectListItemDto {
-    const { figures, ...project } = entry;
+    const { figures, sent, ...project } = entry;
     return {
       ...ProjectResponseDto.from(project),
       wealthChf: figures?.wealthChf ?? null,
       incomeChf: figures?.incomeChf ?? null,
       calculatedAt: figures?.calculatedAt ?? null,
+      sent,
     };
   }
 }
