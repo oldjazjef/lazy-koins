@@ -59,7 +59,9 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
         new IctaxKurslisteSource({
-          baseUrl: config.get('ESTV_BASE_URL', { infer: true }),
+          baseUrl:
+            config.get('ESTV_BASE_URL', { infer: true }) ??
+            'https://www.ictax.admin.ch',
         }),
     },
     {
