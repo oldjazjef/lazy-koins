@@ -1,3 +1,4 @@
+import { InMemorySnapshotRepository } from '../../calculation/testing/in-memory-calculation.repositories';
 import {
   BadRequestException,
   ConflictException,
@@ -39,7 +40,7 @@ function setup() {
   return {
     repo,
     create: new CreateProjectHandler(repo),
-    list: new ListMyProjectsHandler(repo),
+    list: new ListMyProjectsHandler(repo, new InMemorySnapshotRepository()),
     get: new GetProjectHandler(repo),
     update: new UpdateProjectHandler(repo),
     remove: new DeleteProjectHandler(repo),

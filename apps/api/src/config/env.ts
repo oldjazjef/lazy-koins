@@ -120,6 +120,31 @@ export class Env {
    */
   @IsIn(['', 'true', 'false'])
   API_DOCS = '';
+
+  // --- Settings, rates, exports ---
+
+  /**
+   * Seals the API keys users store in their settings (F6.7) with AES-256-GCM (settings/
+   * secret-box.ts). Any long random string; empty = storing keys is refused. Changing it makes
+   * stored keys unreadable (users enter them again).
+   */
+  @ValidateIf((env: Env) => env.SETTINGS_ENCRYPTION_KEY !== '')
+  @IsString()
+  @MinLength(32, {
+    message: 'SETTINGS_ENCRYPTION_KEY must be at least 32 characters',
+  })
+  SETTINGS_ENCRYPTION_KEY = '';
+
+  /**
+   * Chromium for the PDF exports (F10). Empty = the browser `playwright-core` installs
+   * (`pnpm exec playwright-core install chromium`).
+   */
+  @IsString()
+  PDF_CHROMIUM_PATH = '';
+
+  /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
+  @IsIn(['true', 'false'])
+  RATES_ONLINE = 'true';
 }
 
 export function validateEnv(raw: Record<string, unknown>): Env {

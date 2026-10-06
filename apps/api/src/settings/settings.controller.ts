@@ -1,0 +1,71 @@
+import { Body, Controller, Get, Put } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { AuthenticatedUser } from '../auth/authenticated-user';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { BEARER_SCHEME } from '../openapi/security-schemes';
+import { SettingsResponseDto, UpdateSettingsDto } from './dto/settings.dto';
+import { SettingsService } from './settings.service';
+
+const SYMBOL = /^[A-Za-z0-9.]{1,40}$/;
+const COINGECKO_ID = /^[a-z0-9-]{1,100}$/;
+
+@ApiTags('settings')
+@ApiBearerAuth(BEARER_SCHEME)
+@Controller('settings')
+export class SettingsController {
+  constructor(private readonly settings: SettingsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'My settings (F11); API keys only as hints (F6.7)' })
+  @ApiOkResponse({ type: SettingsResponseDto })
+  async get(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<SettingsResponseDto> {
+    return SettingsResponseDto.from(await this.settings.get(user.userId));
+  }
+
+  @Put()
+  @ApiOperation({
+    summary: 'Change my settings; keys are stored encrypted (AES-256-GCM)',
+  })
+  @ApiOkResponse({ type: SettingsResponseDto })
+  @ApiServiceUnavailableResponse({
+    description: 'A key was sent but SETTINGS_ENCRYPTION_KEY is not set',
+  })
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateSettingsDto,
+  ): Promise<SettingsResponseDto> {
+    const coingeckoIds = dto.coingeckoIds
+      ? Object.fromEntries(
+          Object.entries(dto.coingeckoIds)
+            .filter(
+              ([symbol, id]) =>
+                typeof id === 'string' &&
+                SYMBOL.test(symbol) &&
+                COINGECKO_ID.test(id),
+            )
+            .map(([symbol, id]) => [symbol.toUpperCase(), id]),
+        )
+      : undefined;
+    return SettingsResponseDto.from(
+      await this.settings.update(user.userId, {
+        displayName: dto.displayName,
+        canton: dto.canton,
+        advisorName: dto.advisorName,
+        advisorEmail: dto.advisorEmail,
+        numberFormat: dto.numberFormat,
+        dateFormat: dto.dateFormat,
+        onlineRates: dto.onlineRates,
+        keys: dto.keys,
+        coingeckoIds,
+      }),
+    );
+  }
+}

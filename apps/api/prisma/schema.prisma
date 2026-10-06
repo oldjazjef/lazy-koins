@@ -62,6 +62,7 @@ model User {
   projects    Project[]
   storedFiles StoredFile[]
   mappings    ImportMapping[]
+  settings    UserSettings?
 
   @@map("user")
 }
@@ -83,7 +84,12 @@ model Project {
   /// Deleting an account deletes its projects (F2.2).
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  files ProjectFile[]
+  files       ProjectFile[]
+  rates       ProjectRate[]
+  snapshots   CalculationSnapshot[]
+  corrections Correction[]
+  itemStates  OpenItemState[]
+  exports     ProjectExport[]
 
   @@index([ownerId, taxYear])
   @@map("project")
@@ -171,4 +177,131 @@ model ProjectFile {
   @@index([fileId])
   @@index([mappingId])
   @@map("project_file")
+}
+
+/// Personal settings (F11.1–F11.3) and the API keys a user stores (F6.7). Keys are sealed with
+/// AES-256-GCM (`SETTINGS_ENCRYPTION_KEY`) and never returned — the API answers with a hint only.
+model UserSettings {
+  userId        String   @id @map("user_id")
+  /// Name on the exports (F10.4); empty = the account's display name.
+  displayName   String   @default("") @map("display_name")
+  /// Canton of residence, two letters, or empty.
+  canton        String   @default("")
+  advisorName   String   @default("") @map("advisor_name")
+  advisorEmail  String   @default("") @map("advisor_email")
+  /// F11.2. Only `de-CH` / `dd.MM.yyyy` exist so far. CHECK in the migration.
+  numberFormat  String   @default("de-CH") @map("number_format")
+  dateFormat    String   @default("dd.MM.yyyy") @map("date_format")
+  /// F11.3: rate lookups on the internet allowed.
+  onlineRates   Boolean  @default(true) @map("online_rates")
+  /// `enc:v1:…` (secret-box.ts), or null.
+  coingeckoKey  String?  @map("coingecko_key")
+  etherscanKey  String?  @map("etherscan_key")
+  /// JSON object symbol → CoinGecko id, overriding the built-in table.
+  coingeckoIds  String   @default("{}") @map("coingecko_ids")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+/// A stored rate of a project (F7.4): a price (asset in CHF/USD) or an exchange rate (USD, EUR in
+/// CHF) for one day, with its source. `manual` rows are the user's overrides. The calculation reads
+/// only these rows — fetching is a separate, explicit action.
+model ProjectRate {
+  id        String   @id @default(uuid(7))
+  projectId String   @map("project_id")
+  /// price | fx. CHECK in the migration.
+  kind      String
+  asset     String
+  /// CHF | USD. CHECK in the migration.
+  currency  String
+  /// ISO date.
+  date      String
+  /// Decimal string.
+  value     String
+  /// manual | estv | binance | coingecko | ecb. CHECK in the migration.
+  source    String
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, kind, asset, currency, date, source])
+  @@map("project_rate")
+}
+
+/// The result of one calculation (F7.6) as JSON, with the hash of its input: same hash, same
+/// result. `records` holds the records behind the figures (F7.5) separately — it is large and only
+/// read for drill-downs.
+model CalculationSnapshot {
+  id            String   @id @default(uuid(7))
+  projectId     String   @map("project_id")
+  inputHash     String   @map("input_hash")
+  engineVersion Int      @map("engine_version")
+  result        String
+  records       String
+  /// Decimal strings, for the project list (F4.2).
+  wealthChf     String   @map("wealth_chf")
+  incomeChf     String   @map("income_chf")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("calculation_snapshot")
+}
+
+/// A correction (F9): data applied on top of the imported records, never an edit. Undo sets
+/// `undone_at`; the row stays as history (F9.4).
+model Correction {
+  id        String    @id @default(uuid(7))
+  projectId String    @map("project_id")
+  /// price_override | reclassify | manual_booking | manual_holding. CHECK in the migration.
+  type      String
+  /// The validated correction data (libs/engine `CorrectionDataSchema`) as JSON.
+  data      String
+  reason    String
+  createdAt DateTime  @default(now()) @map("created_at")
+  undoneAt  DateTime? @map("undone_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("correction")
+}
+
+/// F8.2: an open item ticked off and/or annotated, keyed by the item's stable key.
+model OpenItemState {
+  projectId String   @map("project_id")
+  itemKey   String   @map("item_key")
+  done      Boolean  @default(false)
+  note      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, itemKey])
+  @@map("open_item_state")
+}
+
+/// A generated statement (F10.5), kept with its date.
+model ProjectExport {
+  id         String   @id @default(uuid(7))
+  projectId  String   @map("project_id")
+  /// simple_pdf | simple_xlsx | detailed_pdf | detailed_xlsx. CHECK in the migration.
+  kind       String
+  fileName   String   @map("file_name")
+  mediaType  String   @map("media_type")
+  bytes      Bytes
+  size       Int
+  snapshotId String?  @map("snapshot_id")
+  wealthChf  String   @map("wealth_chf")
+  incomeChf  String   @map("income_chf")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_export")
 }
