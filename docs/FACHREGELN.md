@@ -14,7 +14,9 @@ Plattformen beschreiben, was diese Mappings ausdrücken müssen.
 - Deklariert werden **Vermögen per 31.12.** (Wertschriftenverzeichnis) und **Ertrag** des Jahres
   (Einkommen aus beweglichem Vermögen). Kapitalgewinne im Privatvermögen sind steuerfrei und
   werden nicht ausgewiesen.
-- Bewertung in CHF. Ertrag zum Zuflusszeitpunkt (Tageskurs), Vermögen zum Stichtag 31.12.
+- Bewertung in CHF (Steuerwährung des Projekts, ANFORDERUNGEN F4.1a: Vorgabe aus dem Land,
+  Schweiz → CHF; siehe „Kurse in einer anderen Steuerwährung“). Ertrag zum Zuflusszeitpunkt
+  (Tageskurs), Vermögen zum Stichtag 31.12.
 
 ## Bestand per 31.12.
 
@@ -69,6 +71,23 @@ Rangfolge je Position (erste vorhandene gilt):
 - Jede Position nennt ihre **Mengenquelle** und **Kursquelle**. Ohne Kurs: Position bleibt mit
   Menge, Wert leer, Status „ohne Kurswert“, Fussnote „Kein Kurswert verfügbar; nicht im Total
   enthalten.“; intern zählt sie als offener Punkt (Prüfbericht).
+
+### Kurse in einer anderen Steuerwährung (F4.1a)
+
+Ist die Steuerwährung T nicht CHF (z. B. EUR), gilt dieselbe Rangfolge in T:
+
+1. **Override** in T (überschriebener Kurs) – die ESTV-Kursliste gilt **nicht** (sie ist in CHF).
+2. **Kurs in T direkt** (CoinGecko in T); ein CHF-Kurs aus dem Beleg wird nicht verwendet.
+3. **Kurs USD × USD/T** des Tages (Binance-Tagesschluss, USD-Wert der Plattform).
+
+- Stablecoins und `USD` = 1 USD × USD/T; T selbst = 1; andere Währungen über ihren Kurs in T.
+- Devisen: EZB-Referenzkurse USD → T und EUR → T (Frankfurter), letztes Fixing ≤ Tag, fehlende
+  Tage aufgefüllt. Fehlt ein Paar, wird über USD, EUR oder CHF gekreuzt (z. B. CHF/EUR =
+  1 / EUR/CHF; GBP/EUR = GBP/USD × USD/EUR).
+- Earn-Lücke: Jahresmittel der Tageskurse USD × USD/T.
+- Auszüge: alle Spalten und Summen in T („Wert EUR“), Parameter USD/T und EUR/T.
+- Eine Änderung der Steuerwährung macht die Berechnung veraltet; Kurse neu laden und neu
+  berechnen. Das Dashboard summiert nie über Währungen: es zeigt je Währung deren Projekte.
 
 ## Ertrag
 

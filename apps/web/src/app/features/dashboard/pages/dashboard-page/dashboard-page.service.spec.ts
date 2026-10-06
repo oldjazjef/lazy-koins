@@ -23,6 +23,8 @@ const settle = async () => {
 };
 
 const view = (over: Partial<DashboardView> = {}): DashboardView => ({
+  currency: 'CHF',
+  currencies: ['CHF'],
   from: '2026-01-01',
   to: '2026-10-06',
   series: [],
@@ -181,6 +183,32 @@ describe('DashboardPageService', () => {
     expect(service.holdings().map((h) => h.asset)).toEqual(['ETH']);
     service.toggle('ETH');
     expect(service.expanded().has('ETH')).toBe(true);
+  });
+
+  it('asks for one tax currency at a time once one is chosen (F4.1a)', async () => {
+    const { service, http } = await setup();
+    const first = http.expectOne((r) => r.url === '/api/dashboard');
+    expect(first.request.params.has('currency')).toBe(false);
+    first.flush(view({ currencies: ['CHF', 'EUR'] }));
+    await settle();
+    service.currency.set('EUR');
+    await settle();
+    http
+      .expectOne(
+        (r) => r.url === '/api/dashboard' && r.params.get('currency') === 'EUR',
+      )
+      .flush(view({ currency: 'EUR', currencies: ['CHF', 'EUR'] }));
+    await settle();
+    const done = service.showRecords('income', 'Ertrag');
+    await settle();
+    http
+      .expectOne(
+        (r) =>
+          r.url === '/api/dashboard/records' &&
+          r.params.get('currency') === 'EUR',
+      )
+      .flush({ figureId: 'kpi:income', total: 0, records: [] });
+    await done;
   });
 
   it('drills a KPI down to its bookings', async () => {

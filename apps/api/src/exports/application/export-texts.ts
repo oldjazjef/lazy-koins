@@ -92,13 +92,15 @@ const ORIGIN_LABELS: Readonly<Record<string, string>> = {
   tableUsd: 'Tagesschluss USD × USD/CHF',
 };
 
+/** How a price was found, in the project's tax currency (F4.1a: "Tageskurs EUR"). */
 export function priceSourceText(
   origin: string | null,
   source: string | null,
   date: string | null,
+  currency = 'CHF',
 ): string {
   if (!origin) return '–';
-  const label = ORIGIN_LABELS[origin] ?? origin;
+  const label = (ORIGIN_LABELS[origin] ?? origin).replaceAll('CHF', currency);
   const extra = [source && source !== 'fixed' ? source : null, date]
     .filter(Boolean)
     .join(' ');
@@ -112,6 +114,7 @@ export function categoryLabel(
   return rules.labels.categories[category];
 }
 
+/** An amount in the tax currency with 2 decimals (the currency code is in the header/label). */
 export function chf(value: string | null): string {
   return value === null ? '–' : formatChf(parseDecimal(value));
 }

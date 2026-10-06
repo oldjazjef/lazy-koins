@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -22,7 +23,9 @@ import { z } from 'zod';
 import {
   PROJECT_STATUSES,
   type ProjectStatus,
+  TAX_CURRENCIES,
 } from '../../../../core/api/api.types';
+import { taxCurrencyOptions } from '../project-form-page/tax-currency-options';
 import type { Carryover } from '../../../../core/api/dashboard.types';
 import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { EmptyState } from '../../../../shared/components/empty-state';
@@ -42,9 +45,11 @@ const ProjectEditSchema = z.object({
     .max(120, 'projects.form.nameTooLong'),
   notes: z.string().max(5000, 'projects.form.notesTooLong'),
   status: z.enum(PROJECT_STATUSES),
+  taxCurrency: z.enum(TAX_CURRENCIES),
 });
+type ProjectEdit = z.infer<typeof ProjectEditSchema>;
 
-type Confirm = 'reopen' | 'delete';
+type Confirm = 'reopen' | 'delete' | 'currency';
 
 /**
  * The project's data (name, notes, status) and its workspace: files and mappings (F5), rates,
@@ -85,12 +90,27 @@ export class ProjectDetailPage {
   readonly tab = input<string | undefined>();
 
   protected readonly confirm = signal<Confirm | null>(null);
+  /** F4.1a: changes waiting for the confirmation of a new tax currency. */
+  private readonly pendingEdit = signal<ProjectEdit | null>(null);
+  protected readonly pendingCurrency = computed(
+    () => this.pendingEdit()?.taxCurrency ?? '',
+  );
+  /** The currencies offered: the project's own and the country default first. */
+  protected readonly currencies = computed(() =>
+    this.service.project.hasValue()
+      ? taxCurrencyOptions(
+          this.service.project.value().country,
+          this.service.project.value().taxCurrency,
+        )
+      : taxCurrencyOptions('CH'),
+  );
 
   protected readonly form = inject(FormBuilder).nonNullable.group(
     {
       name: [''],
       notes: [''],
       status: ['in_progress' as ProjectStatus],
+      taxCurrency: ['CHF'],
     },
     { validators: zodValidator(ProjectEditSchema) },
   );
@@ -116,6 +136,7 @@ export class ProjectDetailPage {
         name: project.name,
         notes: project.notes,
         status: project.status,
+        taxCurrency: project.taxCurrency,
       });
       if (project.status === 'closed') this.form.disable();
       else this.form.enable();
@@ -126,7 +147,17 @@ export class ProjectDetailPage {
     this.form.markAllAsTouched();
     const parsed = ProjectEditSchema.safeParse(this.form.getRawValue());
     if (!parsed.success) return;
-    void this.service.save(parsed.data).catch(() => undefined);
+    // F4.1a: another tax currency needs a confirmation (the calculation becomes stale).
+    const project = this.service.project.hasValue()
+      ? this.service.project.value()
+      : undefined;
+    if (project && parsed.data.taxCurrency !== project.taxCurrency) {
+      this.pendingEdit.set(parsed.data);
+      this.confirm.set('currency');
+      return;
+    }
+    const { taxCurrency: _same, ...rest } = parsed.data;
+    void this.service.save(rest).catch(() => undefined);
   }
 
   protected setCarriedDone(item: Carryover, done: boolean): void {
@@ -138,7 +169,16 @@ export class ProjectDetailPage {
   }
 
   protected dialogChanged(state: 'open' | 'closed'): void {
-    if (state === 'closed') this.confirm.set(null);
+    if (state === 'closed') {
+      // Cancelled a currency change: the select shows the project's currency again.
+      if (this.pendingEdit() && this.service.project.hasValue()) {
+        this.form.controls.taxCurrency.setValue(
+          this.service.project.value().taxCurrency,
+        );
+      }
+      this.confirm.set(null);
+      this.pendingEdit.set(null);
+    }
   }
 
   protected confirmed(): void {
@@ -148,6 +188,10 @@ export class ProjectDetailPage {
       void this.service.reopen().catch(() => undefined);
     } else if (action === 'delete') {
       void this.service.remove().catch(() => undefined);
+    } else if (action === 'currency') {
+      const edit = this.pendingEdit();
+      this.pendingEdit.set(null);
+      if (edit) void this.service.save(edit).catch(() => undefined);
     }
   }
 }

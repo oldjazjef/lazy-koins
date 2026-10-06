@@ -214,6 +214,15 @@ describe('exports (F10)', () => {
 
     const names = workbook.definedNames.model.map((n) => n.name);
     expect(names).toEqual(expect.arrayContaining(['USDCHF', 'EURCHF']));
+    // A CHF project keeps its labels (F4.1a changes nothing for CHF).
+    expect(texts).toEqual(
+      expect.arrayContaining([
+        'Wert CHF',
+        'USD/CHF',
+        'ESTV-Kurs (Override)',
+        'USD/CHF per 31.12.2025',
+      ]),
+    );
 
     // The app version (X.Y.Z+<commit>) under Methodik.
     const method: string[] = [];
@@ -221,6 +230,82 @@ describe('exports (F10)', () => {
       method.push(String(row.getCell(1).value)),
     );
     expect(method).toContain('Erstellt mit lazy-koins 0.0.0-dev+unknown.');
+  });
+
+  it('labels every amount with the tax currency of an EUR project (F4.1a)', async () => {
+    const t = await setup();
+    await t.projects.update(t.project.id, { taxCurrency: 'EUR' });
+    await t.rates.upsertMany(t.project.id, [
+      {
+        kind: 'fx',
+        asset: 'USD',
+        currency: 'EUR',
+        date: '2025-12-31',
+        value: '0.85',
+        source: 'ecb',
+      },
+      {
+        kind: 'fx',
+        asset: 'USD',
+        currency: 'EUR',
+        date: '2025-03-01',
+        value: '0.9',
+        source: 'ecb',
+      },
+    ]);
+    const meta = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'detailed_xlsx'),
+    );
+    // BTC 0.005 × 90000 × 0.85 + CHF 498.7 / 0.8 × 0.85; income 1.5 DOT × 5 × 0.9.
+    expect(meta).toMatchObject({
+      wealthChf: '912.36875',
+      incomeChf: '6.75',
+    });
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, meta.id),
+        )
+      ).bytes,
+    );
+    const holdings = sheetOf(workbook, SHEETS.holdings);
+    const header = (holdings.getRow(1).values as unknown[]).map(String);
+    expect(header).toEqual(
+      expect.arrayContaining([
+        'USD/EUR',
+        'Kurs EUR direkt',
+        'Kurs (Override)',
+        'Wert EUR',
+      ]),
+    );
+    expect(header.some((h) => h.includes('CHF'))).toBe(false);
+    expect(formulaOf(holdings.getRow(2).getCell(7))).toBe('USDEUR');
+    // Same formula structure as in CHF.
+    expect(formulaOf(holdings.getRow(2).getCell(10))).toBe(
+      'IF(I2<>"",E2*I2,IF(H2<>"",E2*H2,IF(F2<>"",E2*F2*G2,"")))',
+    );
+    const parameters = sheetOf(workbook, SHEETS.parameters);
+    expect(parameters.getCell('A3').value).toBe('USD/EUR per 31.12.2025');
+    expect(parameters.getCell('A4').value).toBe('EUR/EUR per 31.12.2025');
+    expect(workbook.definedNames.model.map((n) => n.name)).toEqual(
+      expect.arrayContaining(['USDEUR', 'EUREUR']),
+    );
+    const texts = allTexts(workbook);
+    expect(texts).toContain('Steuerwert EUR');
+    expect(texts).toContain('Ertrag EUR');
+    expectClean(texts);
+
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'simple_pdf'),
+    );
+    const html = t.pdf.rendered[0] ?? '';
+    expect(html).toContain('EUR 912.37');
+    expect(html).toContain('Steuerwert EUR');
+    expect(html).not.toContain('Steuerwert CHF');
+    const draft = await t.mail.execute(
+      new GetMailDraftQuery('anna', t.project.id),
+    );
+    expect(draft.body).toContain('EUR 912.37');
   });
 
   it('writes the simple statement as Excel and PDF, lists and serves them (F10.1, F10.5)', async () => {

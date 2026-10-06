@@ -45,7 +45,13 @@ export class DashboardController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: DashboardQueryDto,
   ): Promise<DashboardView> {
-    return this.dashboard.get(user.userId, query.from, query.to, query.project);
+    return this.dashboard.get(
+      user.userId,
+      query.from,
+      query.to,
+      query.project,
+      query.currency,
+    );
   }
 
   @Get('records')
@@ -63,6 +69,7 @@ export class DashboardController {
       query.to,
       query.kpi,
       query.project,
+      query.currency,
     );
   }
 
@@ -84,6 +91,7 @@ export class DashboardController {
       dto.to,
       dto.assets ?? [],
       dto.force ?? false,
+      dto.currency,
     );
   }
 }

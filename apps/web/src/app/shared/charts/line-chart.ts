@@ -42,6 +42,8 @@ export class LineChart {
   /** Accessible name (already translated). */
   readonly label = input.required<string>();
   readonly compact = input(false);
+  /** F4.1a: the currency of the values (tooltip, table header). */
+  readonly currency = input('CHF');
 
   protected readonly width = WIDTH;
   protected readonly height = computed(() => (this.compact() ? 120 : HEIGHT));
@@ -96,7 +98,7 @@ export class LineChart {
     return [0, 0.25, 0.5, 0.75, 1].map((f) => 8 + plot * f);
   });
 
-  /** Axis labels: the top and bottom of the domain, formatted as CHF. */
+  /** Axis labels: the top and bottom of the domain, as amounts (the currency is in the label). */
   protected readonly yLabels = computed(() => {
     const { min, max } = this.domain();
     return [

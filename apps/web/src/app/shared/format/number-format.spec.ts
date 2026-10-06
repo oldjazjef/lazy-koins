@@ -1,4 +1,10 @@
-import { formatChf, formatQuantity, isNegative } from './number-format';
+import {
+  ChfPipe,
+  formatChf,
+  formatMoney,
+  formatQuantity,
+  isNegative,
+} from './number-format';
 
 describe('Swiss number format (F11.2)', () => {
   it('formats CHF with grouping and two decimals, half up', () => {
@@ -8,6 +14,14 @@ describe('Swiss number format (F11.2)', () => {
     expect(formatChf('-0.001')).toBe('0.00');
     expect(formatChf(null)).toBe('–');
     expect(formatChf('abc')).toBe('–');
+  });
+
+  it('prefixes the tax currency when given (F4.1a)', () => {
+    expect(formatChf('1234.5', 'EUR')).toBe('EUR 1’234.50');
+    expect(formatMoney('1234.5', 'CHF')).toBe('CHF 1’234.50');
+    expect(formatMoney(null, 'EUR')).toBe('–');
+    expect(new ChfPipe().transform('0.005', 'USD')).toBe('USD 0.01');
+    expect(new ChfPipe().transform('0.005')).toBe('0.01');
   });
 
   it('keeps 18-decimal quantities exact up to the requested places', () => {

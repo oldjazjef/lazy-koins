@@ -39,6 +39,11 @@ export interface EstvApplySummary {
   readonly fx: readonly string[];
 }
 
+/** F4.1a: the ESTV Kursliste is in CHF and only applies to projects valued in CHF. */
+export function estvApplies(project: Pick<Project, 'taxCurrency'>): boolean {
+  return project.taxCurrency === 'CHF';
+}
+
 /** The assets of a calculation the Kursliste can value: priced assets and stablecoins. */
 export function estvAssetsOf(
   result: CalculationResult,
@@ -77,6 +82,10 @@ export class EstvProjectRatesService {
     } = {},
   ): Promise<EstvApplySummary> {
     const year = project.taxYear;
+    // F4.1a: the Kursliste values in CHF — a project in another currency never uses it.
+    if (!estvApplies(project)) {
+      return { year, label: null, matched: [], ambiguous: [], fx: [] };
+    }
     const version = await this.store.findVersion(year);
     const existing = (await this.rates.listByProject(project.id)).filter(
       (r) => r.source === 'estv' && r.note?.startsWith(ESTV_LABEL_PREFIX),

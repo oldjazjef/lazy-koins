@@ -14,7 +14,7 @@ import { FileAnalysisService } from '../../files/application/file-analysis.servi
 import { SourceFileReader } from '../../files/application/source-file-reader';
 import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memory-import-mapping.repository';
 import {
-  FakeChfSource,
+  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../../rates/testing/in-memory-project-rate.repository';
@@ -78,7 +78,7 @@ async function setup(online: 'true' | 'false' = 'true') {
       userRates,
       settings,
       usd,
-      new FakeChfSource(),
+      new FakeFiatSource(),
       fx,
       config,
     ),
@@ -216,6 +216,67 @@ describe('dashboard (F11.4–F11.9)', () => {
         ),
       ),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('shows one tax currency at a time — never a sum across currencies (F4.1a)', async () => {
+    const t = await setup();
+    const eur = await t.projects.create('anna', {
+      name: 'Steuern 2024 (DE)',
+      taxYear: 2024,
+      country: 'CH',
+      canton: 'ZH',
+      taxCurrency: 'EUR',
+      notes: '',
+    });
+    await t.rates.upsertMany(eur.id, [
+      {
+        kind: 'fx',
+        asset: 'USD',
+        currency: 'EUR',
+        date: '2025-12-31',
+        value: '0.85',
+        source: 'ecb',
+      },
+    ]);
+    // Default: the newest project's currency (the CHF project of 2025).
+    const chf = await t.get.execute(
+      new GetDashboardQuery('anna', '2025-12-01', '2025-12-31'),
+    );
+    expect(chf).toMatchObject({
+      currency: 'CHF',
+      currencies: ['CHF', 'EUR'],
+      endValueChf: '858.7',
+    });
+    expect(chf.projects.map((p) => p.taxYear)).toEqual([2025]);
+    // The EUR view holds the EUR project only (no files: nothing valued yet).
+    const inEur = await t.get.execute(
+      new GetDashboardQuery(
+        'anna',
+        '2025-12-01',
+        '2025-12-31',
+        undefined,
+        'EUR',
+      ),
+    );
+    expect(inEur).toMatchObject({ currency: 'EUR', endValueChf: '0' });
+    expect(inEur.projects.map((p) => p.id)).toEqual([eur.id]);
+    // The card of one project uses that project's currency.
+    const card = await t.get.execute(
+      new GetDashboardQuery('anna', '2024-01-01', '2024-12-31', eur.id),
+    );
+    expect(card.currency).toBe('EUR');
+    // Rates for the EUR view are fetched in EUR.
+    await t.refresh.execute(
+      new RefreshDashboardRatesCommand(
+        'anna',
+        '2025-12-01',
+        '2025-12-31',
+        [],
+        true,
+        'EUR',
+      ),
+    );
+    expect(t.fx.calls).toEqual(['USD>EUR']);
   });
 
   it('checks the period', () => {

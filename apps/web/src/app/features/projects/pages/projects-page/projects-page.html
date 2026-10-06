@@ -92,10 +92,10 @@
           </span>
         </td>
         <td hlmTd class="text-right tabular-nums">
-          {{ project.wealthChf | lkChf }}
+          {{ project.wealthChf | lkChf: project.taxCurrency }}
         </td>
         <td hlmTd class="hidden text-right tabular-nums md:table-cell">
-          {{ project.incomeChf | lkChf }}
+          {{ project.incomeChf | lkChf: project.taxCurrency }}
         </td>
       </tr>
       }

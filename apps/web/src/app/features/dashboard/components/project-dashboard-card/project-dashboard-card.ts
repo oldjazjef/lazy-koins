@@ -44,7 +44,7 @@ import { TranslateService } from '@ngx-translate/core';
           @let view = service.view.value();
           <div>
             <p class="text-2xl font-semibold tabular-nums">
-              {{ 'common.chf' | translate }} {{ view.endValueChf | lkChf }}
+              {{ view.endValueChf | lkChf: view.currency }}
             </p>
             @if (view.changePct !== null) {
               <p
@@ -60,7 +60,10 @@ import { TranslateService } from '@ngx-translate/core';
           <lk-line-chart
             [points]="points()"
             [compact]="true"
-            [label]="'dashboard.chartLabel' | translate"
+            [currency]="view.currency"
+            [label]="
+              'dashboard.chartLabel' | translate: { currency: view.currency }
+            "
           />
           <dl class="grid grid-cols-3 gap-2 text-sm">
             @for (kind of kinds; track kind) {
@@ -74,7 +77,7 @@ import { TranslateService } from '@ngx-translate/core';
                     class="font-medium tabular-nums hover:underline"
                     (click)="open(kind)"
                   >
-                    {{ valueOf(kind) | lkChf }}
+                    {{ valueOf(kind) | lkChf: view.currency }}
                   </button>
                 </dd>
               </div>

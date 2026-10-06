@@ -7,6 +7,11 @@
   </p>
   } @if (view.stale) {
   <span hlmBadge variant="destructive">{{ 'result.stale' | translate }}</span>
+  } @if (view.result && view.result.currency !== service.projectCurrency()) {
+  <p class="text-destructive text-sm" role="note">
+    {{ 'result.currencyChanged' | translate: { currency: view.result.currency,
+    projectCurrency: service.projectCurrency() } }}
+  </p>
   }
   <span class="flex-1"></span>
   @if (!closed()) {
@@ -29,7 +34,7 @@
         {{ 'result.wealth' | translate: { year: result.taxYear } }}
       </p>
       <h2 hlmCardTitle class="text-2xl tabular-nums">
-        {{ 'common.chf' | translate }} {{ result.totals.wealthChf | lkChf }}
+        {{ result.totals.wealthChf | lkChf: result.currency }}
       </h2>
     </div>
   </section>
@@ -39,7 +44,7 @@
         {{ 'result.income' | translate: { year: result.taxYear } }}
       </p>
       <h2 hlmCardTitle class="text-2xl tabular-nums">
-        {{ 'common.chf' | translate }} {{ result.totals.incomeChf | lkChf }}
+        {{ result.totals.incomeChf | lkChf: result.currency }}
       </h2>
     </div>
   </section>
@@ -71,7 +76,8 @@
             {{ 'result.fields.positions' | translate }}
           </th>
           <th hlmTh class="text-right">
-            {{ 'result.fields.valueChf' | translate }}
+            {{ 'result.fields.valueChf' | translate: { currency: result.currency
+            } }}
           </th>
         </tr>
       </thead>
@@ -133,10 +139,12 @@
                     {{ 'result.fields.quantity' | translate }}
                   </th>
                   <th hlmTh class="hidden text-right lg:table-cell">
-                    {{ 'result.fields.priceChf' | translate }}
+                    {{ 'result.fields.priceChf' | translate: { currency:
+                    result.currency } }}
                   </th>
                   <th hlmTh class="text-right">
-                    {{ 'result.fields.valueChf' | translate }}
+                    {{ 'result.fields.valueChf' | translate: { currency:
+                    result.currency } }}
                   </th>
                   <th hlmTh class="hidden xl:table-cell">
                     {{ 'result.fields.source' | translate }}
@@ -245,7 +253,8 @@
             {{ 'result.fields.bookings' | translate }}
           </th>
           <th hlmTh class="text-right">
-            {{ 'result.fields.valueChf' | translate }}
+            {{ 'result.fields.valueChf' | translate: { currency: result.currency
+            } }}
           </th>
         </tr>
       </thead>
@@ -308,10 +317,12 @@
                     {{ 'result.fields.netQuantity' | translate }}
                   </th>
                   <th hlmTh class="text-right">
-                    {{ 'result.fields.valueChf' | translate }}
+                    {{ 'result.fields.valueChf' | translate: { currency:
+                    result.currency } }}
                   </th>
                   <th hlmTh class="hidden text-right lg:table-cell">
-                    {{ 'result.fields.grossChf' | translate }}
+                    {{ 'result.fields.grossChf' | translate: { currency:
+                    result.currency } }}
                   </th>
                   <th hlmTh class="lk-sticky-actions bg-transparent text-right">
                     <span class="sr-only"
@@ -426,7 +437,8 @@
             {{ 'result.fields.gap' | translate }}
           </th>
           <th hlmTh class="text-right">
-            {{ 'result.fields.valueChf' | translate }}
+            {{ 'result.fields.valueChf' | translate: { currency: result.currency
+            } }}
           </th>
         </tr>
       </thead>
@@ -506,7 +518,8 @@
             {{ 'result.fields.quantity' | translate }}
           </th>
           <th hlmTh class="text-right">
-            {{ 'result.fields.valueChf' | translate }}
+            {{ 'result.fields.valueChf' | translate: { currency: result.currency
+            } }}
           </th>
         </tr>
       </thead>

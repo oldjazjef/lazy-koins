@@ -82,6 +82,8 @@ export class ProjectWorkspaceService {
   readonly estv = inject(EstvService);
 
   readonly projectId = signal<string | undefined>(undefined);
+  /** F4.1a: the project's tax currency (set by the workspace from the project). */
+  readonly projectCurrency = signal('CHF');
   readonly tab = signal<WorkspaceTab>('files');
 
   private url(path: string): string | undefined {
@@ -104,6 +106,15 @@ export class ProjectWorkspaceService {
   readonly exports = httpResource<ProjectExport[]>(() =>
     this.tab() === 'exports' ? this.url('/exports') : undefined,
   );
+
+  /**
+   * The currency of the figures on screen (F4.1a): the latest calculation's — it may still be in
+   * the previous currency right after a change — else the project's.
+   */
+  readonly currency = computed(() => {
+    const view = this.result.hasValue() ? this.result.value() : undefined;
+    return view?.result?.currency ?? this.projectCurrency();
+  });
 
   readonly lastRefresh = signal<RefreshSummary | null>(null);
   /** F7.4a: what the last refresh / "übernehmen" took from the ESTV Kursliste. */

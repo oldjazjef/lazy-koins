@@ -21,6 +21,7 @@ const options: FollowUpOptions = {
   taxYear: 2026,
   country: 'CH',
   canton: 'ZH',
+  taxCurrency: 'CHF',
   existing: [],
   files: [
     {

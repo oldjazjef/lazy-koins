@@ -91,7 +91,11 @@ export class CalculationSnapshotPrismaRepository extends CalculationSnapshotRepo
     if (!row) return undefined;
     return {
       ...toMeta(row),
-      result: JSON.parse(row.result) as StoredResult,
+      // Snapshots of engine version ≤ 3 predate the tax currency (F4.1a): they are CHF.
+      result: {
+        currency: 'CHF',
+        ...(JSON.parse(row.result) as object),
+      } as StoredResult,
     };
   }
 

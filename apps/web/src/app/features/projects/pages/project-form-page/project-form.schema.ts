@@ -3,6 +3,7 @@ import {
   CH_CANTONS,
   MAX_TAX_YEAR,
   MIN_TAX_YEAR,
+  TAX_CURRENCIES,
 } from '../../../../core/api/api.types';
 
 /**
@@ -21,6 +22,8 @@ export const ProjectFormSchema = z.object({
     .min(MIN_TAX_YEAR, 'projects.form.taxYearInvalid')
     .max(MAX_TAX_YEAR, 'projects.form.taxYearInvalid'),
   canton: z.enum(CH_CANTONS, 'projects.form.cantonRequired'),
+  /** F4.1a: the currency every amount is valued in. */
+  taxCurrency: z.enum(TAX_CURRENCIES, 'projects.form.taxCurrencyInvalid'),
   notes: z.string().max(5000, 'projects.form.notesTooLong'),
 });
 

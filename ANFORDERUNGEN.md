@@ -38,6 +38,10 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
   („Wert CHF“ → „Wert <Währung>“). Die ESTV-Kursliste gilt nur für CHF; bei anderer Währung
   greifen die übrigen Quellen bzw. die Landesregeln (F7.7). Eine Änderung der Währung verlangt
   eine Bestätigung und eine Neuberechnung.
+  Präzisiert (08.10.2026): wählbar sind die Währungen mit EZB-Referenzkursen (CHF, EUR, USD, GBP,
+  …); Devisen USD/EUR → Steuerwährung von der EZB, fehlende Paare über Kreuzkurse. Das Dashboard
+  rechnet Projekte verschiedener Währungen nicht um: es zeigt je Währung deren Projekte (Auswahl
+  mit Hinweis). Pakete ohne Angabe gelten als CHF.
 - **F4.2** Projektliste mit Status, Vermögen und Ertrag je Projekt.
 - **F4.3** Neues Projekt anlegen; Land, Kanton und Wallets werden aus dem neusten Projekt vorgeschlagen.
 - **F4.4** Aus älteren Projekten übernehmen: Dateien, Wallets und Korrekturen auswählen, gruppiert nach Plattform/Wallet. Eine übernommene Datei wird nicht doppelt gespeichert.

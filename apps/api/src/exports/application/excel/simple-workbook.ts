@@ -52,7 +52,7 @@ export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
     'Plattform / Wallet',
     'Hauptpositionen',
     'Kleinpositionen',
-    'Steuerwert CHF',
+    `Steuerwert ${data.rules.homeCurrency}`,
   ]);
   const first = sheet.rowCount + 1;
   for (const platform of result.platforms) {
@@ -78,7 +78,7 @@ export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
   }
 
   section(`${rules.labels.incomeTitle} ${data.taxYear}`);
-  header(['Kategorie', '', '', 'Ertrag CHF']);
+  header(['Kategorie', '', '', `Ertrag ${data.rules.homeCurrency}`]);
   const firstIncome = sheet.rowCount + 1;
   for (const category of INCOME_CATEGORIES) {
     const total = result.categories.find((c) => c.category === category);

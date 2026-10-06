@@ -44,7 +44,8 @@
       </div>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-price"
-          >{{ 'corrections.fields.priceChf' | translate }}</label
+          >{{ 'corrections.fields.priceChf' | translate: { currency:
+          service.currency() } }}</label
         >
         <input
           hlmInput
@@ -143,7 +144,8 @@
       </div>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-price2"
-          >{{ 'corrections.fields.priceChfOptional' | translate }}</label
+          >{{ 'corrections.fields.priceChfOptional' | translate: { currency:
+          'CHF' } }}</label
         >
         <input
           hlmInput
@@ -195,7 +197,8 @@
       </div>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-price3"
-          >{{ 'corrections.fields.priceChfOptional' | translate }}</label
+          >{{ 'corrections.fields.priceChfOptional' | translate: { currency:
+          'CHF' } }}</label
         >
         <input
           hlmInput

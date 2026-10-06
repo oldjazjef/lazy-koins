@@ -32,6 +32,16 @@ export const EXPORT_EXTRA_COLUMNS = {
   row: 'Zeile',
 } as const;
 
+/** The information columns with the project's tax currency in the names (F4.1a: "Wert EUR"). */
+export function exportExtraColumns(currency: string): readonly string[] {
+  return Object.values(EXPORT_EXTRA_COLUMNS).map((name) =>
+    name === EXPORT_EXTRA_COLUMNS.priceChf ||
+    name === EXPORT_EXTRA_COLUMNS.valueChf
+      ? name.replace('CHF', currency)
+      : name,
+  );
+}
+
 export interface StandardExportFilter {
   readonly platform?: string;
   readonly accountId?: string;
@@ -92,8 +102,12 @@ export function standardExport(input: StandardExportInput): StandardExport {
     input.bookings,
     input.holdings,
     input.corrections,
+    input.rules.homeCurrency,
   );
-  const table = new RateTable([...input.rates, ...corrected.rates]);
+  const table = new RateTable(
+    [...input.rates, ...corrected.rates],
+    input.rules.homeCurrency,
+  );
   const notes = new Map<string, string[]>();
   const note = (id: string, value: string) =>
     notes.set(id, [...(notes.get(id) ?? []), value]);
@@ -183,7 +197,7 @@ export function standardExport(input: StandardExportInput): StandardExport {
     ];
   });
 
-  const extras = Object.values(EXPORT_EXTRA_COLUMNS);
+  const extras = exportExtraColumns(input.rules.homeCurrency);
   return {
     bookings: {
       header: [...columnNames(BOOKING_COLUMNS), ...extras],

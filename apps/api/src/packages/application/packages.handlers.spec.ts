@@ -211,6 +211,35 @@ describe('project package (F10.8)', () => {
     expect(t.files.stored.size).toBe(blobs);
   });
 
+  it('carries the tax currency; a package from before F4.1a imports as CHF', async () => {
+    const t = await setup();
+    await t.projects.update(t.project.id, { taxCurrency: 'EUR' });
+    const file = await t.exportPackage.execute(
+      new ExportProjectPackageQuery('anna', t.project.id, NOW),
+    );
+    const entries = unzipSync(file.bytes);
+    const manifest = JSON.parse(
+      strFromU8(entries['manifest.json'] as Uint8Array),
+    ) as { project: Record<string, unknown> };
+    expect(manifest.project['taxCurrency']).toBe('EUR');
+    const imported = await t.importPackage.execute(
+      new ImportProjectPackageCommand('bob', file.bytes),
+    );
+    expect((await t.projects.findById(imported.projectId))?.taxCurrency).toBe(
+      'EUR',
+    );
+
+    delete manifest.project['taxCurrency'];
+    const older = zipSync({
+      ...entries,
+      'manifest.json': strToU8(JSON.stringify(manifest)),
+    });
+    const old = await t.importPackage.execute(
+      new ImportProjectPackageCommand('carl', older),
+    );
+    expect((await t.projects.findById(old.projectId))?.taxCurrency).toBe('CHF');
+  });
+
   it('refuses tampered packages, unsafe paths and things that are no package', async () => {
     const t = await setup();
     const file = await t.exportPackage.execute(

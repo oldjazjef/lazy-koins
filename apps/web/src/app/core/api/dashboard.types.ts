@@ -60,7 +60,12 @@ export interface DashboardHolding {
   readonly accounts: readonly DashboardAccount[];
 }
 
+/** Every `…Chf` amount is in `currency` (F4.1a). */
 export interface DashboardView {
+  /** The tax currency shown (ISO 4217). */
+  readonly currency: string;
+  /** Every tax currency among my projects; with several, one is shown at a time. */
+  readonly currencies: readonly string[];
   readonly from: string;
   readonly to: string;
   readonly series: readonly DashboardPoint[];
@@ -133,6 +138,8 @@ export interface FollowUpOptions {
   readonly taxYear: number;
   readonly country: Project['country'];
   readonly canton: string;
+  /** F4.1a: the follow-up project keeps the source's tax currency. */
+  readonly taxCurrency: string;
   readonly existing: readonly { readonly id: string; readonly name: string }[];
   readonly files: readonly FileOption[];
   readonly walletsAvailable: boolean;

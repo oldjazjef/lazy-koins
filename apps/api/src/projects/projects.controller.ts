@@ -63,6 +63,7 @@ export class ProjectsController {
         taxYear: dto.taxYear,
         country: dto.country,
         canton: dto.canton,
+        taxCurrency: dto.taxCurrency,
         notes: dto.notes ?? '',
       }),
     );

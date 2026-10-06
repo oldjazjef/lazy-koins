@@ -55,6 +55,49 @@ export const CH_CANTONS = [
 ] as const;
 export type Canton = (typeof CH_CANTONS)[number];
 
+/**
+ * F4.1a: the currencies a project can be valued in (ISO 4217, the ECB reference rates) — mirrors
+ * `TAX_CURRENCIES` of the engine. The form offers the country default and CHF, EUR, USD, GBP first.
+ */
+export const TAX_CURRENCIES = [
+  'AUD',
+  'BGN',
+  'BRL',
+  'CAD',
+  'CHF',
+  'CNY',
+  'CZK',
+  'DKK',
+  'EUR',
+  'GBP',
+  'HKD',
+  'HUF',
+  'IDR',
+  'ILS',
+  'INR',
+  'ISK',
+  'JPY',
+  'KRW',
+  'MXN',
+  'MYR',
+  'NOK',
+  'NZD',
+  'PHP',
+  'PLN',
+  'RON',
+  'SEK',
+  'SGD',
+  'THB',
+  'TRY',
+  'USD',
+  'ZAR',
+] as const;
+
+/** The tax currency a new project in `country` gets (F4.1a: CH → CHF). */
+export const DEFAULT_TAX_CURRENCY: Readonly<Record<string, string>> = {
+  CH: 'CHF',
+};
+
 export const MIN_TAX_YEAR = 2009;
 export const MAX_TAX_YEAR = 2100;
 
@@ -64,6 +107,8 @@ export interface Project {
   taxYear: number;
   country: Country;
   canton: string;
+  /** F4.1a: ISO 4217 code every amount of the project is in. */
+  taxCurrency: string;
   status: ProjectStatus;
   notes: string;
   createdAt: string;
@@ -76,6 +121,8 @@ export interface CreateProjectRequest {
   taxYear: number;
   country: Country;
   canton: string;
+  /** F4.1a; absent = the country default. */
+  taxCurrency?: string;
   notes?: string;
 }
 
@@ -85,6 +132,8 @@ export interface UpdateProjectRequest {
   notes?: string;
   status?: ProjectStatus;
   canton?: string;
+  /** F4.1a: makes the latest calculation stale. */
+  taxCurrency?: string;
 }
 
 // --- Files (F5) — mirrors apps/api `files/dto/project-file.dto.ts` ---
