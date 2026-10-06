@@ -16,6 +16,8 @@ import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { apiDocsEnabled, type Env, LOCAL_HOST } from './config/env';
+import { registerHostPdfPrinter } from './integrations/pdf/host-pdf.renderer';
+import type { HostPdfPrinter } from './integrations/pdf/print-options';
 import { OPENAPI_REFERENCE_PATH, setupOpenApi } from './openapi/setup-openapi';
 
 const GLOBAL_PREFIX = 'api';
@@ -45,6 +47,11 @@ export interface BootstrapOptions {
   accessToken?: string;
   /** Nest logger setting (default: Nest's console logger). */
   logger?: LoggerService | LogLevel[] | false;
+  /**
+   * Prints PDF exports with the host's browser instead of Playwright's Chromium — the desktop
+   * app passes Electron's `printToPDF`, so users need no separately installed browser.
+   */
+  pdfPrinter?: HostPdfPrinter;
 }
 
 export interface RunningApi {
@@ -62,6 +69,8 @@ export interface RunningApi {
 export async function bootstrap(
   options: BootstrapOptions = {},
 ): Promise<RunningApi> {
+  // Before the module graph exists: IntegrationsModule picks the PDF renderer from it.
+  registerHostPdfPrinter(options.pdfPrinter);
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     options.logger === undefined ? {} : { logger: options.logger },

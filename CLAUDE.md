@@ -368,7 +368,8 @@ unless `force`), `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file 
 when the user switched rate lookups off or `RATES_ONLINE=false`. `exports/`: `POST …/exports`
 recalculates first when stale; detailed Excel = the FACHREGELN sheets with formulas (named cells
 `USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
-(`PdfRendererPort` → 503 without a browser); `GET …/mail-draft` (F10.6).
+(`PdfRendererPort` → 503 without a browser; the desktop app prints with Electron, see Versions
+and icons › PDFs); `GET …/mail-draft` (F10.6).
 
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
@@ -548,10 +549,14 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
   `lkBuild`; shown in Hilfe → Über lazy-koins (macOS: About panel) and Einstellungen → Speicherort.
 - **Exports**: `ExportData.appVersion` (= `BUILD_INFO.full`) — "Erstellt mit lazy-koins …" on the
   Methodik sheet/section and in the PDF footer.
-- **Desktop PDFs**: the API's `PlaywrightPdfRenderer` uses a Playwright Chromium installed on the
-  machine (present on dev machines — the packaged app printed a PDF here); a user's machine has
-  none, so PDF exports answer 503 there (Excel works). Open: a `PdfRendererPort` adapter on
-  Electron's `printToPDF` (Decisions: Exports).
+- **PDFs** (`integrations/pdf/`): one set of print options (`print-options.ts`: A4, margins,
+  "Seite x / y" footer) for two renderers, chosen by `selectPdfRenderer` in `IntegrationsModule`:
+  **desktop** = `HostPdfRenderer` around the printer the host passes to `bootstrap({ pdfPrinter })`
+  — `apps/desktop/src/main/pdf-printer.ts`, Electron's `webContents.printToPDF` in a hidden,
+  sandboxed window with JavaScript off and its own in-memory session that may load nothing but
+  the temporary HTML file (offline, one print at a time, 60 s timeout); **server/container** =
+  `PlaywrightPdfRenderer` (`PDF_CHROMIUM_PATH` / Playwright's download). The registration is a
+  module-level hook set before `NestFactory.create` (the API bundle must not import electron).
 
 **Icons**: one source, `assets/brand/icon.svg`. `pnpm icons` (`scripts/build/icons.cjs`, rendered
 by Electron's Chromium — no image library) writes `apps/desktop/build/icon.png` (1024) +
