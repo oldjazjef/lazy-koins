@@ -30,6 +30,8 @@ import { BEARER_SCHEME } from '../openapi/security-schemes';
 import {
   CreateMappingDto,
   MappingResponseDto,
+  MappingSummaryResponseDto,
+  MappingUsageProjectDto,
   ProjectMappingResponseDto,
   ReapplyResponseDto,
   UpdatedMappingResponseDto,
@@ -44,13 +46,15 @@ export class MappingsController {
   constructor(private readonly mappings: MappingsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'My mapping specs' })
-  @ApiOkResponse({ type: [MappingResponseDto] })
+  @ApiOperation({
+    summary: 'My mapping specs (all my projects), with how many files use each',
+  })
+  @ApiOkResponse({ type: [MappingSummaryResponseDto] })
   async list(
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<MappingResponseDto[]> {
+  ): Promise<MappingSummaryResponseDto[]> {
     return (await this.mappings.listMine(user.userId)).map(
-      MappingResponseDto.from,
+      MappingSummaryResponseDto.fromSummary,
     );
   }
 
@@ -71,6 +75,21 @@ export class MappingsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<MappingResponseDto> {
     return MappingResponseDto.from(await this.mappings.get(user.userId, id));
+  }
+
+  @Get(':id/usage')
+  @ApiOperation({
+    summary: 'The projects and files read with this mapping (F11.0)',
+  })
+  @ApiOkResponse({ type: [MappingUsageProjectDto] })
+  @ApiNotFoundResponse({ description: 'Missing, or not mine' })
+  async usage(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<MappingUsageProjectDto[]> {
+    return (await this.mappings.usage(user.userId, id)).map(
+      MappingUsageProjectDto.from,
+    );
   }
 
   @Get(':id/download')

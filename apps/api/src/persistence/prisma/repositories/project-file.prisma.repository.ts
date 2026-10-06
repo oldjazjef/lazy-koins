@@ -13,6 +13,7 @@ import type {
 } from '../../../files/domain/project-file';
 import {
   type AddProjectFileInput,
+  type MappingUse,
   ProjectFileRepositoryPort,
 } from '../../../files/ports/project-file.repository.port';
 import { toIsoString } from '../mappers/scalar.mapper';
@@ -173,6 +174,27 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
       orderBy: [{ addedAt: 'asc' }, { id: 'asc' }],
     });
     return rows.map(toProjectFile);
+  }
+
+  async countByMappings(mappingIds: readonly string[]): Promise<MappingUse[]> {
+    if (mappingIds.length === 0) return [];
+    const groups = await this.prisma.projectFile.groupBy({
+      by: ['mappingId', 'projectId'],
+      where: { mappingId: { in: [...mappingIds] } },
+      _count: { _all: true },
+      orderBy: [{ mappingId: 'asc' }, { projectId: 'asc' }],
+    });
+    return groups.flatMap((group) =>
+      group.mappingId
+        ? [
+            {
+              mappingId: group.mappingId,
+              projectId: group.projectId,
+              files: group._count._all,
+            },
+          ]
+        : [],
+    );
   }
 
   async add(

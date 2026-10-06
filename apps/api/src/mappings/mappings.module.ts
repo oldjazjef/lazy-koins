@@ -8,6 +8,7 @@ import {
 } from './application/commands/mapping.commands';
 import {
   GetMappingHandler,
+  GetMappingUsageHandler,
   ListMappingsHandler,
   ListProjectMappingsHandler,
 } from './application/queries/mapping.queries';
@@ -28,6 +29,7 @@ import { MappingsService } from './mappings.service';
     MappingsService,
     ListMappingsHandler,
     GetMappingHandler,
+    GetMappingUsageHandler,
     ListProjectMappingsHandler,
     CreateMappingHandler,
     UpdateMappingHandler,

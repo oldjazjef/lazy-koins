@@ -15,8 +15,8 @@ two as a package (F1.3).
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine), the Angular web app (`apps/web`: login, project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Kurse · Ergebnis ·
-> Prüfungen · Korrekturen · Exporte; Profil and Einstellungen › Kurse/Wallets/AI behind the user
-> menu), the pure engine (`libs/engine`:
+> Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main menu; Profil
+> and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
 > **mapping spec** and its applier, F5.8 coverage hints, the **calculation** with rates, checks,
 > corrections and analyses over any date, the golden test) and the infrastructure
@@ -130,7 +130,7 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
     projects/               #   the reference feature slice — copy its shape
     files/                  #   F5: upload (raw body), list, download, preview, assignment, templates
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
-    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing
+    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings, PDF statements
       domain/               #     pure: sample builder, prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
@@ -147,9 +147,11 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
-    features/<feature>/     #   login, projects, profile, settings (shell + rates/wallets/ai), files and
-                            #   calculation (components only: embedded in the project detail;
-                            #   project-workspace hosts the tabs, its service is shared by them)
+    features/<feature>/     #   login, projects, mappings (F11.0: list + detail), profile, settings
+                            #   (shell + rates/wallets/ai), files and calculation (components only:
+                            #   embedded in the project detail; project-workspace hosts the tabs, its
+                            #   service is shared by them; ai-assist = the AI dialogs; mapping-editor
+                            #   = the editor body, also used by mappings)
     shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
@@ -239,6 +241,18 @@ coverage (`coverage/missing-files.ts`), no platform knowledge.
 Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
+
+**Mappings page (F11.0)** — `features/mappings`, `/app/mappings` in the main navigation: every
+mapping of mine (`GET /api/mappings` adds `filesUsing` / `projectsUsing`, counted by the
+database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json`, new.
+`/app/mappings/:id`: facts, JSON, edit (the shared `lk-mapping-editor-form`, preview against a
+file that uses it — any project), save → offer re-apply, download, delete (lists the affected
+files; disabled while a closed project uses it — the API's 409), and "Wird genutzt in"
+(`GET /api/mappings/:id/usage`: projects newest year first, files linking to
+`/app/projects/:id#file-<id>`, where the row is scrolled to and marked). The project's mappings
+section only lists the mappings its files use (linking here), uploads a `.json`, starts
+"Mit AI erstellen" and the editor of a new mapping for one file; edits happen on this page. After
+a save from a project (editor, upload, AI) the toast links to the new mapping's page.
 
 To support a new platform: write (or let the AI write — "Mit AI erstellen") a mapping JSON, check it with the
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic

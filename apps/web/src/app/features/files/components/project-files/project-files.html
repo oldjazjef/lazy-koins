@@ -145,7 +145,12 @@
           </thead>
           <tbody hlmTBody>
             @for (file of group.files; track file.id) {
-            <tr hlmTr>
+            <tr
+              hlmTr
+              class="scroll-mt-24"
+              [id]="'file-' + file.id"
+              [class.bg-muted]="highlighted() === file.id"
+            >
               <td hlmTd>
                 <span class="font-medium">{{ file.displayName }}</span>
                 <span class="text-muted-foreground ml-2 text-xs"
@@ -157,9 +162,11 @@
                 <span hlmBadge [variant]="statusVariant(file.status)"
                   >{{ 'files.status.' + file.status | translate }}</span
                 >
-                @if (file.mappingName) {
-                <span class="text-muted-foreground ml-1 text-xs"
-                  >{{ file.mappingName }}</span
+                @if (file.mappingName && file.mappingId) {
+                <a
+                  class="text-muted-foreground ml-1 text-xs hover:underline"
+                  [routerLink]="['/app/mappings', file.mappingId]"
+                  >{{ file.mappingName }}</a
                 >
                 }
               </td>
