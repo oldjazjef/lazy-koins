@@ -1,9 +1,6 @@
 @let s = state.step();
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
-  <hlm-dialog-content
-    *hlmDialogPortal
-    class="max-h-[90vh] overflow-y-auto sm:max-w-5xl"
-  >
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
     <!-- Choose the file (started from the mappings section) -->
     @if (s === 'pickFile') {
     <hlm-dialog-header>

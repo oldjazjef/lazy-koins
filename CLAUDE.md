@@ -582,7 +582,7 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
   lines and the prompt tells the model to set it.
 - A Nest provider whose constructor has a defaulted function parameter (`fetchImpl = fetch`)
   cannot be `useClass`-bound (DI tries to resolve `Function`): bind it with `useFactory`.
-- Long dialogs (AI review) need `max-h-[90vh] overflow-y-auto` on `hlm-dialog-content`, and a
-  `<pre>` inside them `whitespace-pre-wrap`, or the footer leaves the screen.
+- A wide `<pre>` in a dialog (the AI payload preview) needs `whitespace-pre-wrap break-all`, or it
+  widens the whole dialog; the height is handled globally (see "Dialog actions never scroll away").
 - `sqlite-url.spec.ts` compares against `path.resolve(...)`: surf-lend's copy hard-coded POSIX
   paths and only passed on Linux.
