@@ -7,8 +7,13 @@ import type { RateEntry, RateKind, RateSource } from '@lazykoins/engine';
 export interface ProjectRate extends RateEntry {
   readonly id: string;
   readonly projectId: string;
+  /** Shown with the source — the Kursliste version of an automatic ESTV value (F7.4a). */
+  readonly note: string | null;
   readonly fetchedAt: string;
 }
+
+/** A rate to store, optionally with its label (`note`; absent = none). */
+export type StoredRateEntry = RateEntry & { readonly note?: string | null };
 
 /** Identifies one stored rate (the unique key without the project). */
 export interface RateKey {

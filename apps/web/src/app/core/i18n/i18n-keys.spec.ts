@@ -8,6 +8,7 @@ import { WORKSPACE_TABS } from '../../features/calculation/components/project-wo
 import {
   CHECK_KINDS,
   CORRECTION_TYPES,
+  ESTV_PHASES,
   EXPORT_KINDS,
   FETCH_STATUSES,
   INCOME_CATEGORIES,
@@ -25,6 +26,7 @@ import {
   SENT_VIA,
   SMTP_ERROR_KINDS,
 } from '../api/mail.types';
+import { FINGERPRINT_VERDICTS } from '../api/api.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -93,6 +95,10 @@ const DYNAMIC_KEYS = [
     (source) => `rates.source.${source}`,
   ),
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
+  ...ESTV_PHASES.map((phase) => `estv.phase.${phase}`),
+  ...['updated', 'current', 'failed'].map(
+    (outcome) => `estv.outcome.${outcome}`,
+  ),
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
   ...['statements', 'internal'].map((group) => `exports.groups.${group}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
@@ -129,6 +135,9 @@ const DYNAMIC_KEYS = [
     'modelNotFound',
   ].map((code) => `ai.errors.${code}`),
   ...['disabled', 'notConfigured'].map((reason) => `ai.notReady.${reason}`),
+  ...FINGERPRINT_VERDICTS.map(
+    (verdict) => `mappings.sample.fingerprint.${verdict}`,
+  ),
   ...[
     'invalidSpec',
     'headerNotFound',

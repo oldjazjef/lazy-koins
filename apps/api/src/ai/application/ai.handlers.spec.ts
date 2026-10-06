@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   BadGatewayException,
+  BadRequestException,
   ConflictException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -31,6 +32,7 @@ import {
   type AiConnection,
   AiProviderError,
 } from '../../integrations/ai/ai-completion.port';
+import { sampleFileOf } from '../../mappings/application/sample-file';
 import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memory-import-mapping.repository';
 import { InMemoryProjectRepository } from '../../projects/testing/in-memory-project.repository';
 import { InMemoryAiSettingsRepository } from '../testing/in-memory-ai-settings.repository';
@@ -40,10 +42,16 @@ import { AiSources } from './ai-sources';
 import {
   AcceptAiMappingCommand,
   AcceptAiMappingHandler,
+  AcceptSampleMappingCommand,
+  AcceptSampleMappingHandler,
   GenerateMappingCommand,
   GenerateMappingHandler,
+  GenerateSampleMappingCommand,
+  GenerateSampleMappingHandler,
   GetMappingPayloadHandler,
   GetMappingPayloadQuery,
+  GetSampleMappingPayloadHandler,
+  GetSampleMappingPayloadQuery,
 } from './mapping.handlers';
 import {
   GetAiSettingsHandler,
@@ -195,6 +203,25 @@ async function setup(
     accept: (fileId: string, spec: unknown) =>
       new AcceptAiMappingHandler(projects, files, mappings, bus).execute(
         new AcceptAiMappingCommand('anna', project.id, fileId, spec),
+      ),
+    samplePayload: (bytes: Uint8Array) =>
+      new GetSampleMappingPayloadHandler(gate, sources).execute(
+        new GetSampleMappingPayloadQuery(
+          'anna',
+          sampleFileOf('bitfinex.csv', bytes),
+        ),
+      ),
+    generateSample: (bytes: Uint8Array, consent = true) =>
+      new GenerateSampleMappingHandler(gate, sources, analysis, ai).execute(
+        new GenerateSampleMappingCommand(
+          'anna',
+          sampleFileOf('bitfinex.csv', bytes),
+          consent,
+        ),
+      ),
+    acceptSample: (spec: unknown) =>
+      new AcceptSampleMappingHandler(mappings).execute(
+        new AcceptSampleMappingCommand('anna', spec),
       ),
     statementPayload: (fileId: string) =>
       new GetStatementPayloadHandler(projects, files, gate, sources).execute(
@@ -360,6 +387,48 @@ describe('AI settings (F5.13)', () => {
     await t.save({ enabled: false });
     t.ai.answer({ ok: true });
     expect(await t.testConnection()).toMatchObject({ ok: true });
+  });
+});
+
+describe('AI mapping from the editor sample file (F5.13, F5.14)', () => {
+  it('previews and sends the same payload, only with consent, and stores nothing', async () => {
+    const t = await setup();
+    await t.save();
+    const preview = await t.samplePayload(BITFINEX);
+    expect(preview.consentGiven).toBe(false);
+    expect(preview.payload.fileName).toBe('bitfinex.csv');
+
+    const refused = await t
+      .generateSample(BITFINEX, false)
+      .catch((e: unknown) => e);
+    expect(codeOf(refused)).toBe('consentRequired');
+    expect(t.ai.requests).toHaveLength(0);
+
+    t.ai.answer(BITFINEX_SPEC);
+    const candidate = await t.generateSample(BITFINEX, true);
+    expect(t.ai.requests[0]?.request.messages[0]?.content).toContain(
+      JSON.stringify(preview.payload),
+    );
+    expect(candidate.valid).toBe(true);
+    expect(candidate.preview?.totals.bookings).toBeGreaterThan(0);
+    expect(t.files.stored.size).toBe(0);
+    expect(t.mappings.rows.size).toBe(0);
+
+    // The reviewed proposal is saved as an AI mapping; an invalid one is refused with its issues.
+    const saved = await t.acceptSample(candidate.spec);
+    expect(saved).toMatchObject({ origin: 'ai', platform: 'bitfinex' });
+    const invalid = await t
+      .acceptSample({ format: 'x' })
+      .catch((e: unknown) => e);
+    expect(invalid).toBeInstanceOf(BadRequestException);
+    expect(t.mappings.rows.size).toBe(1);
+  });
+
+  it('refuses while the plugin is off', async () => {
+    const t = await setup();
+    const error = await t.samplePayload(BITFINEX).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect(codeOf(error)).toBe('aiDisabled');
   });
 });
 

@@ -13,6 +13,11 @@ import {
   ListProjectMappingsHandler,
 } from './application/queries/mapping.queries';
 import {
+  InspectSampleHandler,
+  PreviewSampleHandler,
+} from './application/queries/mapping-sample.queries';
+import { MappingSamplesController } from './mapping-samples.controller';
+import {
   MappingsController,
   ProjectMappingsController,
 } from './mappings.controller';
@@ -24,9 +29,15 @@ import { MappingsService } from './mappings.service';
  */
 @Module({
   imports: [CqrsModule, FilesModule],
-  controllers: [MappingsController, ProjectMappingsController],
+  controllers: [
+    MappingsController,
+    ProjectMappingsController,
+    MappingSamplesController,
+  ],
   providers: [
     MappingsService,
+    InspectSampleHandler,
+    PreviewSampleHandler,
     ListMappingsHandler,
     GetMappingHandler,
     GetMappingUsageHandler,

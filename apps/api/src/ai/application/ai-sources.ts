@@ -1,6 +1,6 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
-import { decodeText } from '@lazykoins/engine';
-import { orUnreadable, readableOf } from '../../files/application/file-access';
+import type { MappingSample } from '@lazykoins/engine';
+import { readableOf } from '../../files/application/file-access';
 import {
   PdfTextExtractor,
   UnreadablePdfError,
@@ -11,11 +11,7 @@ import {
 } from '../../files/application/source-file-reader';
 import type { ProjectFile } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
-import {
-  buildMappingSample,
-  guessDelimiter,
-  type MappingSample,
-} from '../domain/mapping-sample';
+import { readSampleTable } from '../../mappings/application/sample-file';
 import {
   buildStatementPayload,
   type StatementPayload,
@@ -42,19 +38,12 @@ export class AiSources {
       );
     }
     const { readable } = await readableOf(this.files, file);
-    let csv:
-      { encoding: string; delimiter: ',' | ';' | '\t' | '|' } | undefined;
-    if (readable.kind === 'csv') {
-      const decoded = decodeText(readable.bytes);
-      csv = {
-        encoding: decoded.encoding,
-        delimiter: guessDelimiter(decoded.text),
-      };
-    }
-    const source = await orUnreadable(() =>
-      this.reader.read(readable, csv ? { delimiter: csv.delimiter } : {}),
-    );
-    return { sample: buildMappingSample(source, csv), readable };
+    return { sample: await this.sampleOf(readable), readable };
+  }
+
+  /** The sample of bytes that are not a project file (the mapping editor's sample file). */
+  async sampleOf(readable: ReadableFile): Promise<MappingSample> {
+    return (await readSampleTable(this.reader, readable)).sample;
   }
 
   async statement(

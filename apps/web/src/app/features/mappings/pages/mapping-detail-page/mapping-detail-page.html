@@ -24,7 +24,11 @@
 </lk-page-header>
 
 <div class="grid gap-6 lg:grid-cols-3">
-  <section hlmCard class="min-w-0 lg:col-span-2">
+  <section
+    hlmCard
+    class="min-w-0"
+    [class]="service.editing() ? 'lg:col-span-3' : 'lg:col-span-2'"
+  >
     <div hlmCardHeader>
       <h2 hlmCardTitle>{{ 'mappings.detail.jsonTitle' | translate }}</h2>
       @if (service.editing()) {
@@ -33,17 +37,7 @@
     </div>
     <div hlmCardContent class="flex flex-col gap-4">
       @if (service.editing()) {
-      <lk-mapping-editor-form
-        [idPrefix]="'mapping-detail'"
-        [text]="service.text()"
-        (textChange)="service.text.set($event)"
-        [checkFileId]="service.checkFileId()"
-        (checkFileIdChange)="service.checkFileId.set($event)"
-        [checkFiles]="service.checkFiles()"
-        [issues]="service.issues()"
-        [invalidJson]="service.invalidJson()"
-        [preview]="service.preview()"
-      />
+      <lk-mapping-workbench [idPrefix]="'mapping-detail'" />
       <div class="flex flex-wrap justify-end gap-2">
         <button
           hlmBtn
@@ -55,17 +49,8 @@
         </button>
         <button
           hlmBtn
-          variant="outline"
           type="button"
-          [disabled]="service.busy() || !service.canCheck()"
-          (click)="service.check()"
-        >
-          {{ 'mappings.editor.check' | translate }}
-        </button>
-        <button
-          hlmBtn
-          type="button"
-          [disabled]="service.busy()"
+          [disabled]="service.busy() || workbench.invalidJson()"
           (click)="service.save()"
         >
           {{ 'common.save' | translate }}

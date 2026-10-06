@@ -7,6 +7,7 @@ import { apiUrl } from '../../../../core/api/api-url';
 import {
   type ChecksView,
   type Correction,
+  type EstvApplySummary,
   type ExportKind,
   type FigureRecords,
   isInternalKind,
@@ -20,6 +21,7 @@ import {
   type StoredRate,
 } from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
 import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
 
@@ -67,6 +69,7 @@ export class ProjectWorkspaceService {
   private readonly document = inject(DOCUMENT);
   /** F4.7: calculations and exports can make a project "seit dem Versand geändert". */
   private readonly sentEvents = inject(ProjectSentEvents);
+  readonly estv = inject(EstvService);
 
   readonly projectId = signal<string | undefined>(undefined);
   readonly tab = signal<WorkspaceTab>('files');
@@ -93,6 +96,8 @@ export class ProjectWorkspaceService {
   );
 
   readonly lastRefresh = signal<RefreshSummary | null>(null);
+  /** F7.4a: what the last refresh / "übernehmen" took from the ESTV Kursliste. */
+  readonly lastEstv = signal<EstvApplySummary | null>(null);
 
   /** The drill-down on screen (F7.5): which figure, and its records once loaded. */
   readonly recordsOf = signal<{ figureId: string; title: string } | null>(null);
@@ -163,6 +168,17 @@ export class ProjectWorkspaceService {
         }),
       ),
     messages: { success: 'rates.removed', error: 'rates.removeFailed' },
+  });
+
+  private readonly applyEstvAction = defineAction<string, EstvApplySummary>({
+    run: (id) =>
+      firstValueFrom(
+        this.http.post<EstvApplySummary>(
+          apiUrl(`/projects/${id}/rates/estv/apply`),
+          {},
+        ),
+      ),
+    messages: { error: 'estv.applyFailed' },
   });
 
   private readonly kurslisteAction = defineAction<
@@ -263,8 +279,38 @@ export class ProjectWorkspaceService {
       { key: 'project-workspace' },
     );
     this.lastRefresh.set(summary);
+    this.lastEstv.set(summary.estv);
     this.rates.reload();
     this.result.reload();
+  }
+
+  /** F7.4a: takes the stored Kursliste of the tax year into the project (no network). */
+  async applyEstv(): Promise<void> {
+    const summary = await this.actions.run(
+      this.applyEstvAction,
+      this.requireId(),
+      { key: 'project-workspace' },
+    );
+    this.lastEstv.set(summary);
+    if (summary.label) {
+      this.notifications.info('estv.applied', {
+        count: summary.matched.length,
+        label: summary.label,
+      });
+    } else {
+      this.notifications.info('estv.noneForYear', { year: summary.year });
+    }
+    this.rates.reload();
+    this.result.reload();
+  }
+
+  /**
+   * "ESTV-Kursliste aktualisieren" in the project: downloads the year's list when a newer one
+   * exists (the deployment's, F7.4a), then takes it into the project.
+   */
+  async updateEstv(taxYear: number): Promise<void> {
+    await this.estv.update(taxYear);
+    await this.applyEstv();
   }
 
   async setManualRate(rate: ManualRateRequest): Promise<void> {

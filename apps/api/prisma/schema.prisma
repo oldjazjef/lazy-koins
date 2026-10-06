@@ -229,6 +229,9 @@ model ProjectRate {
   value     String
   /// manual | estv | binance | coingecko | ecb. CHECK in the migration.
   source    String
+  /// Shown with the source, e.g. "ESTV-Kursliste 2025, Stand 02.10.2026" for the automatic ESTV
+  /// values (F7.4a); null for everything else.
+  note      String?
   fetchedAt DateTime @default(now()) @map("fetched_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -418,4 +421,60 @@ model ProjectSentState {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("project_sent_state")
+}
+
+/// The ESTV Kursliste (ICTax) of one tax year, **once per deployment** (F7.4a) — not per user: the
+/// newest official export (`THIRD.INIT.<n>`) that was downloaded, with its version metadata. Only
+/// the newest version per year is kept; its year-end values are in `estv_rate`.
+model EstvKursliste {
+  year          Int      @id
+  /// e.g. THIRD.INIT.220 (the suffix is the schema version, 220 = 2.2.0).
+  exportType    String   @map("export_type")
+  exportDate    DateTime @map("export_date")
+  fileHash      String   @map("file_hash")
+  fileName      String   @map("file_name")
+  /// The XML namespace version, e.g. 2.2.0.
+  schemaVersion String   @map("schema_version")
+  downloadedAt  DateTime @map("downloaded_at")
+  entryCount    Int      @map("entry_count")
+  cryptoCount   Int      @map("crypto_count")
+
+  rates EstvRate[]
+
+  @@map("estv_kursliste")
+}
+
+/// One year-end value of the Kursliste: a cryptocurrency or currency (`currencyNote`) or a
+/// year-end exchange rate (`exchangeRateYearEnd`), in CHF per unit. Replaced with its year.
+model EstvRate {
+  id          String  @id @default(uuid(7))
+  year        Int
+  /// crypto | currency | fx. CHECK in the migration.
+  kind        String
+  /// The ICTax entity id (null for exchange rates).
+  ictaxId     String? @map("ictax_id")
+  /// The ticker (securityAppendix) or the ISO currency.
+  symbol      String
+  name        String
+  valorNumber String? @map("valor_number")
+  isin        String?
+  /// Decimal string, CHF per unit.
+  value       String
+
+  kursliste EstvKursliste @relation(fields: [year], references: [year], onDelete: Cascade)
+
+  @@index([year, symbol])
+  @@map("estv_rate")
+}
+
+/// The last check for a newer Kursliste of one tax year (F7.4a), successful or not.
+model EstvCheck {
+  year      Int      @id
+  checkedAt DateTime @map("checked_at")
+  /// updated | current | failed. CHECK in the migration.
+  outcome   String
+  /// What went wrong (no secrets); null on success.
+  error     String?
+
+  @@map("estv_check")
 }
