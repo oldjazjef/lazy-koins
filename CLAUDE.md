@@ -9,17 +9,18 @@ Two ways to run it with the **same features** (F1): a multi-user **web app** and
 **desktop app** (macOS + Windows, no login, data stays on the machine). A project moves between the
 two as a package (F1.3).
 
-> **Status (06.10.2026): files + mappings.** Nx monorepo with the NestJS API (`apps/api`: auth,
-> users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8 storage/upload/preview,
-> **mappings** = declarative mapping specs), the Angular web app (`apps/web`: login, project list /
-> form / detail with the files area and the project's mappings), the pure engine (`libs/engine`:
+> **Status (07.10.2026): files + mappings + AI plugin.** Nx monorepo with the NestJS API
+> (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
+> storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
+> mappings and PDF statements read into balances), the Angular web app (`apps/web`: login, project
+> list / form / detail with the files area, the project's mappings and the AI dialogs; settings →
+> AI), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
 > **mapping spec** and its applier, F5.8 coverage hints, the golden test) and the infrastructure
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
-> stored per user). **Not built yet:** `apps/desktop` (Electron), AI-generated mappings (next
-> phase), bookings persisted as rows, PDF text extraction, wallets, rates, checks, corrections,
-> exports. Update this file whenever the code makes a section concrete or wrong.
+> stored per user). **Not built yet:** `apps/desktop` (Electron), bookings persisted as rows,
+> wallets, rates, checks, corrections, exports. Update this file whenever the code makes a section concrete or wrong.
 
 ## Stack
 
@@ -115,12 +116,16 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
       persistence.module.ts #     binds every repository port to its adapter (global)
       prisma/               #     PrismaService, sqlite-url, mappers, repositories/*.prisma.repository.ts
     integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers
+      ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
     projects/               #   the reference feature slice — copy its shape
     files/                  #   F5: upload (raw body), list, download, preview, assignment, templates
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
     mappings/               #   mapping specs: CRUD, JSON download, schema, project listing
+    ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings, PDF statements
+      domain/               #     pure: sample builder, prompts, repair logic, statement checks, SSRF guard
+    common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
 apps/web/                   # Angular app
@@ -129,7 +134,9 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
-    features/<feature>/     #   login, projects, files (components only: embedded in the project detail)
+    features/<feature>/     #   login, projects, settings (AI), files (components only: embedded in
+                            #   the project detail; ai-assist = the AI dialogs)
+    shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
     shared/                 #   components/<c>/index.ts, forms/zod-validator
 libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angular/Prisma/network/fs/clock
@@ -214,9 +221,55 @@ Mappings are owner-scoped (`import_mapping`); a project lists the mappings its f
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
 
-To support a new platform: write (or later: let the AI write) a mapping JSON, check it with the
+To support a new platform: write (or let the AI write — "Mit AI erstellen") a mapping JSON, check it with the
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
 fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
+
+## AI plugin (F5.13, F5.14)
+
+Optional: without it everything works with the template and hand-written mappings. Settings per
+user in **`ai_settings`** (own table/migration `20261007090000_ai_settings`): on/off, provider kind
+`openai_compatible | anthropic`, base URL, model (empty = provider default), the API key **sealed
+with AES-256-GCM** (`common/crypto/secret-box.ts`, key = SHA-256 of `SETTINGS_ENCRYPTION_KEY`;
+empty env = no key can be stored, keyless local models still work), never returned (hint `…1234`),
+and the consent timestamp. Web: **Einstellungen → AI** (`/app/settings/ai`), presets, connection
+test (`POST /api/ai/settings/test`, no user data).
+
+- **Port**: `integrations/ai/ai-completion.port.ts` (`AiCompletionPort.complete(connection,
+request)` → parsed JSON + text + usage). `ProviderSwitchingAiCompletion` dispatches per call:
+  OpenAI-compatible Chat Completions (`response_format: json_schema`, on 400/422 retried as plain
+  JSON in the text — older Ollama, gateways) and Anthropic Messages (forced **tool use** with the
+  schema as `input_schema`, `anthropic-version: 2023-06-01`, default `claude-sonnet-5-5`). Plain
+  `fetch`, 120 s timeout, errors mapped to codes (`invalidKey` 401/403, `rateLimited` 429,
+  `modelNotFound` 404, `network`, `timeout`, `badResponse`, `providerError`) → 502 with `code`.
+- **Gate** (`ai/application/ai-gate.ts`): 409 `aiDisabled | aiNotConfigured | consentRequired |
+keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement}/payload` returns
+  exactly the data that will be sent; the app shows it before EVERY request; the first request
+  needs `consent: true` and stores `consent_at` (revocable in the settings).
+- **SSRF guard**: the API itself calls the base URL, so private/loopback hosts are refused unless
+  `AI_ALLOW_PRIVATE_URLS=true` — default: allowed with `AUTH_MODE=local|dev`, refused with
+  `firebase`. Literal host check only (no DNS-rebinding protection).
+- **Mapping** (`POST /api/projects/:p/files/:f/ai/mapping`): sample (`ai/domain/mapping-sample.ts`:
+  file name, encoding, delimiter guessed over the first 30 lines, first ≤25 raw rows incl.
+  preamble — up to 40 with a long preamble — distinct values of category-like columns ≤40, row
+  count; never amounts/dates/ids as "distinct values") → system prompt with the standard format,
+  kinds and a condensed copy of `docs/FACHREGELN.md` (`ai/domain/prompts.ts` — keep in step) →
+  zod (`validateMappingSpec`) → **dry run of `applyMapping` on the whole file** → if invalid,
+  header not found, no records, >5 % row errors or >20 % `unknown`: **one** repair round with the
+  concrete problems (it quotes no cell the sample did not show) → candidate with preview, kind
+  counts, unknown values, token usage. Nothing saved: `…/ai/mapping/accept` with the reviewed spec
+  stores an `import_mapping` with origin `ai` and reads the file with it; later files with the same
+  fingerprint are mapped on upload without AI.
+- **PDF statements** (`…/ai/statement`): text per page with **pdfjs-dist** (legacy build,
+  `files/application/pdf-text-extractor.ts`; ≤12 pages / 40 000 characters sent) → the model returns
+  Bestände with `quantityAsPrinted` (JSON Schema from zod) → textual normalisation (never via a JS
+  number; `1,234` flagged ambiguous) + **verbatim check** of every printed quantity against the
+  text (whole-number match, page checked) → review table. `…/statement/accept` takes the records
+  as returned, re-extracts and re-checks on the server and stores a **derived standard-format CSV**
+  (`<name>.bestaende.csv`, `Beleg` = `<pdf>, S. <n>`, origin `derived_from:<project file id>`);
+  the PDF stays as evidence. No mapping is stored.
+- Live without an account: `node scripts/dev/fake-ai-server.mjs` (OpenAI-compatible stub on
+  `http://localhost:11435/v1`; answers the synthetic fixtures' mappings and simple statements).
 
 ## Database (SQLite)
 
@@ -246,6 +299,9 @@ prisma/schema.prisma` must still report **no difference**.
   (spec as JSON text, `json_valid` CHECK) and `project_file` (status/origin/count/period CHECKs,
   `mapped` needs a `mapping_id`). A stored file is deleted with its **last** `project_file` — in the
   same transaction, also when a project is deleted (`ProjectPrismaRepository.delete`).
+- **AI** (migration `20261007090000_ai_settings`): `ai_settings` (PK `user_id`, cascade with the
+  user, CHECKs: provider, key sealed `enc:v1:%`, hint ≤ 8 chars). The same migration **redefines
+  `project_file`** only to widen its origin CHECK to `derived_from:_%` — all other CHECKs copied.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -335,7 +391,9 @@ etx), so no `project.json` has a `test` target, deliberately.
 - **Unit**: pure domain functions, handlers against **port doubles**, the module graph
   (`app.module.spec.ts` compiles every provider), page services with `HttpTestingController`,
   the engine (money, text decoding, standard format, mapping specs applied to the synthetic
-  Kraken/Binance/Bitfinex/Revolut fixtures, coverage). `files.handlers.spec.ts` runs the real
+  Kraken/Binance/Bitfinex/Revolut fixtures, coverage). The AI plugin is tested with a fake
+  `fetch` (adapters) and a fake `AiCompletionPort` (handlers), PDFs are generated in the test with
+  `pdf-lib` — never a real provider call. `files.handlers.spec.ts` runs the real
   engine + exceljs against in-memory ports.
 - **Integration** (`*.integration.spec.ts`, excluded from `pnpm test`): the Prisma adapters
   against a real SQLite file with the real migrations — owner listing, empty updates, cascade,
@@ -457,6 +515,10 @@ A1). It is git-ignored and must stay that way.
 - Security reports go through GitHub private vulnerability reporting ([SECURITY.md](SECURITY.md));
   `.github/CODEOWNERS` requires the owner's review.
 
+- **AI plugin = provider-agnostic port, no SDK** (07.10.2026): OpenAI-compatible + Anthropic
+  adapters over `fetch`; the AI writes **mappings, not bookings**; PDFs are a one-off conversion to
+  a derived standard CSV. Settings in their own `ai_settings` table, not a generic settings table.
+
 ## Open decisions — ask, don't decide
 
 - **OneDrive / Google Drive** connection for the web app (F3.2): API approach and folder sync.
@@ -506,5 +568,16 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
 - On Windows, git may check files out with CRLF (`core.autocrlf`); `.gitattributes` normalises to
   LF in the index and Prettier (`endOfLine: auto`) accepts both. Scripts that edit files should
   write LF.
+- **pdfjs-dist is ESM-only**: `import('pdfjs-dist/legacy/build/pdf.mjs')` compiles (module
+  commonjs) to `require()` of an external — works because Node ≥ 22.12 can `require()` ESM without
+  top-level await. pdf.js collapses runs of spaces into one; it may detach the buffer it gets (pass a
+  copy); `getDocument` has no `isEvalSupported` any more (v6).
+- `detectDelimiter` (engine) looks at the **first line only**; a CSV with a one-cell preamble
+  reads as comma-separated unless the spec sets `source.delimiter` — the AI sample guesses over 30
+  lines and the prompt tells the model to set it.
+- A Nest provider whose constructor has a defaulted function parameter (`fetchImpl = fetch`)
+  cannot be `useClass`-bound (DI tries to resolve `Function`): bind it with `useFactory`.
+- Long dialogs (AI review) need `max-h-[90vh] overflow-y-auto` on `hlm-dialog-content`, and a
+  `<pre>` inside them `whitespace-pre-wrap`, or the footer leaves the screen.
 - `sqlite-url.spec.ts` compares against `path.resolve(...)`: surf-lend's copy hard-coded POSIX
   paths and only passed on Linux.
