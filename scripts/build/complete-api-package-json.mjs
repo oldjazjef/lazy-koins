@@ -37,7 +37,9 @@ const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../..',
 );
-const distDir = path.join(repoRoot, 'dist/apps/api');
+// Optional argument: the dist folder relative to the repo root. Default = the server bundle; the
+// desktop app's API library (`nx run api:build-desktop`) passes `dist/apps/desktop-api`.
+const distDir = path.join(repoRoot, process.argv[2] ?? 'dist/apps/api');
 const bundlePath = path.join(distDir, 'main.js');
 const manifestPath = path.join(distDir, 'package.json');
 

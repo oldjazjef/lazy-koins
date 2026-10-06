@@ -294,7 +294,8 @@ model OpenItemState {
 model ProjectExport {
   id         String   @id @default(uuid(7))
   projectId  String   @map("project_id")
-  /// simple_pdf | simple_xlsx | detailed_pdf | detailed_xlsx. CHECK in the migration.
+  /// simple_pdf | simple_xlsx | detailed_pdf | detailed_xlsx | internal_report_pdf |
+  /// internal_report_xlsx. CHECK in the migrations (widened by 20261008090000).
   kind       String
   fileName   String   @map("file_name")
   mediaType  String   @map("media_type")

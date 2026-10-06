@@ -10,7 +10,7 @@ import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.re
 import { UserPrismaRepository } from './prisma/repositories/user.prisma.repository';
 
 /**
- * The ESTV Kursliste store (migration `20261008090000_estv_kursliste`) against a real SQLite
+ * The ESTV Kursliste store (migration `20261008100000_estv_kursliste`) against a real SQLite
  * file: one version per year replaced with its values, the checks, the project-rate label and
  * the hand-written CHECKs. `pnpm ci:integration` — never your dev database.
  */

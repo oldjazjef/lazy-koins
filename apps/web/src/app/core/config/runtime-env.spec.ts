@@ -41,4 +41,9 @@ describe('runtimeEnv', () => {
     window.__LK_ENV__ = { authMode: 'FIREBASE' as 'firebase' };
     expect(runtimeEnv().authMode).toBe('dev');
   });
+
+  it('accepts the desktop app’s local mode', () => {
+    window.__LK_ENV__ = { authMode: 'local' };
+    expect(runtimeEnv().authMode).toBe('local');
+  });
 });

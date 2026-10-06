@@ -2,7 +2,8 @@
 
 Abgeleitet aus der bisherigen manuellen Auswertung (Steuerjahr 2025). Hier stehen nur **Regeln**;
 Werte, Adressen und Mengen gehören nicht ins Repo (siehe CLAUDE.md, Private data). Keine
-Steuerberatung – Zweifelsfälle sind als **Annahme** markiert und gehören in die offenen Punkte.
+Steuerberatung – Zweifelsfälle sind als **Annahme** markiert und gehören in die offenen Punkte
+(intern, nie in den Auszug für die Steuerbehörde).
 
 Plattformspezifisches (Spalten, Buchungsarten, Asset-Namen, Zeitzonen) wird **nicht im Code**
 umgesetzt, sondern in Mapping-JSONs (ANFORDERUNGEN F5.11); die Abschnitte zu einzelnen
@@ -50,8 +51,9 @@ Rangfolge je Position (erste vorhandene gilt):
 - Umbenannte Assets beim Kursabruf abbilden (z. B. `MATIC` → `POL` ab der Umstellung).
 - Devisen: EZB-Referenzkurse, fehlende Tage mit dem letzten Fixing auffüllen; Stichtagskurs =
   letztes Fixing ≤ 31.12. Für die Deklaration durch den ESTV-Wert ersetzbar (Parameter).
-- Jede Position nennt ihre **Mengenquelle** und **Kursquelle**. Ohne Kurs: Position bleibt,
-  Wert leer, Status „Kurs/Menge fehlt“ (gelb), zählt als offener Punkt.
+- Jede Position nennt ihre **Mengenquelle** und **Kursquelle**. Ohne Kurs: Position bleibt mit
+  Menge, Wert leer, Status „ohne Kurswert“, Fussnote „Kein Kurswert verfügbar; nicht im Total
+  enthalten.“; intern zählt sie als offener Punkt (Prüfbericht).
 
 ## Ertrag
 
@@ -77,7 +79,8 @@ Die Historie enthält nur Spot/Funding; in Earn intern gutgeschriebene Erträge 
 - Je Jahr und Asset: **Lücke = (Bestand Ende − Bestand Anfang) − Σ Historie im Jahr** (ohne
   interne Umbuchungen). Bestand aus den Account Statements; Anfang = Ende des Vorjahres-Statements.
 - Bewertung zum **Jahresmittel** (Ø der Tageskurse USD × USD/CHF im Jahr).
-- Nur **positive** Lücken zählen als Ertrag; negative werden als Prüfhinweis ausgewiesen.
+- Nur **positive** Lücken zählen als Ertrag; negative stehen im Auszug als „negativ – kein
+  Ertrag“ und im internen Prüfbericht als Warnung.
 - EUR und USDT ausgenommen.
 
 ### Kraken (Ledger)
@@ -98,7 +101,8 @@ Die Historie enthält nur Spot/Funding; in Earn intern gutgeschriebene Erträge 
 
 - Hardforks und Airdrops (z. B. Fork-Coins, Airdrops an Halter eines Assets) separat ausweisen:
   Datum, Ereignis, Plattform, Asset, Menge, Wert zum Zuflusszeitpunkt.
-- Ohne Kurs: Wert 0 mit Hinweis „ESTV-Kurs nachtragen“ (offener Punkt).
+- Ohne Kurs: Wert leer („–“) mit der Fussnote „Kein Kurswert verfügbar; nicht im Total
+  enthalten.“; intern ein offener Punkt (Kurs nachtragen) im Prüfbericht.
 
 ### Spam
 
@@ -112,17 +116,34 @@ Die Historie enthält nur Spot/Funding; in Earn intern gutgeschriebene Erträge 
 
 ## Auszug (Excel, ausführlich)
 
-Blätter: **Übersicht**, **Parameter**, **Bestand 31.12.**, **Ertrag Detail**, **Earn-Lücke
-Binance**, **Einmalereignisse**, **Offene Punkte**, **Methodik**.
+Der Auszug geht an die **Steuerbehörde**: Er enthält nur, was deklariert wird, und wie es
+berechnet wurde – **keine offenen Punkte, Prüfhinweise oder Arbeitsanweisungen** (kein „zu
+prüfen“, kein „nachtragen“, keine Prüf-Farbe). Was zu klären ist, steht im **internen
+Prüfbericht** (unten).
 
-- Farben: **blau** = Eingabe, **schwarz** = Formel, **grün** = Verweis auf Parameter, **gelb** =
-  zu prüfen/nachzutragen.
+Blätter: **Übersicht**, **Parameter**, **Bestand 31.12.**, **Ertrag Detail**, **Earn-Lücke**,
+**Einmalereignisse**, **Methodik**.
+
+- Farben: **blau** = Eingabe, **schwarz** = Formel, **grün** = Verweis auf Parameter.
+- Ohne Kurs: Menge steht, Wert leer, Status „ohne Kurswert“, Fussnote unter der Tabelle „Kein
+  Kurswert verfügbar; nicht im Total enthalten.“ (Spam und negative Salden ebenso mit Fussnote).
 - Parameter: USD/CHF und EUR/CHF per 31.12. als Eingabe; Ersatz durch ESTV-Werte rechnet alles neu.
 - Bestand: Spalten Jahr, Plattform, Asset, Menge, Kurs USD, USD/CHF, Kurs CHF direkt,
   ESTV-Kurs (Override), Wert CHF, Status, Quelle Menge, Quelle Kurs. Wert CHF als Formel nach der
   Kurs-Rangfolge oben.
 - Ertrag Detail: Datum (UTC), Plattform, Art, Kategorie, Asset, Menge netto, Kurs USD, Wert USD
   (Formel), USD/CHF Tag, Wert CHF (Formel), Referenz.
-- Übersicht: Vermögen je Plattform (SUMIFS), Total, Anzahl Positionen ohne Kurs; Ertrag je
-  Quelle/Kategorie, Total; Hinweise.
-- Offene Punkte: Thema, Beschreibung, geschätzte Auswirkung CHF.
+- Übersicht: Vermögen je Plattform (SUMIFS), Total, Anzahl Positionen ohne Kurswert (nicht im
+  Total); Ertrag je Quelle/Kategorie, Total; Formularverweis und Farblegende.
+- Earn-Lücke: erklärt die Differenzmethode (Formel, nur positive Lücken, Jahresmittel) – sie ist
+  Ertrag, kein offener Punkt.
+- Der einfache Auszug (PDF/Excel) hat dieselbe Regel: Verzeichnis, Ertrag, Fussnote für
+  Positionen ohne Kurswert (mit Menge), Formularverweis.
+
+## Interner Prüfbericht
+
+„Interner Prüfbericht – nicht für die Steuerbehörde“ (PDF und Excel), für den Benutzer und den
+Treuhänder: Prüfungen mit Ampel, alle offenen Punkte mit Erledigt-Status, Notiz und geschätzter
+Auswirkung CHF, Positionen/Erträge/Einmalereignisse ohne Kurs, Warnungen zur Earn-Lücke (negativ,
+ohne Jahresmittelkurs), Hinweise auf fehlende Dateien. Wird nie standardmässig an die Mail an den
+Treuhänder angehängt; die offenen Fachfragen stehen im Mail-Text.

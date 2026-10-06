@@ -186,27 +186,29 @@
         {{ 'mappings.detail.deleteBody' | translate: { name: mapping.name } }}
       </p>
     </hlm-dialog-header>
-    @if (service.usedByClosedProject()) {
-    <p class="text-destructive text-sm" role="alert">
-      {{ 'mappings.detail.deleteClosed' | translate }}
-    </p>
-    } @if (service.usageFiles().length > 0) {
-    <div class="flex flex-col gap-2 text-sm">
-      <p>{{ 'mappings.detail.deleteFiles' | translate }}</p>
-      <ul class="list-disc pl-5">
-        @for (file of service.usageFiles(); track file.fileId) {
-        <li>
-          {{ file.displayName }}
-          <span class="text-muted-foreground">· {{ file.projectName }}</span>
-        </li>
-        }
-      </ul>
+    <div class="lk-dialog-body">
+      @if (service.usedByClosedProject()) {
+      <p class="text-destructive text-sm" role="alert">
+        {{ 'mappings.detail.deleteClosed' | translate }}
+      </p>
+      } @if (service.usageFiles().length > 0) {
+      <div class="flex flex-col gap-2 text-sm">
+        <p>{{ 'mappings.detail.deleteFiles' | translate }}</p>
+        <ul class="list-disc pl-5">
+          @for (file of service.usageFiles(); track file.fileId) {
+          <li>
+            {{ file.displayName }}
+            <span class="text-muted-foreground">· {{ file.projectName }}</span>
+          </li>
+          }
+        </ul>
+      </div>
+      } @else {
+      <p class="text-muted-foreground text-sm">
+        {{ 'mappings.detail.deleteNoFiles' | translate }}
+      </p>
+      }
     </div>
-    } @else {
-    <p class="text-muted-foreground text-sm">
-      {{ 'mappings.detail.deleteNoFiles' | translate }}
-    </p>
-    }
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
@@ -234,12 +236,14 @@
         ?? 0 } }}
       </p>
     </hlm-dialog-header>
-    @if (service.closedFiles() > 0) {
-    <p class="text-muted-foreground text-sm">
-      {{ 'mappings.detail.reapplyClosed' | translate: { count:
-      service.closedFiles() } }}
-    </p>
-    }
+    <div class="lk-dialog-body">
+      @if (service.closedFiles() > 0) {
+      <p class="text-muted-foreground text-sm">
+        {{ 'mappings.detail.reapplyClosed' | translate: { count:
+        service.closedFiles() } }}
+      </p>
+      }
+    </div>
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'mappings.reapplyLater' | translate }}

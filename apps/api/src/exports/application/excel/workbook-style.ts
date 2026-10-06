@@ -2,7 +2,8 @@ import type ExcelJS from 'exceljs';
 
 /**
  * The colour code of the statements (FACHREGELN, Auszug): blue = input, black = formula,
- * green = reference to Parameter, yellow = to check / to fill in.
+ * green = reference to Parameter. Statements have no "to check" colour — what needs checking is
+ * in the internal report, whose lights use `LIGHT_FILLS`.
  */
 export const INPUT_FONT: Partial<ExcelJS.Font> = {
   color: { argb: 'FF1F4FD8' },
@@ -13,19 +14,15 @@ export const FORMULA_FONT: Partial<ExcelJS.Font> = {
 export const PARAMETER_FONT: Partial<ExcelJS.Font> = {
   color: { argb: 'FF1B7F3B' },
 };
-export const CHECK_FILL: ExcelJS.Fill = {
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: 'FFFFF2A8' },
-};
 export const HEADER_FILL: ExcelJS.Fill = {
   type: 'pattern',
   pattern: 'solid',
   fgColor: { argb: 'FFE5E9F0' },
 };
+/** Traffic lights of the internal report only. */
 export const LIGHT_FILLS: Readonly<Record<string, ExcelJS.Fill>> = {
   green: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB7E4C7' } },
-  yellow: CHECK_FILL,
+  yellow: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF2A8' } },
   red: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4B6B6' } },
   grey: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } },
 };
