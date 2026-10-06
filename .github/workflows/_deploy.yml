@@ -1,0 +1,109 @@
+# Reusable: deploys already-built images to one GitHub Environment (test | production).
+# The environment holds its own secrets/variables and (for production) the approval rule.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: test | production
+        required: true
+        type: string
+      source-tag:
+        description: Existing image tag to deploy (sha-<commit>)
+        required: true
+        type: string
+      release-tag:
+        description: Extra tag for the deployed images (e.g. v1.2.0), optional
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    name: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.LAZYKOINS_SITE_URL }}
+    # One Coolify deploy per environment at a time. Must differ from the callers' workflow-level
+    # groups (e.g. deploy-test), or GitHub cancels the run as a deadlock.
+    concurrency:
+      group: coolify-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      IMAGES: lazykoins-api lazykoins-web
+      # `secrets` can't be used in step `if:` conditions directly.
+      HAS_DEPLOY_TARGET: ${{ secrets.COOLIFY_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Promote the exact tested images (no rebuild): add the environment tag (+ release tag).
+      - name: Tag images for ${{ inputs.environment }}
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          SOURCE_TAG: ${{ inputs.source-tag }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: |
+          registry="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          for image in $IMAGES; do
+            tags=(-t "$registry/$image:$ENVIRONMENT")
+            if [ -n "$RELEASE_TAG" ]; then tags+=(-t "$registry/$image:$RELEASE_TAG"); fi
+            docker buildx imagetools create "${tags[@]}" "$registry/$image:$SOURCE_TAG"
+          done
+
+      # Not configured yet (no Coolify token / URL / resource for this environment): the images are
+      # built and tagged above, the deploy and the smoke test are skipped with a notice instead of
+      # failing every merge to main. Setup: deploy/coolify/SETUP.md, steps 7–8.
+      - name: Deploy target configured?
+        id: target
+        env:
+          DEPLOY_ENV: ${{ inputs.environment }}
+          HAS_TOKEN: ${{ env.HAS_DEPLOY_TARGET }}
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_RESOURCE_UUIDS: ${{ vars.COOLIFY_RESOURCE_UUIDS }}
+        run: |
+          missing=()
+          [ "$HAS_TOKEN" = true ] || missing+=("secret COOLIFY_TOKEN")
+          [ -n "$COOLIFY_URL" ] || missing+=("variable COOLIFY_URL")
+          [ -n "$COOLIFY_RESOURCE_UUIDS" ] || missing+=("variable COOLIFY_RESOURCE_UUIDS")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            list="$(IFS=,; echo "${missing[*]}")"
+            echo "::notice title=Deploy skipped (${DEPLOY_ENV})::Environment '${DEPLOY_ENV}' is not configured yet (missing: ${list}). Images are built and tagged; see deploy/coolify/SETUP.md."
+            {
+              echo "### Deploy to \`${DEPLOY_ENV}\` skipped"
+              echo "Missing in GitHub → Settings → Environments → \`${DEPLOY_ENV}\`: ${list}."
+              echo "The images were built and tagged \`:${DEPLOY_ENV}\`. Setup: \`deploy/coolify/SETUP.md\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        if: steps.target.outputs.ready == 'true'
+        env:
+          DEPLOY_ENV: ${{ inputs.environment }}
+          REGISTRY: ghcr.io/${{ github.repository_owner }}
+          IMAGE_TAG: ${{ inputs.source-tag }}
+          # Per-environment configuration (GitHub → Settings → Environments → <env>)
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_RESOURCE_UUIDS: ${{ vars.COOLIFY_RESOURCE_UUIDS }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: bash deploy/deploy.sh
+
+      - name: Smoke test
+        if: steps.target.outputs.ready == 'true' && vars.LAZYKOINS_SITE_URL != ''
+        env:
+          LAZYKOINS_SITE_URL: ${{ vars.LAZYKOINS_SITE_URL }}
+        run: bash deploy/smoke-test.sh

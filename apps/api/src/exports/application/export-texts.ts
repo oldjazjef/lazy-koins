@@ -5,6 +5,7 @@ import {
   formatGrouped,
   type IncomeCategory,
   type Light,
+  type MissingFileHint,
   type OpenItem,
   parseDecimal,
   type Position,
@@ -35,12 +36,41 @@ export const LIGHT_LABELS: Readonly<Record<Light, string>> = {
   grey: 'nicht anwendbar',
 };
 
+/**
+ * Status of a position in a statement: neutral facts for the tax authority (the Excel's SUMIFS
+ * and COUNTIFS match these texts).
+ */
 export const STATUS_LABELS: Readonly<Record<PositionStatus, string>> = {
   ok: 'ok',
-  missingPrice: 'Kurs fehlt',
+  missingPrice: 'ohne Kurswert',
   spam: 'Spam',
   negative: 'Negativ',
 };
+
+/** Footnotes under the holdings of a statement, per status that is not in the total. */
+export function statusNote(
+  rules: CountryRules,
+  status: PositionStatus,
+): string | null {
+  switch (status) {
+    case 'missingPrice':
+      return `${STATUS_LABELS.missingPrice}: ${rules.labels.noPriceNote}`;
+    case 'spam':
+      return `${STATUS_LABELS.spam}: Spam-/Scam-Token ohne Marktwert; nicht im Total enthalten.`;
+    case 'negative':
+      return `${STATUS_LABELS.negative}: negativer Saldo; nicht im Total enthalten.`;
+    case 'ok':
+      return null;
+  }
+}
+
+export function oneOffLabel(kind: string): string {
+  return kind === 'loss'
+    ? 'Verlust'
+    : kind === 'income_hardfork'
+      ? 'Hardfork'
+      : 'Airdrop';
+}
 
 export const QUANTITY_SOURCE_LABELS: Readonly<Record<QuantitySource, string>> =
   {
@@ -67,7 +97,7 @@ export function priceSourceText(
   source: string | null,
   date: string | null,
 ): string {
-  if (!origin) return 'kein Kurs';
+  if (!origin) return '–';
   const label = ORIGIN_LABELS[origin] ?? origin;
   const extra = [source && source !== 'fixed' ? source : null, date]
     .filter(Boolean)
@@ -100,7 +130,10 @@ export function swissDate(iso: string): string {
 
 const p = (item: OpenItem, key: string) => item.params[key] ?? '';
 
-/** One line describing an open item (Offene Punkte, the mail draft). */
+/**
+ * One line describing an open item — for the internal report and the Treuhänder mail only, never
+ * for a statement (it may tell someone what to do).
+ */
 export function describeItem(item: OpenItem): string {
   const where = [item.platform, item.accountId, item.asset]
     .filter(Boolean)
@@ -133,6 +166,26 @@ export function describeItem(item: OpenItem): string {
     case 'walletNetworksNotAvailable':
       return 'Wallet-Abfrage auf allen Netzwerken ist noch nicht verfügbar – manuell prüfen';
   }
+}
+
+/** One line of an F5.8 missing-file hint (internal report). */
+export function describeHint(hint: MissingFileHint): string {
+  const where = `${hint.platform} / ${hint.accountId}`;
+  switch (hint.kind) {
+    case 'startsLate':
+      return `${where}: Buchungen erst ab ${swissDate(hint.date ?? '')} – Export ab 01.01. fehlt`;
+    case 'endsEarly':
+      return `${where}: Buchungen nur bis ${swissDate(hint.date ?? '')} – Export bis 31.12. fehlt`;
+    case 'noYearEndBalance':
+      return `${where}: kein Saldo/Kontoauszug per 31.12.`;
+  }
+}
+
+/** Positions without a value, as `platform asset quantity` (the footnote of the simple statement). */
+export function unpricedPositions(positions: readonly Position[]): string[] {
+  return positions
+    .filter((p) => p.status === 'missingPrice')
+    .map((p) => `${p.platform} ${p.asset} ${quantity(p.quantity)}`);
 }
 
 /** Positions of a platform for the securities list: main positions, small ones counted (F10.1). */

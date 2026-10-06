@@ -1,6 +1,7 @@
 {
   "app": {
-    "name": "lazy-koins"
+    "name": "lazy-koins",
+    "version": "lazy-koins v{{version}} ({{commit}})"
   },
   "actions": {
     "undo": "Rückgängig"
@@ -483,6 +484,25 @@
   },
   "settings": {
     "title": "Einstellungen",
+    "storage": {
+      "title": "Speicherort",
+      "subtitle": "Wo lazy-koins deine Daten und Originaldateien ablegt",
+      "intro": "Alle Projekte, Dateien und Einstellungen liegen in einer Datenbank-Datei in diesem Ordner. Du kannst einen eigenen Ordner wählen, auch den Sync-Ordner von OneDrive, Google Drive oder Proton Drive.",
+      "default": "Standard",
+      "synced": "Synchronisiert mit {{provider}}",
+      "folder": "Ordner",
+      "database": "Datenbank",
+      "version": "App-Version",
+      "syncWarning": "Dieser Ordner wird von {{provider}} synchronisiert. Öffne lazy-koins nie gleichzeitig auf zwei Geräten und warte nach dem Beenden, bis die Synchronisation fertig ist. Beim Start warnt lazy-koins, wenn die Daten gerade auf einem anderen Gerät offen sind.",
+      "conflicts": "Im Ordner liegen Konfliktkopien der Datenbank (der Sync-Dienst hat sie angelegt). lazy-koins arbeitet mit lazykoins.db weiter; prüfe die Kopien und lösche sie danach:",
+      "hint": "Beim Wechsel fragt lazy-koins, ob die bisherigen Daten in den neuen Ordner kopiert oder vorhandene Daten dort geöffnet werden sollen, und startet danach neu.",
+      "choose": "Ordner wählen …",
+      "useDefault": "Standardordner verwenden",
+      "reveal": "Ordner öffnen",
+      "restarting": "lazy-koins startet mit dem neuen Speicherort neu …",
+      "failed": "Der Speicherort konnte nicht gewechselt werden.",
+      "loadFailed": "Der Speicherort konnte nicht gelesen werden."
+    },
     "ai": {
       "title": "AI-Plugin",
       "subtitle": "AI-Anbieter für Mappings und Kontoauszüge",
@@ -557,7 +577,22 @@
       "rates": "Kurse",
       "wallets": "Wallets",
       "ai": "AI-Plugin",
-      "mail": "Mail"
+      "mail": "Mail",
+      "storage": "Speicherort",
+      "system": "System"
+    },
+    "system": {
+      "title": "System",
+      "subtitle": "Welche Version läuft und wo der Quellcode liegt.",
+      "version": "Version",
+      "commit": "Commit",
+      "builtAt": "Erstellt am",
+      "runtime": "Betriebsart",
+      "runtimeWeb": "Web-App",
+      "runtimeDesktop": "Desktop-App",
+      "repository": "Quellcode",
+      "support": "Unterstützen",
+      "supportLink": "Buy me a coffee"
     },
     "rates": {
       "title": "Kursabfragen",
@@ -933,7 +968,22 @@
   },
   "exports": {
     "createTitle": "Auszug erstellen",
-    "createHint": "Aus dem aktuellen Ergebnis (bei geänderten Daten wird zuerst neu berechnet). Jeder Auszug wird mit Datum gespeichert.",
+    "createHint": "Für die Steuerbehörde: nur deklarierte Werte und ihre Herleitung, ohne offene Punkte. Aus dem aktuellen Ergebnis (bei geänderten Daten wird zuerst neu berechnet); jeder Auszug wird mit Datum gespeichert.",
+    "internal": {
+      "title": "Interner Prüfbericht",
+      "hint": "Nicht für die Steuerbehörde: Prüfungen mit Ampel, offene Punkte mit Notizen, Positionen ohne Kurs, Earn-Lücken-Warnungen und fehlende Dateien – für dich und deinen Treuhänder. Wird nicht automatisch an den Treuhänder angehängt."
+    },
+    "groups": {
+      "statements": "Auszüge für die Steuerbehörde",
+      "internal": "Intern"
+    },
+    "confirm": {
+      "title": "Auszug trotz offener Punkte erstellen?",
+      "message": "Es gibt noch {{count}} offene Punkte. Trotzdem erstellen?",
+      "hint": "Der Auszug enthält die offenen Punkte nicht – er ist für die Steuerbehörde. Kläre sie zuerst in den Prüfungen oder halte sie im internen Prüfbericht fest.",
+      "toChecks": "Zu den Prüfungen",
+      "create": "Trotzdem erstellen"
+    },
     "listTitle": "Erstellte Auszüge",
     "empty": "Noch keine Auszüge erstellt.",
     "loadFailed": "Die Auszüge konnten nicht geladen werden.",
@@ -945,7 +995,9 @@
       "simple_pdf": "Einfach (PDF)",
       "simple_xlsx": "Einfach (Excel)",
       "detailed_pdf": "Ausführlich (PDF)",
-      "detailed_xlsx": "Ausführlich (Excel)"
+      "detailed_xlsx": "Ausführlich (Excel)",
+      "internal_report_pdf": "Prüfbericht intern (PDF)",
+      "internal_report_xlsx": "Prüfbericht intern (Excel)"
     },
     "fields": {
       "createdAt": "Erstellt",

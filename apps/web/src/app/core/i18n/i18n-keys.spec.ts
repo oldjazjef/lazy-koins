@@ -94,6 +94,7 @@ const DYNAMIC_KEYS = [
   ),
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
+  ...['statements', 'internal'].map((group) => `exports.groups.${group}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
   ...MAIL_SECURITIES.map((security) => `settings.mail.securities.${security}`),
   ...MAIL_PLACEHOLDERS.map((name) => `mail.placeholders.${name}`),

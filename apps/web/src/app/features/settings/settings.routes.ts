@@ -1,6 +1,7 @@
 import type { Routes } from '@angular/router';
+import { desktopOnly } from '../../core/desktop/desktop-bridge';
 
-/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail — each section a sub-route. */
+/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail, System — each a sub-route. */
 const routes: Routes = [
   {
     path: '',
@@ -34,6 +35,22 @@ const routes: Routes = [
         loadComponent: () =>
           import('./pages/mail-settings-page/mail-settings-page').then(
             (m) => m.MailSettingsPage,
+          ),
+      },
+      {
+        // Desktop app only (F3.1): the data folder. In the browser the route does not exist.
+        path: 'storage',
+        canMatch: [desktopOnly],
+        loadComponent: () =>
+          import('./pages/storage-settings-page/storage-settings-page').then(
+            (m) => m.StorageSettingsPage,
+          ),
+      },
+      {
+        path: 'system',
+        loadComponent: () =>
+          import('./pages/system-settings-page/system-settings-page').then(
+            (m) => m.SystemSettingsPage,
           ),
       },
     ],

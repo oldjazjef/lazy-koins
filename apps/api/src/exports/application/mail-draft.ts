@@ -1,6 +1,9 @@
 import type { ExportData } from './export-data';
 import { chf, describeItem } from './export-texts';
-import type { ProjectExportMeta } from '../domain/project-export';
+import {
+  isInternalKind,
+  type ProjectExportMeta,
+} from '../domain/project-export';
 
 export interface MailDraft {
   readonly to: string;
@@ -9,8 +12,10 @@ export interface MailDraft {
 }
 
 /**
- * F10.6: a mail to the Treuhänder with the two figures, the attachments and the open questions —
- * text to copy, nothing is sent.
+ * F10.6: a mail to the Treuhänder with the two figures, the attachments and the open technical
+ * questions — text to copy, nothing is sent. The questions belong here (the Treuhänder answers
+ * them), never in a statement for the tax authority. Attachments: the latest statement of each
+ * kind; the internal check report is never listed by default (F10.2a).
  */
 export function mailDraft(
   data: ExportData,
@@ -21,7 +26,8 @@ export function mailDraft(
     : 'Guten Tag';
   const latest = new Map<string, ProjectExportMeta>();
   for (const item of exports)
-    if (!latest.has(item.kind)) latest.set(item.kind, item);
+    if (!isInternalKind(item.kind) && !latest.has(item.kind))
+      latest.set(item.kind, item);
   const attachments =
     latest.size > 0
       ? [...latest.values()].map((item) => `- ${item.fileName}`)
@@ -42,7 +48,7 @@ export function mailDraft(
     'Anhänge:',
     ...attachments,
     '',
-    'Offene Fachfragen:',
+    'Offene Fachfragen (in den Auszügen nicht enthalten):',
     ...(questions.length > 0 ? questions : ['- keine']),
     '- Annahme: Launchpool-/HODLer-Airdrops als Ertrag deklariert (konservativ).',
     '- Annahme: Erträge netto nach Gebühr deklariert.',

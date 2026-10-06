@@ -1,0 +1,126 @@
+# Desktop builds: the Electron app (apps/desktop) for Windows and macOS, attached to a GitHub release.
+#
+# - Called by deploy-production.yml right after its `release` job (not after the production
+#   approval). It has to live inside that workflow: a release created with GITHUB_TOKEN (the
+#   "Run workflow" path) does not trigger other workflows' `release` events, so a separate
+#   `on: release` workflow would never run for it.
+# - Run by hand (Actions → Desktop builds → Run workflow, tag e.g. v1.2.3) to rebuild the
+#   installers of an existing release; `--clobber` replaces the files already attached.
+# - App version = the tag (LK_VERSION + LK_COMMIT for scripts/build/version.mjs, read by `pnpm build:desktop`).
+# - `pnpm build:desktop` builds web + API + desktop and runs `electron-builder --publish never`
+#   into dist/desktop/: Windows `lazy-koins-Setup-<version>.exe`, macOS
+#   `lazy-koins-<version>-arm64.dmg` and `lazy-koins-<version>-x64.dmg` (+ .blockmap files). No
+#   auto-update yet, so no latest*.yml; the upload step picks them up once a `publish` provider
+#   is configured in apps/desktop/electron-builder.config.cjs.
+#
+# Unsigned for now (CSC_IDENTITY_AUTO_DISCOVERY=false): users get SmartScreen / Gatekeeper warnings,
+# explained in the release notes. Signing later = repository secrets, referenced by name only, never
+# values in this file (see deploy/README.md, "Secrets and variables"):
+#   CSC_LINK                     Windows .pfx / macOS .p12 certificate (base64 or https URL)
+#   CSC_KEY_PASSWORD             its password
+#   APPLE_ID                     Apple ID of the developer account (macOS notarisation)
+#   APPLE_APP_SPECIFIC_PASSWORD  app-specific password of that Apple ID
+#   APPLE_TEAM_ID                Apple developer team id
+# To switch it on: drop CSC_IDENTITY_AUTO_DISCOVERY and uncomment the lines in the build step.
+name: Desktop builds
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build and attach the installers to (vX.Y.Z)
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to (re)build the installers for, e.g. v1.2.3
+        required: true
+        type: string
+
+permissions:
+  contents: write # upload the installers to the release
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    env:
+      NX_DAEMON: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        shell: bash
+
+      - name: App version from the tag
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag must look like v1.2.3 (got $TAG)"
+            exit 1
+          fi
+          # scripts/build/version.mjs: X.Y.Z from the tag + the tag's commit (GITHUB_SHA would be
+          # the branch head on a manual re-run).
+          echo "LK_VERSION=$TAG" >> "$GITHUB_ENV"
+          echo "LK_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build desktop app
+        shell: bash
+        env:
+          # No signing yet: don't let electron-builder pick up a certificate from the keychain.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # Signing / notarisation later (repository secrets, see the comment at the top):
+          # CSC_LINK: ${{ secrets.CSC_LINK }}
+          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: pnpm build:desktop
+
+      # For debugging a build without touching the release.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            dist/desktop/*.exe
+            dist/desktop/*.dmg
+            dist/desktop/*.blockmap
+            dist/desktop/latest*.yml
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Attach installers to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          shopt -s nullglob
+          installers=(dist/desktop/*.exe dist/desktop/*.dmg)
+          if [ "${#installers[@]}" -eq 0 ]; then
+            echo "::error::No installer (.exe / .dmg) in dist/desktop/ — did pnpm build:desktop write there?"
+            ls -la dist/desktop || true
+            exit 1
+          fi
+          files=("${installers[@]}" dist/desktop/latest*.yml)
+          printf 'Uploading %s\n' "${files[@]}"
+          gh release upload "$TAG" "${files[@]}" --clobber

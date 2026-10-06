@@ -4,19 +4,20 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
-import type {
-  ChecksView,
-  Correction,
-  ExportKind,
-  FigureRecords,
-  MailDraft,
-  ManualRateRequest,
-  OpenItem,
-  ProjectExport,
-  RatesView,
-  RefreshSummary,
-  ResultView,
-  StoredRate,
+import {
+  type ChecksView,
+  type Correction,
+  type ExportKind,
+  type FigureRecords,
+  isInternalKind,
+  type MailDraft,
+  type ManualRateRequest,
+  type OpenItem,
+  type ProjectExport,
+  type RatesView,
+  type RefreshSummary,
+  type ResultView,
+  type StoredRate,
 } from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
@@ -38,6 +39,12 @@ export interface CorrectionDraft {
   readonly type:
     'price_override' | 'reclassify' | 'manual_booking' | 'manual_holding';
   readonly values: Readonly<Record<string, string>>;
+}
+
+/** A statement waiting for the user's "create anyway" while open items exist (F10.2a). */
+export interface PendingExport {
+  readonly kind: ExportKind;
+  readonly openItems: number;
 }
 
 /** A correction as the API takes it (amounts as decimal strings). */
@@ -93,6 +100,9 @@ export class ProjectWorkspaceService {
 
   /** A correction being prepared in the corrections tab. */
   readonly draft = signal<CorrectionDraft | null>(null);
+
+  /** A statement asked for while open items exist — the confirmation dialog shows it. */
+  readonly pendingExport = signal<PendingExport | null>(null);
 
   private readonly status = this.actions.status<unknown>('project-workspace');
   readonly isBusy = computed(() => this.status()?.state === 'pending');
@@ -330,6 +340,53 @@ export class ProjectWorkspaceService {
     this.exports.reload();
     this.result.reload();
     this.sentEvents.changed();
+  }
+
+  /**
+   * A statement is handed to the tax authority, so it carries no open items (F10.2a): while some
+   * are not ticked off, ask first (`pendingExport` → confirm / cancel / go to the checks). The
+   * internal report is created at once — it is where the open items are.
+   */
+  async requestExport(kind: ExportKind): Promise<void> {
+    if (!isInternalKind(kind)) {
+      const openItems = await this.openItemCount();
+      if (openItems > 0) {
+        this.pendingExport.set({ kind, openItems });
+        return;
+      }
+    }
+    await this.createExport(kind);
+  }
+
+  async confirmExport(): Promise<void> {
+    const pending = this.pendingExport();
+    if (!pending) return;
+    this.pendingExport.set(null);
+    await this.createExport(pending.kind);
+  }
+
+  cancelExport(): void {
+    this.pendingExport.set(null);
+  }
+
+  /** From the confirmation to the Prüfungen tab. */
+  showChecks(): void {
+    this.pendingExport.set(null);
+    this.tab.set('checks');
+  }
+
+  /** Open items not ticked off, from the latest calculation; unknown (no calculation) = 0. */
+  private async openItemCount(): Promise<number> {
+    try {
+      const view = await firstValueFrom(
+        this.http.get<ChecksView>(
+          apiUrl(`/projects/${this.requireId()}/checks`),
+        ),
+      );
+      return view.items.filter((item) => !item.done).length;
+    } catch {
+      return 0;
+    }
   }
 
   /** F7.5: the records behind a figure. */

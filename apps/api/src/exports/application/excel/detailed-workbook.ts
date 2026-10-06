@@ -1,5 +1,4 @@
 import {
-  CHECK_KINDS,
   INCOME_CATEGORIES,
   parseDecimal,
   type Position,
@@ -8,21 +7,18 @@ import ExcelJS from 'exceljs';
 import type { ExportData } from '../export-data';
 import {
   categoryLabel,
-  CHECK_LABELS,
-  describeItem,
-  LIGHT_LABELS,
+  oneOffLabel,
   priceSourceText,
   QUANTITY_SOURCE_LABELS,
   STATUS_LABELS,
+  statusNote,
   swissDate,
 } from '../export-texts';
 import {
-  CHECK_FILL,
   CHF_FORMAT,
   formula,
   headerRow,
   input,
-  LIGHT_FILLS,
   num,
   PARAMETER_FONT,
   PRICE_FORMAT,
@@ -37,8 +33,6 @@ export const SHEETS = {
   income: 'Ertrag Detail',
   earnGap: 'Earn-Lücke',
   oneOff: 'Einmalereignisse',
-  checks: 'Prüfungen',
-  openItems: 'Offene Punkte',
   method: 'Methodik',
 } as const;
 
@@ -67,10 +61,24 @@ function addHeader(
   sheet.addRow([]);
 }
 
+/** Notes under a table: one per status that keeps a row out of the total. */
+function addFootnotes(
+  sheet: ExcelJS.Worksheet,
+  notes: readonly (string | null)[],
+): void {
+  const distinct = [...new Set(notes.filter((n): n is string => !!n))];
+  if (distinct.length === 0) return;
+  sheet.addRow([]);
+  for (const note of distinct) {
+    sheet.addRow([note]).font = { italic: true, color: { argb: 'FF666666' } };
+  }
+}
+
 /**
  * The detailed statement (F10.2) as the FACHREGELN workbook: real formulas (values by the price
- * priority, totals by SUMIFS), inputs in blue, references to Parameter in green, things to check
- * in yellow. Overriding a price, the ESTV column or a parameter recalculates everything.
+ * priority, totals by SUMIFS), inputs in blue, references to Parameter in green. Overriding a
+ * price, the ESTV column or a parameter recalculates everything. It is handed to the tax
+ * authority: no open items, checks or instructions — those are in the internal report (F10.2a).
  */
 export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   const { result, rules } = data;
@@ -85,8 +93,6 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   const income = workbook.addWorksheet(SHEETS.income);
   const earnGap = workbook.addWorksheet(SHEETS.earnGap);
   const oneOff = workbook.addWorksheet(SHEETS.oneOff);
-  const checks = workbook.addWorksheet(SHEETS.checks);
-  const openItems = workbook.addWorksheet(SHEETS.openItems);
   const method = workbook.addWorksheet(SHEETS.method);
 
   // --- Parameter ---
@@ -94,15 +100,13 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   parameters.addRow([]);
   const usdRow = parameters.addRow([`USD/CHF per 31.12.${data.taxYear}`]);
   input(usdRow.getCell(2), num(result.parameters.usdChf), PRICE_FORMAT);
-  usdRow.getCell(3).value = result.parameters.usdChfSource ?? 'fehlt';
-  if (result.parameters.usdChf === null) usdRow.getCell(2).fill = CHECK_FILL;
+  usdRow.getCell(3).value = result.parameters.usdChfSource ?? '–';
   const eurRow = parameters.addRow([`EUR/CHF per 31.12.${data.taxYear}`]);
   input(eurRow.getCell(2), num(result.parameters.eurChf), PRICE_FORMAT);
-  eurRow.getCell(3).value = result.parameters.eurChfSource ?? 'fehlt';
-  if (result.parameters.eurChf === null) eurRow.getCell(2).fill = CHECK_FILL;
+  eurRow.getCell(3).value = result.parameters.eurChfSource ?? '–';
   parameters.addRow([]);
   parameters.addRow([
-    'Ersatz durch ESTV-Werte: Wert in Spalte B überschreiben – alle Formeln rechnen neu.',
+    'Die Formeln der übrigen Blätter rechnen mit diesen Werten (benannte Zellen USDCHF, EURCHF).',
   ]);
   workbook.definedNames.add(
     `'${SHEETS.parameters}'!$B$${usdRow.number}`,
@@ -134,6 +138,10 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   for (const position of result.positions) {
     addPositionRow(holdings, data.taxYear, position);
   }
+  addFootnotes(
+    holdings,
+    result.positions.map((p) => statusNote(rules, p.status)),
+  );
   setWidths(holdings, [6, 14, 16, 10, 18, 14, 10, 14, 14, 16, 12, 26, 40, 30]);
 
   // --- Ertrag Detail ---
@@ -189,11 +197,14 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     row.getCell(14).value =
       line.status === 'ok'
         ? priceSourceText(line.priceOrigin, line.priceSource, null)
-        : 'Kurs fehlt';
-    if (line.status === 'missingPrice') {
-      for (const c of [7, 10, 14]) row.getCell(c).fill = CHECK_FILL;
-    }
+        : STATUS_LABELS.missingPrice;
   }
+  addFootnotes(
+    income,
+    result.income
+      .filter((l) => l.status === 'missingPrice')
+      .map(() => statusNote(rules, 'missingPrice')),
+  );
   setWidths(income, [20, 12, 26, 24, 9, 18, 14, 14, 11, 14, 14, 14, 24, 34]);
 
   // --- Earn-Lücke ---
@@ -235,10 +246,15 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
       gap.status === 'income'
         ? 'Ertrag'
         : gap.status === 'negative'
-          ? 'negativ – prüfen'
-          : 'Kurs fehlt';
-    if (gap.status !== 'income') row.getCell(10).fill = CHECK_FILL;
+          ? 'negativ – kein Ertrag'
+          : STATUS_LABELS.missingPrice;
   }
+  addFootnotes(
+    earnGap,
+    result.earnGaps
+      .filter((g) => g.status === 'missingPrice')
+      .map(() => statusNote(rules, 'missingPrice')),
+  );
   setWidths(earnGap, [12, 16, 9, 16, 16, 16, 16, 14, 14, 18]);
 
   // --- Einmalereignisse ---
@@ -254,58 +270,19 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   for (const event of result.oneOffEvents) {
     const row = oneOff.addRow([
       swissDate(event.timestamp),
-      event.kind === 'loss'
-        ? 'Verlust'
-        : event.kind === 'income_hardfork'
-          ? 'Hardfork'
-          : 'Airdrop',
+      oneOffLabel(event.kind),
       event.platform,
       event.asset,
     ]);
     input(row.getCell(5), num(event.quantity), QUANTITY_FORMAT);
-    input(row.getCell(6), num(event.valueChf) ?? 0, CHF_FORMAT);
     if (event.valueChf === null) {
-      row.getCell(6).fill = CHECK_FILL;
-      row.getCell(7).value = 'ESTV-Kurs nachtragen';
-      row.getCell(7).fill = CHECK_FILL;
+      row.getCell(6).value = '–';
+      row.getCell(7).value = rules.labels.noPriceNote;
+    } else {
+      input(row.getCell(6), num(event.valueChf), CHF_FORMAT);
     }
   }
-  setWidths(oneOff, [12, 12, 12, 9, 18, 14, 24]);
-
-  // --- Prüfungen ---
-  headerRow(checks, ['Prüfung', 'Ampel', 'Offene Punkte', 'Auswirkung CHF']);
-  for (const kind of CHECK_KINDS) {
-    const check = result.checks.find((c) => c.kind === kind);
-    if (!check) continue;
-    const row = checks.addRow([
-      CHECK_LABELS[kind],
-      LIGHT_LABELS[check.light],
-      check.items,
-    ]);
-    row.getCell(2).fill = LIGHT_FILLS[check.light] ?? CHECK_FILL;
-    input(row.getCell(4), num(check.impactChf), CHF_FORMAT);
-  }
-  setWidths(checks, [52, 16, 14, 16]);
-
-  // --- Offene Punkte ---
-  headerRow(openItems, [
-    'Thema',
-    'Beschreibung',
-    'Geschätzte Auswirkung CHF',
-    'Erledigt',
-    'Notiz',
-  ]);
-  for (const item of data.items) {
-    const row = openItems.addRow([
-      CHECK_LABELS[item.check],
-      describeItem(item),
-    ]);
-    input(row.getCell(3), num(item.impactChf), CHF_FORMAT);
-    row.getCell(4).value = item.done ? 'ja' : 'nein';
-    row.getCell(5).value = item.note;
-    if (!item.done) row.getCell(2).fill = CHECK_FILL;
-  }
-  setWidths(openItems, [36, 80, 18, 10, 40]);
+  setWidths(oneOff, [12, 12, 12, 9, 18, 14, 48]);
 
   // --- Methodik ---
   for (const line of methodLines(data)) method.addRow([line]);
@@ -340,7 +317,9 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     num(result.totals.wealthChf),
     CHF_FORMAT,
   );
-  const missingRow = overview.addRow(['Positionen ohne Kurs']);
+  const missingRow = overview.addRow([
+    `Positionen ${STATUS_LABELS.missingPrice} (nicht im Total)`,
+  ]);
   formula(
     missingRow.getCell(2),
     `COUNTIFS(${H}!K:K,"${STATUS_LABELS.missingPrice}")`,
@@ -375,11 +354,9 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   );
   overview.addRow([]);
   overview.addRow(['Hinweise']).font = { bold: true };
-  const open = data.items.filter((i) => !i.done).length;
-  overview.addRow([`Offene Punkte: ${open} (Blatt „${SHEETS.openItems}“)`]);
   overview.addRow([rules.labels.formReference(data.canton)]);
   const legend = overview.addRow([
-    'Farben: blau = Eingabe, schwarz = Formel, grün = Verweis auf Parameter, gelb = zu prüfen / nachzutragen.',
+    'Farben: blau = Eingabe, schwarz = Formel, grün = Verweis auf Parameter.',
   ]);
   legend.font = { italic: true };
   setWidths(overview, [44, 18]);
@@ -440,9 +417,6 @@ function addPositionRow(
     position.priceDate,
   );
   row.getCell(14).value = position.quantity;
-  if (position.status === 'missingPrice' || position.status === 'negative') {
-    for (const c of [9, 10, 11]) row.getCell(c).fill = CHECK_FILL;
-  }
   if (position.status === 'spam') row.font = { color: { argb: 'FF999999' } };
   // Values in CHF are rounded only for display; the cell keeps the full product.
   if (position.valueChf !== null && parseDecimal(position.valueChf).isZero())
@@ -460,10 +434,12 @@ export function methodLines(data: ExportData): string[] {
     `Stablecoins (${rules.usdPegged.join(', ')}) = 1 USD; CHF = 1; EUR über EUR/CHF. USD-Kurse: Tagesschluss (Binance, UTC), höchstens ${rules.priceToleranceDays} Tage alt, sonst erster Kurs danach (≤ ${rules.priceToleranceDays} Tage). Devisen: EZB-Referenzkurse, letztes Fixing.`,
     'Ertrag: zum Zuflusszeitpunkt (Tag in UTC) bewertet, netto nach Gebühr im gleichen Asset; Brutto als Information. Liefert die Plattform einen USD-Wert (z. B. Kraken amountusd − feeusd), gilt dieser × USD/CHF des Tages.',
     `Earn-Lücke (Differenzmethode): (Bestand Ende − Bestand Anfang) − Σ Historie ohne interne Umbuchungen, je Konto und Asset; nur positive Lücken sind Ertrag, bewertet zum Jahresmittel. Ausgenommen: ${rules.earnGapExcluded.join(', ')}.`,
-    'Einmalereignisse (Hardforks, Airdrops, Verluste) werden separat ausgewiesen; ohne Kurs mit Hinweis „ESTV-Kurs nachtragen“.',
-    'Spam-/Scam-Token (z. B. mit „Claim“ im Namen) sind ausgeblendet; manuell überschreibbar.',
+    'Einmalereignisse (Hardforks, Airdrops, Verluste) werden separat ausgewiesen.',
+    'Positionen und Ereignisse ohne verfügbaren Kurswert werden mit ihrer Menge, ohne Wert aufgeführt und sind nicht im Total enthalten.',
+    'Spam-/Scam-Token (z. B. mit „Claim“ im Namen) haben keinen Marktwert und sind nicht im Total enthalten.',
     'Annahmen (konservativ): Launchpool-/HODLer-Airdrops sind Ertrag; Kraken-Erträge netto nach Gebühr.',
-    'Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (lazy-koins: Klick auf den Betrag).',
+    'Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar.',
+    `Erstellt mit lazy-koins ${data.appVersion}.`,
     '',
     rules.labels.noTaxAdvice,
   ];

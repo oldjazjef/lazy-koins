@@ -140,16 +140,18 @@
         {{ 'mappings.list.newDescription' | translate }}
       </p>
     </hlm-dialog-header>
-    <lk-mapping-editor-form
-      [idPrefix]="'new-mapping'"
-      [text]="text()"
-      (textChange)="text.set($event)"
-      [checkFileId]="checkFileId()"
-      (checkFileIdChange)="checkFileId.set($event)"
-      [checkFiles]="[]"
-      [issues]="issues()"
-      [invalidJson]="invalidJson()"
-    />
+    <div class="lk-dialog-body">
+      <lk-mapping-editor-form
+        [idPrefix]="'new-mapping'"
+        [text]="text()"
+        (textChange)="text.set($event)"
+        [checkFileId]="checkFileId()"
+        (checkFileIdChange)="checkFileId.set($event)"
+        [checkFiles]="[]"
+        [issues]="issues()"
+        [invalidJson]="invalidJson()"
+      />
+    </div>
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}

@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -15,9 +16,11 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import {
-  EXPORT_KINDS,
   type ExportKind,
+  INTERNAL_KINDS,
+  isInternalKind,
   type MailDraft,
+  STATEMENT_KINDS,
 } from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EmptyState } from '../../../../shared/components/empty-state';
@@ -26,9 +29,11 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
 import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
 
 /**
- * Exporte (F10): create the simple and the detailed statement as PDF or Excel, every one kept
- * with its date (F10.5) and downloadable; the mail draft to the Treuhänder (F10.6). Allowed on
- * a closed project too — that is when the final statement is made.
+ * Exporte (F10): create the simple and the detailed statement as PDF or Excel — asking first while
+ * open items exist, since a statement goes to the tax authority — and the internal check report
+ * (F10.2a), every one kept with its date (F10.5) and downloadable, listed in two groups; the mail
+ * draft to the Treuhänder (F10.6). Allowed on a closed project too — that is when the final
+ * statement is made.
  */
 @Component({
   selector: 'lk-project-exports',
@@ -53,12 +58,42 @@ import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
 export class ProjectExports {
   protected readonly service = inject(ProjectWorkspaceService);
   private readonly notifications = inject(NotificationService);
-  protected readonly kinds = EXPORT_KINDS;
+  protected readonly statementKinds = STATEMENT_KINDS;
+  protected readonly internalKinds = INTERNAL_KINDS;
+
+  /** Stored documents in two groups: statements for the authority, internal reports. */
+  protected readonly groups = computed(() => {
+    const all = this.service.exports.hasValue()
+      ? this.service.exports.value()
+      : [];
+    return [
+      {
+        key: 'statements',
+        items: all.filter((item) => !isInternalKind(item.kind)),
+      },
+      {
+        key: 'internal',
+        items: all.filter((item) => isInternalKind(item.kind)),
+      },
+    ].filter((group) => group.items.length > 0);
+  });
 
   protected readonly draft = signal<MailDraft | null>(null);
 
   protected create(kind: ExportKind): void {
-    void this.service.createExport(kind).catch(() => undefined);
+    void this.service.requestExport(kind).catch(() => undefined);
+  }
+
+  protected confirmState(): 'open' | 'closed' {
+    return this.service.pendingExport() ? 'open' : 'closed';
+  }
+
+  protected confirmChanged(state: 'open' | 'closed'): void {
+    if (state === 'closed') this.service.cancelExport();
+  }
+
+  protected confirm(): void {
+    void this.service.confirmExport().catch(() => undefined);
   }
 
   protected async openDraft(): Promise<void> {
