@@ -370,6 +370,22 @@ recalculates first when stale; detailed Excel = the FACHREGELN sheets with formu
 `USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
 (`PdfRendererPort` → 503 without a browser); `GET …/mail-draft` (F10.6).
 
+**Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
+drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
+never open items, check lights, „zu prüfen“/„nachtragen“ wording or a "to check" fill. A position
+or event without a price keeps its quantity, the value stays empty/„–“, and a neutral footnote
+(`rules.labels.noPriceNote`, `statusNote()` in `export-texts.ts`) says it is not in the total.
+`describeItem()` (it may instruct) is for the internal report and the mail only. Everything to
+check goes into the **internal report** (F10.2a, kinds `internal_report_pdf|xlsx`, migration
+`20261008090000_internal_report_export` widens the kind CHECK): `internal-report.ts` builds one
+model (lights, open items with done/note, unpriced positions/income/events, Earn-gap warnings,
+F5.8 hints from the project files), rendered by `excel/internal-workbook.ts` and
+`pdf/internal-report-html.ts`. The mail draft never lists it as an attachment. The exports spec
+scans every cell/HTML of the statements for forbidden words. Web (Exporte tab): statements and
+the internal report in separate cards, the list grouped „Auszüge für die Steuerbehörde“ /
+„Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
+N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
+
 ## Database (SQLite)
 
 One file, no database server. Prisma talks to it through `@prisma/adapter-better-sqlite3`, a
@@ -678,6 +694,8 @@ the budget (vendored); its one noisy rule is switched off in `libs/ui/utils/esli
 - **Seed phrases and private keys** (F6.2) are detected and refused before anything is stored or
   logged — not even in an error message.
 - **No tax advice**: every export carries the "keine Steuerberatung" note (F10.4).
+- **Statements carry no to-dos** (F10.1/F10.2): no open items, checks or instructions — those
+  belong in the internal report (F10.2a) and the Treuhänder mail.
 - **Network is optional** (F11.3): with rate lookups off, everything still works from stored or
   manually entered rates.
 

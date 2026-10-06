@@ -145,16 +145,18 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 
 ## 10. Exporte
 
-- **F10.1** Einfacher Auszug als PDF (1–2 Seiten) und Excel: Steuerwert per 31.12., Ertrag, Wertschriftenverzeichnis mit einer Zeile pro Plattform/Wallet (Hauptpositionen, Anzahl Kleinpositionen, Steuerwert), Ertragstabelle, offene Punkte.
-- **F10.2** Ausführlicher Auszug als Excel und PDF: Übersicht, Parameter, Bestand je Position mit Kursquelle, Ertrag je Buchung, fehlende Earn-Erträge, Einmalereignisse, Prüfungen, offene Punkte, Methodik. Excel mit nachvollziehbaren Formeln; Eingaben und fehlende Werte farblich markiert; überschriebene Kurse rechnen im Excel weiter.
+- **Grundsatz:** Auszüge für die Steuerbehörde (F10.1, F10.2) enthalten keine offenen Punkte, Prüfhinweise oder Arbeitsanweisungen – nur, was deklariert wird, und wie es berechnet wurde. Positionen und Ereignisse ohne Kurs erscheinen mit ihrer Menge, ohne Wert, mit einer neutralen Fussnote („Kein Kurswert verfügbar; nicht im Total enthalten.“).
+- **F10.1** Einfacher Auszug als PDF (1–2 Seiten) und Excel: Kopfzeile (F10.4), Steuerwert per 31.12., Ertrag, Wertschriftenverzeichnis mit einer Zeile pro Plattform/Wallet (Hauptpositionen, Anzahl Kleinpositionen, Steuerwert), Ertragstabelle.
+- **F10.2** Ausführlicher Auszug als Excel und PDF: Übersicht (Vermögen, Ertrag), Parameter (Devisenkurse), Bestand per 31.12. je Position mit Kurs und Kursquelle, Ertrag (Zusammenfassung und je Buchung), fehlende Earn-Erträge (Earn-Lücke, als Erläuterung der Differenzmethode), Einmalereignisse, Methodik. Excel mit nachvollziehbaren Formeln; Eingaben (blau), Formeln (schwarz) und Verweise auf Parameter (grün) farblich unterschieden; überschriebene Kurse rechnen im Excel weiter.
+- **F10.2a** Interner Prüfbericht als PDF und Excel, deutlich betitelt „Interner Prüfbericht – nicht für die Steuerbehörde“: Prüfungen mit Ampel (F8.1), offene Punkte mit Erledigt-Status und Notiz (F8.2), Positionen/Erträge/Ereignisse ohne Kurs, Warnungen zur Earn-Lücke, Hinweise auf fehlende Dateien (F5.8). Wird im Tab Exporte separat erstellt, wie die Auszüge gespeichert (F10.5), aber in einer eigenen Gruppe „Intern“ gelistet und nie standardmässig an die Mail an den Treuhänder angehängt. Wird ein Auszug erstellt, solange nicht erledigte offene Punkte bestehen, fragt die App zuerst („Es gibt noch N offene Punkte. Trotzdem erstellen?“, mit Weg zu den Prüfungen).
 - **F10.3** Bezeichnungen und Formularverweise passend zum gewählten Land und Kanton.
 - **F10.4** Kopfzeile mit Name, Steuerjahr, Kanton, Erstellungsdatum und Hinweis „keine Steuerberatung“.
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
-- **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
+- **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste (nur Auszüge, nicht der interne Prüfbericht) und offenen Fachfragen (die gehören dem Treuhänder, nicht der Steuerbehörde); Text zum Kopieren.
 - **F10.6a** Mail direkt aus der App senden: Im Projekt (Exporte) „An Treuhänder senden“ öffnet
   einen Dialog mit Empfänger (aus dem Profil, änderbar), CC an mich, Betreff und Text aus der
   Vorlage (F11.10, im Dialog noch bearbeitbar), auswählbaren Anhängen (erstellte Auszüge PDF/Excel)
-  und Vorschau. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
+  und Vorschau; der interne Prüfbericht (F10.2a) ist nie vorausgewählt. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
   protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
   eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
 

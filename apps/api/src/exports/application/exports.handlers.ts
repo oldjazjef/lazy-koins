@@ -10,7 +10,7 @@ import {
   type IQueryHandler,
   QueryHandler,
 } from '@nestjs/cqrs';
-import { countryRules } from '@lazykoins/engine';
+import { countryRules, missingFileHints } from '@lazykoins/engine';
 import { BUILD_INFO } from '../../app/build-info';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CalculationService } from '../../calculation/calculation.service';
@@ -19,6 +19,7 @@ import {
   CalculationSnapshotRepositoryPort,
   OpenItemStateRepositoryPort,
 } from '../../calculation/ports/calculation.repository.port';
+import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -35,15 +36,21 @@ import {
   ProjectExportRepositoryPort,
 } from '../ports/project-export.repository.port';
 import { detailedWorkbook } from './excel/detailed-workbook';
+import { internalWorkbook } from './excel/internal-workbook';
 import { simpleWorkbook } from './excel/simple-workbook';
-import { type ExportData, exportFileName } from './export-data';
+import {
+  type ExportData,
+  exportFileName,
+  type ExportVariant,
+} from './export-data';
 import { type MailDraft, mailDraft } from './mail-draft';
+import { internalReportHtml } from './pdf/internal-report-html';
 import {
   detailedStatementHtml,
   simpleStatementHtml,
 } from './pdf/statement-html';
 
-/** Collects what a statement shows: the latest result, ticks, names (F10.4). */
+/** Collects what a document shows: the latest result, ticks, names (F10.4), file hints. */
 @Injectable()
 export class ExportDataService {
   constructor(
@@ -51,6 +58,7 @@ export class ExportDataService {
     private readonly states: OpenItemStateRepositoryPort,
     private readonly settings: SettingsReader,
     private readonly users: UserRepositoryPort,
+    private readonly files: ProjectFileRepositoryPort,
     private readonly inputs: CalculationInputService,
     private readonly calculation: CalculationService,
   ) {}
@@ -90,6 +98,9 @@ export class ExportDataService {
     const states = new Map(
       (await this.states.listByProject(project.id)).map((s) => [s.itemKey, s]),
     );
+    const coverage = (await this.files.listByProject(project.id))
+      .filter((file) => file.status === 'standard' || file.status === 'mapped')
+      .flatMap((file) => file.coverage);
     return {
       projectName: project.name,
       taxYear: project.taxYear,
@@ -107,6 +118,7 @@ export class ExportDataService {
         done: states.get(item.key)?.done ?? false,
         note: states.get(item.key)?.note ?? '',
       })),
+      hints: missingFileHints(project.taxYear, coverage),
     };
   }
 }
@@ -119,9 +131,19 @@ export class CreateExportCommand {
   ) {}
 }
 
+const VARIANTS: Readonly<Record<ExportKind, ExportVariant>> = {
+  simple_pdf: 'einfach',
+  simple_xlsx: 'einfach',
+  detailed_pdf: 'ausfuehrlich',
+  detailed_xlsx: 'ausfuehrlich',
+  internal_report_pdf: 'pruefbericht-intern',
+  internal_report_xlsx: 'pruefbericht-intern',
+};
+
 /**
- * F10.1, F10.2, F10.5: renders a statement from the latest result and keeps it with its date.
- * Allowed on a closed project too — that is when the final statement is made.
+ * F10.1, F10.2, F10.2a, F10.5: renders a statement (or the internal check report) from the latest
+ * result and keeps it with its date. Allowed on a closed project too — that is when the final
+ * statement is made. Open items never block a statement: the web asks before (F10.2a).
  */
 @CommandHandler(CreateExportCommand)
 export class CreateExportHandler implements ICommandHandler<
@@ -153,7 +175,7 @@ export class CreateExportHandler implements ICommandHandler<
       kind,
       fileName: exportFileName(
         data,
-        kind.startsWith('simple') ? 'einfach' : 'ausfuehrlich',
+        VARIANTS[kind],
         kind.endsWith('_pdf') ? 'pdf' : 'xlsx',
       ),
       bytes,
@@ -172,13 +194,18 @@ export class CreateExportHandler implements ICommandHandler<
         return simpleWorkbook(data);
       case 'detailed_xlsx':
         return detailedWorkbook(data);
+      case 'internal_report_xlsx':
+        return internalWorkbook(data);
       case 'simple_pdf':
       case 'detailed_pdf':
+      case 'internal_report_pdf':
         try {
           return await this.pdf.render(
             kind === 'simple_pdf'
               ? simpleStatementHtml(data)
-              : detailedStatementHtml(data),
+              : kind === 'detailed_pdf'
+                ? detailedStatementHtml(data)
+                : internalReportHtml(data),
           );
         } catch (error) {
           if (error instanceof PdfUnavailableError) {

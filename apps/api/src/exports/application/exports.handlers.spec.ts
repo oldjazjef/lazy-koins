@@ -1,7 +1,11 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import ExcelJS from 'exceljs';
-import { CalculateProjectCommand } from '../../calculation/application/calculation.handlers';
+import {
+  CalculateProjectCommand,
+  GetChecksQuery,
+  UpdateOpenItemCommand,
+} from '../../calculation/application/calculation.handlers';
 import type { CalculationService } from '../../calculation/calculation.service';
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import type { Env } from '../../config/env';
@@ -56,6 +60,7 @@ async function setup(pdfAvailable = true) {
     t.states,
     settings,
     users,
+    t.files,
     t.inputs,
     calculation,
   );
@@ -80,6 +85,41 @@ function sheetOf(workbook: ExcelJS.Workbook, name: string): ExcelJS.Worksheet {
   const sheet = workbook.getWorksheet(name);
   if (!sheet) throw new Error(`no sheet ${name}`);
   return sheet;
+}
+
+/** Every cell text of every sheet (formulas as their expression). */
+function allTexts(workbook: ExcelJS.Workbook): string[] {
+  const texts: string[] = workbook.worksheets.map((sheet) => sheet.name);
+  for (const sheet of workbook.worksheets) {
+    sheet.eachRow((row) =>
+      row.eachCell((cell) => {
+        const f = formulaOf(cell);
+        texts.push(f ?? String(cell.value ?? ''));
+      }),
+    );
+  }
+  return texts;
+}
+
+/** What a statement for the tax authority must never say (F10.1/F10.2: no to-dos). */
+const FORBIDDEN = /offene punkte|nachtragen|zu prüfen|todo|prüfen|prüfung/i;
+
+function expectClean(texts: readonly string[]): void {
+  expect(texts.filter((text) => FORBIDDEN.test(text))).toEqual([]);
+}
+
+function fillsOf(workbook: ExcelJS.Workbook): string[] {
+  const fills: string[] = [];
+  for (const sheet of workbook.worksheets) {
+    sheet.eachRow((row) =>
+      row.eachCell((cell) => {
+        const argb = (cell.fill as ExcelJS.FillPattern | undefined)?.fgColor
+          ?.argb;
+        if (argb) fills.push(argb);
+      }),
+    );
+  }
+  return fills;
 }
 
 function formulaOf(cell: ExcelJS.Cell): string | undefined {
@@ -145,11 +185,20 @@ describe('exports (F10)', () => {
     expect(formulaOf(btc.getCell(7))).toBe('USDCHF');
     expect(btc.getCell(7).font?.color?.argb).toBe('FF1B7F3B');
     expect(btc.getCell(6).font?.color?.argb).toBe('FF1F4FD8');
-    // A position without price is marked yellow.
+    // A position without price keeps its quantity; its value stays empty, with a neutral note.
     const dot = holdings.getRow(4);
-    expect(dot.getCell(11).value).toBe('Kurs fehlt');
-    expect((dot.getCell(9).fill as ExcelJS.FillPattern).fgColor?.argb).toBe(
-      'FFFFF2A8',
+    expect(dot.getCell(11).value).toBe('ohne Kurswert');
+    expect(dot.getCell(5).value).not.toBeNull();
+    expect(dot.getCell(9).fill).toBeUndefined();
+    const texts = allTexts(workbook);
+    expect(texts).toContain(
+      'ohne Kurswert: Kein Kurswert verfügbar; nicht im Total enthalten.',
+    );
+    // For the tax authority: no open items, checks, instructions or "to check" colour.
+    expectClean(texts);
+    expect(fillsOf(workbook)).not.toContain('FFFFF2A8');
+    expect(texts).toContain(
+      'Farben: blau = Eingabe, schwarz = Formel, grün = Verweis auf Parameter.',
     );
 
     const income = sheetOf(workbook, SHEETS.income);
@@ -187,20 +236,114 @@ describe('exports (F10)', () => {
     expect(html).toContain('Keine Steuerberatung');
     expect(html).toContain('lazy-koins 0.0.0-dev+unknown');
     expect(html).not.toContain('<script');
+    expect(html).toContain(
+      'Kein Kurswert verfügbar; nicht im Total enthalten.',
+    );
+    expectClean([html]);
 
     const stored = await t.content.execute(
       new GetExportContentQuery('anna', t.project.id, xlsx.id),
     );
-    const sheet = sheetOf(await workbookOf(stored.bytes), 'Auszug');
-    const texts: string[] = [];
-    sheet.eachRow((row) => texts.push(String(row.getCell(1).value ?? '')));
+    const workbook = await workbookOf(stored.bytes);
+    expect(workbook.worksheets.map((s) => s.name)).toEqual(['Auszug']);
+    const texts = allTexts(workbook);
     expect(texts).toContain('kraken');
-    expect(texts).toContain('Offene Punkte');
+    expect(
+      texts.some((text) =>
+        text.endsWith('Kein Kurswert verfügbar; nicht im Total enthalten.'),
+      ),
+    ).toBe(true);
+    expectClean(texts);
 
     const listed = await t.list.execute(
       new ListExportsQuery('anna', t.project.id),
     );
     expect(listed.map((e) => e.kind)).toEqual(['simple_pdf', 'simple_xlsx']);
+  });
+
+  it('prints the detailed statement without checks, open items or instructions (F10.2)', async () => {
+    const t = await setup();
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'detailed_pdf'),
+    );
+    const html = t.pdf.rendered[0] ?? '';
+    expect(html).toContain('Bestand per 31.12.2025');
+    expect(html).toContain('Methodik');
+    expect(html).toContain('ohne Kurswert');
+    expect(html).toContain(
+      'Kein Kurswert verfügbar; nicht im Total enthalten.',
+    );
+    expect(html).not.toContain('class="check"');
+    expect(html).not.toContain('fff2a8;"');
+    expectClean([html]);
+  });
+
+  it('creates the internal check report with lights, open items and notes (F10.2a)', async () => {
+    const t = await setup();
+    await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    const result = await t.checks.execute(
+      new GetChecksQuery('anna', t.project.id),
+    );
+    const first = result.items[0];
+    if (!first) throw new Error('fixture has no open item');
+    await t.tick.execute(
+      new UpdateOpenItemCommand('anna', t.project.id, first.key, {
+        done: true,
+        note: 'mit Treuhänder besprochen',
+      }),
+    );
+
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'internal_report_xlsx'),
+    );
+    expect(xlsx.fileName).toMatch(
+      /^Steuern-2025_pruefbericht-intern_\d{4}-\d{2}-\d{2}\.xlsx$/,
+    );
+    const stored = await t.content.execute(
+      new GetExportContentQuery('anna', t.project.id, xlsx.id),
+    );
+    const workbook = await workbookOf(stored.bytes);
+    expect(workbook.worksheets.map((s) => s.name)).toEqual([
+      'Übersicht',
+      'Prüfungen',
+      'Offene Punkte',
+      'Ohne Kurs',
+      'Earn-Lücke',
+      'Dateien',
+    ]);
+    for (const sheet of workbook.worksheets) {
+      expect(sheet.getCell('A1').value).toBe(
+        'Interner Prüfbericht – nicht für die Steuerbehörde',
+      );
+    }
+    const texts = allTexts(workbook);
+    expect(texts).toContain('mit Treuhänder besprochen');
+    expect(texts).toContain('erledigt');
+    expect(texts.some((text) => text.includes('nachtragen'))).toBe(true);
+    expect(fillsOf(workbook).length).toBeGreaterThan(0);
+
+    const pdf = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'internal_report_pdf'),
+    );
+    expect(pdf.mediaType).toBe('application/pdf');
+    const html = t.pdf.rendered[0] ?? '';
+    expect(html).toContain(
+      'Interner Prüfbericht – nicht für die Steuerbehörde',
+    );
+    expect(html).toContain('Offene Punkte');
+    expect(html).toContain('class="light ');
+    expect(html).toContain('lazy-koins 0.0.0-dev+unknown');
+    expect(html).toContain('mit Treuhänder besprochen');
+
+    const listed = await t.list.execute(
+      new ListExportsQuery('anna', t.project.id),
+    );
+    expect(listed.map((e) => e.kind)).toEqual([
+      'internal_report_pdf',
+      'internal_report_xlsx',
+    ]);
   });
 
   it('answers 503 for a PDF when no browser is available', async () => {
@@ -217,6 +360,9 @@ describe('exports (F10)', () => {
     await t.create.execute(
       new CreateExportCommand('anna', t.project.id, 'simple_pdf'),
     );
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'internal_report_pdf'),
+    );
     const draft = await t.mail.execute(
       new GetMailDraftQuery('anna', t.project.id),
     );
@@ -226,7 +372,13 @@ describe('exports (F10)', () => {
     expect(draft.body).toContain('CHF 858.70');
     expect(draft.body).toContain('CHF 6.75');
     expect(draft.body).toMatch(/Steuern-2025_einfach_.*\.pdf/);
-    expect(draft.body).toContain('Offene Fachfragen:');
+    // The internal report is never an attachment by default (F10.2a).
+    expect(draft.body).not.toContain('pruefbericht-intern');
+    // The open technical questions are for the Treuhänder (not for the tax authority).
+    expect(draft.body).toContain(
+      'Offene Fachfragen (in den Auszügen nicht enthalten):',
+    );
+    expect(draft.body).toMatch(/- kraken .*DOT.*kein Kurs per 31\.12\./);
     expect(draft.body.endsWith('Anna Muster')).toBe(true);
   });
 
