@@ -1,3 +1,4 @@
+import { standardImporter } from '../standard/standard-importer';
 import type { Confidence, Importer, SourceFile } from './importer';
 
 export interface Candidate {
@@ -69,7 +70,7 @@ export class ImporterRegistry {
   /** Every importer of the file's kind that claims it, surest first. */
   candidates(file: SourceFile): Candidate[] {
     return this.importers
-      .filter((importer) => importer.fileKind === file.kind)
+      .filter((importer) => importer.fileKinds.includes(file.kind))
       .map((importer) => ({ importer, confidence: safeDetect(importer, file) }))
       .filter((candidate) => candidate.confidence > 0)
       .sort(
@@ -112,11 +113,14 @@ function safeDetect(importer: Importer, file: SourceFile): Confidence {
 }
 
 /**
- * The importers the app uses. Empty until the first platform lands (F5.2 lists them: Kraken,
- * Binance, Bitfinex, Bittrex, Revolut) — add each one here.
+ * The built-in importers: only the standard format itself. Platforms are supported through
+ * mapping specs (`mapping/`), which the caller adds as `mappingImporter`s.
  */
-export const IMPORTERS: readonly Importer[] = [];
+export const IMPORTERS: readonly Importer[] = [standardImporter];
 
-export function defaultImporterRegistry(): ImporterRegistry {
-  return new ImporterRegistry(IMPORTERS);
+/** The built-in importers plus the caller's (stored mappings). */
+export function defaultImporterRegistry(
+  extra: readonly Importer[] = [],
+): ImporterRegistry {
+  return new ImporterRegistry([...IMPORTERS, ...extra]);
 }

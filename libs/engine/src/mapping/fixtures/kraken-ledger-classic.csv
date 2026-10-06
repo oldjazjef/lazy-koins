@@ -1,0 +1,3 @@
+"txid","refid","time","type","subtype","aclass","asset","amount","fee","balance"
+"LSYN02-BBBBB-000001","TSYN1001","2018-03-01 12:00:00","trade","","currency","XXBT","0.0100000000","0.0000000000","0.0100000000"
+"LSYN02-BBBBB-000002","TSYN1001","2018-03-01 12:00:00","trade","","currency","ZEUR","-80.0000","0.1300","19.8700"

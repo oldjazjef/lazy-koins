@@ -23,9 +23,15 @@ function importer(
   return {
     id,
     platform: id.split('-')[0] ?? id,
-    fileKind,
+    fileKinds: [fileKind],
     detect,
-    parse: () => ({ bookings: [], period: null }),
+    parse: () => ({
+      bookings: [],
+      holdings: [],
+      period: null,
+      errors: [],
+      notes: [],
+    }),
   };
 }
 
@@ -152,10 +158,14 @@ describe('ImporterRegistry construction', () => {
     expect(registry.importers.map((x) => x.id)).toEqual(['a-x', 'b-x']);
   });
 
-  it('starts empty: no platform importer exists yet', () => {
-    expect(IMPORTERS).toEqual([]);
+  it('has the standard format built in, and nothing platform-specific', () => {
+    expect(IMPORTERS.map((x) => x.id)).toEqual(['standard-v1']);
     expect(defaultImporterRegistry().detect(csv(['txid']))).toEqual({
       status: 'unknown',
     });
+    const extra = importer('mapping:k', () => 0.9);
+    expect(
+      defaultImporterRegistry([extra]).detect(csv(['txid'])),
+    ).toMatchObject({ status: 'match', importer: extra });
   });
 });

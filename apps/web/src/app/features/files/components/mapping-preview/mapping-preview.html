@@ -1,0 +1,82 @@
+@let p = preview();
+<div class="flex flex-col gap-4 text-sm">
+  <p class="text-muted-foreground">
+    {{ 'mappings.preview.totals' | translate: { bookings: p.totals.bookings,
+    holdings: p.totals.holdings, errors: p.totals.errors, notes: p.totals.notes
+    } }} @if (p.period) { {{ 'mappings.preview.period' | translate: { from:
+    (p.period.from | date: 'dd.MM.yyyy'), to: (p.period.to | date: 'dd.MM.yyyy')
+    } }} }
+  </p>
+
+  @if (p.bookings.length > 0) {
+  <div hlmTableContainer class="lk-panel max-h-72 overflow-y-auto">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'mappings.preview.row' | translate }}</th>
+          <th hlmTh>{{ 'mappings.preview.timestamp' | translate }}</th>
+          <th hlmTh>{{ 'mappings.preview.account' | translate }}</th>
+          <th hlmTh>{{ 'mappings.preview.kind' | translate }}</th>
+          <th hlmTh>{{ 'mappings.preview.asset' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'mappings.preview.quantity' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'mappings.preview.fee' | translate }}
+          </th>
+          <th hlmTh>{{ 'mappings.preview.rawType' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (booking of p.bookings; track booking.row) {
+        <tr hlmTr>
+          <td hlmTd class="tabular-nums">{{ booking.row }}</td>
+          <td hlmTd class="tabular-nums">
+            {{ booking.timestamp | date: 'dd.MM.yyyy HH:mm:ss' : 'UTC' }}
+          </td>
+          <td hlmTd>{{ booking.accountId }}</td>
+          <td hlmTd>{{ 'bookings.kind.' + booking.kind | translate }}</td>
+          <td hlmTd>{{ booking.asset }}</td>
+          <td hlmTd class="text-right font-mono tabular-nums">
+            {{ booking.quantity }}
+          </td>
+          <td hlmTd class="text-right font-mono tabular-nums">
+            {{ booking.fee ?? '' }} {{ booking.feeAsset ?? '' }}
+          </td>
+          <td hlmTd class="text-muted-foreground">{{ booking.rawType }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } @if (p.holdings.length > 0) {
+  <div>
+    <h4 class="mb-2 font-medium">
+      {{ 'mappings.preview.holdings' | translate }}
+    </h4>
+    <ul class="text-muted-foreground flex flex-col gap-1">
+      @for (holding of p.holdings; track holding.row + holding.asset) {
+      <li class="font-mono tabular-nums">
+        {{ holding.asOf | date: 'dd.MM.yyyy' }} · {{ holding.accountId }} · {{
+        holding.asset }} {{ holding.quantity }}
+      </li>
+      }
+    </ul>
+  </div>
+  } @if (p.errors.length > 0) {
+  <div>
+    <h4 class="text-destructive mb-2 font-medium">
+      {{ 'mappings.preview.errors' | translate }}
+    </h4>
+    <ul class="flex flex-col gap-1">
+      @for (error of p.errors; track $index) {
+      <li>
+        {{ 'mappings.preview.errorAt' | translate: { row: error.row, column:
+        error.column ?? '–' } }} {{ 'files.rowErrors.' + error.code | translate
+        }}
+      </li>
+      }
+    </ul>
+  </div>
+  }
+</div>

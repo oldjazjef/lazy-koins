@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
@@ -15,6 +16,12 @@ export default defineConfig({
   // No explicit `root`: the Nx target runs with `cwd: apps/api`, so the default is already right,
   // and referencing `__dirname` here would make this ESM file depend on CJS globals.
   cacheDir: '../../node_modules/.vite/apps/api',
+  // The engine is consumed through the tsconfig path alias (no build of its own), as webpack does.
+  resolve: {
+    alias: {
+      '@lazykoins/engine': resolve(__dirname, '../../libs/engine/src/index.ts'),
+    },
+  },
   plugins: [
     swc.vite({
       module: { type: 'es6' },

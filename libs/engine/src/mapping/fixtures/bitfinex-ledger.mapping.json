@@ -1,0 +1,89 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Bitfinex Ledgers",
+  "platform": "bitfinex",
+  "description": "Synthetic test mapping: Bitfinex ledgers CSV, DATE dd-mm-YYYY in UTC; kind from DESCRIPTION.",
+  "match": {
+    "headers": [
+      "#",
+      "DESCRIPTION",
+      "CURRENCY",
+      "AMOUNT",
+      "BALANCE",
+      "DATE",
+      "WALLET"
+    ]
+  },
+  "assets": {
+    "aliases": {
+      "UST": "USDT"
+    }
+  },
+  "bookings": {
+    "timestamp": {
+      "column": "DATE",
+      "format": "dmy"
+    },
+    "account": {
+      "column": "WALLET"
+    },
+    "asset": {
+      "column": "CURRENCY"
+    },
+    "quantity": {
+      "mode": "signed",
+      "column": "AMOUNT"
+    },
+    "kind": {
+      "columns": ["DESCRIPTION"],
+      "rules": [
+        {
+          "pattern": "^exchange .* for .*@",
+          "kind": "trade"
+        },
+        {
+          "pattern": "trading fees?",
+          "kind": "fee"
+        },
+        {
+          "pattern": "staking reward",
+          "kind": "income_staking"
+        },
+        {
+          "pattern": "\\bfees?\\b",
+          "kind": "fee"
+        },
+        {
+          "pattern": "deposit",
+          "kind": "deposit"
+        },
+        {
+          "pattern": "withdrawal",
+          "kind": "withdrawal"
+        },
+        {
+          "pattern": "^transfer of",
+          "kind": "transfer"
+        },
+        {
+          "pattern": "funding payment",
+          "kind": "income_interest"
+        }
+      ],
+      "default": "unknown"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": {
+      "column": "CURRENCY"
+    },
+    "quantity": {
+      "column": "BALANCE"
+    },
+    "account": {
+      "column": "WALLET"
+    }
+  }
+}

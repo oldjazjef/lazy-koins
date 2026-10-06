@@ -10,7 +10,9 @@ import {
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import { AuthModule } from '../auth/auth.module';
 import { validateEnv } from '../config/env';
+import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { MappingsModule } from '../mappings/mappings.module';
 import { PersistenceModule } from '../persistence/persistence.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { UsersModule } from '../users/users.module';
@@ -34,6 +36,8 @@ import { AppController } from './app.controller';
     AuthModule,
     UsersModule,
     ProjectsModule,
+    FilesModule,
+    MappingsModule,
   ],
   controllers: [AppController],
   providers: [
