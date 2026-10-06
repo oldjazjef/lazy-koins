@@ -18,6 +18,7 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import { BOOKING_KINDS } from '../../../../core/api/api.types';
+import { AiErrorPanel } from '../../../../shared/ai/ai-error-panel';
 import { MappingPreviewView } from '../mapping-preview';
 import { AiAssistState } from './ai-assist.state';
 
@@ -34,6 +35,7 @@ import { AiAssistState } from './ai-assist.state';
     NgIcon,
     TranslatePipe,
     MappingPreviewView,
+    AiErrorPanel,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
