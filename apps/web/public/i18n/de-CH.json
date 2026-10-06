@@ -833,7 +833,22 @@
   },
   "exports": {
     "createTitle": "Auszug erstellen",
-    "createHint": "Aus dem aktuellen Ergebnis (bei geänderten Daten wird zuerst neu berechnet). Jeder Auszug wird mit Datum gespeichert.",
+    "createHint": "Für die Steuerbehörde: nur deklarierte Werte und ihre Herleitung, ohne offene Punkte. Aus dem aktuellen Ergebnis (bei geänderten Daten wird zuerst neu berechnet); jeder Auszug wird mit Datum gespeichert.",
+    "internal": {
+      "title": "Interner Prüfbericht",
+      "hint": "Nicht für die Steuerbehörde: Prüfungen mit Ampel, offene Punkte mit Notizen, Positionen ohne Kurs, Earn-Lücken-Warnungen und fehlende Dateien – für dich und deinen Treuhänder. Wird nicht automatisch an den Treuhänder angehängt."
+    },
+    "groups": {
+      "statements": "Auszüge für die Steuerbehörde",
+      "internal": "Intern"
+    },
+    "confirm": {
+      "title": "Auszug trotz offener Punkte erstellen?",
+      "message": "Es gibt noch {{count}} offene Punkte. Trotzdem erstellen?",
+      "hint": "Der Auszug enthält die offenen Punkte nicht – er ist für die Steuerbehörde. Kläre sie zuerst in den Prüfungen oder halte sie im internen Prüfbericht fest.",
+      "toChecks": "Zu den Prüfungen",
+      "create": "Trotzdem erstellen"
+    },
     "listTitle": "Erstellte Auszüge",
     "empty": "Noch keine Auszüge erstellt.",
     "loadFailed": "Die Auszüge konnten nicht geladen werden.",
@@ -845,7 +860,9 @@
       "simple_pdf": "Einfach (PDF)",
       "simple_xlsx": "Einfach (Excel)",
       "detailed_pdf": "Ausführlich (PDF)",
-      "detailed_xlsx": "Ausführlich (Excel)"
+      "detailed_xlsx": "Ausführlich (Excel)",
+      "internal_report_pdf": "Prüfbericht intern (PDF)",
+      "internal_report_xlsx": "Prüfbericht intern (Excel)"
     },
     "fields": {
       "createdAt": "Erstellt",

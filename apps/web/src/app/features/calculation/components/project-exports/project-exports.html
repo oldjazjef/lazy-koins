@@ -4,7 +4,7 @@
     <p hlmCardDescription>{{ 'exports.createHint' | translate }}</p>
   </div>
   <div hlmCardContent class="flex flex-wrap gap-2">
-    @for (kind of kinds; track kind) {
+    @for (kind of statementKinds; track kind) {
     <button
       hlmBtn
       [variant]="kind === 'simple_pdf' ? 'default' : 'outline'"
@@ -22,12 +22,36 @@
   </div>
 </section>
 
+<!-- F10.2a: the internal check report, never for the tax authority -->
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'exports.internal.title' | translate }}</h3>
+    <p hlmCardDescription>{{ 'exports.internal.hint' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-wrap gap-2">
+    @for (kind of internalKinds; track kind) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.isBusy()"
+      (click)="create(kind)"
+    >
+      {{ 'exports.kind.' + kind | translate }}
+    </button>
+    }
+  </div>
+</section>
+
 <section class="flex flex-col gap-2">
   <h3 class="font-medium">{{ 'exports.listTitle' | translate }}</h3>
   @if (service.exports.hasValue()) { @if (service.exports.value().length === 0)
   {
   <lk-empty-state [message]="'exports.empty' | translate" />
-  } @else {
+  } @else { @for (group of groups(); track group.key) {
+  <h4 class="text-muted-foreground mt-2 text-sm font-medium">
+    {{ 'exports.groups.' + group.key | translate }}
+  </h4>
   <div hlmTableContainer class="lk-panel">
     <table hlmTable>
       <thead hlmTHead>
@@ -48,7 +72,7 @@
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (item of service.exports.value(); track item.id) {
+        @for (item of group.items; track item.id) {
         <tr hlmTr>
           <td hlmTd class="tabular-nums whitespace-nowrap">
             {{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}
@@ -81,7 +105,7 @@
       </tbody>
     </table>
   </div>
-  } } @else if (service.exports.error()) {
+  } } } @else if (service.exports.error()) {
   <lk-empty-state [message]="'exports.loadFailed' | translate" />
   } @else {
   <hlm-skeleton class="h-32 w-full" />
@@ -134,6 +158,40 @@
       </button>
       <button hlmBtn type="button" (click)="copy(mail)">
         {{ 'exports.mail.copy' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- F10.2a: a statement goes to the tax authority — ask while open items exist -->
+<hlm-dialog [state]="confirmState()" (stateChanged)="confirmChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-lg">
+    @if (service.pendingExport(); as pending) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'exports.confirm.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'exports.confirm.message' | translate: { count: pending.openItems }
+        }}
+      </p>
+    </hlm-dialog-header>
+    <p class="text-muted-foreground text-sm">
+      {{ 'exports.confirm.hint' | translate }}
+    </p>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="secondary"
+        type="button"
+        (click)="service.showChecks()"
+      >
+        {{ 'exports.confirm.toChecks' | translate }}
+      </button>
+      <button hlmBtn type="button" (click)="confirm()">
+        {{ 'exports.confirm.create' | translate }}
       </button>
     </hlm-dialog-footer>
     }

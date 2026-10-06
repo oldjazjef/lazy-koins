@@ -186,6 +186,72 @@ describe('ProjectWorkspaceService', () => {
     await settle();
     http.expectOne('/api/projects/p1/result').flush(view());
   });
+
+  it('asks before a statement while open items exist, then creates it on confirm (F10.2a)', async () => {
+    const { service, http } = await setup();
+    const asked = service.requestExport('simple_pdf');
+    http.expectOne('/api/projects/p1/checks').flush({
+      ...checks,
+      items: [item, { ...item, key: 'other', done: true }],
+    });
+    await asked;
+    expect(service.pendingExport()).toEqual({
+      kind: 'simple_pdf',
+      openItems: 1,
+    });
+    http.expectNone('/api/projects/p1/exports');
+
+    const confirmed = service.confirmExport();
+    const post = http.expectOne('/api/projects/p1/exports');
+    expect(post.request.body).toEqual({ kind: 'simple_pdf' });
+    post.flush({ id: 'e1' });
+    await confirmed;
+    expect(service.pendingExport()).toBeNull();
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+  });
+
+  it('cancels or leads to the checks instead of creating the statement', async () => {
+    const { service, http } = await setup();
+    const asked = service.requestExport('detailed_xlsx');
+    http.expectOne('/api/projects/p1/checks').flush(checks);
+    await asked;
+    service.cancelExport();
+    expect(service.pendingExport()).toBeNull();
+
+    const again = service.requestExport('detailed_pdf');
+    http.expectOne('/api/projects/p1/checks').flush(checks);
+    await again;
+    service.showChecks();
+    expect(service.pendingExport()).toBeNull();
+    expect(service.tab()).toBe('checks');
+    await settle();
+    http.expectOne('/api/projects/p1/checks').flush(checks);
+    http.expectNone('/api/projects/p1/exports');
+  });
+
+  it('creates a statement at once when every item is done, and the internal report always', async () => {
+    const { service, http } = await setup();
+    const clean = service.requestExport('simple_xlsx');
+    http
+      .expectOne('/api/projects/p1/checks')
+      .flush({ ...checks, items: [{ ...item, done: true }] });
+    await settle();
+    http.expectOne('/api/projects/p1/exports').flush({ id: 'e1' });
+    await clean;
+    expect(service.pendingExport()).toBeNull();
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+
+    const internal = service.requestExport('internal_report_pdf');
+    http.expectNone('/api/projects/p1/checks');
+    const post = http.expectOne('/api/projects/p1/exports');
+    expect(post.request.body).toEqual({ kind: 'internal_report_pdf' });
+    post.flush({ id: 'e2' });
+    await internal;
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+  });
 });
 
 describe('correction form → API body (F9)', () => {

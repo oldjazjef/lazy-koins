@@ -1,7 +1,11 @@
-import type { CountryRules, OpenItem } from '@lazykoins/engine';
+import type {
+  CountryRules,
+  MissingFileHint,
+  OpenItem,
+} from '@lazykoins/engine';
 import type { StoredResult } from '../../calculation/domain/calculation';
 
-/** Everything a statement shows — assembled once, rendered as Excel, HTML/PDF or mail text. */
+/** Everything a document shows — assembled once, rendered as Excel, HTML/PDF or mail text. */
 export interface ExportData {
   readonly projectName: string;
   readonly taxYear: number;
@@ -15,17 +19,24 @@ export interface ExportData {
   readonly calculatedAt: string;
   readonly rules: CountryRules;
   readonly result: StoredResult;
-  /** Open items with their tick and note (F8.2). */
+  /**
+   * Open items with their tick and note (F8.2). Only the internal report and the Treuhänder
+   * mail show them — never a statement for the tax authority.
+   */
   readonly items: readonly (OpenItem & {
     readonly done: boolean;
     readonly note: string;
   })[];
+  /** F5.8 missing-file hints of the project's files — internal report only. */
+  readonly hints: readonly MissingFileHint[];
 }
+
+export type ExportVariant = 'einfach' | 'ausfuehrlich' | 'pruefbericht-intern';
 
 /** `Steuern-2025_einfach_2026-01-15.xlsx` — no characters a file system dislikes. */
 export function exportFileName(
   data: Pick<ExportData, 'projectName' | 'createdAt'>,
-  variant: 'einfach' | 'ausfuehrlich',
+  variant: ExportVariant,
   extension: 'pdf' | 'xlsx',
 ): string {
   const base =

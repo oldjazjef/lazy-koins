@@ -3,9 +3,8 @@ import ExcelJS from 'exceljs';
 import type { ExportData } from '../export-data';
 import {
   categoryLabel,
-  CHECK_LABELS,
-  describeItem,
   platformLine,
+  unpricedPositions,
 } from '../export-texts';
 import { headerLines } from './detailed-workbook';
 import {
@@ -19,8 +18,8 @@ import {
 
 /**
  * The simple statement (F10.1) as one sheet: Steuerwert per 31.12., Ertrag, the securities list
- * with one line per platform/wallet (main positions, number of small positions, value), the
- * income table and the open points.
+ * with one line per platform/wallet (main positions, number of small positions, value) and the
+ * income table. For the tax authority: no open items or instructions (F10.2a has them).
  */
 export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
   const { result, rules } = data;
@@ -72,6 +71,11 @@ export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
     num(result.totals.wealthChf),
     CHF_FORMAT,
   );
+  const unpriced = unpricedPositions(result.positions);
+  if (unpriced.length > 0) {
+    sheet.addRow([`${unpriced.join(', ')}: ${rules.labels.noPriceNote}`]).font =
+      { italic: true, color: { argb: 'FF666666' } };
+  }
 
   section(`${rules.labels.incomeTitle} ${data.taxYear}`);
   header(['Kategorie', '', '', 'Ertrag CHF']);
@@ -91,15 +95,6 @@ export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
     num(result.totals.incomeChf),
     CHF_FORMAT,
   );
-
-  section('Offene Punkte');
-  const open = data.items.filter((item) => !item.done);
-  if (open.length === 0) sheet.addRow(['Keine offenen Punkte.']);
-  else header(['Thema', 'Beschreibung', '', 'Auswirkung CHF (geschätzt)']);
-  for (const item of open) {
-    const row = sheet.addRow([CHECK_LABELS[item.check], describeItem(item)]);
-    input(row.getCell(4), num(item.impactChf), CHF_FORMAT);
-  }
 
   sheet.addRow([]);
   sheet.addRow([rules.labels.formReference(data.canton)]).font = {

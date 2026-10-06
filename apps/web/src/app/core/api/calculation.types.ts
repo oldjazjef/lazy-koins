@@ -386,13 +386,24 @@ export interface ManualRateRequest {
   value: string;
 }
 
-export const EXPORT_KINDS = [
+/** Statements for the tax authority (F10.1, F10.2) — no open items, checks or instructions. */
+export const STATEMENT_KINDS = [
   'simple_pdf',
   'simple_xlsx',
   'detailed_pdf',
   'detailed_xlsx',
 ] as const;
+/** The internal check report (F10.2a) — kept apart, never attached to the Treuhänder mail by default. */
+export const INTERNAL_KINDS = [
+  'internal_report_pdf',
+  'internal_report_xlsx',
+] as const;
+export const EXPORT_KINDS = [...STATEMENT_KINDS, ...INTERNAL_KINDS] as const;
 export type ExportKind = (typeof EXPORT_KINDS)[number];
+
+export function isInternalKind(kind: ExportKind): boolean {
+  return (INTERNAL_KINDS as readonly string[]).includes(kind);
+}
 
 export interface ProjectExport {
   id: string;
