@@ -171,7 +171,9 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
                 analysis.status === 'mapped' && !mappingId
                   ? 'needs_mapping'
                   : analysis.status,
-              importerId: mappingId ? `mapping:${mappingId}` : analysis.importerId,
+              importerId: mappingId
+                ? `mapping:${mappingId}`
+                : analysis.importerId,
               mappingId: analysis.status === 'mapped' ? mappingId : null,
               platform: analysis.platform,
               periodFrom: analysis.period?.from ?? null,
@@ -222,7 +224,9 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
               snapshotId: null,
               wealthChf: item.wealthChf,
               incomeChf: item.incomeChf,
-              ...(item.createdAt ? { createdAt: new Date(item.createdAt) } : {}),
+              ...(item.createdAt
+                ? { createdAt: new Date(item.createdAt) }
+                : {}),
             },
           });
         }

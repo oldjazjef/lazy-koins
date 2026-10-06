@@ -1,4 +1,8 @@
-import type { BundleResult, Carryover, ProjectBundle } from '../domain/carryover';
+import type {
+  BundleResult,
+  Carryover,
+  ProjectBundle,
+} from '../domain/carryover';
 
 /** Carry-over rows of a project (read side). */
 export abstract class CarryoverRepositoryPort {

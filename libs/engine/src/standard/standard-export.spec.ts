@@ -85,7 +85,10 @@ const input = {
   fileNames: { sha1: 'kraken.csv', sha2: 'ledger.csv' },
 };
 
-function reimport(header: readonly string[], rows: readonly (readonly string[])[]) {
+function reimport(
+  header: readonly string[],
+  rows: readonly (readonly string[])[],
+) {
   const bytes = new TextEncoder().encode(toCsv([header, ...rows]));
   return parseStandardFile(
     csvSourceFile({ id: 'again', name: 'again.csv', bytes }),
@@ -132,12 +135,17 @@ describe('standard export (F10.7)', () => {
       standardExport({ ...input, filter: { kind: 'trade' } }).bookings.rows,
     ).toHaveLength(1);
     expect(
-      standardExport({ ...input, filter: { from: '2025-04-01', to: '2025-12-31' } })
-        .bookings.rows,
+      standardExport({
+        ...input,
+        filter: { from: '2025-04-01', to: '2025-12-31' },
+      }).bookings.rows,
     ).toHaveLength(1);
     expect(
       standardExport({ ...input, filter: { platform: 'ledger' } }),
-    ).toMatchObject({ bookings: { rows: [] }, holdings: { rows: [expect.anything()] } });
+    ).toMatchObject({
+      bookings: { rows: [] },
+      holdings: { rows: [expect.anything()] },
+    });
   });
 
   it('round trip: the export re-imports as the same records', () => {

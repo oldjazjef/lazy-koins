@@ -138,9 +138,9 @@ describe('dashboard (F11.4–F11.9)', () => {
       priceChf: null,
       valueChf: null,
     });
-    expect(
-      result.kpis.find((k) => k.kind === 'deposits')?.missingPrices,
-    ).toBe(1);
+    expect(result.kpis.find((k) => k.kind === 'deposits')?.missingPrices).toBe(
+      1,
+    );
   });
 
   it('counts the same record of a file shared by two projects once', () => {
@@ -205,7 +205,10 @@ describe('dashboard (F11.4–F11.9)', () => {
       ],
     });
     expect(result.allocation).toHaveLength(8);
-    expect(result.allocation[0]).toMatchObject({ asset: 'I', sharePct: '20.00' });
+    expect(result.allocation[0]).toMatchObject({
+      asset: 'I',
+      sharePct: '20.00',
+    });
     expect(result.allocation[7]).toMatchObject({
       asset: null,
       valueChf: '3',
@@ -270,7 +273,11 @@ describe('dashboard rules across projects', () => {
       [
         {
           projectId: 'p2024',
-          rates: [manual('2024-12-31'), manual('2025-12-31'), rates[1] as RateEntry],
+          rates: [
+            manual('2024-12-31'),
+            manual('2025-12-31'),
+            rates[1] as RateEntry,
+          ],
         },
         { projectId: 'p2025', rates: [rates[1] as RateEntry] },
       ],
