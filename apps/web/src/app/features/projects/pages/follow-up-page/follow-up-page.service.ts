@@ -10,7 +10,7 @@ import type {
   FollowUpOptions,
 } from '../../../../core/api/dashboard.types';
 
-export type SelectionGroup = 'files' | 'corrections' | 'openItems';
+export type SelectionGroup = 'files' | 'wallets' | 'corrections' | 'openItems';
 
 /**
  * F4.4a "Folgeprojekt erstellen": what the project can hand on (the API decides what is
@@ -34,6 +34,7 @@ export class FollowUpPageService {
     Readonly<Record<SelectionGroup, ReadonlySet<string>>>
   >({
     files: new Set(),
+    wallets: new Set(),
     corrections: new Set(),
     openItems: new Set(),
   });
@@ -44,15 +45,23 @@ export class FollowUpPageService {
     if (!this.options.hasValue()) return [];
     const options = this.options.value();
     if (group === 'files') return options.files.map((f) => f.projectFileId);
+    if (group === 'wallets') {
+      return (options.wallets ?? []).map((w) => w.walletId);
+    }
     if (group === 'corrections') return options.corrections.map((c) => c.id);
     return options.openItems.map((o) => o.key);
   }
 
-  /** The API's preselection: files reaching into the new year; nothing else. */
+  /** The API's preselection: files reaching into the new year and every wallet. */
   preselect(options: FollowUpOptions): void {
     this.selected.set({
       files: new Set(
         options.files.filter((f) => f.preselected).map((f) => f.projectFileId),
+      ),
+      wallets: new Set(
+        (options.wallets ?? [])
+          .filter((w) => w.preselected)
+          .map((w) => w.walletId),
       ),
       corrections: new Set(),
       openItems: new Set(),
@@ -82,6 +91,7 @@ export class FollowUpPageService {
 
   readonly summary = computed(() => ({
     files: this.selected().files.size,
+    wallets: this.selected().wallets.size,
     corrections: this.selected().corrections.size,
     openItems: this.selected().openItems.size,
     notes: this.takeNotes(),
@@ -125,6 +135,7 @@ export class FollowUpPageService {
           correctionIds: [...selected.corrections],
           openItemKeys: [...selected.openItems],
           notes: this.takeNotes(),
+          walletIds: [...selected.wallets],
         },
       },
       { key: 'follow-up' },

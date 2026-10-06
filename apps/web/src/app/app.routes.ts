@@ -29,6 +29,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/mappings/mappings.routes'),
       },
       {
+        path: 'wallets',
+        loadChildren: () => import('./features/wallets/wallets.routes'),
+      },
+      {
         path: 'notifications',
         loadChildren: () =>
           import('./features/notifications/notifications.routes'),

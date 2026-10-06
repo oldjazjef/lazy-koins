@@ -25,6 +25,7 @@ export const NOTIFICATION_TITLE_BASES = [
   `mail.sent`,
   `export.failed`,
   `package.importFailed`,
+  `wallet.fetchFailed`,
   `file.needsMapping`,
   `file.rowErrors`,
   `file.readFailed`,
@@ -76,6 +77,13 @@ export const NOTIFICATION_REASONS = [
   'version',
   'content',
   'unexpected',
+  'notConfigured',
+  'invalidKey',
+  'rateLimited',
+  'chainNotOnPlan',
+  'providerError',
+  'invalidAddress',
+  'unsupported',
 ] as const;
 
 export interface NotificationAction {

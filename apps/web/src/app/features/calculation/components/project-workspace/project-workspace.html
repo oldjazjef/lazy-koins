@@ -40,6 +40,8 @@
     (showChecks)="select('checks')"
     (showFiles)="select('files')"
   />
+  } @case ('wallets') {
+  <lk-project-wallets [projectId]="projectId()" [closed]="closed()" />
   } @case ('rates') {
   <lk-project-rates [closed]="closed()" [taxYear]="taxYear()" />
   } @case ('result') {

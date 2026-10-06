@@ -165,6 +165,16 @@ export function describeItem(item: OpenItem): string {
       return `${where}: ${p(item, 'count')} Buchungen „${p(item, 'rawType')}“ nicht zugeordnet`;
     case 'walletNetworksNotAvailable':
       return 'Wallet-Abfrage auf allen Netzwerken ist noch nicht verfügbar – manuell prüfen';
+    case 'walletNetworksUnchecked':
+      return `Wallet ${p(item, 'wallet')}: Netzwerke noch nicht geprüft`;
+    case 'walletNetworkNotSelected':
+      return `Wallet ${p(item, 'wallet')}: auf ${p(item, 'network')} genutzt, aber nicht erfasst`;
+    case 'walletNetworkNotFetched':
+      return `Wallet ${p(item, 'wallet')} / ${p(item, 'network')}: noch nicht abgerufen`;
+    case 'walletManualBalanceMissing':
+      return `Wallet ${p(item, 'wallet')} / ${p(item, 'network')}: Saldo per 31.12. manuell mit Beleg erfassen`;
+    case 'walletFetchFailed':
+      return `Wallet ${p(item, 'wallet')} / ${p(item, 'network')}: Abruf fehlgeschlagen`;
   }
 }
 

@@ -3,7 +3,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
+  untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
@@ -117,7 +119,11 @@ export class NotificationsPage {
   });
 
   constructor() {
-    this.service.refresh();
+    // Reload whenever the bell's count moves (polling, panel actions, finished tasks).
+    effect(() => {
+      this.centre.unread();
+      untracked(() => this.service.refresh());
+    });
   }
 
   protected setKind(value: string): void {

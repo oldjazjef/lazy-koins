@@ -36,6 +36,7 @@ const REFRESH_POLL_MS = 1000;
 export const WORKSPACE_TABS = [
   'files',
   'hints',
+  'wallets',
   'rates',
   'result',
   'checks',

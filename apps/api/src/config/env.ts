@@ -163,6 +163,13 @@ export class Env {
   RATES_ONLINE = 'true';
 
   /**
+   * `1` = the wallet lookups (F6.3/F6.4) answer from synthetic fake chains, no network and no
+   * keys needed — for development and demos. Refused with NODE_ENV=production.
+   */
+  @IsIn(['', '0', '1'])
+  LK_CHAINS_FAKE = '';
+
+  /**
    * Development only: waits this long before each series of "Kurse aktualisieren", so the
    * progress in the app's activity indicator can be watched. Refused outside development/test.
    */
@@ -238,6 +245,12 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   }
   if (env.AUTH_MODE !== 'local' && env.LOCAL_MODE === 'true') {
     messages.push('  LOCAL_MODE: `true` is only valid with AUTH_MODE=local');
+  }
+
+  if (env.LK_CHAINS_FAKE === '1' && env.NODE_ENV === NodeEnv.Production) {
+    messages.push(
+      '  LK_CHAINS_FAKE: fake chains answer with synthetic data — never in production',
+    );
   }
 
   // A deliberate slowdown has no place outside development.

@@ -19,6 +19,16 @@ import {
   QUANTITY_SOURCES,
 } from '../api/calculation.types';
 import {
+  ADDRESS_KINDS,
+  CHAIN_SERVICES,
+  FETCH_NOTES,
+  NETWORK_COVERAGES,
+  NETWORK_IDS,
+  SECRET_KINDS,
+  SPAM_REASONS,
+  WALLET_ERROR_CODES,
+} from '../api/wallets.types';
+import {
   CHANGE_REASONS,
   MAIL_ERROR_CODES,
   MAIL_PLACEHOLDERS,
@@ -183,6 +193,26 @@ const DYNAMIC_KEYS = [
     'pageOutOfRange',
     'invalidRecord',
   ].map((issue) => `ai.statement.issues.${issue}`),
+  ...NETWORK_IDS.map((network) => `wallets.network.${network}`),
+  ...NETWORK_COVERAGES.map((coverage) => `wallets.coverage.${coverage}`),
+  ...ADDRESS_KINDS.map((kind) => `wallets.kind.${kind}`),
+  ...SECRET_KINDS.map((kind) => `wallets.secret.kind.${kind}`),
+  ...WALLET_ERROR_CODES.map((code) => `wallets.errors.${code}`),
+  ...FETCH_NOTES.map((note) => `wallets.notes.${note}`),
+  ...SPAM_REASONS.map((reason) => `wallets.spamReason.${reason}`),
+  ...CHAIN_SERVICES.flatMap((service) => [
+    `settings.wallets.services.${service}.title`,
+    `settings.wallets.services.${service}.hint`,
+  ]),
+  ...[
+    'etherscanKey',
+    'heliusKey',
+    'subscanKey',
+    'solanaRpcUrl',
+    'esploraUrl',
+    'koiosUrl',
+    'cosmosLcdUrl',
+  ].map((field) => `settings.wallets.fields.${field}`),
   ...['openai_compatible', 'anthropic'].map(
     (provider) => `settings.ai.providers.${provider}`,
   ),

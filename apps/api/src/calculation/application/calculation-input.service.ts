@@ -11,7 +11,10 @@ import {
   parseStandardFile,
   type PreviousYear,
   type RateEntry,
+  type WalletState,
 } from '@lazykoins/engine';
+import { walletStates } from '../../wallets/domain/wallet-states';
+import { WalletRepositoryPort } from '../../wallets/ports/wallet.repository.port';
 import { readableOf } from '../../files/application/file-access';
 import {
   SourceFileReader,
@@ -46,6 +49,8 @@ interface Sources {
   readonly rates: readonly RateEntry[];
   readonly previous: PreviousYear | undefined;
   readonly previousRef: string | null;
+  /** F6.4: the project's wallets per network (only the wallet check reads them). */
+  readonly wallets: readonly WalletState[];
 }
 
 function compareText(a: string, b: string): number {
@@ -73,6 +78,7 @@ export class CalculationInputService {
     private readonly corrections: CorrectionRepositoryPort,
     private readonly snapshots: CalculationSnapshotRepositoryPort,
     private readonly reader: SourceFileReader,
+    private readonly wallets: WalletRepositoryPort,
   ) {}
 
   /** The input hash alone — cheap (no file is read); tells whether a snapshot is stale. */
@@ -118,6 +124,7 @@ export class CalculationInputService {
         corrections,
         rates: sources.rates,
         previous: sources.previous,
+        wallets: sources.wallets,
       },
       files: sources.files.map((f) => ({
         projectFileId: f.id,
@@ -168,7 +175,22 @@ export class CalculationInputService {
       rates,
       previous,
       previousRef: ref,
+      wallets: await this.walletStates(project),
     };
+  }
+
+  private async walletStates(project: Project): Promise<WalletState[]> {
+    const ids = await this.wallets.listWalletIds(project.id);
+    if (ids.length === 0) return [];
+    const wallets = (await this.wallets.findByIds(ids)).filter(
+      (w) => w.ownerId === project.ownerId,
+    );
+    return walletStates(
+      wallets,
+      await this.wallets.listData(ids),
+      await this.wallets.listBalances(project.id),
+      `${project.taxYear}-12-31`,
+    );
   }
 
   /** The owner's project of the year before (same country), via its latest snapshot. */
@@ -249,6 +271,7 @@ function hashOf(project: Project, sources: Sources): string {
       )
       .sort(compareText),
     previous: sources.previousRef,
+    wallets: sources.wallets,
   };
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }

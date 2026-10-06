@@ -4,6 +4,7 @@ import {
   lucideLayoutDashboard,
   lucideSettings,
   lucideUserRound,
+  lucideWallet,
 } from '@ng-icons/lucide';
 
 export interface NavItem {
@@ -29,6 +30,11 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: 'nav.mappings',
     icon: 'lucideFileJson',
   },
+  {
+    path: '/app/wallets',
+    labelKey: 'nav.wallets',
+    icon: 'lucideWallet',
+  },
 ];
 
 /** The user menu at the top right (ANFORDERUNGEN §11): Profil and Einstellungen. */
@@ -51,4 +57,5 @@ export const NAV_ICONS = {
   lucideLayoutDashboard,
   lucideSettings,
   lucideUserRound,
+  lucideWallet,
 };

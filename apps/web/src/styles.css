@@ -215,21 +215,26 @@
     background-color: var(--light-grey);
   }
 
-  /* Notification centre (F11.11): kind colours, the bell's badge and its panel. */
+  /* Notification centre (F11.11): kind colours (ng-icon reads --ng-icon__color, unlayered),
+     the bell's badge and its panel. */
   .lk-kind-error {
     color: var(--destructive);
+    --ng-icon__color: var(--destructive);
   }
 
   .lk-kind-action {
     color: var(--warning-text);
+    --ng-icon__color: var(--warning-text);
   }
 
   .lk-kind-info {
     color: var(--primary);
+    --ng-icon__color: var(--primary);
   }
 
   .lk-kind-success {
     color: var(--positive);
+    --ng-icon__color: var(--positive);
   }
 
   .lk-count-badge {

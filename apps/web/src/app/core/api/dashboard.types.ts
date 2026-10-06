@@ -136,6 +136,8 @@ export interface FollowUpOptions {
   readonly existing: readonly { readonly id: string; readonly name: string }[];
   readonly files: readonly FileOption[];
   readonly walletsAvailable: boolean;
+  /** F4.4a: the project's wallets, preselected (absent on an older API). */
+  readonly wallets?: readonly WalletOption[];
   readonly corrections: readonly CorrectionOption[];
   readonly openItems: readonly OpenItemOption[];
   readonly notes: string;
@@ -149,6 +151,15 @@ export interface CreateFollowUpRequest {
   readonly correctionIds: readonly string[];
   readonly openItemKeys: readonly string[];
   readonly notes: boolean;
+  readonly walletIds?: readonly string[];
+}
+
+export interface WalletOption {
+  readonly walletId: string;
+  readonly label: string;
+  readonly address: string;
+  readonly networks: readonly string[];
+  readonly preselected: boolean;
 }
 
 export interface TakeOverSource {
@@ -165,6 +176,7 @@ export const CARRYOVER_KINDS = [
   'correction',
   'open_item',
   'notes',
+  'wallet',
 ] as const;
 export type CarryoverKind = (typeof CARRYOVER_KINDS)[number];
 

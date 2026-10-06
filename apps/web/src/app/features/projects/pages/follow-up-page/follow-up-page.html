@@ -117,13 +117,62 @@
     </div>
   </section>
 
-  <!-- Wallets: not an entity yet (F6) -->
-  <section hlmCard class="opacity-70" aria-disabled="true">
-    <div hlmCardHeader>
-      <h2 hlmCardTitle>{{ 'projects.followUp.wallets' | translate }}</h2>
-      <p hlmCardDescription>
-        {{ 'projects.followUp.walletsUnavailable' | translate }}
+  <!-- Wallets (F4.4a, F6): linked to the new project, preselected -->
+  <section hlmCard>
+    <div hlmCardHeader class="flex flex-wrap items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <h2 hlmCardTitle>{{ 'projects.followUp.wallets' | translate }}</h2>
+        <p hlmCardDescription>
+          {{ 'projects.followUp.walletsHint' | translate }}
+        </p>
+      </div>
+      @if ((options.wallets ?? []).length > 0) {
+      <div class="flex gap-1">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('wallets', true)"
+        >
+          {{ 'projects.followUp.all' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('wallets', false)"
+        >
+          {{ 'projects.followUp.none' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+    <div hlmCardContent class="flex flex-col gap-1">
+      @for (wallet of options.wallets ?? []; track wallet.walletId) {
+      <label
+        class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1"
+      >
+        <input
+          type="checkbox"
+          [checked]="service.isSelected('wallets', wallet.walletId)"
+          (change)="toggle('wallets', wallet.walletId)"
+        />
+        <span class="min-w-0 flex-1" [lkTruncate]="wallet.label"
+          >{{ wallet.label }}</span
+        >
+        <span
+          class="text-muted-foreground max-w-48 shrink-0 font-mono text-xs"
+          [lkTruncate]="wallet.address"
+          >{{ wallet.address }}</span
+        >
+      </label>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'projects.followUp.noWallets' | translate }}
       </p>
+      }
     </div>
   </section>
 

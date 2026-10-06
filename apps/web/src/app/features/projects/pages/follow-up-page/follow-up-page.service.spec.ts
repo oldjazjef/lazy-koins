@@ -51,7 +51,16 @@ const options: FollowUpOptions = {
       preselected: false,
     },
   ],
-  walletsAvailable: false,
+  walletsAvailable: true,
+  wallets: [
+    {
+      walletId: 'w1',
+      label: 'Ledger',
+      address: '0x11',
+      networks: ['ethereum'],
+      preselected: true,
+    },
+  ],
   corrections: [
     {
       id: 'c1',
@@ -100,6 +109,7 @@ describe('FollowUpPageService (F4.4a)', () => {
     expect(service.selected().corrections.size).toBe(0);
     expect(service.summary()).toEqual({
       files: 1,
+      wallets: 1,
       corrections: 0,
       openItems: 0,
       notes: true,
@@ -137,6 +147,7 @@ describe('FollowUpPageService (F4.4a)', () => {
       correctionIds: ['c1'],
       openItemKeys: [],
       notes: true,
+      walletIds: ['w1'],
     });
     request.flush({ projectId: 'p9' });
     await done;

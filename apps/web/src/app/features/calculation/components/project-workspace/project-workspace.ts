@@ -10,6 +10,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RecordsDialog } from '../../../../shared/components/records-dialog';
 import { AiAssist, AiAssistState } from '../../../files/components/ai-assist';
 import { ProjectFiles } from '../../../files/components/project-files';
+import { ProjectWallets } from '../../../wallets/components/project-wallets';
 import { ProjectFilesService } from '../../../files/components/project-files/project-files.service';
 import {
   type ManualHoldingRequest,
@@ -38,6 +39,7 @@ import {
     TranslatePipe,
     RecordsDialog,
     ProjectFiles,
+    ProjectWallets,
     ProjectHints,
     AiAssist,
     ProjectRates,

@@ -103,8 +103,9 @@ export const Topics = {
   missingPrices: (projectId: string) => `rates.missingPrices:${projectId}`,
   estvFetchFailed: (year: number) => `estv.fetchFailed:${year}`,
   estvNewVersion: (projectId: string) => `estv.newVersion:${projectId}`,
-  keyInvalid: (service: 'ai' | 'coingecko' | 'mail') =>
+  keyInvalid: (service: 'ai' | 'coingecko' | 'mail' | 'chain') =>
     `key.invalid:${service}`,
+  walletFetchFailed: (walletId: string) => `wallet.fetchFailed:${walletId}`,
   aiCallFailed: () => 'ai.callFailed',
   mailSendFailed: (projectId: string) => `mail.sendFailed:${projectId}`,
   mailSent: (projectId: string) => `mail.sent:${projectId}`,
@@ -137,6 +138,7 @@ export const TITLE_BASES = [
   'mail.sent',
   'export.failed',
   'package.importFailed',
+  'wallet.fetchFailed',
   'file.needsMapping',
   'file.rowErrors',
   'file.readFailed',
