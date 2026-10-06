@@ -69,6 +69,10 @@ model User {
   rates         UserRate[]
   wallets       Wallet[]
   chainSettings ChainSettings?
+  assistant     AssistantSettings?
+  mcpTokens     McpToken[]
+  conversations ChatConversation[]
+  toolAudits    ToolAudit[]
 
   @@map("user")
 }
@@ -680,4 +684,123 @@ model ProjectHintState {
 
   @@id([projectId, hintKey])
   @@map("project_hint_state")
+}
+
+/// F11.15 + F11.16: the assistant's own system prompt (null = the built-in default; the safety
+/// rules are appended server-side and cannot be edited), the chat consent (F5.14 for the chat)
+/// and the MCP server switches. One row per user; no row = the defaults (MCP off).
+model AssistantSettings {
+  userId        String    @id @map("user_id")
+  systemPrompt  String?   @map("system_prompt")
+  chatConsentAt DateTime? @map("chat_consent_at")
+  mcpEnabled    Boolean   @default(false) @map("mcp_enabled")
+  /// JSON array of the tool areas the MCP server exposes. CHECK json_valid in the migration.
+  mcpAreas      String    @default("[]") @map("mcp_areas")
+  mcpAllowWrite Boolean   @default(false) @map("mcp_allow_write")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("assistant_settings")
+}
+
+/// F11.16: a personal access token for the MCP endpoint — only its SHA-256 is stored.
+model McpToken {
+  id         String    @id @default(uuid(7))
+  userId     String    @map("user_id")
+  name       String
+  /// SHA-256 (hex) of the token. CHECK in the migration.
+  tokenHash  String    @unique @map("token_hash")
+  /// The last characters, to recognise it in the list.
+  tokenHint  String    @map("token_hint")
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mcp_token")
+}
+
+/// F11.14: one chat of the assistant sidebar. Deleting it deletes its messages and proposals.
+model ChatConversation {
+  id        String   @id @default(uuid(7))
+  userId    String   @map("user_id")
+  title     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  proposals ChatProposal[]
+
+  @@index([userId, updatedAt])
+  @@map("chat_conversation")
+}
+
+/// One message of a chat: what the user wrote, the assistant's answers, the tool calls and their
+/// (shortened) results the model saw, and events such as an executed proposal.
+model ChatMessage {
+  id             String   @id @default(uuid(7))
+  conversationId String   @map("conversation_id")
+  seq            Int
+  /// user | assistant | tool | event. CHECK in the migration.
+  role           String
+  content        String
+  /// JSON object: tool calls, tool call id, links, upload requests, proposal ids, usage.
+  data           String   @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, seq])
+  @@map("chat_message")
+}
+
+/// F11.14: a change the assistant proposed; it runs only when the user confirms it.
+model ChatProposal {
+  id             String    @id @default(uuid(7))
+  conversationId String    @map("conversation_id")
+  tool           String
+  /// JSON object: the validated tool arguments.
+  args           String
+  /// JSON object: summary + before/after lines shown on the card.
+  preview        String
+  /// pending | executed | failed | cancelled. CHECK in the migration.
+  status         String    @default("pending")
+  /// JSON: the shortened result or the error.
+  result         String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  decidedAt      DateTime? @map("decided_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("chat_proposal")
+}
+
+/// Every tool call of the chat or the MCP server (F11.14, F11.16): who, from where, which tool,
+/// the arguments without secrets, the outcome and how long it took.
+model ToolAudit {
+  id         String   @id @default(uuid(7))
+  userId     String   @map("user_id")
+  /// chat | mcp. CHECK in the migration.
+  source     String
+  tool       String
+  /// Redacted, shortened summary of the arguments.
+  args       String
+  /// ok | error | refused | proposed. CHECK in the migration.
+  status     String
+  errorCode  String?  @map("error_code")
+  durationMs Int      @map("duration_ms")
+  /// The MCP token used (no FK: the audit outlives a deleted token).
+  tokenId    String?  @map("token_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("tool_audit")
 }

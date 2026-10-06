@@ -92,6 +92,6 @@ import { WalletsService } from './wallets.service';
     TestChainServiceHandler,
   ],
   // F4.4a: the follow-up project links wallets and lets them write their derived files.
-  exports: [WalletDerivedFiles],
+  exports: [WalletDerivedFiles, WalletsService],
 })
 export class WalletsModule {}

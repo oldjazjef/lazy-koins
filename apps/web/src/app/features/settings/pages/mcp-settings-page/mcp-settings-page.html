@@ -1,0 +1,590 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'mcp.subtitle' | translate"
+/>
+
+@if (current(); as settings) {
+<div class="flex max-w-4xl flex-col gap-6">
+  <!-- On/off, areas, writing -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle class="flex items-center gap-2">
+        {{ 'mcp.title' | translate }}
+        <span hlmBadge [variant]="settings.enabled ? 'secondary' : 'outline'"
+          >{{ (settings.enabled ? 'mcp.status.on' : 'mcp.status.off') |
+          translate }}</span
+        >
+      </h2>
+      <p hlmCardDescription>{{ 'mcp.intro' | translate }}</p>
+    </div>
+    <div hlmCardContent>
+      <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="save()">
+        <label class="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" formControlName="enabled" />
+          {{ 'mcp.enabled' | translate }}
+        </label>
+
+        <fieldset class="flex flex-col gap-2" formGroupName="areas">
+          <legend class="mb-2 text-sm font-medium">
+            {{ 'mcp.areasLabel' | translate }}
+          </legend>
+          <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            @for (area of areas; track area) {
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" [formControlName]="area" />
+              {{ 'mcp.areas.' + area | translate }}
+            </label>
+            }
+          </div>
+        </fieldset>
+
+        <div class="flex flex-col gap-1">
+          <label class="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" formControlName="allowWrite" />
+            {{ 'mcp.allowWrite' | translate }}
+          </label>
+          <p class="lk-warning-text text-xs">
+            {{ 'mcp.allowWriteWarning' | translate }}
+          </p>
+        </div>
+
+        <div class="flex justify-end">
+          <button hlmBtn type="submit" [disabled]="service.isBusy()">
+            {{ 'common.save' | translate }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Endpoint + client configurations -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'mcp.connect.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'mcp.connect.intro' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-5">
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium"
+          >{{ 'mcp.connect.endpoint' | translate }}</span
+        >
+        <div class="flex min-w-0 items-center gap-2">
+          <code
+            class="bg-muted min-w-0 flex-1 truncate rounded-md px-3 py-2 font-mono text-xs"
+            >{{ settings.endpoint }}</code
+          >
+          <button
+            hlmBtn
+            variant="outline"
+            size="icon-sm"
+            type="button"
+            [attr.aria-label]="'mcp.copy' | translate"
+            [attr.title]="'mcp.copy' | translate"
+            (click)="service.copy(settings.endpoint)"
+          >
+            <ng-icon name="lucideCopy" size="14" aria-hidden="true" />
+          </button>
+        </div>
+        @if (settings.mode === 'desktop') {
+        <p class="text-muted-foreground text-xs">
+          {{ 'mcp.connect.desktopNote' | translate }}
+        </p>
+        }
+      </div>
+
+      @if (service.snippets(); as snippets) { @if (!service.createdToken()) {
+      <p class="text-muted-foreground text-xs">
+        {{ 'mcp.connect.placeholderHint' | translate }}
+      </p>
+      } @if (snippets.stdio; as stdio) {
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-medium">
+            {{ 'mcp.connect.stdio' | translate }}
+          </h3>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="service.copy(stdio)"
+          >
+            <ng-icon name="lucideCopy" size="14" aria-hidden="true" />
+            {{ 'mcp.copy' | translate }}
+          </button>
+        </div>
+        <p class="text-muted-foreground text-xs">
+          {{ 'mcp.connect.stdioHint' | translate }}
+        </p>
+        <pre class="bg-muted overflow-x-auto rounded-md p-3 font-mono text-xs">
+{{ stdio }}</pre>
+      </div>
+      }
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-medium">
+            {{ 'mcp.connect.claudeDesktop' | translate }}
+          </h3>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="service.copy(snippets.claudeDesktop)"
+          >
+            <ng-icon name="lucideCopy" size="14" aria-hidden="true" />
+            {{ 'mcp.copy' | translate }}
+          </button>
+        </div>
+        <p class="text-muted-foreground text-xs">
+          {{ 'mcp.connect.claudeDesktopHint' | translate }}
+        </p>
+        <pre class="bg-muted overflow-x-auto rounded-md p-3 font-mono text-xs">
+{{ snippets.claudeDesktop }}</pre>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-medium">
+            {{ 'mcp.connect.claudeCode' | translate }}
+          </h3>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="service.copy(snippets.claudeCode)"
+          >
+            <ng-icon name="lucideCopy" size="14" aria-hidden="true" />
+            {{ 'mcp.copy' | translate }}
+          </button>
+        </div>
+        <pre
+          class="bg-muted rounded-md p-3 font-mono text-xs break-all whitespace-pre-wrap"
+        >
+{{ snippets.claudeCode }}</pre>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-medium">
+            {{ 'mcp.connect.http' | translate }}
+          </h3>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="service.copy(snippets.http)"
+          >
+            <ng-icon name="lucideCopy" size="14" aria-hidden="true" />
+            {{ 'mcp.copy' | translate }}
+          </button>
+        </div>
+        <pre
+          class="bg-muted rounded-md p-3 font-mono text-xs break-all whitespace-pre-wrap"
+        >
+{{ snippets.http }}</pre>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Tokens -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'mcp.tokens.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'mcp.tokens.intro' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-3">
+      <div>
+        <button hlmBtn variant="outline" type="button" (click)="openCreate()">
+          <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
+          {{ 'mcp.tokens.create' | translate }}
+        </button>
+      </div>
+      @if (service.tokens.hasValue()) { @if (service.tokens.value().length ===
+      0) {
+      <lk-empty-state [message]="'mcp.tokens.empty' | translate" />
+      } @else {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col />
+            <col class="w-28" />
+            <col class="hidden w-32 md:table-column" />
+            <col class="hidden w-32 lg:table-column" />
+            <col class="hidden w-32 lg:table-column" />
+            <col class="w-14" />
+          </colgroup>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh>{{ 'mcp.tokens.fields.name' | translate }}</th>
+              <th hlmTh>{{ 'mcp.tokens.fields.state' | translate }}</th>
+              <th hlmTh class="hidden md:table-cell">
+                {{ 'mcp.tokens.fields.expires' | translate }}
+              </th>
+              <th hlmTh class="hidden lg:table-cell">
+                {{ 'mcp.tokens.fields.lastUsed' | translate }}
+              </th>
+              <th hlmTh class="hidden lg:table-cell">
+                {{ 'mcp.tokens.fields.created' | translate }}
+              </th>
+              <th hlmTh class="lk-sticky-actions text-right">
+                <span class="sr-only">{{ 'common.actions' | translate }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (token of tokenPager.visible(); track token.id) {
+            <tr hlmTr>
+              <td hlmTd class="max-w-0">
+                <span [lkTruncate]="token.name">{{ token.name }}</span>
+                <span
+                  class="text-muted-foreground font-mono text-xs"
+                  [lkTruncate]="token.hint"
+                  >{{ token.hint }}</span
+                >
+              </td>
+              <td hlmTd class="align-top">
+                <span
+                  hlmBadge
+                  [variant]="token.state === 'active' ? 'secondary' : 'outline'"
+                  >{{ 'mcp.tokens.state.' + token.state | translate }}</span
+                >
+              </td>
+              <td hlmTd class="hidden align-top tabular-nums md:table-cell">
+                @if (token.expiresAt) { {{ token.expiresAt | date: 'dd.MM.yyyy'
+                }} } @else { {{ 'mcp.tokens.never' | translate }} }
+              </td>
+              <td hlmTd class="hidden align-top tabular-nums lg:table-cell">
+                @if (token.lastUsedAt) { {{ token.lastUsedAt | date: 'dd.MM.yyyy
+                HH:mm' }} } @else { {{ 'mcp.tokens.unused' | translate }} }
+              </td>
+              <td hlmTd class="hidden align-top tabular-nums lg:table-cell">
+                {{ token.createdAt | date: 'dd.MM.yyyy' }}
+              </td>
+              <td hlmTd class="lk-sticky-actions text-right align-top">
+                <lk-row-actions
+                  [actions]="tokenActions().get(token.id) ?? []"
+                  (selected)="tokenAction(token)"
+                />
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <lk-paginator [pager]="tokenPager" />
+      } } @else if (service.tokens.error()) {
+      <lk-empty-state [message]="'mcp.tokens.loadFailed' | translate" />
+      } @else {
+      <hlm-skeleton class="h-24 w-full" />
+      }
+    </div>
+  </section>
+
+  <!-- Tools by area -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'mcp.tools.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'mcp.tools.intro' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      @for (group of toolGroups(); track group.area) {
+      <div class="flex flex-col gap-1">
+        <h3 class="text-sm font-medium">
+          {{ 'mcp.areas.' + group.area | translate }} @if
+          (!settings.areas.includes(group.area)) {
+          <span class="text-muted-foreground text-xs font-normal"
+            >{{ 'mcp.tools.areaOff' | translate }}</span
+          >
+          }
+        </h3>
+        <ul class="lk-panel flex flex-col divide-y text-sm">
+          @for (tool of group.tools; track tool.name) {
+          <li class="flex min-w-0 flex-col gap-0.5 px-3 py-2">
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="min-w-0 flex-1" [lkTruncate]="tool.title"
+                >{{ tool.title }}</span
+              >
+              <span
+                hlmBadge
+                class="shrink-0"
+                [variant]="effectVariants[tool.effect]"
+                >{{ 'assistant.effect.' + tool.effect | translate }}</span
+              >
+            </div>
+            <span
+              class="text-muted-foreground font-mono text-xs"
+              [lkTruncate]="tool.name"
+              >{{ tool.name }}</span
+            >
+            <span
+              class="text-muted-foreground text-xs"
+              [lkTruncate]="tool.description"
+              >{{ tool.description }}</span
+            >
+          </li>
+          }
+        </ul>
+      </div>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'mcp.tools.empty' | translate }}
+      </p>
+      }
+    </div>
+  </section>
+
+  <!-- Audit log -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'mcp.audit.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'mcp.audit.intro' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-3">
+      <div class="flex max-w-xs flex-col gap-1">
+        <label hlmLabel for="mcp-audit-source"
+          >{{ 'mcp.audit.sourceFilter' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="mcp-audit-source"
+          (change)="setSource($any($event.target).value)"
+        >
+          <option value="" [selected]="service.auditSource() === ''">
+            {{ 'mcp.audit.allSources' | translate }}
+          </option>
+          @for (source of sources; track source) {
+          <option
+            [value]="source"
+            [selected]="service.auditSource() === source"
+          >
+            {{ 'mcp.audit.source.' + source | translate }}
+          </option>
+          }
+        </select>
+      </div>
+      @if (service.audit.hasValue()) { @if (service.audit.value().length === 0)
+      {
+      <lk-empty-state [message]="'mcp.audit.empty' | translate" />
+      } @else {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col class="w-36" />
+            <col class="hidden w-20 md:table-column" />
+            <col />
+            <col class="hidden w-24 md:table-column" />
+            <col class="w-28" />
+            <col class="hidden w-20 lg:table-column" />
+          </colgroup>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh>{{ 'mcp.audit.fields.time' | translate }}</th>
+              <th hlmTh class="hidden md:table-cell">
+                {{ 'mcp.audit.fields.source' | translate }}
+              </th>
+              <th hlmTh>{{ 'mcp.audit.fields.tool' | translate }}</th>
+              <th hlmTh class="hidden md:table-cell">
+                {{ 'mcp.audit.fields.args' | translate }}
+              </th>
+              <th hlmTh>{{ 'mcp.audit.fields.status' | translate }}</th>
+              <th hlmTh class="hidden text-right lg:table-cell">
+                {{ 'mcp.audit.fields.duration' | translate }}
+              </th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (entry of auditPager.visible(); track entry.id) {
+            <tr hlmTr>
+              <td hlmTd class="align-top tabular-nums">
+                {{ entry.createdAt | date: 'dd.MM.yyyy HH:mm:ss' }}
+              </td>
+              <td hlmTd class="hidden align-top md:table-cell">
+                {{ 'mcp.audit.source.' + entry.source | translate }}
+              </td>
+              <td hlmTd class="max-w-0">
+                <span class="font-mono text-xs" [lkTruncate]="entry.tool"
+                  >{{ entry.tool }}</span
+                >
+                <span
+                  class="text-muted-foreground font-mono text-xs md:hidden"
+                  [lkTruncate]="entry.args"
+                  >{{ entry.args }}</span
+                >
+              </td>
+              <td hlmTd class="hidden max-w-0 md:table-cell">
+                <span
+                  class="text-muted-foreground font-mono text-xs"
+                  [lkTruncate]="entry.args"
+                  >{{ entry.args }}</span
+                >
+              </td>
+              <td hlmTd class="max-w-0 align-top">
+                <span
+                  hlmBadge
+                  [variant]="entry.status === 'ok' ? 'secondary' : entry.status === 'proposed' ? 'outline' : 'destructive'"
+                  >{{ 'mcp.audit.status.' + entry.status | translate }}</span
+                >
+                @if (entry.errorCode) {
+                <span
+                  class="text-muted-foreground font-mono text-xs"
+                  [lkTruncate]="entry.errorCode"
+                  >{{ entry.errorCode }}</span
+                >
+                }
+              </td>
+              <td
+                hlmTd
+                class="hidden text-right align-top tabular-nums lg:table-cell"
+              >
+                {{ 'mcp.audit.millis' | translate: { ms: entry.durationMs } }}
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <lk-paginator [pager]="auditPager" />
+      } } @else if (service.audit.error()) {
+      <lk-empty-state [message]="'mcp.audit.loadFailed' | translate" />
+      } @else {
+      <hlm-skeleton class="h-24 w-full" />
+      }
+    </div>
+  </section>
+</div>
+} @else if (service.settings.error()) {
+<lk-empty-state [message]="'mcp.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.settings.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<hlm-skeleton class="h-96 w-full max-w-4xl" />
+}
+
+<hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-lg">
+    @switch (dialog()?.kind) { @case ('create') {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mcp.tokens.createTitle' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'mcp.tokens.createBody' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <form
+        class="flex flex-col gap-4"
+        [formGroup]="tokenForm"
+        (ngSubmit)="create()"
+      >
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mcp-token-name"
+            >{{ 'mcp.tokens.fields.name' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mcp-token-name"
+            type="text"
+            maxlength="80"
+            formControlName="name"
+            [placeholder]="'mcp.tokens.namePlaceholder' | translate"
+          />
+          @if (tokenForm.controls.name.touched &&
+          tokenForm.controls.name.errors?.['zod']; as error) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mcp-token-expiry"
+            >{{ 'mcp.tokens.fields.expires' | translate }}</label
+          >
+          <select hlmInput id="mcp-token-expiry" formControlName="expiry">
+            @for (expiry of expiries; track expiry) {
+            <option [value]="expiry">
+              {{ 'mcp.tokens.expiry.' + expiry | translate }}
+            </option>
+            }
+          </select>
+        </div>
+      </form>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.isBusy()"
+        (click)="create()"
+      >
+        {{ 'mcp.tokens.create' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } @case ('created') {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mcp.tokens.createdTitle' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'mcp.tokens.createdBody' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (service.createdToken(); as created) {
+      <p class="lk-warning-text text-sm font-medium">
+        {{ 'mcp.tokens.onceWarning' | translate }}
+      </p>
+      <div class="flex min-w-0 items-center gap-2">
+        <code
+          class="bg-muted min-w-0 flex-1 rounded-md px-3 py-2 font-mono text-xs break-all"
+          >{{ created.token }}</code
+        >
+        <button
+          hlmBtn
+          variant="outline"
+          size="icon-sm"
+          type="button"
+          [attr.aria-label]="'mcp.copy' | translate"
+          [attr.title]="'mcp.copy' | translate"
+          (click)="service.copy(created.token)"
+        >
+          <ng-icon name="lucideCopy" size="14" aria-hidden="true" />
+        </button>
+      </div>
+      <p class="text-muted-foreground text-xs">
+        {{ 'mcp.tokens.snippetsHint' | translate }}
+      </p>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn type="button" hlmDialogClose>
+        {{ 'common.close' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } @case ('revoke') {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mcp.tokens.revokeTitle' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'mcp.tokens.revokeBody' | translate: { name: revokeTarget()?.name }
+        }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body"></div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        (click)="revokePending()"
+      >
+        {{ 'mcp.tokens.revoke' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } }
+  </hlm-dialog-content>
+</hlm-dialog>

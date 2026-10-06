@@ -1,0 +1,58 @@
+<div
+  class="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-4 text-center text-sm transition-colors"
+  [class.border-primary]="dragging()"
+  [class.bg-muted]="dragging()"
+  (dragover)="dragOver($event)"
+  (dragleave)="dragLeave()"
+  (drop)="drop($event)"
+>
+  <ng-icon name="lucideUpload" size="20" aria-hidden="true" />
+  <p class="break-words">
+    @if (message()) { {{ message() }} } @else { {{ 'chat.upload.drop' |
+    translate }} }
+  </p>
+  <button
+    hlmBtn
+    variant="outline"
+    size="sm"
+    type="button"
+    (click)="picker.click()"
+  >
+    {{ 'chat.upload.pick' | translate }}
+  </button>
+  <input
+    #picker
+    class="sr-only"
+    type="file"
+    multiple
+    accept=".csv,.xlsx,.pdf,text/csv,application/pdf"
+    (change)="picked($event)"
+  />
+</div>
+@if (results().length > 0) {
+<ul class="mt-2 flex flex-col gap-1 text-xs" aria-live="polite">
+  @for (item of results(); track item.id) {
+  <li class="flex min-w-0 flex-col">
+    <span class="truncate font-medium">{{ item.name }}</span>
+    <span
+      class="flex flex-wrap items-center gap-2"
+      [class.text-destructive]="item.state === 'failed'"
+      [class.text-muted-foreground]="item.state !== 'failed'"
+    >
+      @if (item.state === 'uploading') { {{ 'files.upload.state.uploading' |
+      translate }} } @else if (item.messageKey) { {{ item.messageKey | translate
+      }} } @if (item.fileId) {
+      <a
+        class="text-primary underline underline-offset-2"
+        [routerLink]="['/app/projects', projectId()]"
+        [queryParams]="{ tab: 'files' }"
+        [fragment]="'file-' + item.fileId"
+        (click)="chat.navigated()"
+        >{{ 'chat.upload.show' | translate }}</a
+      >
+      }
+    </span>
+  </li>
+  }
+</ul>
+}

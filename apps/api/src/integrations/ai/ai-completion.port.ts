@@ -115,9 +115,70 @@ export class AiProviderError extends Error {
   }
 }
 
+/** A tool the model may call (F11.14): the tool layer's name, description and JSON Schema. */
+export interface AiToolSpec {
+  /** `^[a-zA-Z0-9_-]{1,64}$` — both providers require it. */
+  readonly name: string;
+  readonly description: string;
+  /** JSON Schema of the arguments; always `type: "object"`. */
+  readonly inputSchema: Record<string, unknown>;
+}
+
+/** One tool call of the model; `input` is untrusted — the tool layer validates it. */
+export interface AiToolCall {
+  readonly id: string;
+  readonly name: string;
+  readonly input: unknown;
+}
+
+/** A turn of a conversation with tools, provider-neutral. */
+export type AiChatMessage =
+  | { readonly role: 'user'; readonly content: string }
+  | {
+      readonly role: 'assistant';
+      readonly content: string;
+      readonly toolCalls?: readonly AiToolCall[];
+    }
+  | {
+      readonly role: 'tool';
+      readonly toolCallId: string;
+      readonly name: string;
+      /** The tool's result as text (JSON). */
+      readonly content: string;
+      readonly isError?: boolean;
+    };
+
+export interface AiConverseRequest {
+  readonly system: string;
+  readonly messages: readonly AiChatMessage[];
+  readonly tools: readonly AiToolSpec[];
+  readonly maxTokens?: number;
+  readonly timeoutMs?: number;
+}
+
+export interface AiConverseTurn {
+  /** The model's text of this turn ('' when it only calls tools). */
+  readonly text: string;
+  readonly toolCalls: readonly AiToolCall[];
+  readonly model: string;
+  readonly usage?: AiUsage;
+  /** Why the model stopped: answered, wants tools, ran out of tokens, or something else. */
+  readonly stop: 'end' | 'toolUse' | 'maxTokens' | 'other';
+}
+
 export abstract class AiCompletionPort {
   abstract complete(
     connection: AiConnection,
     request: AiCompletionRequest,
   ): Promise<AiCompletion>;
+
+  /**
+   * One turn of a conversation with tool use (F11.14): OpenAI-compatible `tools`/`tool_calls`,
+   * Anthropic `tools`/`tool_use`. The caller runs the tools and calls again with their results
+   * (the loop and its limit live in the chat, not here). Non-streaming.
+   */
+  abstract converse(
+    connection: AiConnection,
+    request: AiConverseRequest,
+  ): Promise<AiConverseTurn>;
 }

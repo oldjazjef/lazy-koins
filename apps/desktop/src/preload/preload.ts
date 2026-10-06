@@ -5,6 +5,9 @@ import { type DesktopBridge, IPC } from '../shared/bridge';
 // and the page gets plain functions — never ipcRenderer itself.
 const bridge: DesktopBridge = {
   platform: process.platform,
+  mcp: {
+    stdio: () => ipcRenderer.invoke(IPC.mcpStdio),
+  },
   storage: {
     info: () => ipcRenderer.invoke(IPC.storageInfo),
     choose: () => ipcRenderer.invoke(IPC.storageChoose),

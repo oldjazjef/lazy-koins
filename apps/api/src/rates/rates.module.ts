@@ -56,6 +56,8 @@ import { RatesService } from './rates.service';
     StartEstvUpdateHandler,
     ApplyEstvHandler,
   ],
+  // The tool layer (tools/) calls the same façade as the controller.
+  exports: [RatesService],
 })
 export class RatesModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

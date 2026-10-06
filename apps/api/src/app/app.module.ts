@@ -9,6 +9,8 @@ import {
 } from '../common/throttling/throttling';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import { AiModule } from '../ai/ai.module';
+import { AssistantModule } from '../assistant/assistant.module';
+import { McpModule } from '../mcp/mcp.module';
 import { AuthModule } from '../auth/auth.module';
 import { validateEnv } from '../config/env';
 import { CalculationModule } from '../calculation/calculation.module';
@@ -61,6 +63,8 @@ import { AppController } from './app.controller';
     DashboardModule,
     CarryoverModule,
     PackagesModule,
+    AssistantModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [

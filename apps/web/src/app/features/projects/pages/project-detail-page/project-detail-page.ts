@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -23,6 +24,7 @@ import {
   type ProjectStatus,
 } from '../../../../core/api/api.types';
 import type { Carryover } from '../../../../core/api/dashboard.types';
+import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ProjectDashboardCard } from '../../../dashboard/components/project-dashboard-card';
 import { ProjectWorkspace } from '../../../calculation/components/project-workspace/project-workspace';
@@ -93,6 +95,17 @@ export class ProjectDetailPage {
 
   constructor() {
     effect(() => this.service.projectId.set(this.id()));
+    // A change the assistant made to this project (F11.14): its facts may have changed too.
+    const assistant = inject(AssistantEvents);
+    const since = assistant.change()?.seq ?? 0;
+    effect(() => {
+      const change = assistant.change();
+      untracked(() => {
+        if (AssistantEvents.concerns(change, since, this.id())) {
+          this.service.reload();
+        }
+      });
+    });
     // Fill the form from the loaded project; a closed project is read-only (F4.5).
     effect(() => {
       if (!this.service.project.hasValue()) return;

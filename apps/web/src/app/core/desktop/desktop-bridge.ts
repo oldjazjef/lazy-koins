@@ -19,6 +19,13 @@ export type StorageChangeResult =
   | { status: 'restarting' }
   | { status: 'failed'; message: string };
 
+/** How an MCP client starts the desktop app's stdio server (F11.16). */
+export interface McpStdioConfig {
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
 export interface DesktopBridge {
   readonly platform: string;
   readonly storage: {
@@ -26,6 +33,10 @@ export interface DesktopBridge {
     choose(): Promise<StorageChangeResult>;
     useDefault(): Promise<StorageChangeResult>;
     reveal(): Promise<void>;
+  };
+  /** Absent in older desktop builds. */
+  readonly mcp?: {
+    stdio(): Promise<McpStdioConfig>;
   };
 }
 

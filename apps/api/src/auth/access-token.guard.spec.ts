@@ -113,4 +113,27 @@ describe('AccessTokenGuard', () => {
     ).resolves.toBe(true);
     expect(request.user).toMatchObject({ userId: 'user-of-local:owner' });
   });
+
+  it('accepts an MCP access token nowhere but on a public route (F11.16), not even in local mode', async () => {
+    const pat = `lkmcp_${'x'.repeat(43)}`;
+    const closed = contextFor(`Bearer ${pat}`, false);
+    await expect(
+      new AccessTokenGuard(
+        closed.reflector,
+        new AmbientVerifier(),
+        principals,
+      ).canActivate(closed.context),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(closed.request.user).toBeUndefined();
+
+    const open = contextFor(`Bearer ${pat}`, true);
+    await expect(
+      new AccessTokenGuard(
+        open.reflector,
+        new AmbientVerifier(),
+        principals,
+      ).canActivate(open.context),
+    ).resolves.toBe(true);
+    expect(open.request.user).toBeUndefined();
+  });
 });

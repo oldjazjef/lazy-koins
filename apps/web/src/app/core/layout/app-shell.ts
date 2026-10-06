@@ -14,6 +14,7 @@ import {
 } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideBot,
   lucideChevronDown,
   lucideCircleUserRound,
   lucideLogOut,
@@ -22,6 +23,8 @@ import {
 } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
+import { ChatService } from '../assistant/chat.service';
+import { ChatSidebar } from '../assistant/chat-sidebar';
 import { AuthService } from '../auth/auth.service';
 import { ThemeService } from '../theme/theme.service';
 import { AppVersionService } from '../version/app-version.service';
@@ -30,7 +33,7 @@ import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
 /**
  * The signed-in frame, desktop first: a header with the app name, the main navigation, the theme
  * toggle and the user menu at the top right (Profil, Einstellungen, Abmelden — ANFORDERUNGEN
- * §11); the page below in a centred column.
+ * §11); the page below in a centred column, and the assistant's sidebar at the right (F11.14).
  */
 @Component({
   selector: 'lk-app-shell',
@@ -40,11 +43,13 @@ import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
     RouterLinkActive,
     NgIcon,
     TranslatePipe,
+    ChatSidebar,
     ...HlmButtonImports,
   ],
   providers: [
     provideIcons({
       ...NAV_ICONS,
+      lucideBot,
       lucideChevronDown,
       lucideCircleUserRound,
       lucideLogOut,
@@ -63,6 +68,8 @@ export class AppShell {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   protected readonly version = inject(AppVersionService);
+  /** The assistant's sidebar (F11.14), on every page. */
+  protected readonly chat = inject(ChatService);
   /** The app icon (generated from assets/brand/icon.svg, see `pnpm icons`), 24 px in the header. */
   // A template literal: i18n-keys.spec.ts reads quoted dotted literals as translation keys.
   protected readonly logo = `favicon.svg`;
@@ -84,6 +91,8 @@ export class AppShell {
   @HostListener('document:keydown.escape')
   protected escape(): void {
     this.menuOpen.set(false);
+    // The chat's overlay (narrow screens) closes on Escape; beside the page it stays.
+    if (this.chat.open()) this.chat.navigated();
   }
 
   protected async signOut(): Promise<void> {

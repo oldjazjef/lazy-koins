@@ -12,15 +12,20 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import type { NextFunction, Request, Response } from 'express';
+import { json, type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { apiDocsEnabled, type Env, LOCAL_HOST } from './config/env';
+import { recordLocalMcpEndpoint } from './mcp/domain/mcp-endpoint';
+import { looksLikeMcpToken } from './mcp/domain/mcp-token';
 import { registerHostPdfPrinter } from './integrations/pdf/host-pdf.renderer';
 import type { HostPdfPrinter } from './integrations/pdf/print-options';
 import { OPENAPI_REFERENCE_PATH, setupOpenApi } from './openapi/setup-openapi';
 
 const GLOBAL_PREFIX = 'api';
+
+/** JSON body limit of `/api/mcp` (an `upload_file` of 5 MB is ~6.7 MB as base64). */
+const MCP_BODY_LIMIT = '8mb';
 
 /** The header the desktop shell adds to every request when it passes `accessToken`. */
 export const DESKTOP_ACCESS_HEADER = 'x-lazykoins-desktop';
@@ -82,6 +87,10 @@ export async function bootstrap(
     app.use(requireAccessToken(options.accessToken));
   }
 
+  // F11.16: MCP requests may carry a file upload (base64) — a larger JSON limit for that route
+  // only. Registered before Nest's own parsers, which then skip the already parsed body.
+  app.use(`/${GLOBAL_PREFIX}/mcp`, mcpBodyParser());
+
   app.setGlobalPrefix(GLOBAL_PREFIX);
 
   const docs = apiDocsEnabled({
@@ -139,6 +148,9 @@ export async function bootstrap(
   }
 
   const address = app.getHttpServer().address() as AddressInfo;
+  if (authMode === 'local') {
+    recordLocalMcpEndpoint(`http://${LOCAL_HOST}:${address.port}`);
+  }
   logger.log(
     `API listening on http://localhost:${address.port}/${GLOBAL_PREFIX}`,
   );
@@ -152,12 +164,21 @@ export async function bootstrap(
   return { app, port: address.port, host: address.address };
 }
 
-/** Express middleware: 403 unless the request carries the expected desktop access token. */
+/**
+ * Express middleware: 403 unless the request carries the expected desktop access token. The one
+ * exception is the MCP endpoint with an MCP personal access token (F11.16: external clients on
+ * this machine — via the stdio proxy or directly on 127.0.0.1); that route checks the token
+ * itself and accepts nothing else.
+ */
 export function requireAccessToken(
   expected: string,
 ): (request: Request, response: Response, next: NextFunction) => void {
   const expectedBytes = Buffer.from(expected, 'utf8');
   return (request, response, next) => {
+    if (isMcpRequestWithToken(request)) {
+      next();
+      return;
+    }
     const given = request.headers[DESKTOP_ACCESS_HEADER];
     const givenBytes = Buffer.from(
       typeof given === 'string' ? given : '',
@@ -172,4 +193,29 @@ export function requireAccessToken(
     }
     response.status(403).json({ statusCode: 403, message: 'Forbidden' });
   };
+}
+
+/**
+ * The JSON parser of `/api/mcp` with its larger limit. Wrapped in a function of another name on
+ * purpose: Nest skips registering its own global parser when a middleware called `jsonParser`
+ * (express.json's name) is already in the stack — every other route would lose its JSON body.
+ */
+export function mcpBodyParser(): (
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => void {
+  const parse = json({ limit: MCP_BODY_LIMIT });
+  return function mcpJsonBody(request, response, next) {
+    parse(request, response, next);
+  };
+}
+
+function isMcpRequestWithToken(request: Request): boolean {
+  const path = (request.originalUrl ?? request.url ?? '').split('?')[0];
+  if (path !== `/${GLOBAL_PREFIX}/mcp` && path !== `/${GLOBAL_PREFIX}/mcp/`) {
+    return false;
+  }
+  const [scheme, token] = (request.headers.authorization ?? '').split(' ');
+  return scheme === 'Bearer' && looksLikeMcpToken(token);
 }

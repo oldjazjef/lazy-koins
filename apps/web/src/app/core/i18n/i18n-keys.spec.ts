@@ -48,6 +48,14 @@ import {
   HINT_STATUSES,
   MISSING_FILE_KINDS,
 } from '../api/api.types';
+import {
+  AUDIT_SOURCES,
+  AUDIT_STATUSES,
+  MCP_AREAS,
+  MCP_TOKEN_STATES,
+  TOKEN_EXPIRIES,
+  TOOL_EFFECTS,
+} from '../api/assistant.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -207,6 +215,12 @@ const DYNAMIC_KEYS = [
     'koiosUrl',
     'cosmosLcdUrl',
   ].map((field) => `settings.wallets.fields.${field}`),
+  ...MCP_AREAS.map((area) => `mcp.areas.${area}`),
+  ...TOOL_EFFECTS.map((effect) => `assistant.effect.${effect}`),
+  ...MCP_TOKEN_STATES.map((state) => `mcp.tokens.state.${state}`),
+  ...TOKEN_EXPIRIES.map((expiry) => `mcp.tokens.expiry.${expiry}`),
+  ...AUDIT_SOURCES.map((source) => `mcp.audit.source.${source}`),
+  ...AUDIT_STATUSES.map((status) => `mcp.audit.status.${status}`),
   ...['openai_compatible', 'anthropic'].map(
     (provider) => `settings.ai.providers.${provider}`,
   ),

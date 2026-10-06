@@ -15,6 +15,7 @@ import {
 } from 'electron';
 import {
   IPC,
+  type McpStdioInfo,
   type StorageChangeResult,
   type StorageInfo,
 } from '../shared/bridge';
@@ -39,6 +40,7 @@ import {
   sameFolder,
   writeConfig,
 } from './lib/storage';
+import { removeMcpEndpoint, writeMcpEndpoint } from './lib/mcp-endpoint';
 import { detectSyncProvider } from './lib/sync-folder';
 import { APP_ORIGIN } from './lib/web-protocol';
 import { MESSAGES } from './messages';
@@ -129,6 +131,15 @@ async function start(): Promise<void> {
     }
     warnAboutConflictCopies();
     api = await startApi({ appDir, dataDir });
+    // F11.16: where MCP clients (the stdio proxy) find this run's loopback endpoint.
+    try {
+      writeMcpEndpoint(dataDir, {
+        url: `${api.baseUrl}/api/mcp`,
+        pid: process.pid,
+      });
+    } catch (error) {
+      console.error('[desktop] MCP endpoint file not written', error);
+    }
   } catch (error) {
     reportError(
       MESSAGES.startFailed.title,
@@ -251,6 +262,11 @@ function shutdown(): Promise<void> {
     }
     if (dataDir) {
       try {
+        removeMcpEndpoint(dataDir, process.pid);
+      } catch {
+        // A stale file names a port nobody listens on; the proxy reports that.
+      }
+      try {
         releaseLock(dataDir, self);
       } catch {
         // Nothing to do: a stale marker is recognised as such by the next start.
@@ -303,6 +319,15 @@ function registerIpc(userData: string): void {
     guard(async () => {
       await shell.openPath(dataDir);
     }),
+  );
+  // F11.16: the stdio configuration Einstellungen › MCP shows (the token is added by the user).
+  ipcMain.handle(
+    IPC.mcpStdio,
+    guard((): McpStdioInfo => ({
+      command: process.execPath,
+      args: [join(app.getAppPath(), 'mcp-stdio.js')],
+      env: { ELECTRON_RUN_AS_NODE: '1', LAZYKOINS_DATA_DIR: dataDir },
+    })),
   );
 }
 

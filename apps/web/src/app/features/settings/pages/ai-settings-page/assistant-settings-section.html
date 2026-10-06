@@ -1,0 +1,102 @@
+@if (current(); as settings) {
+<section hlmCard class="mt-6 max-w-3xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle class="flex items-center gap-2">
+      {{ 'assistant.title' | translate }} @if (settings.isDefault) {
+      <span hlmBadge variant="secondary"
+        >{{ 'assistant.prompt.default' | translate }}</span
+      >
+      }
+    </h2>
+    <p hlmCardDescription>{{ 'assistant.intro' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-5">
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="assistant-prompt"
+        >{{ 'assistant.prompt.label' | translate }}</label
+      >
+      <textarea
+        hlmTextarea
+        id="assistant-prompt"
+        rows="10"
+        class="font-mono text-xs"
+        [attr.maxlength]="settings.maxLength"
+        [formControl]="prompt"
+      ></textarea>
+      <p class="text-muted-foreground text-xs">
+        {{ 'assistant.prompt.hint' | translate: { count: prompt.value.length,
+        max: settings.maxLength } }}
+      </p>
+      @if (error(); as message) {
+      <p class="text-destructive text-sm">
+        {{ message | translate: { max: settings.maxLength } }}
+      </p>
+      }
+    </div>
+    <div class="flex flex-wrap justify-end gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.isSaving() || settings.isDefault"
+        (click)="reset()"
+      >
+        {{ 'assistant.prompt.reset' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.isSaving()"
+        (click)="save(settings)"
+      >
+        {{ 'common.save' | translate }}
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h3 class="text-sm font-medium">
+        {{ 'assistant.safety.title' | translate }}
+      </h3>
+      <p class="text-muted-foreground text-xs">
+        {{ 'assistant.safety.hint' | translate }}
+      </p>
+      <pre
+        class="bg-muted text-muted-foreground max-h-64 overflow-y-auto rounded-md p-3 text-xs break-words whitespace-pre-wrap"
+      >
+{{ settings.safetyRules }}</pre>
+    </div>
+
+    <div
+      class="flex flex-wrap items-center justify-between gap-3 border-t pt-4"
+    >
+      <div class="flex flex-col gap-1">
+        <h3 class="text-sm font-medium">
+          {{ 'assistant.consent.title' | translate }}
+        </h3>
+        <p class="text-sm">
+          @if (settings.chatConsentAt) { {{ 'assistant.consent.given' |
+          translate: { date: (settings.chatConsentAt | date: 'dd.MM.yyyy HH:mm')
+          } }} } @else { {{ 'assistant.consent.none' | translate }} }
+        </p>
+      </div>
+      @if (settings.chatConsentAt) {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.isSaving()"
+        (click)="service.revokeConsent()"
+      >
+        {{ 'assistant.consent.revoke' | translate }}
+      </button>
+      }
+    </div>
+  </div>
+</section>
+} @else if (service.settings.error()) {
+<p class="text-muted-foreground mt-6 text-sm">
+  {{ 'assistant.loadFailed' | translate }}
+</p>
+} @else {
+<hlm-skeleton class="mt-6 h-64 w-full max-w-3xl" />
+}

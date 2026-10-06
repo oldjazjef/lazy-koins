@@ -1,0 +1,268 @@
+<section class="flex h-full min-h-0 flex-col" aria-labelledby="lk-chat-title">
+  <!-- Header: title and the conversation's actions (never scrolls) -->
+  <div class="flex shrink-0 items-center gap-1 border-b px-3 py-2">
+    <ng-icon
+      name="lucideBot"
+      size="18"
+      class="text-primary shrink-0"
+      aria-hidden="true"
+    />
+    <h2
+      id="lk-chat-title"
+      class="min-w-0 flex-1 truncate text-sm font-semibold"
+    >
+      {{ 'chat.title' | translate }}
+    </h2>
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon-sm"
+      type="button"
+      [attr.aria-label]="'chat.new' | translate"
+      [attr.title]="'chat.new' | translate"
+      (click)="chat.newChat()"
+    >
+      <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
+    </button>
+    @if (chat.conversation()) {
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon-sm"
+      type="button"
+      [attr.aria-label]="'chat.rename.action' | translate"
+      [attr.title]="'chat.rename.action' | translate"
+      (click)="openRename()"
+    >
+      <ng-icon name="lucidePencil" size="16" aria-hidden="true" />
+    </button>
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon-sm"
+      type="button"
+      class="text-destructive"
+      [attr.aria-label]="'chat.delete.action' | translate"
+      [attr.title]="'chat.delete.action' | translate"
+      (click)="confirm.set('delete')"
+    >
+      <ng-icon name="lucideTrash2" size="16" aria-hidden="true" />
+    </button>
+    }
+    <button
+      hlmBtn
+      variant="ghost"
+      size="icon-sm"
+      type="button"
+      [attr.aria-label]="'chat.close' | translate"
+      [attr.title]="'chat.close' | translate"
+      (click)="chat.close()"
+    >
+      <ng-icon name="lucideX" size="16" aria-hidden="true" />
+    </button>
+  </div>
+
+  @if (list().length > 0) {
+  <div class="shrink-0 border-b px-3 py-2">
+    <label hlmLabel class="sr-only" for="lk-chat-conversation"
+      >{{ 'chat.conversations' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="lk-chat-conversation"
+      class="w-full"
+      (change)="pick($any($event.target).value)"
+    >
+      <option value="" [selected]="currentId() === ''">
+        {{ 'chat.newConversation' | translate }}
+      </option>
+      @for (item of list(); track item.id) {
+      <option [value]="item.id" [selected]="item.id === currentId()">
+        {{ item.title }}
+      </option>
+      }
+    </select>
+  </div>
+  }
+
+  <!-- Messages: the only part that scrolls -->
+  <div
+    #scroller
+    class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-3 py-3"
+  >
+    @if (chat.status.hasValue()) { @let status = chat.status.value(); @if
+    (!status.available) {
+    <div class="lk-panel flex flex-col gap-2 p-3 text-sm" role="status">
+      <p class="flex items-start gap-2 font-medium">
+        <ng-icon
+          name="lucideTriangleAlert"
+          size="16"
+          class="lk-warning-text mt-0.5 shrink-0"
+          aria-hidden="true"
+        />
+        <span>{{ unavailableKey() | translate }}</span>
+      </p>
+      @if (status.detail) {
+      <p class="text-muted-foreground text-xs break-words">
+        {{ status.detail }}
+      </p>
+      }
+      <p class="text-muted-foreground text-xs">
+        {{ 'chat.setupHint' | translate }}
+      </p>
+      <a
+        hlmBtn
+        variant="outline"
+        size="sm"
+        class="self-start"
+        routerLink="/app/settings/ai"
+        (click)="chat.navigated()"
+        >{{ 'chat.openSettings' | translate }}</a
+      >
+    </div>
+    } @else { @if (chat.needsConsent()) {
+    <div class="lk-panel flex flex-col gap-2 p-3 text-sm" role="status">
+      <p class="font-medium">{{ 'chat.consent.title' | translate }}</p>
+      <p class="text-muted-foreground">
+        {{ 'chat.consent.body' | translate: { provider: status.provider, model:
+        status.model || ('chat.consent.defaultModel' | translate) } }}
+      </p>
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        class="self-start"
+        (click)="chat.acceptConsent()"
+      >
+        {{ 'chat.consent.accept' | translate }}
+      </button>
+    </div>
+    } @if (chat.conversation(); as conversation) { @for (message of
+    conversation.messages; track message.id) {
+    <lk-chat-message [message]="message" />
+    } } @else if (!chat.thinking()) {
+    <p class="text-muted-foreground text-sm">{{ 'chat.empty' | translate }}</p>
+    } @if (chat.pending(); as question) {
+    <div class="flex justify-end">
+      <p
+        class="bg-primary text-primary-foreground max-w-[85%] rounded-lg px-3 py-2 text-sm break-words whitespace-pre-wrap"
+      >
+        {{ question }}
+      </p>
+    </div>
+    <p
+      class="text-muted-foreground flex items-center gap-2 text-xs"
+      role="status"
+      aria-live="polite"
+    >
+      <ng-icon
+        name="lucideLoaderCircle"
+        size="14"
+        class="lk-spinner shrink-0"
+        aria-hidden="true"
+      />
+      {{ 'chat.thinking' | translate }}
+    </p>
+    } } } @else if (chat.status.error()) {
+    <div class="flex flex-col items-start gap-2 text-sm">
+      <p class="text-muted-foreground">{{ 'chat.statusFailed' | translate }}</p>
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        (click)="chat.status.reload()"
+      >
+        {{ 'common.retry' | translate }}
+      </button>
+    </div>
+    } @else {
+    <p class="text-muted-foreground text-sm">
+      {{ 'chat.loading' | translate }}
+    </p>
+    }
+  </div>
+
+  <!-- The question box (never scrolls) -->
+  <div class="flex shrink-0 flex-col gap-2 border-t p-3">
+    @if (chat.error(); as error) {
+    <div class="max-h-48 overflow-y-auto">
+      <lk-ai-error-panel [error]="error" [collapsible]="true" />
+    </div>
+    }
+    <form class="flex items-end gap-2" (ngSubmit)="send()">
+      <label hlmLabel class="sr-only" for="lk-chat-input"
+        >{{ 'chat.input.label' | translate }}</label
+      >
+      <textarea
+        hlmTextarea
+        id="lk-chat-input"
+        class="max-h-40 min-h-10 flex-1 resize-none"
+        rows="2"
+        [attr.maxlength]="maxLength"
+        [value]="chat.draft()"
+        [disabled]="!chat.ready() || chat.needsConsent() || chat.thinking()"
+        [placeholder]="'chat.input.placeholder' | translate"
+        (input)="input($event)"
+        (keydown.enter)="enter($event)"
+      ></textarea>
+      <button
+        hlmBtn
+        size="icon"
+        type="submit"
+        [disabled]="!canSend()"
+        [attr.aria-label]="'chat.send' | translate"
+        [attr.title]="'chat.send' | translate"
+      >
+        <ng-icon name="lucideSendHorizontal" size="16" aria-hidden="true" />
+      </button>
+    </form>
+  </div>
+</section>
+
+<hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ (confirm() === 'rename' ? 'chat.rename.title' : 'chat.delete.title')
+        | translate }}
+      </h3>
+      @if (confirm() === 'delete') {
+      <p hlmDialogDescription>{{ 'chat.delete.body' | translate }}</p>
+      }
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (confirm() === 'rename') {
+      <form class="flex flex-col gap-2" (ngSubmit)="confirmed()">
+        <label hlmLabel for="lk-chat-title-input"
+          >{{ 'chat.rename.label' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="lk-chat-title-input"
+          type="text"
+          maxlength="120"
+          [formControl]="title"
+        />
+        @if (title.touched && title.errors?.['zod']; as error) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </form>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [variant]="confirm() === 'delete' ? 'destructive' : 'default'"
+        (click)="confirmed()"
+      >
+        {{ (confirm() === 'delete' ? 'chat.delete.confirm' : 'common.save') |
+        translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

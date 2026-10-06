@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { looksLikeMcpToken } from '../mcp/domain/mcp-token';
 import type { AuthenticatedUser } from './authenticated-user';
 import { IdentityTokenVerifierPort } from './ports/identity-token-verifier.port';
 import { PrincipalService } from './principal.service';
@@ -40,6 +41,16 @@ export class AccessTokenGuard implements CanActivate {
     ]);
     const request = context.switchToHttp().getRequest<GuardedRequest>();
     const token = bearerToken(request.headers.authorization);
+
+    // F11.16: an MCP personal access token is valid for `/api/mcp` only (a @Public route that
+    // checks it itself). Anywhere else it is refused — never verified as an ID token, and never
+    // replaced by the ambient identity of the desktop app.
+    if (looksLikeMcpToken(token)) {
+      if (isPublic) return true;
+      throw new UnauthorizedException(
+        'MCP access tokens are only valid for /api/mcp',
+      );
+    }
 
     const identity = token
       ? await this.verifier.verify(token)

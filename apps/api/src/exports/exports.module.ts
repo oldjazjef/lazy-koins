@@ -29,5 +29,7 @@ import { ExportsService } from './exports.service';
     GetMailDraftHandler,
     DataExportHandler,
   ],
+  // The tool layer (tools/) calls the same façade as the controller.
+  exports: [ExportsService],
 })
 export class ExportsModule {}

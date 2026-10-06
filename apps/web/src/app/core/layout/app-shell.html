@@ -33,6 +33,20 @@
         variant="ghost"
         size="icon"
         type="button"
+        aria-controls="lk-chat"
+        [class.lk-nav-active]="chat.open()"
+        [attr.aria-expanded]="chat.open()"
+        [attr.aria-label]="'nav.chat' | translate"
+        [attr.title]="'nav.chat' | translate"
+        (click)="chat.toggle()"
+      >
+        <ng-icon name="lucideBot" size="18" aria-hidden="true" />
+      </button>
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        type="button"
         (click)="theme.toggle()"
         [attr.aria-label]="'nav.toggleTheme' | translate"
       >
@@ -88,19 +102,35 @@
     </div>
   </header>
 
-  <!-- Only this area scrolls (user rule): the header above stays put. -->
-  <div class="lk-scroll-area flex min-h-0 flex-1 flex-col overflow-y-auto">
-    <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
-      <router-outlet />
-    </main>
-
-    @if (version.info(); as build) {
-    <footer
-      class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+  <div class="relative flex min-h-0 flex-1">
+    <!-- Only this area scrolls (user rule): the header above stays put. -->
+    <div
+      class="lk-scroll-area flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
     >
-      {{ 'app.version' | translate: { version: build.version, commit:
-      build.commit } }}
-    </footer>
+      <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+        <router-outlet />
+      </main>
+
+      @if (version.info(); as build) {
+      <footer
+        class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+      >
+        {{ 'app.version' | translate: { version: build.version, commit:
+        build.commit } }}
+      </footer>
+      }
+    </div>
+
+    <!-- The assistant (F11.14): beside the page on wide screens, an overlay on narrow ones -->
+    @if (chat.open()) {
+    <button
+      type="button"
+      class="lk-chat-backdrop"
+      tabindex="-1"
+      [attr.aria-label]="'chat.close' | translate"
+      (click)="chat.close()"
+    ></button>
+    <lk-chat-sidebar id="lk-chat" class="lk-chat-panel" />
     }
   </div>
 </div>

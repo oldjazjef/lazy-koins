@@ -70,5 +70,7 @@ import { MailService } from './mail.service';
     SendMailHandler,
     ListMailLogHandler,
   ],
+  // The tool layer (tools/) calls the same façade as the controller.
+  exports: [MailService],
 })
 export class MailModule {}

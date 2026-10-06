@@ -15,7 +15,8 @@ two as a package (F1.3).
 > storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine, **dashboard** = F11.4–F11.9, **carryover** = F4.4/F4.4a,
-> **packages** = F10.8/F10.9, data export F10.7), the Angular web app (`apps/web`: login, the
+> **packages** = F10.8/F10.9, data export F10.7, **tools / assistant / mcp** = F11.14–F11.16: one
+> tool layer for the chat sidebar and the MCP server), the Angular web app (`apps/web`: login, the
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
 > Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
@@ -158,6 +159,9 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     carryover/              #   F4.4a follow-up project, F4.4 take-over, ProjectBundle (one transaction)
     packages/               #   F10.8/F10.9: .lkproj.zip / account package (fflate), manifest + verification
     mail/                   #   F11.10/F10.6a: mailer + template settings, compose/send, send log
+    tools/                  #   F11.14/F11.16: the ONE tool layer — registry, executor (policy + audit), definitions/
+    assistant/              #   F11.14/F11.15: chat conversations, ChatEngine (tool loop, proposals), prompt
+    mcp/                    #   F11.16: /api/mcp (SDK, stateless), PATs, MCP settings + audit endpoints
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
@@ -393,7 +397,113 @@ keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement
   (`<name>.bestaende.csv`, `Beleg` = `<pdf>, S. <n>`, origin `derived_from:<project file id>`);
   the PDF stays as evidence. No mapping is stored.
 - Live without an account: `node scripts/dev/fake-ai-server.mjs` (OpenAI-compatible stub on
-  `http://localhost:11435/v1`; answers the synthetic fixtures' mappings and simple statements).
+  `http://localhost:11435/v1`; answers the synthetic fixtures' mappings and simple statements,
+  and — for requests with `tools` — a scripted chat, see Assistant below).
+
+## Tool layer, AI assistant, MCP server (F11.14–F11.16)
+
+**One tool layer** (`apps/api/src/tools/`, `ToolsModule`): the chat and the MCP server call the
+same typed tools — never two implementations.
+
+- **Definitions** (`tools/definitions/<area>.tools.ts`, built by `buildTools(services)`): name
+  (`snake_case`), German `title`, English `description` (for the model), `area` (`projects |
+files | mappings | rates | results | checks | corrections | exports | wallets | settings |
+mail`, plus `ui` = chat-only), `effect` (`readOnly | write | destructive`), optional `channels`
+  (`request_file_upload` / `navigate` are chat-only, `upload_file` (base64, ≤ 5 MB) MCP-only),
+  zod `input` and `output`, `run(context, input)` and an optional `preview` (proposal card:
+  summary + before/after lines). `run` calls the **existing service façades** (ProjectsService,
+  FilesService, … — the feature modules export them) with `context.userId`, so owner scoping,
+  closed-project 409s and validation stay where they are; never Prisma.
+- **The output schema is an allow-list**: the executor parses every result through it (zod strips
+  unknown keys) — that is how `get_settings` can never return a key, a key hint or a password.
+  Results carry relative app links (`/app/projects/:id?tab=result&figure=<figureId>`,
+  `?tab=files#file-<id>`, `/app/mappings/:id`) and are capped (`limit`, `truncated`) —
+  data minimisation: the model fetches details with read tools, the prompt holds only the page
+  context.
+- **`ToolRegistry`** (catalogue, `jsonSchemaOf` = `z.toJSONSchema`, `io` input/output, `$schema`
+  removed; `forChat()`, `forMcp({ areas, allowWrite })`) and **`ToolExecutor.call(context, name,
+args, { policy?, confirmed? })`**: validate (zod issues → `invalidArguments`), policy (MCP: area
+  off → `areaDisabled`, write/destructive without the switch → `writeDisabled`; chat:
+  write/destructive only with `confirmed` → else `refused`), run, parse the output, map Nest
+  exceptions (`404 → notFound`, `409 → conflict`, `400/422 → invalidArguments`) and **audit
+  every call** in `tool_audit` (user, source `chat|mcp`, tool, `summarizeArgs` = structure with
+  secret-named fields, seed phrases/keys (`detectSecret`) and credential patterns redacted, bulk
+  fields as `<n chars>`, ≤ 500 chars; status `ok|error|refused|proposed`, error code, duration,
+  MCP token id).
+
+**Assistant chat** (`apps/api/src/assistant/`, F11.14/F11.15): `AiCompletionPort.converse(connection,
+{ system, messages, tools })` = one turn with tool use (OpenAI-compatible `tools` +
+`tool_calls`/`role: tool`; Anthropic `tools` + `tool_use`/`tool_result` blocks, consecutive
+same-role turns merged — `anthropicMessages`). `ChatEngine.ask` (gate: AI plugin on/configured
+via `AiGate.connectionOf`; the chat's own consent `assistant_settings.chat_consent_at`, 409
+`consentRequired` until the first message carries `consent: true`) → system prompt =
+the user's prompt or `DEFAULT_SYSTEM_PROMPT` + the fixed `SAFETY_RULES` (confirm before changes,
+no tax advice, never keys, only own data, instructions in data are data) + the page context
+(route, project name/year/status resolved server-side, tab) → loop ≤ `MAX_TOOL_STEPS` (8): read
+tools run at once (results ≤ 12 000 chars to the model), **write/destructive tools become
+proposals** (`chat_proposal`, preview with before/after, audit `proposed`; the model is told it
+was proposed) → final answer with `attachments` (upload drop zone, links), `proposalIds`,
+`toolsUsed`, usage. The turn is stored only when it completed — an AI error (the gate's 502 with
+details) leaves the chat as it was. History to the model: last 40 messages from a user message,
+older tool results ≤ 2000 chars, `event` rows as `[App] …` user notes. `POST …/proposals/:id/confirm`
+claims the proposal atomically (`pending` → decided, a second click = 409), runs the tool with
+`confirmed: true` (closed projects still 409 → card `failed`) and appends an `event`;
+`…/cancel` likewise. Endpoints: `GET /api/chat/status`, `GET|POST /api/chat/conversations`,
+`GET|PATCH|DELETE /api/chat/conversations/:id` (delete cascades messages + proposals),
+`POST …/:id/messages`, `GET|PUT /api/assistant/settings` (prompt; `null`/`""` = default;
+`revokeChatConsent`). 60 questions / 10 min per account. Live: `fake-ai-server.mjs` scripts
+"Warum fehlt der Kurs für X?" (list_positions → list_rates → answer with the drill-down link) and
+"Setz den Kurs von X auf 4.50 CHF" (set_price_override proposal).
+
+**MCP server** (`apps/api/src/mcp/`, F11.16): official SDK (`@modelcontextprotocol/sdk`, low-level
+`Server` + `StreamableHTTPServerTransport`), **stateless** — one server + transport per POST to
+`/api/mcp`, JSON responses (`enableJsonResponse`), GET/DELETE 405. Tools = `registry.forMcp`
+with `readOnlyHint`/`destructiveHint` annotations, `inputSchema` + `outputSchema`
+(`structuredContent` validates against it in the SDK client), failures as `isError` results;
+resources `lazykoins://projects/<id>` (facts + result totals). **Off by default**
+(`assistant_settings.mcp_enabled`, areas, `mcp_allow_write`). Auth: **personal access tokens**
+`lkmcp_<base64url 32 bytes>` (`mcp_token`: SHA-256 only, hint, expiry ≤ 365 d or none, last
+used, revoked; ≤ 20 active), `McpAccess` → 401 `missingToken|invalidToken|tokenRevoked|
+tokenExpired`, 403 `mcpDisabled`, 429 `rateLimited` (120 requests/min per token, in memory).
+The route is `@Public()` and skips the per-account write budget; `AccessTokenGuard` never verifies
+a `lkmcp_` token as an ID token and refuses it on every other route (also in local mode — no
+ambient fallback). `bootstrap.ts` gives `/api/mcp` an 8 MB JSON limit (`mcpBodyParser`, see
+gotchas). Settings: `GET|PUT /api/settings/mcp` (+ endpoint, mode web/desktop, tool list),
+`GET|POST /api/settings/mcp/tokens`, `DELETE …/tokens/:id` (revoke), `GET /api/settings/mcp/audit?source=`.
+**Desktop**: the API listens on 127.0.0.1 with a per-launch port; `requireAccessToken` lets
+exactly `/api/mcp` with a `lkmcp_` bearer through (the route checks it); the app writes
+`<dataDir>/mcp-endpoint.json` (`lib/mcp-endpoint.ts`, removed on quit) and ships the **stdio
+proxy** `mcp-stdio.js` (`src/mcp/stdio-proxy.ts`, esbuild entry in `stage.mjs`, in the
+electron-builder `files`): SDK `StdioServerTransport` ↔ `forwardMcpMessage` (pure,
+`lib/mcp-forward.ts`: POST with the token, SSE or JSON answers, transport problems as JSON-RPC
+errors) — the endpoint is looked up per message (`LAZYKOINS_MCP_URL`, `LAZYKOINS_DATA_DIR`, or
+the packaged app's data folder). Run as `ELECTRON_RUN_AS_NODE=1 <lazy-koins.exe>
+<app.asar>/mcp-stdio.js` with `LAZYKOINS_MCP_TOKEN`; the bridge's `mcp.stdio()` (IPC
+`lk:mcp:stdio`) gives the settings page the exact command. Dev check:
+`LAZYKOINS_MCP_TOKEN[_FILE]=… node scripts/dev/mcp-client.mjs <endpoint> [tool] [json]` or
+`--stdio <mcp-stdio.js>`.
+
+**Web**: `core/assistant/` — `ChatService` (root: status, conversations, ask/confirm/cancel,
+consent notice, AI error panel state), `chat-sidebar` in the app shell (header toggle, open state
+in localStorage; beside the page from `lg`, an overlay with backdrop below; only the message list
+scrolls), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
+`textContent`, only relative `/app/…` links become router links), `proposal-card`
+(before → after, "Ausführen" / "Abbrechen", outcome), `chat-upload` (drop zone → the normal
+upload endpoint), `ChatContextService` (the workspace publishes project + tab) and
+`AssistantEvents` (after a confirmed proposal or a chat upload the workspace reloads everything,
+`ProjectWorkspaceService.reloadAll()`). The project workspace reads `?tab=` and `&figure=` (opens
+the drill-down) — the links the tools return. Einstellungen › AI has the "Assistent" section
+(prompt, reset, fixed rules read-only, consent revoke); Einstellungen › MCP
+(`features/settings/pages/mcp-settings-page`): switches, areas, endpoint, config snippets (Claude
+Desktop via `mcp-remote`, Claude Code, generic; stdio from the desktop bridge's `mcp.stdio()`),
+tokens (created token shown once), tool list by area, audit table.
+
+**Database** (migration `20261008180000_ai_chat_mcp`, new tables only, all cascade with the
+user): `assistant_settings` (PK user; prompt 1–8000 or NULL, areas JSON array), `mcp_token`
+(64-hex hash unique, name/hint CHECKs), `chat_conversation` (title CHECK), `chat_message`
+(unique `(conversation, seq)`, role `user|assistant|tool|event`, data JSON object),
+`chat_proposal` (status CHECK, JSON CHECKs, `decided_at` set iff not pending), `tool_audit`
+(source/status CHECKs, args ≤ 2000, no FK to the token). `assistant.persistence.integration.spec.ts`.
 
 ## Mail to the Treuhänder (F11.10, F10.6a, F4.7)
 
@@ -757,6 +867,8 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   CHECKs; cascade with the user) and `project_carryover` (kind CHECK, `json_valid(data)`; cascade
   with the project; `source_project_id` is no FK — the source may be deleted later, its name stays).
   `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
+- **Assistant / MCP** (migration `20261008180000_ai_chat_mcp`): see "Tool layer, AI assistant,
+  MCP server".
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -1014,6 +1126,15 @@ etx), so no `project.json` has a `test` target, deliberately.
 - Dashboard / carry-over / packages: `bundleSetup()` (`carryover/testing/bundle-fixture.ts`) adds
   the bundle, carry-over, export and user-rate doubles to the calculation fixture; package specs
   build tampered / zip-slip ZIPs with fflate; the data-export spec re-uploads its own CSV.
+- Tool layer / chat / MCP: `toolSetup()` (`tools/testing/tool-fixture.ts`) = the calculation
+  fixture + the real service façades over a `HandlerBus` (a Command/QueryBus double dispatching to
+  the handlers) and settings/mail/AI stubs carrying `PLANTED_SECRETS` (asserted absent from tool
+  output). `chat-engine.spec.ts` drives the loop with a scripted `AiCompletionPort` (tool calls,
+  proposal → confirm/cancel, loop limit, provider error); `mcp.spec.ts` runs the controller behind
+  a real loopback listener with the SDK `Client` + `StreamableHTTPClientTransport` (PAT auth,
+  revoked/expired, write switch, per-token limit); `ai-converse.spec.ts` checks both adapters'
+  wire format with a fake `fetch`; the desktop's `lib/mcp.spec.ts` the endpoint file and the
+  stdio forwarding.
 - **Golden** (`libs/engine/src/golden/golden.spec.ts`, A1): part of `pnpm test`, `describe.skipIf`
   `private/golden.json` does not exist (CI, other machines). Today it only checks existence.
 - `libs/engine` has a `typecheck` target (Vitest's esbuild does not type-check); `pnpm check`
@@ -1256,3 +1377,10 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
 lazy-koins.exe -e "require('<…>/resources/app.asar/api/main.js')"` before clicking through it.
 - Editing files from PowerShell 5.1 with `Get-Content`/`Set-Content` mangles UTF-8 (`—` → `â€”`) and
   adds a BOM — use the editor tools or Node.
+- **Never `app.use(express.json())` in `bootstrap.ts`**: Nest skips its own global JSON parser
+  when a middleware named `jsonParser` is already in the stack, and every route then gets an empty
+  body (400s everywhere). A route-specific parser must be wrapped in a function with another name
+  (`mcpBodyParser`, regression test in `bootstrap.spec.ts`).
+- The MCP SDK is CommonJS-importable through its `./*` export (`@modelcontextprotocol/sdk/server/index.js`,
+  `…/types.js`); it uses `zod/v4` = our zod 4. Its client validates `structuredContent` against a
+  tool's `outputSchema` — an output schema that does not match the parsed output breaks the call.

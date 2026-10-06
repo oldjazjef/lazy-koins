@@ -46,5 +46,7 @@ import { MappingsService } from './mappings.service';
     UpdateMappingHandler,
     DeleteMappingHandler,
   ],
+  // The tool layer (tools/) calls the same façade as the controller.
+  exports: [MappingsService],
 })
 export class MappingsModule {}

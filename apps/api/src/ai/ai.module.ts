@@ -70,5 +70,7 @@ import {
     ExtractStatementHandler,
     AcceptStatementHandler,
   ],
+  // The chat (assistant/) uses the same gate: on/off, configuration, SSRF guard, error details.
+  exports: [AiGate, AiRuntime],
 })
 export class AiModule {}

@@ -356,7 +356,8 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   **Jede ändernde Aktion wird vorher als Vorschlag gezeigt und erst nach ausdrücklicher
   Bestätigung ausgeführt**; alles landet im Korrekturverlauf bzw. Protokoll. Abgeschlossene
   Projekte bleiben schreibgeschützt. Gesendet werden nur die für die Frage nötigen Daten; die
-  Zustimmung F5.14 gilt sinngemäss. Verlauf pro Benutzer (löschbar).
+  Zustimmung F5.14 gilt sinngemäss (für den Chat einmalig als Hinweis bestätigt, in
+  Einstellungen › AI widerrufbar). Verlauf pro Benutzer (löschbar).
 
 - **F11.15 Prompt bearbeiten**: In Einstellungen › AI lässt sich der **Standard-Prompt** des
   Assistenten (System-Prompt: Rolle, Ton, Sprache, Grenzen) ansehen, bearbeiten und auf den
@@ -372,6 +373,9 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Anleitung/Konfigurationsschnipsel für gängige Clients. Web: Zugriff über persönliche
   Zugriffstoken (erstellen, benennen, Ablauf, widerrufen); Desktop: lokaler Server
   (stdio oder 127.0.0.1) ohne Netzwerkzugriff von aussen. Jeder MCP-Aufruf wird protokolliert.
+  Umsetzung: Streamable HTTP unter `/api/mcp` (Web und Desktop, Zugriffstoken auch auf dem
+  Desktop); der Desktop liefert zusätzlich einen stdio-Einstieg (`mcp-stdio.js`) mit, weil sich
+  sein lokaler Port bei jedem Start ändert.
 
 ## 11b. Bedienung
 

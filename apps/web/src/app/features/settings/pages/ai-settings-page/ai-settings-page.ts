@@ -27,6 +27,7 @@ import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { AiSettingsFormSchema } from './ai-settings.schema';
 import { AI_PRESETS, AiSettingsPageService } from './ai-settings-page.service';
+import { AssistantSettingsSection } from './assistant-settings-section';
 
 /**
  * Settings → AI (F5.13, F5.14): which provider (any OpenAI-compatible API or Anthropic), address,
@@ -41,6 +42,7 @@ import { AI_PRESETS, AiSettingsPageService } from './ai-settings-page.service';
     TranslatePipe,
     PageHeader,
     AiErrorPanel,
+    AssistantSettingsSection,
     EmptyState,
     ...HlmBadgeImports,
     ...HlmButtonImports,

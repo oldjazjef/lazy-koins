@@ -38,7 +38,8 @@
     "profile": "Profil",
     "userMenu": "Benutzermenü",
     "wallets": "Wallets",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "chat": "Assistent"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -722,7 +723,8 @@
       "ai": "AI-Plugin",
       "storage": "Speicherort",
       "system": "System",
-      "mail": "Mail"
+      "mail": "Mail",
+      "mcp": "MCP"
     },
     "system": {
       "title": "System",
@@ -1586,7 +1588,9 @@
       "statementSave": "Bestände aus {{name}} werden geprüft und gespeichert",
       "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
       "statementReady": "Kontoauszug {{name}} ist ausgelesen"
-    }
+    },
+    "chat": "Der Assistent antwortet",
+    "chatConfirm": "Änderung des Assistenten wird ausgeführt"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1801,6 +1805,221 @@
       "status": "Status",
       "sent": "gesendet",
       "failed": "fehlgeschlagen"
+    }
+  },
+  "chat": {
+    "title": "Assistent",
+    "new": "Neuer Chat",
+    "newConversation": "Neuer Chat",
+    "conversations": "Unterhaltungen",
+    "close": "Assistent schliessen",
+    "rename": {
+      "action": "Umbenennen",
+      "title": "Unterhaltung umbenennen",
+      "label": "Titel",
+      "required": "Bitte gib einen Titel ein.",
+      "tooLong": "Höchstens 120 Zeichen."
+    },
+    "delete": {
+      "action": "Unterhaltung löschen",
+      "title": "Unterhaltung löschen?",
+      "body": "Alle Nachrichten dieser Unterhaltung werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Löschen"
+    },
+    "renamed": "Unterhaltung umbenannt",
+    "renameFailed": "Umbenennen fehlgeschlagen",
+    "deleted": "Unterhaltung gelöscht",
+    "deleteFailed": "Löschen fehlgeschlagen",
+    "loadFailed": "Die Unterhaltung konnte nicht geladen werden",
+    "askFailed": "Die Frage konnte nicht gesendet werden",
+    "unavailable": "Der Assistent ist gerade nicht verfügbar.",
+    "setupHint": "Der Assistent nutzt das AI-Plugin. Richte es in den Einstellungen ein.",
+    "openSettings": "AI-Einstellungen öffnen",
+    "consent": {
+      "title": "Bevor du fragst",
+      "body": "Deine Chat-Nachrichten und was die Werkzeuge dafür lesen (Projekte, Zahlen, Dateizeilen) gehen an {{provider}} ({{model}}). Die Zustimmung kannst du in den Einstellungen widerrufen.",
+      "accept": "Zustimmen",
+      "defaultModel": "Standardmodell"
+    },
+    "empty": "Frag mich etwas zu deinen Projekten, Dateien, Kursen oder Ergebnissen. Ich berücksichtige, was du gerade offen hast.",
+    "thinking": "Der Assistent denkt nach …",
+    "statusFailed": "Der Status des Assistenten konnte nicht geladen werden.",
+    "loading": "Wird geladen …",
+    "input": {
+      "label": "Deine Frage",
+      "placeholder": "Frage stellen … (Enter sendet, Shift+Enter = neue Zeile)"
+    },
+    "send": "Senden",
+    "toolsUsed": "Benutzte Werkzeuge ({{count}})",
+    "proposal": {
+      "arrow": "→",
+      "removed": "(entfernt)",
+      "cancel": "Abbrechen",
+      "confirm": "Ausführen",
+      "openProject": "Projekt öffnen",
+      "alreadyDecided": "Über diesen Vorschlag wurde schon entschieden",
+      "failed": "Die Entscheidung konnte nicht gespeichert werden",
+      "status": {
+        "executed": "Ausgeführt ✓",
+        "failed": "Fehlgeschlagen:",
+        "cancelled": "Abgebrochen"
+      }
+    },
+    "upload": {
+      "drop": "Datei hierher ziehen (CSV, XLSX, PDF)",
+      "pick": "Datei wählen",
+      "show": "In Dateien anzeigen"
+    }
+  },
+  "assistant": {
+    "effect": {
+      "readOnly": "Lesen",
+      "write": "Schreiben",
+      "destructive": "Destruktiv"
+    },
+    "title": "Assistent",
+    "intro": "Wie sich der Assistent im Chat verhält. Deine Anweisung ersetzt die Standardanweisung; die Sicherheitsregeln gelten immer zusätzlich.",
+    "prompt": {
+      "label": "Anweisung (System-Prompt)",
+      "default": "Standard",
+      "hint": "{{count}} / {{max}} Zeichen. Leer = Standardanweisung.",
+      "reset": "Auf Standard zurücksetzen",
+      "tooLong": "Höchstens {{max}} Zeichen."
+    },
+    "safety": {
+      "title": "Sicherheitsregeln",
+      "hint": "Diese Regeln gelten immer – auch mit eigener Anweisung – und lassen sich nicht ändern."
+    },
+    "consent": {
+      "title": "Zustimmung für den Chat",
+      "given": "Zugestimmt am {{date}}.",
+      "none": "Noch keine Zustimmung – der Chat fragt bei deiner ersten Frage danach.",
+      "revoke": "Zustimmung widerrufen",
+      "revoked": "Zustimmung für den Chat widerrufen"
+    },
+    "saved": "Anweisung gespeichert",
+    "reset": "Standardanweisung wiederhergestellt",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "loadFailed": "Die Einstellungen des Assistenten konnten nicht geladen werden."
+  },
+  "mcp": {
+    "subtitle": "MCP-Server für AI-Clients wie Claude Desktop oder Claude Code",
+    "title": "MCP-Server",
+    "status": {
+      "on": "Aktiv",
+      "off": "Aus"
+    },
+    "intro": "Über das Model Context Protocol (MCP) können AI-Clients die Werkzeuge von lazy-koins nutzen – nur in den Bereichen, die du freigibst, und nur mit einem Token.",
+    "enabled": "MCP-Server aktivieren",
+    "areasLabel": "Freigegebene Bereiche",
+    "areas": {
+      "projects": "Projekte",
+      "files": "Dateien",
+      "mappings": "Mappings",
+      "rates": "Kurse",
+      "results": "Ergebnisse",
+      "checks": "Prüfungen",
+      "corrections": "Korrekturen",
+      "exports": "Exporte",
+      "wallets": "Wallets",
+      "settings": "Einstellungen",
+      "mail": "Mail"
+    },
+    "allowWrite": "Schreibende Werkzeuge erlauben",
+    "allowWriteWarning": "Damit kann ein verbundener Client Daten ändern (zum Beispiel Korrekturen erfassen oder Dateien zuordnen). Erlaube das nur für Clients, denen du vertraust.",
+    "saved": "MCP-Einstellungen gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "loadFailed": "Die MCP-Einstellungen konnten nicht geladen werden.",
+    "copy": "Kopieren",
+    "copied": "In die Zwischenablage kopiert",
+    "copyFailed": "Kopieren war nicht möglich",
+    "connect": {
+      "title": "Verbinden",
+      "intro": "Trage den Server in deinem AI-Client ein.",
+      "endpoint": "Endpunkt (Streamable HTTP)",
+      "desktopNote": "Desktop-App: Der HTTP-Endpunkt ist nur auf diesem Computer (127.0.0.1) erreichbar, und sein Port ändert sich bei jedem Start. Nutze deshalb besser die stdio-Konfiguration.",
+      "placeholderHint": "Die Beispiele enthalten den Platzhalter <TOKEN>. Erstellst du unten einen Token, wird er hier eingesetzt – nur solange du auf dieser Seite bleibst.",
+      "stdio": "Claude Desktop (stdio, empfohlen)",
+      "stdioHint": "Startet lazy-koins als lokalen MCP-Server. In claude_desktop_config.json eintragen.",
+      "claudeDesktop": "Claude Desktop (claude_desktop_config.json)",
+      "claudeDesktopHint": "Verbindet über mcp-remote (braucht Node.js).",
+      "claudeCode": "Claude Code",
+      "http": "Andere Clients (Streamable HTTP)"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "intro": "Jeder Client braucht einen Token. Ein Token wird nur beim Erstellen angezeigt; widerrufene oder abgelaufene Tokens funktionieren nicht mehr.",
+      "create": "Token erstellen",
+      "empty": "Noch keine Tokens.",
+      "loadFailed": "Die Tokens konnten nicht geladen werden.",
+      "fields": {
+        "name": "Name",
+        "state": "Status",
+        "expires": "Ablauf",
+        "lastUsed": "Zuletzt benutzt",
+        "created": "Erstellt"
+      },
+      "state": {
+        "active": "Aktiv",
+        "expired": "Abgelaufen",
+        "revoked": "Widerrufen"
+      },
+      "never": "Kein Ablauf",
+      "unused": "Nie",
+      "revoke": "Widerrufen",
+      "revokeTitle": "Token widerrufen?",
+      "revokeBody": "Clients mit dem Token «{{name}}» verlieren sofort den Zugriff.",
+      "revoked": "Token widerrufen",
+      "revokeFailed": "Widerrufen fehlgeschlagen",
+      "createTitle": "Token erstellen",
+      "createBody": "Gib dem Token einen Namen, an dem du den Client wiedererkennst.",
+      "namePlaceholder": "z. B. Claude Desktop Laptop",
+      "nameRequired": "Bitte gib einen Namen ein.",
+      "nameTooLong": "Höchstens 80 Zeichen.",
+      "expiry": {
+        "30": "30 Tage",
+        "90": "90 Tage",
+        "365": "365 Tage",
+        "never": "Kein Ablauf"
+      },
+      "createdTitle": "Token erstellt",
+      "createdBody": "Kopiere den Token jetzt und trage ihn in deinem Client ein.",
+      "onceWarning": "Der Token wird nur jetzt angezeigt – danach nie wieder.",
+      "snippetsHint": "Die Konfigurationsbeispiele auf dieser Seite enthalten ihn jetzt.",
+      "createFailed": "Der Token konnte nicht erstellt werden"
+    },
+    "tools": {
+      "title": "Werkzeuge",
+      "intro": "Was ein verbundener Client nutzen kann, nach Bereich. Schreibende und destruktive Werkzeuge nur mit Erlaubnis.",
+      "areaOff": "(nicht freigegeben)",
+      "empty": "Keine Werkzeuge."
+    },
+    "audit": {
+      "title": "Protokoll",
+      "intro": "Jeder Werkzeugaufruf aus dem Chat und über MCP (die letzten 200).",
+      "sourceFilter": "Quelle",
+      "allSources": "Alle",
+      "source": {
+        "chat": "Chat",
+        "mcp": "MCP"
+      },
+      "empty": "Noch keine Aufrufe.",
+      "loadFailed": "Das Protokoll konnte nicht geladen werden.",
+      "fields": {
+        "time": "Zeit",
+        "source": "Quelle",
+        "tool": "Werkzeug",
+        "args": "Argumente",
+        "status": "Status",
+        "duration": "Dauer"
+      },
+      "status": {
+        "ok": "OK",
+        "error": "Fehler",
+        "refused": "Abgelehnt",
+        "proposed": "Vorgeschlagen"
+      },
+      "millis": "{{ms}} ms"
     }
   }
 }

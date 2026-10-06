@@ -9,6 +9,7 @@ export const SETTINGS_SECTIONS = [
   'wallets',
   'ai',
   'mail',
+  'mcp',
   'system',
 ] as const;
 

@@ -24,6 +24,6 @@ import { SettingsService } from './settings.service';
     GetSettingsHandler,
     UpdateSettingsHandler,
   ],
-  exports: [SettingsReader],
+  exports: [SettingsReader, SettingsService],
 })
 export class SettingsModule {}

@@ -521,6 +521,16 @@ export class ProjectWorkspaceService {
     }
   }
 
+  /** Everything the tabs show, again (after a change the assistant made, F11.14). */
+  reloadAll(): void {
+    this.result.reload();
+    this.checks.reload();
+    this.corrections.reload();
+    this.rates.reload();
+    this.exports.reload();
+    this.sentEvents.changed();
+  }
+
   closeRecords(): void {
     this.recordsOf.set(null);
     this.records.set(null);

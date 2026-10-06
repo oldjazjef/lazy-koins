@@ -2,11 +2,17 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
+  untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { AssistantEvents } from '../../../../core/assistant/assistant-events';
+import { ChatContextService } from '../../../../core/assistant/chat-context.service';
 import { RecordsDialog } from '../../../../shared/components/records-dialog';
 import { AiAssist, AiAssistState } from '../../../files/components/ai-assist';
 import { ProjectFiles } from '../../../files/components/project-files';
@@ -62,6 +68,10 @@ export class ProjectWorkspace {
   protected readonly service = inject(ProjectWorkspaceService);
   protected readonly files = inject(ProjectFilesService);
   protected readonly tabs = WORKSPACE_TABS;
+  private readonly chatContext = inject(ChatContextService);
+  private readonly assistant = inject(AssistantEvents);
+  /** `?tab=<tab>&figure=<figure id>` — links from the assistant (F11.14). */
+  private readonly queryParams = toSignal(inject(ActivatedRoute).queryParamMap);
 
   readonly projectId = input.required<string>();
   readonly closed = input(false);
@@ -90,6 +100,35 @@ export class ProjectWorkspace {
       const id = this.projectId();
       this.service.projectId.set(id);
       this.files.projectId.set(id);
+      this.chatContext.projectId.set(id);
+    });
+    // The assistant asks with the tab on screen as context.
+    effect(() => this.chatContext.tab.set(this.service.tab()));
+    inject(DestroyRef).onDestroy(() =>
+      this.chatContext.clear(untracked(this.projectId)),
+    );
+    // `?tab=result&figure=pos:…`: that tab, and the records behind the figure (F7.5).
+    effect(() => {
+      const params = this.queryParams();
+      const tab = params?.get('tab');
+      const figure = params?.get('figure');
+      untracked(() => {
+        if (tab && (WORKSPACE_TABS as readonly string[]).includes(tab)) {
+          this.service.tab.set(tab as WorkspaceTab);
+        }
+        if (figure) void this.service.showRecords(figure, figure);
+      });
+    });
+    // A change the assistant made to this project: reload what the tabs show.
+    const since = this.assistant.change()?.seq ?? 0;
+    effect(() => {
+      const change = this.assistant.change();
+      untracked(() => {
+        if (!AssistantEvents.concerns(change, since, this.projectId())) return;
+        this.service.reloadAll();
+        this.files.reload();
+        this.files.projectMappings.reload();
+      });
     });
   }
 

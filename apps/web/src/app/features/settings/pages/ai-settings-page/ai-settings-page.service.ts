@@ -11,6 +11,7 @@ import type {
   AiSettings,
   SaveAiSettingsRequest,
 } from '../../../../core/api/api.types';
+import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import {
   aiErrorInfo,
@@ -79,6 +80,8 @@ export class AiSettingsPageService {
   private readonly http = inject(HttpClient);
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
+  /** The chat's status (available, consent) follows these settings. */
+  private readonly events = inject(AssistantEvents);
 
   readonly settings = httpResource<AiSettings>(() => apiUrl('/ai/settings'));
   readonly testResult = signal<AiConnectionTest | null>(null);
@@ -108,6 +111,7 @@ export class AiSettingsPageService {
         silent: true,
       });
       this.settings.set(saved);
+      this.events.settingsChanged();
       this.testResult.set(null);
       this.testError.set(null);
       this.notifications.success(message);

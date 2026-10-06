@@ -29,7 +29,19 @@ import {
   ProjectBundleRepositoryPort,
 } from '../carryover/ports/carryover.repository.port';
 import { UserRateRepositoryPort } from '../dashboard/ports/user-rate.repository.port';
+import {
+  AssistantSettingsRepositoryPort,
+  ChatRepositoryPort,
+} from '../assistant/ports/assistant.repository.port';
+import { McpTokenRepositoryPort } from '../mcp/ports/mcp-token.repository.port';
+import { ToolAuditRepositoryPort } from '../tools/ports/tool-audit.repository.port';
 import { PrismaService } from './prisma/prisma.service';
+import {
+  AssistantSettingsPrismaRepository,
+  ChatPrismaRepository,
+  McpTokenPrismaRepository,
+  ToolAuditPrismaRepository,
+} from './prisma/repositories/assistant.prisma.repository';
 import {
   CarryoverPrismaRepository,
   ProjectBundlePrismaRepository,
@@ -131,6 +143,13 @@ import {
       useClass: ProjectBundlePrismaRepository,
     },
     { provide: UserRateRepositoryPort, useClass: UserRatePrismaRepository },
+    {
+      provide: AssistantSettingsRepositoryPort,
+      useClass: AssistantSettingsPrismaRepository,
+    },
+    { provide: ChatRepositoryPort, useClass: ChatPrismaRepository },
+    { provide: McpTokenRepositoryPort, useClass: McpTokenPrismaRepository },
+    { provide: ToolAuditRepositoryPort, useClass: ToolAuditPrismaRepository },
   ],
   exports: [
     UserRepositoryPort,
@@ -155,6 +174,10 @@ import {
     CarryoverRepositoryPort,
     ProjectBundleRepositoryPort,
     UserRateRepositoryPort,
+    AssistantSettingsRepositoryPort,
+    ChatRepositoryPort,
+    McpTokenRepositoryPort,
+    ToolAuditRepositoryPort,
   ],
 })
 export class PersistenceModule {}

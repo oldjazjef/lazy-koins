@@ -29,6 +29,7 @@ import {
   type AiCompletion,
   AiCompletionPort,
   type AiCompletionRequest,
+  type AiConverseTurn,
   type AiConnection,
   AiProviderError,
 } from '../../integrations/ai/ai-completion.port';
@@ -93,6 +94,10 @@ class FakeAi extends AiCompletionPort {
   answer(...values: unknown[]): this {
     this.answers.push(...values);
     return this;
+  }
+
+  converse(): Promise<AiConverseTurn> {
+    return Promise.reject(new Error('FakeAi: no conversations here'));
   }
 
   async complete(

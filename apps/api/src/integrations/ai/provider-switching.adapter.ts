@@ -3,6 +3,8 @@ import {
   AiCompletionPort,
   type AiCompletionRequest,
   type AiConnection,
+  type AiConverseRequest,
+  type AiConverseTurn,
 } from './ai-completion.port';
 import type { FetchLike } from './ai-http';
 import { AnthropicAdapter } from './anthropic.adapter';
@@ -26,5 +28,14 @@ export class ProviderSwitchingAiCompletion extends AiCompletionPort {
     return connection.kind === 'anthropic'
       ? this.anthropic.complete(connection, request)
       : this.openAi.complete(connection, request);
+  }
+
+  converse(
+    connection: AiConnection,
+    request: AiConverseRequest,
+  ): Promise<AiConverseTurn> {
+    return connection.kind === 'anthropic'
+      ? this.anthropic.converse(connection, request)
+      : this.openAi.converse(connection, request);
   }
 }

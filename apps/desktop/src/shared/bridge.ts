@@ -26,8 +26,20 @@ export type StorageChangeResult =
   | { status: 'restarting' }
   | { status: 'failed'; message: string };
 
+/** F11.16: how an MCP client starts the stdio proxy (`mcp-stdio.js`) of this installation. */
+export interface McpStdioInfo {
+  /** The app's executable (it runs the script as Node with `ELECTRON_RUN_AS_NODE=1`). */
+  command: string;
+  args: string[];
+  /** `ELECTRON_RUN_AS_NODE`, `LAZYKOINS_DATA_DIR` — the token is added by the user. */
+  env: Record<string, string>;
+}
+
 export interface DesktopBridge {
   readonly platform: string;
+  readonly mcp: {
+    stdio(): Promise<McpStdioInfo>;
+  };
   readonly storage: {
     info(): Promise<StorageInfo>;
     /** Folder picker → copy the data there or open the data already there (asks) → restart. */
@@ -44,4 +56,5 @@ export const IPC = {
   storageChoose: 'lk:storage:choose',
   storageUseDefault: 'lk:storage:use-default',
   storageReveal: 'lk:storage:reveal',
+  mcpStdio: 'lk:mcp:stdio',
 } as const;

@@ -1,7 +1,7 @@
 import type { Routes } from '@angular/router';
 import { desktopOnly } from '../../core/desktop/desktop-bridge';
 
-/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail, System — each a sub-route. */
+/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail, MCP, System — each a sub-route. */
 const routes: Routes = [
   {
     path: '',
@@ -35,6 +35,14 @@ const routes: Routes = [
         loadComponent: () =>
           import('./pages/mail-settings-page/mail-settings-page').then(
             (m) => m.MailSettingsPage,
+          ),
+      },
+      {
+        // F11.16: the MCP server for AI clients (Claude Desktop, Claude Code, …).
+        path: 'mcp',
+        loadComponent: () =>
+          import('./pages/mcp-settings-page/mcp-settings-page').then(
+            (m) => m.McpSettingsPage,
           ),
       },
       {

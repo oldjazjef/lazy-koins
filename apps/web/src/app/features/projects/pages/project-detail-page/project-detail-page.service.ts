@@ -69,6 +69,13 @@ export class ProjectDetailPageService {
     this.carryovers.reload();
   }
 
+  /** The project, its F4.7 state and its carry-overs, again. */
+  reload(): void {
+    this.project.reload();
+    this.sent.reload();
+    this.carryovers.reload();
+  }
+
   /** F4.5: read-only while closed. */
   readonly isClosed = computed(
     () => this.project.hasValue() && this.project.value().status === 'closed',
