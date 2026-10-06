@@ -99,6 +99,25 @@
 }
 
 @layer components {
+  /*
+   * Dialogs: actions never scroll away. Every dialog is at most the viewport high; only its body
+   * scrolls, while the header (title) sticks to the top and the footer (the action buttons) to
+   * the bottom. Set here, once, for every hlm dialog — libs/ui is vendored and stays untouched.
+   * The negative margins + padding let the sticky bars cover the dialog's own p-6 padding, so
+   * scrolled content never shows above or below them.
+   */
+  hlm-dialog-content {
+    @apply max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain;
+  }
+
+  hlm-dialog-content > hlm-dialog-header {
+    @apply bg-popover sticky -top-6 z-10 -mt-6 pt-6 pb-2;
+  }
+
+  hlm-dialog-content > hlm-dialog-footer {
+    @apply bg-popover sticky -bottom-6 z-10 -mb-6 border-t pt-4 pb-6;
+  }
+
   /* The word mark in the header and on the login card. */
   .lk-brand {
     @apply text-primary text-lg font-semibold tracking-tight;
