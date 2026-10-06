@@ -17,6 +17,7 @@ import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideChevronRight,
   lucideDownload,
   lucideEye,
   lucideLink2,
@@ -83,6 +84,7 @@ type Dialog =
     MappingEditorState,
     AiAssistState,
     provideIcons({
+      lucideChevronRight,
       lucideDownload,
       lucideEye,
       lucideLink2,

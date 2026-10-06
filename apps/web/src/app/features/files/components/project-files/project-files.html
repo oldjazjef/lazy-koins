@@ -99,9 +99,20 @@
 
     @if (service.overview.hasValue()) { @let overview =
     service.overview.value(); @if (overview.missing.length > 0) {
-    <div class="lk-panel flex flex-col gap-2 p-4" role="note">
-      <h3 class="font-medium">{{ 'files.missing.title' | translate }}</h3>
-      <ul class="flex flex-col gap-2 text-sm">
+    <details class="lk-panel group text-sm" role="note">
+      <summary
+        class="flex cursor-pointer list-none items-center gap-2 p-3 font-medium"
+      >
+        <ng-icon
+          name="lucideChevronRight"
+          size="16"
+          aria-hidden="true"
+          class="transition-transform group-open:rotate-90"
+        />
+        {{ 'files.missing.summary' | translate: { count: overview.missing.length
+        } }}
+      </summary>
+      <ul class="flex flex-col gap-2 px-4 pb-4">
         @for (hint of overview.missing; track hint.platform + hint.accountId +
         hint.kind) {
         <li>
@@ -116,7 +127,7 @@
         </li>
         }
       </ul>
-    </div>
+    </details>
     } @if (overview.groups.length === 0) {
     <lk-empty-state [message]="'files.empty' | translate" />
     } @else { @for (group of overview.groups; track group.platform) {
