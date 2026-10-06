@@ -7,11 +7,17 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadGatewayResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiConflictResponse,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -23,6 +29,12 @@ import { Throttle } from '@nestjs/throttler';
 import type { AuthenticatedUser } from '../auth/authenticated-user';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ProjectFileResponseDto } from '../files/dto/project-file.dto';
+import {
+  SAMPLE_UPLOAD_LIMITS,
+  sampleBodySchema,
+  sampleFromUpload,
+  type UploadedSample,
+} from '../mappings/dto/mapping-sample.dto';
 import { MappingResponseDto } from '../mappings/dto/mapping.dto';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
 import { AiService } from './ai.service';
@@ -34,6 +46,7 @@ import {
   AiRequestPreviewResponseDto,
   AiSettingsResponseDto,
   MappingCandidateResponseDto,
+  SampleAiFormDto,
   SaveAiSettingsDto,
   StatementCandidateResponseDto,
 } from './dto/ai.dto';
@@ -236,6 +249,89 @@ export class AiFilesController {
         fileId,
         dto.holdings,
       ),
+    );
+  }
+}
+
+/**
+ * "Mit AI erstellen" from the mapping editor's sample file (F5.13): the file comes with the
+ * request and is not stored — payload preview first (F5.14), then the request itself.
+ */
+@ApiTags('ai')
+@ApiBearerAuth(BEARER_SCHEME)
+@Controller('ai/mapping-sample')
+export class AiSampleController {
+  constructor(private readonly ai: AiService) {}
+
+  @Post('payload')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('file', SAMPLE_UPLOAD_LIMITS))
+  @ApiOperation({
+    summary:
+      'F5.14: exactly what would be sent to write a mapping for this sample file — nothing is sent or stored',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: sampleBodySchema() })
+  @ApiOkResponse({ type: AiRequestPreviewResponseDto })
+  @ApiConflictResponse({ description: AI_CONFLICT })
+  async payload(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file: UploadedSample | undefined,
+    @Body() dto: SampleAiFormDto,
+  ): Promise<AiRequestPreviewResponseDto> {
+    return this.ai.sampleMappingPayload(
+      user.userId,
+      sampleFromUpload(file, dto.name),
+    );
+  }
+
+  @Post()
+  @HttpCode(200)
+  @Throttle(AI_BUDGET)
+  @UseInterceptors(FileInterceptor('file', SAMPLE_UPLOAD_LIMITS))
+  @ApiOperation({
+    summary:
+      'F5.13: let the AI write a mapping for this sample file — a proposal for the editor, nothing is saved',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: sampleBodySchema({
+      consent: {
+        type: 'boolean',
+        description: 'The user agreed in the payload dialog',
+      },
+    }),
+  })
+  @ApiOkResponse({ type: MappingCandidateResponseDto })
+  @ApiConflictResponse({ description: AI_CONFLICT })
+  @ApiBadGatewayResponse({ description: AI_GATEWAY })
+  async generate(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file: UploadedSample | undefined,
+    @Body() dto: SampleAiFormDto,
+  ): Promise<MappingCandidateResponseDto> {
+    return MappingCandidateResponseDto.from(
+      await this.ai.generateSampleMapping(
+        user.userId,
+        sampleFromUpload(file, dto.name),
+        dto.consent === true,
+      ),
+    );
+  }
+
+  @Post('accept')
+  @ApiOperation({
+    summary:
+      'Save the reviewed spec the AI wrote from a sample file as a mapping (origin ai)',
+  })
+  @ApiCreatedResponse({ type: MappingResponseDto })
+  @ApiBadRequestResponse({ description: 'The spec is invalid (body.issues)' })
+  async acceptSampleMapping(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: AcceptAiMappingDto,
+  ): Promise<MappingResponseDto> {
+    return MappingResponseDto.from(
+      await this.ai.acceptSampleMapping(user.userId, dto.spec),
     );
   }
 }

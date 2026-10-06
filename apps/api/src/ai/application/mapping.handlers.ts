@@ -8,6 +8,7 @@ import {
 } from '@nestjs/cqrs';
 import {
   type ImportResult,
+  type MappingSample,
   mappingJsonSchema,
   validateMappingSpec,
 } from '@lazykoins/engine';
@@ -38,7 +39,6 @@ import {
   repairMessage,
   type SpecIssue,
 } from '../domain/mapping-candidate';
-import type { MappingSample } from '../domain/mapping-sample';
 import { MAPPING_SYSTEM_PROMPT, mappingUserMessage } from '../domain/prompts';
 import { AiGate } from './ai-gate';
 import { AiSources } from './ai-sources';
@@ -147,8 +147,6 @@ export class GenerateMappingHandler implements ICommandHandler<
   GenerateMappingCommand,
   MappingCandidate
 > {
-  private readonly logger = new Logger(GenerateMappingHandler.name);
-
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
@@ -173,7 +171,35 @@ export class GenerateMappingHandler implements ICommandHandler<
     );
     const { sample, readable } = await this.sources.mappingSample(file);
     const connection = await this.gate.connect(userId, consent);
+    return new MappingWriter(this.gate, this.analysis, this.ai).write(
+      connection,
+      sample,
+      readable,
+      `file ${file.id}`,
+    );
+  }
+}
 
+/**
+ * The AI round trip shared by a project file and the editor's sample file: sample → model → zod
+ * validation → dry run of `applyMapping` on the whole file → at most one repair round.
+ */
+export class MappingWriter {
+  private readonly logger = new Logger(MappingWriter.name);
+
+  constructor(
+    private readonly gate: AiGate,
+    private readonly analysis: FileAnalysisService,
+    private readonly ai: AiCompletionPort,
+  ) {}
+
+  async write(
+    connection: AiConnection,
+    sample: MappingSample,
+    readable: ReadableFile,
+    /** For the log line only — an id, never a file name or content. */
+    label: string,
+  ): Promise<MappingCandidate> {
     const messages: AiMessage[] = [
       { role: 'user', content: mappingUserMessage(JSON.stringify(sample)) },
     ];
@@ -212,7 +238,7 @@ export class GenerateMappingHandler implements ICommandHandler<
     }
 
     this.logger.log(
-      `AI mapping for file ${file.id}: ${rounds} round(s), valid=${attempt.issues.length === 0}, ` +
+      `AI mapping for ${label}: ${rounds} round(s), valid=${attempt.issues.length === 0}, ` +
         `${attempt.quality?.records ?? 0} records, ${attempt.quality?.errors ?? 0} row errors, ` +
         `${usage.reported ? `${usage.inputTokens}+${usage.outputTokens} tokens` : 'no usage reported'}`,
     );
@@ -304,6 +330,109 @@ function candidateOf(
   };
 }
 
+export class GetSampleMappingPayloadQuery {
+  constructor(
+    readonly userId: string,
+    /** The mapping editor's sample file — not stored anywhere. */
+    readonly file: ReadableFile,
+  ) {}
+}
+
+/** F5.14 for the editor's sample file: what would be sent — nothing is sent, nothing stored. */
+@QueryHandler(GetSampleMappingPayloadQuery)
+export class GetSampleMappingPayloadHandler implements IQueryHandler<
+  GetSampleMappingPayloadQuery,
+  AiRequestPreview<MappingSample>
+> {
+  constructor(
+    private readonly gate: AiGate,
+    private readonly sources: AiSources,
+  ) {}
+
+  async execute({
+    userId,
+    file,
+  }: GetSampleMappingPayloadQuery): Promise<AiRequestPreview<MappingSample>> {
+    const settings = await this.gate.settingsOf(userId);
+    this.gate.connectionOf(settings);
+    return {
+      payload: await this.sources.sampleOf(file),
+      provider: settings.provider,
+      baseUrl: settings.baseUrl,
+      model: settings.model,
+      consentGiven: settings.consentAt !== null,
+    };
+  }
+}
+
+export class GenerateSampleMappingCommand {
+  constructor(
+    readonly userId: string,
+    readonly file: ReadableFile,
+    readonly consent: boolean,
+  ) {}
+}
+
+/**
+ * "Mit AI erstellen" from the editor's sample file: the same round trip as for a project file;
+ * the candidate goes back into the editor. Nothing is saved — not the file, not the spec.
+ */
+@CommandHandler(GenerateSampleMappingCommand)
+export class GenerateSampleMappingHandler implements ICommandHandler<
+  GenerateSampleMappingCommand,
+  MappingCandidate
+> {
+  constructor(
+    private readonly gate: AiGate,
+    private readonly sources: AiSources,
+    private readonly analysis: FileAnalysisService,
+    private readonly ai: AiCompletionPort,
+  ) {}
+
+  async execute({
+    userId,
+    file,
+    consent,
+  }: GenerateSampleMappingCommand): Promise<MappingCandidate> {
+    const sample = await this.sources.sampleOf(file);
+    const connection = await this.gate.connect(userId, consent);
+    return new MappingWriter(this.gate, this.analysis, this.ai).write(
+      connection,
+      sample,
+      file,
+      `sample ${file.sha256.slice(0, 12)}`,
+    );
+  }
+}
+export class AcceptSampleMappingCommand {
+  constructor(
+    readonly userId: string,
+    /** The reviewed (possibly edited) spec the AI wrote from a sample file. */
+    readonly spec: unknown,
+  ) {}
+}
+
+/**
+ * Saves a mapping the AI wrote from the editor's sample file (origin `ai`, F5.12). No file is
+ * read here: the sample was never stored; adding it to a project is the normal upload.
+ */
+@CommandHandler(AcceptSampleMappingCommand)
+export class AcceptSampleMappingHandler implements ICommandHandler<
+  AcceptSampleMappingCommand,
+  ImportMapping
+> {
+  constructor(private readonly mappings: ImportMappingRepositoryPort) {}
+
+  async execute({
+    userId,
+    spec,
+  }: AcceptSampleMappingCommand): Promise<ImportMapping> {
+    return this.mappings.create(userId, {
+      spec: specOr400(spec),
+      origin: 'ai',
+    });
+  }
+}
 export class AcceptAiMappingCommand {
   constructor(
     readonly userId: string,

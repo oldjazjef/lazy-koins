@@ -17,6 +17,7 @@ import {
   PRICE_ORIGINS,
   QUANTITY_SOURCES,
 } from '../api/calculation.types';
+import { FINGERPRINT_VERDICTS } from '../api/api.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -112,6 +113,9 @@ const DYNAMIC_KEYS = [
     'modelNotFound',
   ].map((code) => `ai.errors.${code}`),
   ...['disabled', 'notConfigured'].map((reason) => `ai.notReady.${reason}`),
+  ...FINGERPRINT_VERDICTS.map(
+    (verdict) => `mappings.sample.fingerprint.${verdict}`,
+  ),
   ...[
     'invalidSpec',
     'headerNotFound',

@@ -17,6 +17,13 @@ import {
   type MappingUsageProject,
   type ProjectMapping,
 } from './application/queries/mapping.queries';
+import {
+  InspectSampleQuery,
+  PreviewSampleQuery,
+  type SampleInspection,
+  type SamplePreview,
+} from './application/queries/mapping-sample.queries';
+import type { ReadableFile } from '../files/application/source-file-reader';
 import type { ImportMapping, MappingOrigin } from './domain/import-mapping';
 
 /** Thin façade over the buses — no logic here; it lives in the handlers. */
@@ -72,5 +79,21 @@ export class MappingsService {
 
   reapply(userId: string, mappingId: string): Promise<ReapplyResult> {
     return this.files.reapplyMapping(userId, mappingId);
+  }
+
+  inspectSample(userId: string, file: ReadableFile): Promise<SampleInspection> {
+    return this.queries.execute(new InspectSampleQuery(userId, file));
+  }
+
+  previewSample(
+    userId: string,
+    file: ReadableFile,
+    spec: unknown,
+    limit: number,
+    mappingId?: string,
+  ): Promise<SamplePreview> {
+    return this.queries.execute(
+      new PreviewSampleQuery(userId, file, spec, limit, mappingId),
+    );
   }
 }

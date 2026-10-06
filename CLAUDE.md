@@ -23,7 +23,7 @@ two as a package (F1.3).
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
 > stored per user). **Not built yet:** `apps/desktop` (Electron), bookings persisted as rows,
-> wallet lookups (F6), the dashboard and the global mappings page (next phase). Update this file whenever the code makes a section concrete or wrong.
+> wallet lookups (F6), the dashboard. Update this file whenever the code makes a section concrete or wrong.
 
 ## Stack
 
@@ -130,9 +130,10 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
     projects/               #   the reference feature slice — copy its shape
     files/                  #   F5: upload (raw body), list, download, preview, assignment, templates
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
-    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0)
-    ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings, PDF statements
-      domain/               #     pure: sample builder, prompts, repair logic, statement checks, SSRF guard
+    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0),
+                            #   stateless sample-file inspect/preview for the editor
+    ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings (project file or editor sample), PDF statements
+      domain/               #     pure: prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
                             #   items, corrections (undo/redo); testing/calculation-fixture.ts
     rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import
@@ -151,7 +152,8 @@ apps/web/                   # Angular app
                             #   (shell + rates/wallets/ai), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
                             #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
-                            #   the editor body, also used by mappings)
+                            #   the editor body of a project's new mapping; the mappings feature uses its own
+                            #   components/mapping-workbench with a sample file)
     shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
@@ -162,7 +164,8 @@ libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angul
   src/importers/            #   importer.ts (Importer, SourceFile, ImportResult) + registry.ts + table.ts
     text/                   #     pure decoding: bytes→text (UTF-8/16, cp1252), CSV, numbers, timestamps
   src/standard/             #   standard format v1: German columns, zod row validation, template content
-  src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints
+  src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints,
+                            #   sample.ts (the AI/editor sample, kindSummary), spec-skeleton.ts (Vorlage aus Datei)
     fixtures/               #     SYNTHETIC exports + example mapping JSON (test data, not product code)
   src/coverage/             #   coverage per platform/account + F5.8 missing-file hints
   src/rules/                #   CountryRules (F7.7): chRules — thresholds, pegged assets, labels (F10.3)
@@ -254,6 +257,28 @@ section only lists the mappings its files use (linking here), uploads a `.json`,
 "Mit AI erstellen" and the editor of a new mapping for one file; edits happen on this page. After
 a save from a project (editor, upload, AI) the toast links to the new mapping's page.
 
+**Beispieldatei (sample file) in the mapping editor** — "Neues Mapping" (dialog, `sm:max-w-6xl`)
+and editing on `/app/mappings/:id` use `features/mappings/components/mapping-workbench`
+(component + `MappingWorkbenchService`, provided by the host page; the host owns save/cancel).
+A sample is a CSV/XLSX from this computer (drop zone/picker) or a file of one of my projects
+(its bytes downloaded via `…/content`); it is **held in the browser only** and sent with every
+request — the API is **stateless** (`POST /api/mapping-samples/inspect|preview`, multipart
+`file` + text fields, multer in memory, upload limits; `mappings/application/sample-file.ts`).
+Inspect = the raw table as the AI would see it (`MappingSample`, preamble + header guess),
+"Vorlage aus Datei" (`specSkeleton`, engine: header roles, date/number guesses, one `unknown`
+rule per kind value — a new, untouched editor gets it automatically) and which reader an upload
+would pick today. Preview = `applyMapping` on the whole file (debounced 600 ms while typing,
+stale answers dropped; an invalid spec comes back as `valid: false` + issues, not a 400), kind
+counts, unknown values, row errors, and the **fingerprint verdict** (`this | other | standard |
+none`, decided like the upload: file read without the spec's CSV options, standard first, surest
+mapping, tie → the one being saved; `mappingId` excludes the edited mapping). Its own per-account
+budget (600 / 10 min). "Mit AI erstellen" from the sample: `POST /api/ai/mapping-sample/payload`
+→ consent (nested dialog) → `POST /api/ai/mapping-sample` (same `MappingWriter` round trip as for
+project files) → the proposal lands in the editor; saving it uses `POST
+/api/ai/mapping-sample/accept` (origin `ai`). After saving a new mapping, "auch hinzufügen zu
+<Projekt>" uploads the sample through the normal upload and PATCHes it to the new mapping if
+another reader won. On the mapping page the first file that uses the mapping is preloaded as the
+sample. Nothing about the sample is stored unless the user adds it to a project.
 To support a new platform: write (or let the AI write — "Mit AI erstellen") a mapping JSON, check it with the
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
 fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
@@ -282,7 +307,7 @@ keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement
 - **SSRF guard**: the API itself calls the base URL, so private/loopback hosts are refused unless
   `AI_ALLOW_PRIVATE_URLS=true` — default: allowed with `AUTH_MODE=local|dev`, refused with
   `firebase`. Literal host check only (no DNS-rebinding protection).
-- **Mapping** (`POST /api/projects/:p/files/:f/ai/mapping`): sample (`ai/domain/mapping-sample.ts`:
+- **Mapping** (`POST /api/projects/:p/files/:f/ai/mapping`): sample (`libs/engine/src/mapping/sample.ts`:
   file name, encoding, delimiter guessed over the first 30 lines, first ≤25 raw rows incl.
   preamble — up to 40 with a long preamble — distinct values of category-like columns ≤40, row
   count; never amounts/dates/ids as "distinct values") → system prompt with the standard format,
@@ -651,6 +676,13 @@ A1). It is git-ignored and must stay that way.
 - **Uploads are raw bodies**: `RawBodyMiddleware` is bound to exactly `POST
 projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parser's 413 into a
   Nest exception. The web sends `application/octet-stream` with `?name=`.
+- **Sample-file requests are multipart** (`mapping-samples/*`, `ai/mapping-sample*`): a file
+  _and_ a spec in one stateless request. `FileInterceptor` (multer from
+  `@nestjs/platform-express`, memory only, `SAMPLE_UPLOAD_LIMITS`); form fields arrive as
+  strings (`@Type(() => Number)`, `consent` "true"/"false" via `@Transform`); there is no
+  `@types/multer`, so the part is typed as `UploadedSample`. Multer decodes the part's file name
+  as latin1 — the app sends the UTF-8 name as the `name` field. `HttpTestingController`
+  matches a string URL against `urlWithParams`: match an upload with `?name=` by function.
 - Angular's fetch backend (`withFetch()`) emits **no upload progress** events; the files area
   shows per-file state and the batch's progress instead.
 - `hlmBtn` styles `button`/`a` only — a `<label hlmBtn>` renders unstyled; use a button that

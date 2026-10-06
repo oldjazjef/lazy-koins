@@ -61,14 +61,23 @@ export class MappingsPageService {
     this.mappings.reload();
   }
 
-  /** A new mapping from the editor (origin `manual`); opens its page once stored. */
-  async create(text: string): Promise<SaveOutcome | 'invalidJson'> {
+  /**
+   * A new mapping from the editor (origin `manual`, or `ai` when the AI wrote it from a sample
+   * file); opens its page once stored. `afterSave` runs before that (e.g. "Datei auch zu Projekt
+   * hinzufügen") — its failure does not undo the save.
+   */
+  async create(
+    text: string,
+    afterSave?: (mapping: Mapping) => Promise<unknown>,
+    origin: 'manual' | 'ai' = 'manual',
+  ): Promise<SaveOutcome | 'invalidJson'> {
     const parsed = parseSpecText(text);
     if (!parsed) return 'invalidJson';
-    const outcome = await this.post(parsed.value, 'manual');
+    const outcome = await this.post(parsed.value, origin);
     if (outcome.ok) {
       this.notifications.success('mappings.saved');
       this.refresh();
+      if (afterSave) await afterSave(outcome.mapping);
       await this.router.navigate(['/app/mappings', outcome.mapping.id]);
     }
     return outcome;
@@ -106,11 +115,16 @@ export class MappingsPageService {
 
   private async post(
     spec: unknown,
-    origin: 'manual' | 'copied',
+    origin: 'manual' | 'copied' | 'ai',
   ): Promise<SaveOutcome> {
     try {
+      // An AI-written spec is stored through the AI slice (origin `ai`, F5.12).
       const mapping = await firstValueFrom(
-        this.http.post<Mapping>(apiUrl('/mappings'), { spec, origin }),
+        origin === 'ai'
+          ? this.http.post<Mapping>(apiUrl('/ai/mapping-sample/accept'), {
+              spec,
+            })
+          : this.http.post<Mapping>(apiUrl('/mappings'), { spec, origin }),
       );
       return { ok: true, mapping };
     } catch (error) {

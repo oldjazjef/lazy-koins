@@ -281,6 +281,64 @@ export interface SpecIssue {
   message: string;
 }
 
+/**
+ * The compact sample of a table file (libs/engine `mapping/sample.ts`) — the editor's raw table
+ * and exactly what the AI would get (F5.14).
+ */
+export interface MappingSample {
+  fileName: string;
+  fileKind: 'csv' | 'xlsx';
+  encoding?: string;
+  delimiter?: string;
+  sheets?: { name: string; rowCount: number }[];
+  sheet?: string;
+  rowCount: number;
+  /** 1-based. */
+  headerRowGuess: number;
+  /** `rows[0]` is row 1 of the file (preamble included). */
+  rows: string[][];
+  distinctValues: { column: string; values: string[] }[];
+}
+
+/** Which reader an upload would pick for a file (F5.2). */
+export interface SampleRecognition {
+  standard: boolean;
+  mapping: { id: string; name: string; confidence: number } | null;
+}
+
+/** `POST /api/mapping-samples/inspect` — nothing is stored. */
+export interface SampleInspection {
+  name: string;
+  kind: 'csv' | 'xlsx';
+  size: number;
+  sample: MappingSample;
+  /** "Vorlage aus Datei" — not necessarily valid yet. */
+  skeleton: Record<string, unknown>;
+  recognisedBy: SampleRecognition;
+}
+
+export const FINGERPRINT_VERDICTS = [
+  'this',
+  'other',
+  'standard',
+  'none',
+] as const;
+export type FingerprintVerdict = (typeof FINGERPRINT_VERDICTS)[number];
+
+/** `POST /api/mapping-samples/preview` — an invalid spec comes back with its issues. */
+export interface SamplePreview {
+  valid: boolean;
+  issues: SpecIssue[];
+  preview: MappingPreview | null;
+  kindCounts: Partial<Record<BookingKind, number>>;
+  unknownValues: { value: string; count: number }[];
+  fingerprint: {
+    verdict: FingerprintVerdict;
+    confidence: number;
+    recognisedBy: SampleRecognition;
+  } | null;
+}
+
 // --- AI plugin (F5.13, F5.14) — mirrors apps/api `ai/dto/ai.dto.ts` ---
 
 export const AI_PROVIDERS = ['openai_compatible', 'anthropic'] as const;
