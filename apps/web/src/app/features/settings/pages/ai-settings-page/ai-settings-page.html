@@ -152,10 +152,22 @@
         {{ 'settings.ai.testing' | translate }}
       </p>
       } @if (service.testResult(); as result) {
-      <p class="text-sm" aria-live="polite">
+      <p
+        class="lk-panel flex items-center gap-2 p-3 text-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <ng-icon
+          name="lucideCircleCheck"
+          size="16"
+          class="text-primary shrink-0"
+          aria-hidden="true"
+        />
         {{ 'settings.ai.testOk' | translate: { model: result.model, millis:
         result.millis } }}
       </p>
+      } @if (service.testError(); as error) {
+      <lk-ai-error-panel [error]="error" />
       }
     </form>
   </div>

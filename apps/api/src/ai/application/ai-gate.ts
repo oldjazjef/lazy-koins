@@ -7,8 +7,14 @@ import {
 import { SecretBox } from '../../common/crypto/secret-box';
 import {
   type AiConnection,
+  type AiErrorDetails,
   AiProviderError,
 } from '../../integrations/ai/ai-completion.port';
+import {
+  redactDetails,
+  redactSecrets,
+  safeUrl,
+} from '../../integrations/ai/redact';
 import { checkBaseUrl } from '../domain/base-url';
 import {
   aiReady,
@@ -39,16 +45,52 @@ export const AI_STATE_CODES = [
 ] as const;
 export type AiStateCode = (typeof AI_STATE_CODES)[number];
 
+/** `detail`: what exactly is missing or refused, readable by a human (shown in the app). */
 export function aiConflict(
   code: AiStateCode,
   message: string,
+  detail?: string,
 ): ConflictException {
   return new ConflictException({
     statusCode: 409,
     error: 'Conflict',
     message,
     code,
+    ...(detail ? { detail: redactSecrets(detail) } : {}),
   });
+}
+
+/** What `aiReady` found missing, for the 409's detail. */
+function missingSetup(settings: AiSettings): string {
+  if (settings.provider === 'anthropic') {
+    return 'Anthropic needs an API key — none is stored.';
+  }
+  return 'OpenAI needs an API key; a local or other OpenAI-compatible server needs its address (base URL). Neither is set.';
+}
+
+function urlDetail(problem: 'invalidUrl' | 'privateUrl', baseUrl: string) {
+  const shown = safeUrl(baseUrl);
+  return problem === 'privateUrl'
+    ? `${shown} is a private or local address; this server only calls public providers (AI_ALLOW_PRIVATE_URLS is off).`
+    : `${shown || '(empty)'} is not an http(s) URL without user info, query or fragment.`;
+}
+
+/** One line for the toast and the log: "HTTP 401 · POST https://… · gpt-4.1 · invalid_api_key: …". */
+export function describeAiFailure(
+  code: string,
+  details: AiErrorDetails,
+): string {
+  const parts = [
+    details.status !== undefined ? `HTTP ${details.status}` : undefined,
+    details.url,
+    details.model ? `model ${details.model}` : undefined,
+    [details.providerType, details.providerCode]
+      .filter((part) => part)
+      .join('/') || undefined,
+    details.providerMessage,
+    details.cause,
+  ].filter((part): part is string => !!part);
+  return parts.length > 0 ? `${code}: ${parts.join(' · ')}` : code;
 }
 
 /** Unsaved values from the settings form, for testing before saving. */
@@ -87,6 +129,7 @@ export class AiGate {
         throw aiConflict(
           'consentRequired',
           'Agree to sending the shown excerpt to the AI provider first',
+          'The first AI request needs consent: tick the box under the shown excerpt (it is stored and can be withdrawn under Einstellungen → AI).',
         );
       }
       const { userId: _id, updatedAt: _at, ...rest } = settings;
@@ -101,12 +144,17 @@ export class AiGate {
   /** The connection from saved settings, or the 409 that says what is missing. */
   connectionOf(settings: AiSettings): AiConnection {
     if (!settings.enabled) {
-      throw aiConflict('aiDisabled', 'The AI plugin is switched off');
+      throw aiConflict(
+        'aiDisabled',
+        'The AI plugin is switched off',
+        'Switch it on under Einstellungen → AI ("AI-Plugin verwenden") and save.',
+      );
     }
     if (!aiReady(settings)) {
       throw aiConflict(
         'aiNotConfigured',
         'Set the AI provider (address, model, key) in the settings first',
+        missingSetup(settings),
       );
     }
     const urlProblem = checkBaseUrl(
@@ -114,7 +162,11 @@ export class AiGate {
       this.runtime.allowPrivateUrls,
     );
     if (urlProblem) {
-      throw aiConflict(urlProblem, 'The provider address is not allowed');
+      throw aiConflict(
+        urlProblem,
+        'The provider address is not allowed',
+        urlDetail(urlProblem, settings.baseUrl),
+      );
     }
     let apiKey: string | undefined;
     if (settings.apiKeyCipher) {
@@ -123,6 +175,7 @@ export class AiGate {
         throw aiConflict(
           'keyUnreadable',
           'The stored API key cannot be decrypted (SETTINGS_ENCRYPTION_KEY changed?) — enter it again',
+          `The key ${settings.apiKeyHint ?? ''} was sealed with another SETTINGS_ENCRYPTION_KEY than the server has now. Enter the key again and save.`,
         );
       }
     }
@@ -163,7 +216,11 @@ export class AiGate {
       this.runtime.allowPrivateUrls,
     );
     if (urlProblem) {
-      throw aiConflict(urlProblem, 'The provider address is not allowed');
+      throw aiConflict(
+        urlProblem,
+        'The provider address is not allowed',
+        urlDetail(urlProblem, settings.baseUrl),
+      );
     }
     return {
       kind: settings.provider,
@@ -173,20 +230,37 @@ export class AiGate {
     };
   }
 
-  /** Runs a provider call; its failure becomes a 502 with the error code for the app. */
-  async call<T>(work: () => Promise<T>): Promise<T> {
+  /**
+   * Runs a provider call; its failure becomes a 502 with the error code for the app plus the
+   * redacted details (`status`, `providerMessage`, `providerType`, `providerCode`, `url`,
+   * `model`, `cause`, `timeoutMs`, a one-line `detail`) — logged the same way at warn level.
+   * `connection` lets the key be redacted once more, whatever the adapter missed.
+   */
+  async call<T>(work: () => Promise<T>, connection?: AiConnection): Promise<T> {
     try {
       return await work();
     } catch (error) {
       if (error instanceof AiProviderError) {
-        this.logger.warn(
-          `AI provider call failed: ${error.code}${error.status ? ` (${error.status})` : ''}`,
+        const details = redactDetails(
+          {
+            ...(connection
+              ? { model: connection.model || undefined }
+              : undefined),
+            ...error.details,
+          },
+          [connection?.apiKey],
         );
+        const detail = redactSecrets(describeAiFailure(error.code, details), [
+          connection?.apiKey,
+        ]);
+        this.logger.warn(`AI provider call failed: ${detail}`);
         throw new BadGatewayException({
           statusCode: 502,
           error: 'Bad Gateway',
           message: 'The AI provider did not answer usefully',
           code: error.code,
+          detail,
+          ...details,
         });
       }
       throw error;
