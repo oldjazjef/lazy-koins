@@ -192,6 +192,14 @@
     @apply bg-card sticky right-0 z-10;
   }
 
+  /* …and follows the row's hover tint (hlmTr: bg-muted/50) over its own opaque background. */
+  tr:hover > .lk-sticky-actions {
+    background-image: linear-gradient(
+      color-mix(in oklab, var(--muted) 50%, transparent),
+      color-mix(in oklab, var(--muted) 50%, transparent)
+    );
+  }
+
   /* The word mark in the header and on the login card. */
   .lk-brand {
     @apply text-primary text-lg font-semibold tracking-tight;
