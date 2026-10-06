@@ -166,6 +166,43 @@ describe('MappingsPageService', () => {
     expect(navigate).toHaveBeenCalledWith(['/app/mappings', 'm9']);
   });
 
+  it('runs the after-save step (add the sample to a project) before opening the page', async () => {
+    const { service, http, navigate } = await setup();
+    const order: string[] = [];
+    navigate.mockImplementation(async () => {
+      order.push('navigate');
+      return true;
+    });
+    const created = service.create('{"format":"lazy-koins-mapping"}', (m) => {
+      order.push(`after:${m.id}`);
+      return Promise.resolve();
+    });
+    await settle();
+    http.expectOne('/api/mappings').flush(summary({ id: 'm7' }));
+    await settle();
+    http.expectOne('/api/mappings').flush(LIST);
+    await created;
+    expect(order).toEqual(['after:m7', 'navigate']);
+  });
+
+  it('stores a spec the AI wrote from a sample with origin ai', async () => {
+    const { service, http } = await setup();
+    const created = service.create(
+      '{"format":"lazy-koins-mapping"}',
+      undefined,
+      'ai',
+    );
+    await settle();
+    const post = http.expectOne('/api/ai/mapping-sample/accept');
+    expect(post.request.body).toEqual({
+      spec: { format: 'lazy-koins-mapping' },
+    });
+    post.flush(summary({ id: 'm8', origin: 'ai' }));
+    await settle();
+    http.expectOne('/api/mappings').flush(LIST);
+    expect(await created).toMatchObject({ ok: true });
+  });
+
   it('uploads a .json as a copied mapping, with a link to its page', async () => {
     const { service, http, notifications, navigate } = await setup();
     expect(await service.upload(jsonFile('{nope', 'x.json'))).toBeUndefined();

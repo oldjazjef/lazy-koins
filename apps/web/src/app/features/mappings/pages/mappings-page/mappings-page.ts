@@ -17,13 +17,15 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
-import type { SpecIssue } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import { skeleton } from '../../../files/components/mapping-editor';
 import {
-  MappingEditorForm,
-  skeleton,
-} from '../../../files/components/mapping-editor';
+  MappingWorkbench,
+  MappingWorkbenchService,
+} from '../../components/mapping-workbench';
 import {
   MAPPING_SORTS,
   type MappingSort,
@@ -45,7 +47,9 @@ import {
     TranslatePipe,
     PageHeader,
     EmptyState,
-    MappingEditorForm,
+    MappingWorkbench,
+    Paginator,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
@@ -54,7 +58,10 @@ import {
     ...HlmSkeletonImports,
     ...HlmTableImports,
   ],
-  providers: [provideIcons({ lucidePlus, lucideSearch, lucideUpload })],
+  providers: [
+    MappingWorkbenchService,
+    provideIcons({ lucidePlus, lucideSearch, lucideUpload }),
+  ],
   templateUrl: './mappings-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -63,14 +70,17 @@ export class MappingsPage {
   private readonly router = inject(Router);
   protected readonly sorts = MAPPING_SORTS;
   protected readonly skeletonRows = [1, 2, 3];
+  protected readonly pager = paginate(this.service.visible, {
+    storageKey: 'mappings',
+    resetOn: () => [this.service.search(), this.service.sort()],
+  });
 
-  /** The "Neues Mapping" dialog. */
+  /** The "Neues Mapping" dialog: the editor with a sample file (state in the workbench). */
+  protected readonly workbench = inject(MappingWorkbenchService);
   protected readonly creating = signal(false);
-  protected readonly text = signal('');
-  protected readonly checkFileId = signal('');
-  protected readonly issues = signal<readonly SpecIssue[]>([]);
-  protected readonly invalidJson = signal(false);
   protected readonly busy = signal(false);
+  /** "Datei auch zu Projekt … hinzufügen" after saving; '' = no. */
+  protected readonly addToProjectId = signal('');
 
   constructor() {
     this.service.refresh();
@@ -94,27 +104,32 @@ export class MappingsPage {
   }
 
   protected startNew(): void {
-    this.text.set(JSON.stringify(skeleton('', []), null, 2));
-    this.issues.set([]);
-    this.invalidJson.set(false);
+    this.workbench.start(JSON.stringify(skeleton('', []), null, 2));
+    this.addToProjectId.set('');
     this.creating.set(true);
   }
 
   protected async saveNew(): Promise<void> {
+    if (this.workbench.invalidJson()) return;
     this.busy.set(true);
+    const projectId = this.workbench.sample() ? this.addToProjectId() : '';
     try {
-      const outcome = await this.service.create(this.text());
-      this.invalidJson.set(outcome === 'invalidJson');
+      const outcome = await this.service.create(
+        this.workbench.text(),
+        projectId
+          ? (mapping) => this.workbench.addToProject(projectId, mapping)
+          : undefined,
+        this.workbench.aiCandidate() ? 'ai' : 'manual',
+      );
       if (outcome === 'invalidJson') return;
       if (outcome.ok) this.creating.set(false);
-      else this.issues.set(outcome.issues);
+      else this.workbench.saveIssues.set(outcome.issues);
     } catch {
       // The service has shown the failure.
     } finally {
       this.busy.set(false);
     }
   }
-
   protected dialogState(): 'open' | 'closed' {
     return this.creating() ? 'open' : 'closed';
   }

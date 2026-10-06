@@ -5,13 +5,17 @@ import {
   FileViews,
   type ProjectFileView,
 } from '../files/application/file-views';
+import type { ReadableFile } from '../files/application/source-file-reader';
 import type { ProjectFile } from '../files/domain/project-file';
 import type { ImportMapping } from '../mappings/domain/import-mapping';
 import {
   AcceptAiMappingCommand,
+  AcceptSampleMappingCommand,
   type AiRequestPreview,
   GenerateMappingCommand,
+  GenerateSampleMappingCommand,
   GetMappingPayloadQuery,
+  GetSampleMappingPayloadQuery,
   type MappingCandidate,
 } from './application/mapping.handlers';
 import {
@@ -28,7 +32,7 @@ import {
   GetStatementPayloadQuery,
   type StatementCandidate,
 } from './application/statement.handlers';
-import type { MappingSample } from './domain/mapping-sample';
+import type { MappingSample } from '@lazykoins/engine';
 import type {
   StatementExtraction,
   StatementPayload,
@@ -80,6 +84,27 @@ export class AiService {
     return this.commands.execute(
       new GenerateMappingCommand(userId, projectId, fileId, consent),
     );
+  }
+
+  sampleMappingPayload(
+    userId: string,
+    file: ReadableFile,
+  ): Promise<AiRequestPreview<MappingSample>> {
+    return this.queries.execute(new GetSampleMappingPayloadQuery(userId, file));
+  }
+
+  generateSampleMapping(
+    userId: string,
+    file: ReadableFile,
+    consent: boolean,
+  ): Promise<MappingCandidate> {
+    return this.commands.execute(
+      new GenerateSampleMappingCommand(userId, file, consent),
+    );
+  }
+
+  acceptSampleMapping(userId: string, spec: unknown): Promise<ImportMapping> {
+    return this.commands.execute(new AcceptSampleMappingCommand(userId, spec));
   }
 
   async acceptMapping(

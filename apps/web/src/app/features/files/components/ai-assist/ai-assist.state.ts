@@ -18,7 +18,10 @@ import type {
   StatementCandidate,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
+import {
+  aiErrorInfo,
+  type AiErrorInfo,
+} from '../../../../shared/ai/ai-error-details';
 import { ProjectFilesService } from '../project-files/project-files.service';
 
 export type AiMode = 'mapping' | 'statement';
@@ -85,6 +88,8 @@ export class AiAssistState {
     () => this.candidate()?.usage ?? this.statement()?.usage ?? null,
   );
   readonly busy = signal(false);
+  /** The last failed request with the provider's details (shown in the dialog, expandable). */
+  readonly error = signal<AiErrorInfo | null>(null);
 
   /** Table files without a mapping — the choice when started from the mappings section. */
   readonly filesNeedingMapping = computed(() =>
@@ -147,6 +152,7 @@ export class AiAssistState {
   async send(): Promise<void> {
     const file = this.file();
     if (!file || !this.canSend()) return;
+    this.error.set(null);
     this.step.set('working');
     // The provider may take a minute: the activity indicator shows it, and when the dialog was
     // closed meanwhile, the toast offers to open the proposal.
@@ -315,11 +321,19 @@ export class AiAssistState {
     }
   }
 
+  /** The toast says what failed (with the API's one-line detail); the dialog keeps the details. */
   private fail(error: unknown): void {
-    this.notifications.error(aiErrorKey(error));
+    const info = aiErrorInfo(error);
+    this.error.set(info);
+    if (info.detail) {
+      this.notifications.error(info.key, info.detail);
+    } else {
+      this.notifications.error(info.key);
+    }
   }
 
   private reset(): void {
+    this.error.set(null);
     this.request.set(null);
     this.consentChecked.set(false);
     this.candidate.set(null);

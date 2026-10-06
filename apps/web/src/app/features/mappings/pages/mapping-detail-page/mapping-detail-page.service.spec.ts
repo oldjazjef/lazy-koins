@@ -8,10 +8,12 @@ import { provideRouter, Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import type {
   Mapping,
-  MappingPreview,
   MappingUsageProject,
+  SampleInspection,
+  SamplePreview,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { MappingWorkbenchService } from '../../components/mapping-workbench';
 import { MappingDetailPageService } from './mapping-detail-page.service';
 
 const mapping = (over: Partial<Mapping> = {}): Mapping => ({
@@ -44,15 +46,44 @@ const USAGE: MappingUsageProject[] = [
   },
 ];
 
-const PREVIEW: MappingPreview = {
-  bookings: [],
-  holdings: [],
-  errors: [],
-  notes: [],
-  period: null,
-  totals: { bookings: 13, holdings: 9, errors: 0, notes: 0 },
+const INSPECTION: SampleInspection = {
+  name: 'ledgers.csv',
+  kind: 'csv',
+  size: 12,
+  sample: {
+    fileName: 'ledgers.csv',
+    fileKind: 'csv',
+    rowCount: 2,
+    headerRowGuess: 1,
+    rows: [
+      ['time', 'amount'],
+      ['2025-01-01', '1'],
+    ],
+    distinctValues: [],
+  },
+  skeleton: { format: 'lazy-koins-mapping' },
+  recognisedBy: { standard: false, mapping: null },
 };
 
+const LIVE: SamplePreview = {
+  valid: true,
+  issues: [],
+  preview: {
+    bookings: [],
+    holdings: [],
+    errors: [],
+    notes: [],
+    period: null,
+    totals: { bookings: 13, holdings: 9, errors: 0, notes: 0 },
+  },
+  kindCounts: { trade: 13 },
+  unknownValues: [],
+  fingerprint: {
+    verdict: 'this',
+    confidence: 1,
+    recognisedBy: { standard: false, mapping: null },
+  },
+};
 /** httpResource issues its request from an effect; a flushed response lands one task later. */
 const settle = async () => {
   await new Promise((resolve) => setTimeout(resolve));
@@ -68,6 +99,7 @@ async function setup(
   TestBed.configureTestingModule({
     providers: [
       MappingDetailPageService,
+      MappingWorkbenchService,
       provideHttpClient(),
       provideHttpClientTesting(),
       provideRouter([]),
@@ -102,7 +134,10 @@ async function setup(
 describe('MappingDetailPageService', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      const http = TestBed.inject(HttpTestingController);
+      // The workbench loads my project list in the background once a sample is there.
+      http.match('/api/projects');
+      http.verify();
     } finally {
       TestBed.resetTestingModule();
     }
@@ -122,33 +157,32 @@ describe('MappingDetailPageService', () => {
     expect(service.notFound()).toBe(true);
   });
 
-  it('edits with a preview against a file that uses it, then offers to re-apply', async () => {
+  it('edits with a file that uses it as the sample, then offers to re-apply', async () => {
     const { service, http, notifications } = await setup();
+    const workbench = TestBed.inject(MappingWorkbenchService);
     service.startEdit();
     expect(service.editing()).toBe(true);
-    expect(JSON.parse(service.text())).toEqual(mapping().spec);
-    expect(service.checkFiles()).toEqual([
-      { id: 'f1', label: 'ledgers.csv · Steuern 2025' },
-      { id: 'f2', label: 'ledgers-2024.csv · Steuern 2024' },
-    ]);
-    expect(service.checkFileId()).toBe('f1');
+    expect(JSON.parse(workbench.text())).toEqual(mapping().spec);
 
-    service.text.set('{nope');
-    await service.check();
-    expect(service.invalidJson()).toBe(true);
+    // The first file that uses the mapping becomes the sample: its bytes, then the live preview.
+    http
+      .expectOne('/api/projects/p1/files/f1/content')
+      .flush(new Blob(['time,amount\n2025-01-01,1']));
+    await settle();
+    http.expectOne('/api/mapping-samples/inspect').flush(INSPECTION);
+    await settle();
+    const preview = http.expectOne('/api/mapping-samples/preview');
+    const form = preview.request.body as FormData;
+    expect(form.get('mappingId')).toBe('m1');
+    expect(form.get('name')).toBe('ledgers.csv');
+    preview.flush(LIVE);
+    await settle();
+    expect(workbench.sample()?.from).toEqual({ projectName: 'Steuern 2025' });
+    expect(workbench.live()?.fingerprint?.verdict).toBe('this');
+    // A stored spec is not pristine-replaced by the skeleton.
+    expect(JSON.parse(workbench.text())).toEqual(mapping().spec);
 
-    service.text.set('{"format":"lazy-koins-mapping","name":"Edited"}');
-    service.checkFileId.set('f2');
-    const checking = service.check();
-    const preview = http.expectOne('/api/projects/p2/files/f2/mapping-preview');
-    expect(preview.request.body).toEqual({
-      spec: { format: 'lazy-koins-mapping', name: 'Edited' },
-      limit: 20,
-    });
-    preview.flush(PREVIEW);
-    await checking;
-    expect(service.preview()?.totals.bookings).toBe(13);
-
+    workbench.text.set('{"format":"lazy-koins-mapping","name":"Edited"}');
     const refused = service.save();
     http
       .expectOne('/api/mappings/m1')
@@ -157,7 +191,7 @@ describe('MappingDetailPageService', () => {
         { status: 400, statusText: 'Bad Request' },
       );
     await refused;
-    expect(service.issues()).toEqual([
+    expect(workbench.issues()).toEqual([
       { path: 'platform', message: 'Required' },
     ]);
     expect(service.editing()).toBe(true);
@@ -165,6 +199,9 @@ describe('MappingDetailPageService', () => {
     const saving = service.save();
     const put = http.expectOne('/api/mappings/m1');
     expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual({
+      spec: { format: 'lazy-koins-mapping', name: 'Edited' },
+    });
     put.flush({ mapping: mapping({ name: 'Edited' }), filesUsing: 2 });
     await saving;
     expect(service.editing()).toBe(false);
@@ -185,7 +222,6 @@ describe('MappingDetailPageService', () => {
     await settle();
     http.expectOne('/api/mappings/m1/usage').flush(USAGE);
   });
-
   it('deletes and goes back to the list; a closed project refuses it (409)', async () => {
     const { service, http, notifications, navigate } = await setup();
     const refused = service.remove();

@@ -2,6 +2,7 @@ import { DatePipe, JsonPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -19,14 +20,19 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
-import { MappingEditorForm } from '../../../files/components/mapping-editor';
+import {
+  MappingWorkbench,
+  MappingWorkbenchService,
+} from '../../components/mapping-workbench';
 import { ProjectStatusBadge } from '../../../projects/components/project-status-badge';
 import { MappingDetailPageService } from './mapping-detail-page.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
- * One mapping (F11.0): facts, the JSON (view and edit with a preview against a file that uses
- * it), re-apply after saving, download, delete with the affected files listed, and where it is
- * used — each project and file linking to the project.
+ * One mapping (F11.0): facts, the JSON (view, and edit with a sample file and a live preview),
+ * re-apply after saving, download, delete with the affected files listed, and where it is used —
+ * each project and file linking to the project.
  */
 @Component({
   selector: 'lk-mapping-detail-page',
@@ -36,9 +42,11 @@ import { MappingDetailPageService } from './mapping-detail-page.service';
     RouterLink,
     NgIcon,
     TranslatePipe,
+    Paginator,
+    Truncate,
     PageHeader,
     EmptyState,
-    MappingEditorForm,
+    MappingWorkbench,
     ProjectStatusBadge,
     ...HlmBadgeImports,
     ...HlmButtonImports,
@@ -49,6 +57,7 @@ import { MappingDetailPageService } from './mapping-detail-page.service';
   ],
   providers: [
     MappingDetailPageService,
+    MappingWorkbenchService,
     provideIcons({ lucideDownload, lucidePencil, lucideTrash2 }),
   ],
   templateUrl: './mapping-detail-page.html',
@@ -56,11 +65,19 @@ import { MappingDetailPageService } from './mapping-detail-page.service';
 })
 export class MappingDetailPage {
   protected readonly service = inject(MappingDetailPageService);
+  protected readonly workbench = inject(MappingWorkbenchService);
 
   /** Route param `:id` — no default, absent params bind as `undefined` (see CLAUDE.md). */
   readonly id = input<string | undefined>();
 
   protected readonly confirmDelete = signal(false);
+  /** "Wird genutzt in": one row per project. */
+  protected readonly usagePager = paginate(
+    computed(() =>
+      this.service.usage.hasValue() ? this.service.usage.value() : [],
+    ),
+    { storageKey: 'mapping-usage' },
+  );
 
   constructor() {
     effect(() => this.service.mappingId.set(this.id()));

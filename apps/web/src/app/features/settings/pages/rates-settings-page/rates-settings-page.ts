@@ -8,14 +8,19 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DatePipe } from '@angular/common';
+import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
 import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
+import { HlmTableImports } from '@lazykoins/ui/table';
 import { z } from 'zod';
 import type { UpdateSettingsRequest } from '../../../../core/api/calculation.types';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { Truncate } from '../../../../shared/components/truncate';
+import { EstvService } from '../../../../shared/estv/estv.service';
 import { UserSettingsService } from '../../user-settings.service';
 import { RatesSettingsPageService } from './rates-settings-page.service';
 
@@ -35,20 +40,25 @@ export function ratesSettingsChanges(
 }
 
 /**
- * Einstellungen › Kurse (F11.3, F6.7, F7.4): rate lookups on the internet on/off, the CoinGecko
- * key (stored encrypted, shown as a hint) and the import of the ESTV Kursliste into a project.
+ * Einstellungen › Kurse (F11.3, F6.7, F7.4, F7.4a): rate lookups on the internet on/off, the
+ * CoinGecko key (stored encrypted, shown as a hint), the automatic ESTV Kursliste (status per
+ * year, "ESTV-Kursliste aktualisieren") and the manual Kursliste import into a project.
  */
 @Component({
   selector: 'lk-rates-settings-page',
   imports: [
+    DatePipe,
     ReactiveFormsModule,
     TranslatePipe,
     PageHeader,
+    Truncate,
+    ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmInputImports,
     ...HlmLabelImports,
     ...HlmSkeletonImports,
+    ...HlmTableImports,
   ],
   templateUrl: './rates-settings-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +66,8 @@ export function ratesSettingsChanges(
 export class RatesSettingsPage {
   protected readonly service = inject(UserSettingsService);
   protected readonly page = inject(RatesSettingsPageService);
+
+  protected readonly estv = inject(EstvService);
 
   protected readonly projectId = signal('');
   protected readonly projects = computed(() =>
@@ -70,6 +82,7 @@ export class RatesSettingsPage {
   });
 
   constructor() {
+    this.estv.load();
     effect(() => {
       if (!this.service.settings.hasValue()) return;
       this.form.reset({
@@ -93,6 +106,11 @@ export class RatesSettingsPage {
 
   protected removeKey(): void {
     void this.service.removeKey('coingecko').catch(() => undefined);
+  }
+
+  /** F7.4a: every stored year and last year; progress and outcome come from the service. */
+  protected updateEstv(): void {
+    void this.estv.update().catch(() => undefined);
   }
 
   protected selectProject(event: Event): void {

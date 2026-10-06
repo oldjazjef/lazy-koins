@@ -64,7 +64,7 @@
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (item of view.items; track item.key) {
+        @for (item of itemsPager.visible(); track item.key) {
         <tr
           hlmTr
           class="align-top"
@@ -80,11 +80,12 @@
               (change)="toggle(item, $event)"
             />
           </td>
-          <td hlmTd class="whitespace-normal break-words">
-            <span
-              [class]="'lk-light lk-light-' + item.light + ' mr-2 align-middle'"
-            ></span>
-            <span class="font-medium">{{ where(item) }}</span>
+          <td hlmTd class="max-w-0 whitespace-normal break-words">
+            <div class="flex min-w-0 items-center gap-2">
+              <span [class]="'lk-light lk-light-' + item.light"></span>
+              @let place = where(item);
+              <span class="font-medium" [lkTruncate]="place">{{ place }}</span>
+            </div>
             <span class="block"
               >{{ 'checks.reason.' + item.reason | translate: { expected:
               (item.params['expected'] | lkQuantity: 18), actual:
@@ -189,6 +190,7 @@
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="itemsPager" />
   }
 </section>
 

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
@@ -129,6 +129,25 @@ export class AiConsentDto {
       'The user agreed in the dialog that shows the payload (required the first time)',
   })
   @IsOptional()
+  @IsBoolean()
+  consent?: boolean;
+}
+
+/** Multipart text fields of the sample AI requests (form values arrive as strings). */
+export class SampleAiFormDto {
+  @ApiPropertyOptional({ description: 'The file name (UTF-8)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  name?: string;
+
+  @ApiPropertyOptional({
+    description: 'The user agreed in the payload dialog ("true")',
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    value === 'true' ? true : value === 'false' ? false : value,
+  )
   @IsBoolean()
   consent?: boolean;
 }

@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -21,6 +22,12 @@ import type { RateSeries } from '../../../../core/api/calculation.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
 
 const ManualRateSchema = z.object({
   kind: z.enum(['price', 'fx']),
@@ -39,7 +46,8 @@ const ManualRateSchema = z.object({
 /**
  * Kurse (F7.4): the stored series with their source and the value used for 31.12., overrides
  * and ESTV values, "Kurse aktualisieren" (only with rate lookups on, F11.3) and the Kursliste
- * import.
+ * import. F7.4a: the automatic ESTV Kursliste of the tax year — the version in use, a newer one,
+ * "ESTV-Kursliste aktualisieren" and ambiguous assets (no value; set an override).
  */
 @Component({
   selector: 'lk-project-rates',
@@ -47,6 +55,9 @@ const ManualRateSchema = z.object({
     DatePipe,
     ReactiveFormsModule,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     QuantityPipe,
     EmptyState,
     ...HlmBadgeImports,
@@ -79,6 +90,34 @@ export class ProjectRates {
       (s) => term === '' || s.asset.includes(term),
     );
   });
+
+  protected readonly manualPager = paginate(
+    computed(() => this.view()?.manual ?? []),
+    { storageKey: 'manual-rates' },
+  );
+  protected readonly seriesPager = paginate(this.series, {
+    storageKey: 'rate-series',
+    resetOn: () => this.filter(),
+  });
+
+  /** One action each; none while the project is closed (F4.5). */
+  protected readonly manualActions = computed<readonly RowAction[]>(() => [
+    {
+      id: 'remove',
+      labelKey: 'rates.remove',
+      icon: lucideTrash2,
+      danger: true,
+      hidden: this.closed(),
+    },
+  ]);
+  protected readonly seriesActions = computed<readonly RowAction[]>(() => [
+    {
+      id: 'override',
+      labelKey: 'rates.override',
+      icon: lucidePencil,
+      hidden: this.closed(),
+    },
+  ]);
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     kind: ['price' as 'price' | 'fx'],
@@ -124,6 +163,23 @@ export class ProjectRates {
     const file = target.files?.[0];
     target.value = '';
     if (file) void this.service.importKursliste(file).catch(() => undefined);
+  }
+
+  /** F7.4a: download the tax year's Kursliste if newer, then take it into the project. */
+  protected updateEstv(): void {
+    void this.service.updateEstv(this.taxYear()).catch(() => undefined);
+  }
+
+  protected applyEstv(): void {
+    void this.service.applyEstv().catch(() => undefined);
+  }
+
+  protected candidateNames(
+    candidates: readonly { name: string; valorNumber: string | null }[],
+  ): string {
+    return candidates
+      .map((c) => (c.valorNumber ? `${c.name} (${c.valorNumber})` : c.name))
+      .join(', ');
   }
 
   protected search(event: Event): void {

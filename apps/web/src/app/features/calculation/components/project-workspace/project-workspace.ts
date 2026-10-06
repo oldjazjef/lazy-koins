@@ -31,6 +31,8 @@ import {
   WORKSPACE_TABS,
   type WorkspaceTab,
 } from './project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
  * The project detail's working area as tabs: Dateien (+ Mappings), Kurse, Ergebnis, Prüfungen,
@@ -42,6 +44,8 @@ import {
   imports: [
     DatePipe,
     TranslatePipe,
+    Paginator,
+    Truncate,
     QuantityPipe,
     ProjectFiles,
     ProjectHints,
@@ -92,6 +96,15 @@ export class ProjectWorkspace {
     }
     return counts;
   });
+
+  /** F7.5 drill-down: the records behind a figure, 10 per page. */
+  protected readonly recordsPager = paginate(
+    computed(() => this.service.records()?.records ?? []),
+    {
+      storageKey: 'records',
+      resetOn: () => this.service.recordsOf()?.figureId,
+    },
+  );
 
   constructor() {
     effect(() => {
