@@ -10,8 +10,11 @@ import {
 } from './application/commands/mapping.commands';
 import {
   GetMappingQuery,
+  GetMappingUsageQuery,
   ListMappingsQuery,
   ListProjectMappingsQuery,
+  type MappingSummary,
+  type MappingUsageProject,
   type ProjectMapping,
 } from './application/queries/mapping.queries';
 import type { ImportMapping, MappingOrigin } from './domain/import-mapping';
@@ -25,8 +28,12 @@ export class MappingsService {
     private readonly files: FilesService,
   ) {}
 
-  listMine(userId: string): Promise<ImportMapping[]> {
+  listMine(userId: string): Promise<MappingSummary[]> {
     return this.queries.execute(new ListMappingsQuery(userId));
+  }
+
+  usage(userId: string, mappingId: string): Promise<MappingUsageProject[]> {
+    return this.queries.execute(new GetMappingUsageQuery(userId, mappingId));
   }
 
   get(userId: string, mappingId: string): Promise<ImportMapping> {

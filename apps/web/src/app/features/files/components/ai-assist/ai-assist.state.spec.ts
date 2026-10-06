@@ -4,6 +4,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import type {
   AiSettings,
@@ -200,10 +201,21 @@ describe('AiAssistState', () => {
     expect(accept.request.body).toEqual({
       spec: { format: 'lazy-koins-mapping', name: 'Edited' },
     });
-    accept.flush({ mapping: {}, file: file({ status: 'mapped' }) });
+    accept.flush({ mapping: { id: 'm7' }, file: file({ status: 'mapped' }) });
     await saved;
     await flushReloads(http);
-    expect(notifications.success).toHaveBeenCalledWith('ai.mapping.saved');
+    // The toast links to the new mapping's page (F11.0).
+    expect(notifications.success).toHaveBeenCalledWith('ai.mapping.saved', {
+      labelKey: 'mappings.openPage',
+      onClick: expect.any(Function),
+    });
+    const navigate = vi
+      .spyOn(TestBed.inject(Router), 'navigate')
+      .mockResolvedValue(true);
+    (
+      notifications.success.mock.calls[0]?.[1] as { onClick: () => void }
+    ).onClick();
+    expect(navigate).toHaveBeenCalledWith(['/app/mappings', 'm7']);
     expect(state.step()).toBe('closed');
   });
 

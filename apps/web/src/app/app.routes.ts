@@ -21,6 +21,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/projects/projects.routes'),
       },
       {
+        path: 'mappings',
+        loadChildren: () => import('./features/mappings/mappings.routes'),
+      },
+      {
         path: 'settings',
         loadChildren: () => import('./features/settings/settings.routes'),
       },

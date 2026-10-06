@@ -56,6 +56,9 @@ const DYNAMIC_KEYS = [
     'unknown',
   ].map((kind) => `bookings.kind.${kind}`),
   ...['ai', 'manual', 'copied'].map((origin) => `mappings.origin.${origin}`),
+  ...['name', 'platform', 'updated', 'files'].map(
+    (sort) => `mappings.list.sortBy.${sort}`,
+  ),
   ...[
     'failed',
     'unreachable',
