@@ -22,15 +22,18 @@ packages:
 #   prisma, @prisma/engines  the CLI's schema-engine binary, needed by `migrate`
 #   better-sqlite3     the SQLite driver behind Prisma's adapter; fetches (or builds) its
 #                      native binary — without it the API dies at the first query
+#   electron           downloads the Electron binary (apps/desktop, `pnpm start:desktop`)
 #
 # The `false` entries are deliberate: `@nestjs/core` only prints a sponsorship notice,
 # `@scarf/scarf` phones home with install analytics, `protobufjs` (via firebase-admin) only
 # checks its own version, and `@firebase/util` writes an auto-init config for Firebase
 # Hosting, which this project does not use (the app passes its config explicitly).
+# `electron-winstaller` (via electron-builder) is Squirrel.Windows, unused: the desktop app ships NSIS.
 allowBuilds:
   '@parcel/watcher': true
   '@prisma/engines': true
   better-sqlite3: true
+  electron: true
   '@swc/core': true
   esbuild: true
   less: true
@@ -43,6 +46,7 @@ allowBuilds:
   '@scarf/scarf': false
   '@firebase/util': false
   protobufjs: false
+  electron-winstaller: false
 
 # Nx is pinned to one exact version (see CLAUDE.md), but @spartan-ng/cli depends on `@nx/devkit`
 # with a caret range and would otherwise pull the newest one — whose generators refuse to run

@@ -30,7 +30,14 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 
 ## 4. Projekte
 
-- **F4.1** Ein Projekt = ein Steuerjahr (z. B. „Steuern 2025“). Angaben: Name, Jahr, Land, Kanton, Status (in Arbeit / geprüft / abgeschlossen), Notizen.
+- **F4.1** Ein Projekt = ein Steuerjahr (z. B. „Steuern 2025“). Angaben: Name, Jahr, Land, Kanton, **Steuerwährung**, Status (in Arbeit / geprüft / abgeschlossen), Notizen.
+- **F4.1a Steuerwährung**: Pro Projekt wird die Währung festgelegt, in der Vermögen und Ertrag
+  bewertet und ausgewiesen werden (Vorgabe aus dem Land: Schweiz → CHF; änderbar, z. B. EUR).
+  Alle Bewertungen, Kurse (Krypto → Steuerwährung, Devisen über EZB/ESTV), Prüfungen, Exporte,
+  Dashboard-Werte und Mail-Platzhalter verwenden diese Währung; Spalten- und Feldnamen zeigen sie
+  („Wert CHF“ → „Wert <Währung>“). Die ESTV-Kursliste gilt nur für CHF; bei anderer Währung
+  greifen die übrigen Quellen bzw. die Landesregeln (F7.7). Eine Änderung der Währung verlangt
+  eine Bestätigung und eine Neuberechnung.
 - **F4.2** Projektliste mit Status, Vermögen und Ertrag je Projekt.
 - **F4.3** Neues Projekt anlegen; Land, Kanton und Wallets werden aus dem neusten Projekt vorgeschlagen.
 - **F4.4** Aus älteren Projekten übernehmen: Dateien, Wallets und Korrekturen auswählen, gruppiert nach Plattform/Wallet. Eine übernommene Datei wird nicht doppelt gespeichert.
@@ -145,16 +152,18 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 
 ## 10. Exporte
 
-- **F10.1** Einfacher Auszug als PDF (1–2 Seiten) und Excel: Steuerwert per 31.12., Ertrag, Wertschriftenverzeichnis mit einer Zeile pro Plattform/Wallet (Hauptpositionen, Anzahl Kleinpositionen, Steuerwert), Ertragstabelle, offene Punkte.
-- **F10.2** Ausführlicher Auszug als Excel und PDF: Übersicht, Parameter, Bestand je Position mit Kursquelle, Ertrag je Buchung, fehlende Earn-Erträge, Einmalereignisse, Prüfungen, offene Punkte, Methodik. Excel mit nachvollziehbaren Formeln; Eingaben und fehlende Werte farblich markiert; überschriebene Kurse rechnen im Excel weiter.
+- **Grundsatz:** Auszüge für die Steuerbehörde (F10.1, F10.2) enthalten keine offenen Punkte, Prüfhinweise oder Arbeitsanweisungen – nur, was deklariert wird, und wie es berechnet wurde. Positionen und Ereignisse ohne Kurs erscheinen mit ihrer Menge, ohne Wert, mit einer neutralen Fussnote („Kein Kurswert verfügbar; nicht im Total enthalten.“).
+- **F10.1** Einfacher Auszug als PDF (1–2 Seiten) und Excel: Kopfzeile (F10.4), Steuerwert per 31.12., Ertrag, Wertschriftenverzeichnis mit einer Zeile pro Plattform/Wallet (Hauptpositionen, Anzahl Kleinpositionen, Steuerwert), Ertragstabelle.
+- **F10.2** Ausführlicher Auszug als Excel und PDF: Übersicht (Vermögen, Ertrag), Parameter (Devisenkurse), Bestand per 31.12. je Position mit Kurs und Kursquelle, Ertrag (Zusammenfassung und je Buchung), fehlende Earn-Erträge (Earn-Lücke, als Erläuterung der Differenzmethode), Einmalereignisse, Methodik. Excel mit nachvollziehbaren Formeln; Eingaben (blau), Formeln (schwarz) und Verweise auf Parameter (grün) farblich unterschieden; überschriebene Kurse rechnen im Excel weiter.
+- **F10.2a** Interner Prüfbericht als PDF und Excel, deutlich betitelt „Interner Prüfbericht – nicht für die Steuerbehörde“: Prüfungen mit Ampel (F8.1), offene Punkte mit Erledigt-Status und Notiz (F8.2), Positionen/Erträge/Ereignisse ohne Kurs, Warnungen zur Earn-Lücke, Hinweise auf fehlende Dateien (F5.8). Wird im Tab Exporte separat erstellt, wie die Auszüge gespeichert (F10.5), aber in einer eigenen Gruppe „Intern“ gelistet und nie standardmässig an die Mail an den Treuhänder angehängt. Wird ein Auszug erstellt, solange nicht erledigte offene Punkte bestehen, fragt die App zuerst („Es gibt noch N offene Punkte. Trotzdem erstellen?“, mit Weg zu den Prüfungen).
 - **F10.3** Bezeichnungen und Formularverweise passend zum gewählten Land und Kanton.
 - **F10.4** Kopfzeile mit Name, Steuerjahr, Kanton, Erstellungsdatum und Hinweis „keine Steuerberatung“.
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
-- **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
+- **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste (nur Auszüge, nicht der interne Prüfbericht) und offenen Fachfragen (die gehören dem Treuhänder, nicht der Steuerbehörde); Text zum Kopieren.
 - **F10.6a** Mail direkt aus der App senden: Im Projekt (Exporte) „An Treuhänder senden“ öffnet
   einen Dialog mit Empfänger (aus dem Profil, änderbar), CC an mich, Betreff und Text aus der
   Vorlage (F11.10, im Dialog noch bearbeitbar), auswählbaren Anhängen (erstellte Auszüge PDF/Excel)
-  und Vorschau. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
+  und Vorschau; der interne Prüfbericht (F10.2a) ist nie vorausgewählt. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
   protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
   eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
 
@@ -178,14 +187,33 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
 **Einstellungen** im Benutzermenü oben rechts.
 
 - **F11.0s Einrichtung beim ersten Aufruf**: Beim allerersten Start (Desktop) bzw. nach der
-  ersten Anmeldung (Web) führt ein Assistent in Schritten durch die Einrichtung, mit
-  Fortschrittsanzeige, „Zurück“/„Weiter“ und „Später“ für optionale Schritte; jederzeit über
-  Profil/Einstellungen änderbar und wieder aufrufbar:
-  1. **Profil** – Name, Wohnkanton, Sprache (F11.1, F11.2). Pflicht.
-  2. **Plugin** – AI-Anbieter einrichten und testen (F5.13); optional, „ohne AI fortfahren“.
-  3. **Treuhänder** – Name und E-Mail (F11.1), optional Mailer (F11.10).
-  4. **PIN** – 4–8 Ziffern, zweimal eingeben. Desktop: Pflicht; Web: optional.
-     Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App.
+  ersten Anmeldung (Web) führt ein Assistent als **Stepper** durch alles, was die App zum
+  Arbeiten braucht: Schrittleiste mit Nummer, Titel und Zustand je Schritt (offen / erledigt /
+  übersprungen / Fehler), „Zurück“/„Weiter“ fix unten (Dialog-Regel), „Später“ für optionale
+  Schritte, Zwischenstand wird gespeichert (Abbruch und Fortsetzen möglich). Jeder Schritt mit
+  kurzer Erklärung, wozu er dient, Link „Wo bekomme ich den Schlüssel?“ und – wo möglich –
+  einem **Test-Knopf**, der die Eingabe sofort prüft. Schlüssel werden verschlüsselt gespeichert
+  und nie wieder angezeigt (F11.0b). Jederzeit über Einstellungen wieder aufrufbar; danach
+  ist alles in Profil/Einstellungen einzeln änderbar.
+  1. **Profil** – Name, Wohnkanton, Sprache, Zahlen-/Datumsformat (F11.1, F11.2). Pflicht.
+  2. **Treuhänder** – Name und E-Mail (F11.1). Optional.
+  3. **AI-Plugin** – Anbieter, Modell, Schlüssel, Verbindung testen, Zustimmung (F5.13, F5.14).
+     Optional („ohne AI fortfahren“ – dann Mappings nur manuell).
+  4. **Kurse** – Internet-Kurse ein/aus (F11.3), CoinGecko-Schlüssel (testen), ESTV-Kursliste
+     automatisch beziehen (F7.4a). Optional, mit Hinweis auf fehlende Kurse ohne Schlüssel.
+  5. **Wallets & Netzwerke** – Etherscan-Schlüssel (alle EVM-Chains), Solana-Indexer (z. B.
+     Helius), weitere Netzwerk-Schlüssel nach Bedarf (F6.3, F6.7), je mit Test; optional,
+     erste Wallet-Adressen direkt erfassen.
+  6. **Mail** – Mailer (SMTP) mit Test-Mail und Vorlage übernehmen/anpassen (F11.10). Optional.
+  7. **Speicherort** (nur Desktop) – Datenordner wählen, auch Sync-Ordner (F3.1).
+  8. **PIN** – 4–8 Ziffern, zweimal eingeben (F11.0p). Desktop: Pflicht; Web: optional.
+  9. **Zusammenfassung** – was eingerichtet ist und was fehlt (mit Auswirkung, z. B. „ohne
+     CoinGecko-Schlüssel haben FLR/SGB keinen Kurs“), Knopf „App starten“ bzw. „Erstes
+     Projekt anlegen“.
+
+  Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App. Fehlt
+  später etwas, das eine Funktion braucht, verweist die App direkt auf den passenden Schritt.
+
 - **F11.0p PIN-Sperre**: Der PIN wird bei **jedem Öffnen** der App verlangt – Desktop: bei jedem
   Start und nach dem Entsperren aus dem Ruhezustand/automatischer Sperre nach einstellbarer
   Inaktivität; Web (falls gesetzt): beim Öffnen eines neuen Tabs/Fensters nach dem Schliessen
@@ -252,6 +280,62 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
 - **F11.9** Werte stammen aus denselben Daten und Kursen wie die Steuerberechnung (keine zweite
   Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
   Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
+
+## 11b. Benachrichtigungen
+
+- **F11.11** Benachrichtigungs-Zentrale: Glocke in der Kopfzeile mit Zähler der ungelesenen
+  Meldungen; Klick öffnet eine Liste (neueste zuerst, gruppiert nach Projekt) mit Typ
+  (Fehler / Handlungsbedarf / Info / Erfolg), Zeit, kurzer Beschreibung und **direkter Aktion**
+  („Zum Hinweis“, „Erneut versuchen“, „Schlüssel prüfen“, „Auszug öffnen“). Einzeln oder alle als
+  gelesen markieren, erledigte ausblenden; Meldungen bleiben gespeichert (pro Benutzer, auch nach
+  Neustart) und verschwinden automatisch, wenn die Ursache behoben ist.
+- **F11.12** Was eine Meldung auslöst, mindestens:
+  - **Fehlgeschlagen**: Kursabruf (welche Assets), ESTV-Kursliste, AI-Aufruf (mit Fehlerdetails),
+    Mail-Versand, Export/Auszug, Paket-Import, Wallet-Abruf, Upload/Lesen einer Datei.
+  - **Handlungsbedarf**: Datei ohne Mapping, Zeilenfehler, neue offene Punkte/Hinweise nach einer
+    Neuberechnung, Positionen ohne Kurs, Daten seit dem Versand an den Treuhänder geändert (F4.7),
+    Einrichtung unvollständig (F11.0s), Schlüssel ungültig/abgelaufen, Sync-Konflikt (F3.4).
+  - **Info/Erfolg**: neue Fassung der ESTV-Kursliste verfügbar, lange Aufgabe fertig (aus der
+    Aktivitätsanzeige), Mail gesendet.
+- **F11.13** Fertige oder fehlgeschlagene Hintergrundaufgaben aus der Aktivitätsanzeige landen
+  automatisch als Meldung in der Zentrale. Desktop: optional zusätzlich als System-Benachrichtigung
+  (ein-/ausschaltbar in den Einstellungen); Web: nur in der App. Keine Meldung enthält Schlüssel,
+  Passwörter oder Buchungsdetails.
+
+## 11c. AI-Assistent und MCP
+
+- **F11.14 AI-Chat (Seitenleiste)**: Eine ein-/ausklappbare Seitenleiste mit einem Chat, der beim
+  Bedienen hilft. Er nutzt das konfigurierte AI-Plugin (F5.13) – ohne Plugin ist er deaktiviert
+  mit Hinweis auf die Einrichtung. Er kennt den Kontext (aktuelle Seite, Projekt, Prüfungen,
+  Hinweise) und kann:
+  - erklären („Warum fehlt der Kurs für FLR?“, „Woher kommt diese Zahl?“ – mit Links bis zur
+    Buchung, F7.5),
+  - **nach Dateien fragen** und den Upload direkt im Chat anbieten („Lade den Kraken-Kontoauszug
+    Dezember hoch“), Mappings erstellen lassen (F5.13),
+  - **Einträge korrigieren**: Korrekturen vorschlagen und nach Bestätigung anlegen (Kurs
+    überschreiben, umklassieren, manuelle Position – F9.x, mit Begründung), Hinweise als erledigt
+    markieren, Neuberechnung, Kurse aktualisieren, Auszug erstellen,
+  - navigieren (öffnet die passende Seite/den passenden Tab).
+
+  **Jede ändernde Aktion wird vorher als Vorschlag gezeigt und erst nach ausdrücklicher
+  Bestätigung ausgeführt**; alles landet im Korrekturverlauf bzw. Protokoll. Abgeschlossene
+  Projekte bleiben schreibgeschützt. Gesendet werden nur die für die Frage nötigen Daten; die
+  Zustimmung F5.14 gilt sinngemäss. Verlauf pro Benutzer (löschbar).
+
+- **F11.15 Prompt bearbeiten**: In Einstellungen › AI lässt sich der **Standard-Prompt** des
+  Assistenten (System-Prompt: Rolle, Ton, Sprache, Grenzen) ansehen, bearbeiten und auf den
+  Standard zurücksetzen; die eingebauten Sicherheitsregeln (Bestätigung vor Änderungen, keine
+  Steuerberatung, keine Schlüssel) bleiben immer aktiv.
+- **F11.16 MCP-Server**: lazy-koins stellt seine Funktionen als **MCP-Server** (Model Context
+  Protocol) bereit, damit externe AI-Clients (z. B. Claude Desktop, Claude Code) damit arbeiten
+  können – **für alles**, was die App kann: Projekte, Dateien (hochladen, lesen, zuordnen),
+  Mappings, Kurse, Berechnung, Ergebnis mit Rückverfolgung, Prüfungen/Hinweise, Korrekturen,
+  Exporte, Wallets, Einstellungen (ohne Schlüssel). Chat (F11.14) und MCP nutzen **dieselbe
+  Werkzeug-Schicht**. In Einstellungen › MCP **aktivierbar** (standardmässig aus), mit Auswahl,
+  welche Werkzeugbereiche freigegeben sind und ob schreibende Werkzeuge erlaubt sind;
+  Anleitung/Konfigurationsschnipsel für gängige Clients. Web: Zugriff über persönliche
+  Zugriffstoken (erstellen, benennen, Ablauf, widerrufen); Desktop: lokaler Server
+  (stdio oder 127.0.0.1) ohne Netzwerkzugriff von aussen. Jeder MCP-Aufruf wird protokolliert.
 
 ## 12. Abnahme
 

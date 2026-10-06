@@ -273,5 +273,18 @@ describe('snapshots, corrections, open items, exports', () => {
         project.id,
       ),
     ).rejects.toThrow(/CHECK constraint failed/);
+    // Widened by 20261008090000 for the internal check report (F10.2a); size CHECK kept.
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO project_export (id, project_id, kind, file_name, media_type, bytes, size, wealth_chf, income_chf) VALUES ('x5', ?, 'internal_report_xlsx', 'a', 'b', X'00', 1, '0', '0')`,
+        project.id,
+      ),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO project_export (id, project_id, kind, file_name, media_type, bytes, size, wealth_chf, income_chf) VALUES ('x6', ?, 'internal_report_pdf', 'a', 'b', X'00', 2, '0', '0')`,
+        project.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
   });
 });

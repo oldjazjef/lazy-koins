@@ -34,6 +34,9 @@ import { AppController } from './app.controller';
       validate: validateEnv,
       // First match wins: a local override, then the developer's .env. Both git-ignored.
       envFilePath: ['apps/api/.env.local', 'apps/api/.env', '.env'],
+      // The desktop app (apps/desktop) sets every variable itself before it loads this module; a
+      // stray .env in whatever directory it was started from must not leak in.
+      ignoreEnvFile: process.env['LK_IGNORE_ENV_FILE'] === 'true',
     }),
     // Per-IP hygiene plus a per-account budget for writes (common/throttling).
     ThrottlerModule.forRootAsync({ useFactory: throttlerOptions }),

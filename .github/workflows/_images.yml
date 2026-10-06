@@ -1,0 +1,87 @@
+# Reusable: builds and pushes the Docker images of lazy-koins for one commit.
+# Images: ghcr.io/<owner>/lazykoins-<api|web>:sha-<commit>. Environments later re-tag these exact images.
+name: Build images
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to build
+        required: true
+        type: string
+    outputs:
+      tag:
+        description: Image tag that was pushed (sha-<commit>)
+        value: ${{ jobs.build.outputs.tag }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - image: lazykoins-api
+            dockerfile: apps/api/Dockerfile
+          - image: lazykoins-web
+            dockerfile: apps/web/Dockerfile
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+          # Tags, for the version: the nearest vX.Y.Z below this commit (scripts/build/version.mjs).
+          fetch-depth: 0
+          filter: tree:0
+
+      - id: meta
+        name: Image name, tag and version
+        env:
+          IMAGE: ${{ matrix.image }}
+          REF: ${{ inputs.ref }}
+          # The commit is given, so the script never reports a CI checkout as dirty.
+          LK_COMMIT: ${{ inputs.ref }}
+        run: |
+          # Images are built once, for test, and promoted unchanged to production: they carry the
+          # newest release tag at build time + the commit (e.g. 1.2.3+abc1234, 0.0.0-dev+… before
+          # the first release). The commit is what identifies a production image.
+          {
+            echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/$IMAGE"
+            echo "tag=sha-$REF"
+            echo "version=$(node scripts/build/version.mjs version)"
+            echo "full=$(node scripts/build/version.mjs full)"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        env:
+          # No build-record artifacts: they only fill the Actions storage quota.
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          # Both Dockerfiles build from the repo root: Nx needs the whole workspace.
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
+          build-args: |
+            LK_VERSION=${{ steps.meta.outputs.version }}
+            LK_COMMIT=${{ inputs.ref }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ inputs.ref }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.full }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}

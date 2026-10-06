@@ -172,10 +172,11 @@ async function setup(
           ...input,
         }),
       ),
-    testConnection: () =>
+    testConnection: (draft?: TestAiConnectionCommand['draft']) =>
       new TestAiConnectionHandler(gate, ai).execute(
-        new TestAiConnectionCommand('anna'),
+        new TestAiConnectionCommand('anna', draft),
       ),
+    settings,
     mappingPayload: (fileId: string, user = 'anna') =>
       new GetMappingPayloadHandler(projects, files, gate, sources).execute(
         new GetMappingPayloadQuery(user, project.id, fileId),
@@ -281,6 +282,31 @@ describe('AI settings (F5.13)', () => {
     expect(t.ai.requests[0]?.request.messages).toEqual([
       { role: 'user', content: 'Connection test.' },
     ]);
+  });
+
+  it('tests the unsaved form values without saving them, typed key included', async () => {
+    const t = await setup();
+    t.ai.answer({ ok: true });
+    await t.testConnection({
+      provider: 'anthropic',
+      baseUrl: '',
+      model: 'claude-sonnet-5-5',
+      apiKey: 'sk-typed-only',
+    });
+    expect(t.ai.requests[0]?.connection).toEqual({
+      kind: 'anthropic',
+      baseUrl: '',
+      model: 'claude-sonnet-5-5',
+      apiKey: 'sk-typed-only',
+    });
+    expect(await t.settings.find('anna')).toBeUndefined();
+  });
+
+  it('tests while the plugin is switched off (nothing of the user is sent)', async () => {
+    const t = await setup();
+    await t.save({ enabled: false });
+    t.ai.answer({ ok: true });
+    expect(await t.testConnection()).toMatchObject({ ok: true });
   });
 });
 

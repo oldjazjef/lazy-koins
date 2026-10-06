@@ -25,14 +25,15 @@ two as a package (F1.3).
 > corrections and analyses over any date, the golden test) and the infrastructure
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
-> stored per user). **Not built yet:** `apps/desktop` (Electron), bookings persisted as rows,
-> wallet lookups (F6) — wallets are no entity yet, so the follow-up project shows that group
+> stored per user). **Desktop app** (`apps/desktop`, Electron, see Desktop) and the **release /
+> deploy pipeline** (`deploy/`, `.github/workflows/`) exist. **Not built yet:** bookings persisted
+> as rows, wallet lookups (F6) — wallets are no entity yet, so the follow-up project shows that group
 > disabled. Update this file whenever the code makes a section concrete or wrong.
 
 ## Stack
 
 Same as surf-lend, minus mobile/Capacitor, Stripe, Firebase push, maps and analytics; plus
-Electron for the desktop app (see Decisions — not scaffolded yet).
+Electron for the desktop app (**Electron 42** + electron-builder, see Desktop).
 
 ### Shared
 
@@ -90,6 +91,10 @@ pnpm test:integration  # specs that need a real database (against tmp/lazykoins-
 pnpm ci:integration    # fresh test database: reset, db:deploy, test:integration
 pnpm format        # prettier --write .
 pnpm build         # nx build web          (pnpm build:api = nx build api)
+pnpm start:desktop # desktop app in dev: builds web + API bundle, stages, starts Electron
+pnpm build:desktop # packages the desktop app for this OS into dist/desktop (LK_VERSION=v1.2.3)
+pnpm version:info  # the build version (X.Y.Z+<commit>), see Versions and icons
+pnpm icons         # regenerate every icon from assets/brand/icon.svg
 
 pnpm db:deploy     # prisma migrate deploy — applies pending migrations, safe on real data
 pnpm db:migrate    # prisma migrate dev — AUTHORS a migration (read Database first)
@@ -116,10 +121,13 @@ and buys nothing at this size. If `nx` seems to hang, check that.
 ## Layout
 
 ```
-apps/api/                   # NestJS API — the web app's backend AND (later) the desktop app's local server
+apps/api/                   # NestJS API — the web app's backend AND the desktop app's in-process server
   prisma/schema.prisma      #   the schema; prisma/migrations = the history (CHECKs hand-written)
+  webpack.desktop.config.js #   the API as a CommonJS library for the desktop (nx run api:build-desktop)
   src/
-    main.ts                 #   bootstrap: /api prefix, helmet, validation, CORS, OpenAPI; 127.0.0.1 in local mode
+    main.ts                 #   server entry point: just `bootstrap()`
+    bootstrap.ts            #   bootstrap(options): /api prefix, helmet, validation, CORS, OpenAPI; 127.0.0.1 in local mode
+    desktop.ts              #   desktop entry: exports bootstrap, starts nothing
     config/env.ts           #   the validated environment — the process refuses to boot on a bad value
     common/throttling/      #   per-IP + per-account rate limits
     persistence/            #   the ONLY code that touches Prisma
@@ -167,6 +175,13 @@ apps/web/                   # Angular app
     shared/charts/          #   hand-rolled SVG: lk-line-chart, lk-sparkline, lk-allocation-bar (no chart lib)
     shared/components/      #   records-dialog = the F7.5 drill-down (workspace + dashboard), empty-state, …
     shared/                 #   components/<c>/index.ts, forms/zod-validator
+apps/desktop/               # Electron shell (see Desktop)
+  src/main/                 #   main.ts (lifecycle, window, IPC, storage switch), api-host.ts, protocol.ts (app://)
+    lib/                    #   PURE helpers, unit-tested without Electron: migrations, storage, lock-file,
+                            #   sync-folder, web-protocol (routing, CSP, env.js), api-env
+  src/preload/preload.ts    #   window.lazykoinsDesktop (contextBridge) — types in src/shared/bridge.ts
+  scripts/                  #   stage.mjs (assemble dist/apps/desktop-app), native-deps.cjs
+  electron-builder.config.cjs, build/icon.png
 libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angular/Prisma/network/fs/clock
   src/money/                #   decimal.js helpers: parseDecimal (strings only), roundTo, format*
   src/bookings/booking.ts   #   Booking, Holding, BookingKind (the closed list of the standard format)
@@ -186,11 +201,13 @@ libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angul
 libs/ui/<component>/        # spartan helm components (GENERATED — vendored)
 tools/eslint-rules/         # workspace lint rules (Prisma boundary, no hardcoded text/design values)
 scripts/                    # lint budget, private-inspect, dev/ (test-db wrapper, seed, hooks), build/
+assets/brand/icon.svg       # THE app icon source (pnpm icons → desktop + web icons)
+deploy/                     # Coolify: README (secrets + variables by name), coolify/SETUP.md + lazykoins.yml,
+                            #   deploy.sh, smoke-test.sh
 private/                    # REAL tax data + golden.json — git-ignored, see Private data
 ```
 
-Planned, not built: `apps/desktop/` (Electron shell: starts the API in-process, loads the web
-build). Exports live in the API (`exports/`), not in a library.
+Exports live in the API (`exports/`), not in a library.
 
 The engine is a library so the API, the desktop app and the tests run **the same calculation**.
 
@@ -364,7 +381,24 @@ unless `force`), `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file 
 when the user switched rate lookups off or `RATES_ONLINE=false`. `exports/`: `POST …/exports`
 recalculates first when stale; detailed Excel = the FACHREGELN sheets with formulas (named cells
 `USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
-(`PdfRendererPort` → 503 without a browser); `GET …/mail-draft` (F10.6).
+(`PdfRendererPort` → 503 without a browser; the desktop app prints with Electron, see Versions
+and icons › PDFs); `GET …/mail-draft` (F10.6).
+
+**Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
+drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
+never open items, check lights, „zu prüfen“/„nachtragen“ wording or a "to check" fill. A position
+or event without a price keeps its quantity, the value stays empty/„–“, and a neutral footnote
+(`rules.labels.noPriceNote`, `statusNote()` in `export-texts.ts`) says it is not in the total.
+`describeItem()` (it may instruct) is for the internal report and the mail only. Everything to
+check goes into the **internal report** (F10.2a, kinds `internal_report_pdf|xlsx`, migration
+`20261008090000_internal_report_export` widens the kind CHECK): `internal-report.ts` builds one
+model (lights, open items with done/note, unpriced positions/income/events, Earn-gap warnings,
+F5.8 hints from the project files), rendered by `excel/internal-workbook.ts` and
+`pdf/internal-report-html.ts`. The mail draft never lists it as an attachment. The exports spec
+scans every cell/HTML of the statements for forbidden words. Web (Exporte tab): statements and
+the internal report in separate cards, the list grouped „Auszüge für die Steuerbehörde“ /
+„Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
+N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
 
 ## Dashboard, carry-over, packages, data export (F4.4, F10.7–F10.9, F11.4–F11.9)
 
@@ -476,7 +510,7 @@ prisma/schema.prisma` must still report **no difference**.
   latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
   (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
   the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
-- **Dashboard / carry-over** (migration `20261008090000_dashboard_carryover`): `user_rate` (unique
+- **Dashboard / carry-over** (migration `20261008100000_dashboard_carryover`): `user_rate` (unique
   `(user, kind, asset, currency, date, source)`; source only `binance|coingecko|ecb`, decimal/date
   CHECKs; cascade with the user) and `project_carryover` (kind CHECK, `json_valid(data)`; cascade
   with the project; `source_project_id` is no FK — the source may be deleted later, its name stays).
@@ -496,11 +530,15 @@ server.** Three modes, `AUTH_MODE` in the API (validated in `config/env.ts`):
 - **`dev`** (API) + **`authMode: 'dev'`** (app, `env.js`): the token `dev:<email>` signs in as
   that address, no Firebase project needed. `validateEnv` refuses it unless
   `NODE_ENV=development|test`. In Scalar, paste `dev:anna@lazykoins.dev`.
-- **`local`** (the future desktop app, F1.2): **no token at all** — every request acts as one
+- **`local`** (the desktop app, F1.2): **no token at all** — every request acts as one
   fixed user (`LOCAL_USER_EMAIL`, uid `local:owner`) via `LocalIdentityVerifier.ambient()`.
   Allowed in any `NODE_ENV`, but only with the explicit second switch **`LOCAL_MODE=true`**
-  (and `LOCAL_MODE=true` is refused with any other mode), and `main.ts` then listens on
-  **127.0.0.1 only**. Never set it on a server.
+  (and `LOCAL_MODE=true` is refused with any other mode), and `bootstrap.ts` then listens on
+  **127.0.0.1 only**. Never set it on a server. The desktop additionally passes a per-launch
+  `accessToken`: every request without `x-lazykoins-desktop: <token>` gets a 403 (loopback is
+  reachable by every program and web page on the machine). The app's `authMode: 'local'`
+  (`LocalAuthStrategy`) has no login page, takes the address from `/api/me`, and hides sign-out
+  and the address (`AuthService.hasAccount`, F11.0a).
 
 `AccessTokenGuard` (global) verifies the token through `IdentityTokenVerifierPort` (or takes the
 ambient identity when none is sent); `PrincipalService` creates the user row on first sight.
@@ -513,14 +551,107 @@ handlers.
 container's `entrypoint.sh` rewrites it at start from `LK_*` variables, so one image serves every
 environment.
 
-| Key          | Dev (`public/env.js`)      | Container (`entrypoint.sh`)              |
-| ------------ | -------------------------- | ---------------------------------------- |
-| `apiBaseUrl` | empty — dev server proxies | `LK_API_BASE_URL`, empty = nginx proxies |
-| `authMode`   | `dev`                      | `LK_AUTH_MODE`, default `firebase`       |
-| `firebase.*` | empty                      | `LK_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, … |
+| Key          | Dev (`public/env.js`)                                                  | Container (`entrypoint.sh`)              |
+| ------------ | ---------------------------------------------------------------------- | ---------------------------------------- |
+| `apiBaseUrl` | empty — dev server proxies                                             | `LK_API_BASE_URL`, empty = nginx proxies |
+| `authMode`   | `dev`                                                                  | `LK_AUTH_MODE`, default `firebase`       |
+| (desktop)    | generated by the app:// handler: `apiBaseUrl: ''`, `authMode: 'local'` |                                          |
+| `firebase.*` | empty                                                                  | `LK_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, … |
 
 Only `/api` URLs get the bearer token (`isApiRequest`), never the i18n files or another host.
 There is no `GET /api/config` (surf-lend's console settings); env.js is the only source.
+
+## Desktop (`apps/desktop`, F1.2, F3.1, F3.4)
+
+Electron **42** (pinned exactly — see the native-module gotcha) + electron-builder. One window,
+single-instance lock, `contextIsolation`, `sandbox`, no `nodeIntegration`, a strict CSP (own files
+only; `style-src 'unsafe-inline'` for Angular), every permission request refused, no navigation
+away from the app, `http(s)` links open in the system browser, no `<webview>`.
+
+- **API in-process**: `api-host.ts` applies the migrations, sets the environment
+  (`lib/api-env.ts`: `AUTH_MODE=local`, `LOCAL_MODE=true`, `NODE_ENV=production`,
+  `DATABASE_URL=file:<dataDir>/lazykoins.db`, `SETTINGS_ENCRYPTION_KEY` from
+  `<dataDir>/lazykoins.key` (created once, travels with the database), `LK_IGNORE_ENV_FILE=true`)
+  and only **then** `require`s `api/main.js` (`apps/api/src/desktop.ts`, built by
+  `nx run api:build-desktop`) and calls `bootstrap({ port: 0, shutdownHooks: false, accessToken })`
+  — 127.0.0.1, a port the OS picks. Quitting closes the Nest app (Prisma disconnects, WAL is
+  checkpointed) and removes the lock.
+- **Window ↔ API: the `app://lazykoins` protocol** (`protocol.ts`, pure routing in
+  `lib/web-protocol.ts`) serves the Angular build (`nx run web:build:desktop`, critical-CSS inlining
+  off because of the CSP), a generated `env.js` (`authMode: 'local'`) and **proxies `/api/…`** to
+  the API with the access token (Node `fetch`, never a system proxy). Same origin, no CORS, and a
+  **stable origin** across starts although the port changes — localStorage survives.
+- **Migrations without the Prisma CLI** (`lib/migrations.ts`): the folders of
+  `apps/api/prisma/migrations` (shipped as `migrations/`) are applied in name order, each in a
+  transaction with `foreign_keys` off around it, and recorded in a **`_prisma_migrations`-compatible
+  table** (checksum = SHA-256 of the file) — `prisma migrate status` against a desktop database says
+  "up to date". Chosen over shipping the CLI + schema-engine binary per OS/arch. A failing
+  migration rolls back and the app refuses to start (dialog), data untouched.
+- **Data folder (F3.1)**: default `<userData>/data` (dev runs use `<appData>/lazy-koins-dev`);
+  chosen folder in `<userData>/desktop-config.json`; `LK_DATA_DIR` overrides both (tests).
+  **Einstellungen → Speicherort** (`/app/settings/storage`, route only exists when
+  `window.lazykoinsDesktop` does) → IPC → native folder picker → "open the data already there" or
+  "copy current data (better-sqlite3 backup API) / start empty" → **relaunch** (the API's
+  ConfigModule reads the environment once per process). Sync folders (OneDrive, Google Drive,
+  Proton Drive, Dropbox, iCloud — `lib/sync-folder.ts`, by path) get the F3.4 warning.
+- **Lock file (F3.4)**: `<dataDir>/lazykoins.lock` (host, pid, heartbeat every minute). A fresh
+  marker from another host (heartbeat < 5 min) or a live other pid on this host → warning dialog
+  "wird auf einem anderen Gerät bearbeitet" (Beenden / Trotzdem öffnen). Conflict copies the sync
+  client leaves (`lazykoins-PC.db`, `lazykoins (1).db`, …) are reported at start and on the page.
+- **Build**: `scripts/stage.mjs` assembles `dist/apps/desktop-app` (esbuild main + preload, API
+  bundle, web build, migrations, a `package.json` with the API's runtime dependencies minus
+  `prisma`/`dotenv`), installs them with `pnpm install --prod` as its **own** workspace
+  (pnpm's normal isolated layout, `packageImportMethod: copy`) and puts the **prebuilt**
+  better-sqlite3 for Electron in (`scripts/native-deps.cjs`, prebuild-install). electron-builder
+  (`electron-builder.config.cjs`, appId `ch.lazykoins.desktop`) packages it into `dist/desktop`:
+  NSIS x64 `lazy-koins-Setup-<v>.exe`, dmg arm64 + x64. `npmRebuild: false`; its `afterPack` hook
+  swaps the binary for each target arch inside `app.asar.unpacked` (`asarUnpack` for `.node`).
+  Version = `LK_VERSION` (CI: the tag), see Versions and icons. Icons: `build/icon.png` +
+  `icon.ico`, generated.
+- **Errors**: `src/main/entry.ts` installs the last-resort handler before loading anything — a
+  German dialog instead of Electron's raw stack, then exit; start failures likewise. Both are
+  logged with the stack to `<userData>/logs/main.log`. `LK_NO_DIALOGS=1` (automated runs) only
+  logs. Hilfe → Über lazy-koins shows the full version.
+- **Unsigned, no auto-update** (open decision). Signing later via `CSC_LINK`/`CSC_KEY_PASSWORD`
+  and `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID` as GitHub secrets (names in
+  `deploy/README.md`); without `CSC_LINK` the mac identity is forced off.
+- Verify by hand: `pnpm build:desktop`, run `dist/desktop/win-unpacked/lazy-koins.exe` (or with
+  `LK_DATA_DIR=<tmp>`); `--remote-debugging-port=9333` allows driving the window over CDP.
+
+## Versions and icons
+
+**One version source: `scripts/build/version.mjs`** (`pnpm version:info`; tests in
+`version.spec.mjs`, Vitest project `scripts`). Format **`X.Y.Z+<shortsha>`**: `X.Y.Z` = `LK_VERSION`
+(CI: the release tag) or the nearest `vX.Y.Z` tag, else `0.0.0-dev`; the commit = `LK_COMMIT`
+(Docker builds have no .git) or `GITHUB_SHA` or git; a local build with uncommitted changes gets
+`.dirty`. Computed **at build time only**:
+
+- **API**: webpack `DefinePlugin` `__LK_BUILD__` (`apps/api/webpack.build-info.js`, both bundles) →
+  `src/app/build-info.ts` → `GET /api/health` (`version`) and public **`GET /api/version`**
+  (`{ version, commit, full, builtAt }`). Unbundled (Vitest): `0.0.0-dev+unknown`.
+- **Web**: reads `/api/version` (`core/version/app-version.service.ts`) and shows "lazy-koins
+  vX.Y.Z (abc1234)" in the shell's footer — web and API always come from the same commit.
+- **Images**: `_images.yml` passes `LK_VERSION`/`LK_COMMIT` build args (nearest tag at build time —
+  test images are promoted unchanged to production, so the commit is what identifies them) and
+  sets `org.opencontainers.image.version` (full) + `.revision`.
+- **Desktop**: `stage.mjs` writes the plain semver into package.json (installers need it; file
+  names `lazy-koins-Setup-<v>.exe`, `lazy-koins-<v>-<arch>.dmg`) and the full build into
+  `lkBuild`; shown in Hilfe → Über lazy-koins (macOS: About panel) and Einstellungen → Speicherort.
+- **Exports**: `ExportData.appVersion` (= `BUILD_INFO.full`) — "Erstellt mit lazy-koins …" on the
+  Methodik sheet/section and in the PDF footer.
+- **PDFs** (`integrations/pdf/`): one set of print options (`print-options.ts`: A4, margins,
+  "Seite x / y" footer) for two renderers, chosen by `selectPdfRenderer` in `IntegrationsModule`:
+  **desktop** = `HostPdfRenderer` around the printer the host passes to `bootstrap({ pdfPrinter })`
+  — `apps/desktop/src/main/pdf-printer.ts`, Electron's `webContents.printToPDF` in a hidden,
+  sandboxed window with JavaScript off and its own in-memory session that may load nothing but
+  the temporary HTML file (offline, one print at a time, 60 s timeout); **server/container** =
+  `PlaywrightPdfRenderer` (`PDF_CHROMIUM_PATH` / Playwright's download). The registration is a
+  module-level hook set before `NestFactory.create` (the API bundle must not import electron).
+
+**Icons**: one source, `assets/brand/icon.svg`. `pnpm icons` (`scripts/build/icons.cjs`, rendered
+by Electron's Chromium — no image library) writes `apps/desktop/build/icon.png` (1024) +
+`icon.ico` (16–256) and `apps/web/public/favicon.svg|.ico` + `apple-touch-icon.png` (180); outputs
+are committed. The header shows `favicon.svg` at 24 px next to the word mark.
 
 ## Feature structure (app)
 
@@ -535,11 +666,11 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`login-page.spec.ts` guards it).
 - Mutations go through `defineAction` + `ActionRunner` in the page service; messages are i18n keys.
 - Dialogs for decisions (reopen a closed project, delete), pages for forms.
-- **Dialog actions never scroll away** (user rule, 06.10.2026): a dialog is at most the viewport
-  high, only its body scrolls; `hlm-dialog-header` sticks to the top and `hlm-dialog-footer` (the
-  buttons) to the bottom. Set globally in `styles.css` — so put the buttons in an
-  `<hlm-dialog-footer>` that is a **direct child** of `<hlm-dialog-content>`, never inside the
-  scrolling body. The same goes for any other overlay (sheet, popover with actions).
+- **Dialog layout** (user rule, 07.10.2026): three fixed regions — `<hlm-dialog-header>` at the top,
+  `<div class="lk-dialog-body">` in the middle (the ONLY part that scrolls), `<hlm-dialog-footer>`
+  with every action button across the full width at the bottom. All three are **direct children**
+  of `<hlm-dialog-content>`; a footer inside an `@if` is fine as long as it stays a direct child.
+  Styled globally in `styles.css`. The same goes for any other overlay with actions.
 - Desktop first: the shell is a header with the navigation (`core/layout/app-shell`), no tab bar.
 
 ## UI, styling, i18n
@@ -571,6 +702,8 @@ etx), so no `project.json` has a `test` target, deliberately.
 | `apps/web`           | `vitest.config.ts` + `@analogjs/vite-plugin-angular`, jsdom, TZ pinned to UTC |
 | `libs/engine`        | `vitest.config.ts`, plain Node                                                |
 | `tools/eslint-rules` | `vitest.config.ts`                                                            |
+| `apps/desktop`       | `vitest.config.ts`, plain Node — only `src/main/lib` (no Electron import)     |
+| `scripts`            | `vitest.config.mjs` — `build/*.spec.mjs` (version script)                     |
 
 - **Unit**: pure domain functions, handlers against **port doubles**, the module graph
   (`app.module.spec.ts` compiles every provider), page services with `HttpTestingController`,
@@ -602,6 +735,17 @@ etx), so no `project.json` has a `test` target, deliberately.
 and `integration` (`pnpm ci:integration`, no database service needed). **The gate lives in
 `package.json`** — add checks to `ci:verify`, never to the YAML alone.
 
+Release and deploy (ported from surf-lend, details in `deploy/README.md`): `deploy-test.yml`
+(after CI on `main`: `_images.yml` builds `ghcr.io/<owner>/lazykoins-api|web:sha-<commit>`, then
+`_deploy.yml` tags `:test` and redeploys Coolify), `deploy-production.yml` (release `vX.Y.Z`
+published, or "Run workflow" with bump/version → creates the release, appends the desktop install
+notes → `deploy` re-tags `:production` after the `production` environment's approval, and
+**`desktop`** = `_desktop.yml` in parallel, not waiting for the approval). `_desktop.yml` also has
+`workflow_dispatch` (input `tag`) to rebuild an existing release's installers; matrix
+`windows-latest` + `macos-latest`, `pnpm build:desktop`, `gh release upload --clobber`. Validated
+with actionlint (+ shellcheck). `apps/desktop` has no `build` target on purpose (`pnpm check` runs
+`run-many -t build`); its `typecheck` is in the gate.
+
 `.eslint-budget.json` records warning ceilings (all 0); they may only go down. `libs/ui` is not in
 the budget (vendored); its one noisy rule is switched off in `libs/ui/utils/eslint.config.mjs`.
 
@@ -613,8 +757,13 @@ the budget (vendored); its one noisy rule is switched off in `libs/ui/utils/esli
   `/data`** (the database file) and run exactly one replica.
 - `apps/web/Dockerfile` — the web build behind nginx, `/api` proxied to `LK_API_UPSTREAM`
   (uploads up to 50 MB), `env.js` written from `LK_*` at start.
-- The Coolify pipeline (ghcr images, test → production, like surf-lend's `_images.yml` /
-  `deploy-*.yml`) is not set up yet.
+- **Coolify** (`deploy/`): one Docker Compose resource per environment from
+  `deploy/coolify/lazykoins.yml` (`api` + `web`, `IMAGE_TAG` = `test` | `production`,
+  `pull_policy: always`, volume `lazykoins-data` at `/data`, never scale `api`), first-time setup
+  in `deploy/coolify/SETUP.md`, `deploy.sh` (Coolify API redeploy, waits) and `smoke-test.sh`
+  (`/api/health`, `/`, `/env.js`). GitHub environments `test` / `production` hold `COOLIFY_URL`,
+  `COOLIFY_RESOURCE_UUIDS`, `LAZYKOINS_SITE_URL` (variables) and `COOLIFY_TOKEN` (secret); without
+  the token the deploy step only reports the images. Production never rebuilds.
 
 ## Rules that come from the requirements
 
@@ -643,6 +792,8 @@ the budget (vendored); its one noisy rule is switched off in `libs/ui/utils/esli
 - **Seed phrases and private keys** (F6.2) are detected and refused before anything is stored or
   logged — not even in an error message.
 - **No tax advice**: every export carries the "keine Steuerberatung" note (F10.4).
+- **Statements carry no to-dos** (F10.1/F10.2): no open items, checks or instructions — those
+  belong in the internal report (F10.2a) and the Treuhänder mail.
 - **Network is optional** (F11.3): with rate lookups off, everything still works from stored or
   manually entered rates.
 
@@ -722,7 +873,7 @@ A1). It is git-ignored and must stay that way.
 
 - **OneDrive / Google Drive** connection for the web app (F3.2): API approach and folder sync.
 - **Desktop packaging**: code signing / notarisation (Apple developer account, Windows
-  certificate) and auto-update.
+  certificate) and auto-update (would need a `publish` provider → `latest*.yml` on the release).
 - **Frontend API types**: hand-mirrored in `core/api/api.types.ts` vs. generated from
   `/api/openapi.json` (same open point as surf-lend).
 
@@ -787,3 +938,23 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
 - Rate adapters parse JSON with the reviver's **source text** (`parseJsonKeepingNumbers`) so a
   rate never becomes a JS number; Node ≥ 21 provides it.
 - Several agents may share the Browser pane: pass `tabId` explicitly when driving it.
+- **Desktop native module**: better-sqlite3 must have a **prebuilt binary for Electron's ABI**
+  (GitHub release assets `better-sqlite3-v<x>-electron-v<abi>-<os>-<arch>.tar.gz`). 12.11.1 has
+  them up to ABI 146 = **Electron 42**, which is why `electron` is pinned there (44 = ABI 149 has
+  none, and @electron/rebuild then needs Visual Studio / Xcode). Before bumping either, check the
+  asset list. Never let anything write into the workspace's `node_modules/better-sqlite3` (Node
+  ABI, used by API and tests) — the desktop gets its own copy in `dist/apps/desktop-app`, installed
+  with `packageImportMethod: copy` because pnpm's default hard links share the file with the store
+  and every other checkout (a locked, shared `.node` showed up as EBUSY).
+- The Nest `ConfigModule` validates `process.env` when the API bundle is loaded: the desktop sets
+  the environment before `require`, and a new data folder needs a relaunch, not a restart.
+- electron-builder resolves `--config` relative to `--projectDir`; the `desktop:package` target
+  therefore runs in `dist/apps/desktop-app`. Config values inside a `configurations` entry of
+  `project.json` are schema-checked (no `lk-note` there).
+- electron-builder 26 collects `node_modules` itself (`pnpm list`): with a **hoisted** pnpm install
+  it silently dropped nested versions (lazystream's readable-stream@2) and the packaged app died on
+  `require('exceljs')`; with `beforeBuild` returning false it packaged **no** node_modules at all
+  ("Cannot find module 'better-sqlite3'"). Check a package with `ELECTRON_RUN_AS_NODE=1
+lazy-koins.exe -e "require('<…>/resources/app.asar/api/main.js')"` before clicking through it.
+- Editing files from PowerShell 5.1 with `Get-Content`/`Set-Content` mangles UTF-8 (`—` → `â€”`) and
+  adds a BOM — use the editor tools or Node.

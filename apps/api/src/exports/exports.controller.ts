@@ -92,7 +92,7 @@ export class ExportsController {
   @Throttle(EXPORT_BUDGET)
   @ApiOperation({
     summary:
-      'Create a statement (F10.1/F10.2) from the latest result — recalculated first when the data changed',
+      'Create a statement (F10.1/F10.2) or the internal check report (F10.2a, kinds internal_report_*) from the latest result — recalculated first when the data changed',
   })
   @ApiCreatedResponse({ type: ExportResponseDto })
   @ApiConflictResponse({ description: 'A closed project never calculated' })

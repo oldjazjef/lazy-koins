@@ -117,6 +117,15 @@ async function richProject(t: Awaited<ReturnType<typeof setup>>) {
     wealthChf: '100',
     incomeChf: '5',
   });
+  // The internal check report (F10.2a) travels too.
+  await t.exports.create(t.project.id, {
+    kind: 'internal_report_pdf',
+    fileName: 'pruefbericht.pdf',
+    bytes: strToU8('%PDF-1.7 synthetic report'),
+    snapshotId: null,
+    wealthChf: '100',
+    incomeChf: '5',
+  });
   return { correction, wealth: result.result?.totals.wealthChf };
 }
 
@@ -139,7 +148,7 @@ describe('project package (F10.8)', () => {
         files: 2,
         storedFiles: 2,
         corrections: 2,
-        exports: 1,
+        exports: 2,
       },
     });
     expect(opened.entries.map((e) => e.path).sort()).toEqual(
@@ -177,7 +186,9 @@ describe('project package (F10.8)', () => {
     expect(await t.states.listByProject(imported.projectId)).toEqual([
       expect.objectContaining({ done: true, note: 'erledigt' }),
     ]);
-    expect(await t.exports.listByProject(imported.projectId)).toHaveLength(1);
+    expect(
+      (await t.exports.listByProject(imported.projectId)).map((e) => e.kind).sort(),
+    ).toEqual(['internal_report_pdf', 'simple_pdf']);
     const again = await t.calculate.execute(
       new CalculateProjectCommand('bob', imported.projectId),
     );
