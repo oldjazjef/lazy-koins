@@ -81,44 +81,65 @@
 <lk-empty-state [message]="'mappings.list.noMatch' | translate" />
 } @else {
 <div hlmTableContainer class="lk-panel">
-  <table hlmTable>
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-36" />
+      <col class="hidden w-28 md:table-column" />
+      <col class="hidden w-20 lg:table-column" />
+      <col class="w-36" />
+      <col class="hidden w-48 md:table-column" />
+    </colgroup>
     <thead hlmTHead>
       <tr hlmTr>
         <th hlmTh>{{ 'mappings.fields.name' | translate }}</th>
         <th hlmTh>{{ 'mappings.fields.platform' | translate }}</th>
-        <th hlmTh>{{ 'mappings.fields.origin' | translate }}</th>
-        <th hlmTh class="text-right">
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'mappings.fields.origin' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right lg:table-cell">
           {{ 'mappings.list.version' | translate }}
         </th>
         <th hlmTh>{{ 'mappings.fields.updated' | translate }}</th>
-        <th hlmTh>{{ 'mappings.list.usedBy' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'mappings.list.usedBy' | translate }}
+        </th>
       </tr>
     </thead>
     <tbody hlmTBody>
-      @for (mapping of service.visible(); track mapping.id) {
+      @for (mapping of pager.visible(); track mapping.id) {
       <tr hlmTr class="cursor-pointer" (click)="open(mapping.id)">
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
           <a
             class="font-medium hover:underline"
             [routerLink]="mapping.id"
+            [lkTruncate]="mapping.name"
             (click)="$event.stopPropagation()"
             >{{ mapping.name }}</a
           >
         </td>
-        <td hlmTd>{{ mapping.platform }}</td>
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
+          <span [lkTruncate]="mapping.platform">{{ mapping.platform }}</span>
+        </td>
+        <td hlmTd class="hidden md:table-cell">
           <span hlmBadge variant="outline"
             >{{ 'mappings.origin.' + mapping.origin | translate }}</span
           >
         </td>
-        <td hlmTd class="text-right tabular-nums">{{ mapping.version }}</td>
+        <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+          {{ mapping.version }}
+        </td>
         <td hlmTd class="tabular-nums">
           {{ mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}
         </td>
-        <td hlmTd class="text-sm">
-          @if (mapping.filesUsing > 0) { {{ 'mappings.list.usage' | translate: {
-          files: mapping.filesUsing, projects: mapping.projectsUsing } }} }
-          @else {
+        <td hlmTd class="hidden max-w-0 text-sm md:table-cell">
+          @if (mapping.filesUsing > 0) {
+          <span
+            [lkTruncate]="'mappings.list.usage' | translate: { files: mapping.filesUsing, projects: mapping.projectsUsing }"
+            >{{ 'mappings.list.usage' | translate: { files: mapping.filesUsing,
+            projects: mapping.projectsUsing } }}</span
+          >
+          } @else {
           <span class="text-muted-foreground"
             >{{ 'mappings.list.unused' | translate }}</span
           >
@@ -129,6 +150,7 @@
     </tbody>
   </table>
 </div>
+<lk-paginator [pager]="pager" />
 } }
 
 <!-- New mapping -->

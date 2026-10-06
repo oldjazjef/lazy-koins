@@ -25,6 +25,7 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
+import { Truncate } from '../../../../shared/components/truncate';
 import { MappingPreviewView } from '../../../files/components/mapping-preview';
 import { MappingWorkbenchService } from './mapping-workbench.service';
 
@@ -43,6 +44,7 @@ import { MappingWorkbenchService } from './mapping-workbench.service';
     NgIcon,
     TranslatePipe,
     MappingPreviewView,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,

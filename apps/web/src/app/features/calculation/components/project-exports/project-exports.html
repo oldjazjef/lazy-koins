@@ -53,7 +53,14 @@
     {{ 'exports.groups.' + group.key | translate }}
   </h4>
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col class="w-36" />
+        <col />
+        <col class="w-40" />
+        <col class="hidden w-40 md:table-column" />
+        <col class="w-14" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'exports.fields.createdAt' | translate }}</th>
@@ -61,50 +68,50 @@
           <th hlmTh class="text-right">
             {{ 'exports.fields.wealth' | translate }}
           </th>
-          <th hlmTh class="text-right">
+          <th hlmTh class="hidden text-right md:table-cell">
             {{ 'exports.fields.income' | translate }}
           </th>
-          <th hlmTh class="text-right">
-            <span class="sr-only"
-              >{{ 'exports.fields.actions' | translate }}</span
-            >
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
           </th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (item of group.items; track item.id) {
+        @for (item of pagers[group.key].visible(); track item.id) {
         <tr hlmTr>
-          <td hlmTd class="tabular-nums whitespace-nowrap">
+          <td hlmTd class="align-top tabular-nums">
             {{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}
           </td>
-          <td hlmTd>
-            {{ 'exports.kind.' + item.kind | translate }}
-            <span class="text-muted-foreground block text-xs"
+          <td hlmTd class="max-w-0">
+            @let kind = 'exports.kind.' + item.kind | translate;
+            <span [lkTruncate]="kind">{{ kind }}</span>
+            <span
+              class="text-muted-foreground text-xs"
+              [lkTruncate]="item.fileName"
               >{{ item.fileName }}</span
             >
           </td>
-          <td hlmTd class="text-right tabular-nums">
+          <td hlmTd class="text-right align-top tabular-nums">
             {{ item.wealthChf | lkChf }}
           </td>
-          <td hlmTd class="text-right tabular-nums">
+          <td
+            hlmTd
+            class="hidden text-right align-top tabular-nums md:table-cell"
+          >
             {{ item.incomeChf | lkChf }}
           </td>
-          <td hlmTd class="text-right">
-            <button
-              hlmBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              (click)="service.download(item)"
-            >
-              {{ 'exports.download' | translate }}
-            </button>
+          <td hlmTd class="lk-sticky-actions text-right align-top">
+            <lk-row-actions
+              [actions]="actions"
+              (selected)="service.download(item)"
+            />
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="pagers[group.key]" />
   } } } @else if (service.exports.error()) {
   <lk-empty-state [message]="'exports.loadFailed' | translate" />
   } @else {

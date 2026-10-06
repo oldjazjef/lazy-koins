@@ -2,6 +2,7 @@ import { DatePipe, JsonPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -25,6 +26,8 @@ import {
 } from '../../components/mapping-workbench';
 import { ProjectStatusBadge } from '../../../projects/components/project-status-badge';
 import { MappingDetailPageService } from './mapping-detail-page.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
  * One mapping (F11.0): facts, the JSON (view, and edit with a sample file and a live preview),
@@ -39,6 +42,8 @@ import { MappingDetailPageService } from './mapping-detail-page.service';
     RouterLink,
     NgIcon,
     TranslatePipe,
+    Paginator,
+    Truncate,
     PageHeader,
     EmptyState,
     MappingWorkbench,
@@ -66,6 +71,13 @@ export class MappingDetailPage {
   readonly id = input<string | undefined>();
 
   protected readonly confirmDelete = signal(false);
+  /** "Wird genutzt in": one row per project. */
+  protected readonly usagePager = paginate(
+    computed(() =>
+      this.service.usage.hasValue() ? this.service.usage.value() : [],
+    ),
+    { storageKey: 'mapping-usage' },
+  );
 
   constructor() {
     effect(() => this.service.mappingId.set(this.id()));

@@ -19,6 +19,8 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 import { skeleton } from '../../../files/components/mapping-editor';
 import {
   MappingWorkbench,
@@ -46,6 +48,8 @@ import {
     PageHeader,
     EmptyState,
     MappingWorkbench,
+    Paginator,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
@@ -66,6 +70,10 @@ export class MappingsPage {
   private readonly router = inject(Router);
   protected readonly sorts = MAPPING_SORTS;
   protected readonly skeletonRows = [1, 2, 3];
+  protected readonly pager = paginate(this.service.visible, {
+    storageKey: 'mappings',
+    resetOn: () => [this.service.search(), this.service.sort()],
+  });
 
   /** The "Neues Mapping" dialog: the editor with a sample file (state in the workbench). */
   protected readonly workbench = inject(MappingWorkbenchService);

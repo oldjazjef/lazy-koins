@@ -60,7 +60,7 @@
         class="text-muted-foreground shrink-0"
         aria-hidden="true"
       />
-      <span class="max-w-full truncate font-medium" [title]="sample.name"
+      <span class="min-w-0 max-w-full font-medium" [lkTruncate]="sample.name"
         >{{ sample.name }}</span
       >
       <span class="text-muted-foreground text-xs">
@@ -80,10 +80,7 @@
     } @else if (recognised.mapping; as known) {
     <p class="text-muted-foreground text-xs">
       {{ 'mappings.sample.recognisedBy' | translate }}
-      <a
-        class="hover:underline"
-        [routerLink]="['/app/mappings', known.id]"
-        [title]="known.name"
+      <a class="hover:underline" [routerLink]="['/app/mappings', known.id]"
         >{{ known.name }}</a
       >
     </p>
@@ -346,8 +343,8 @@
           <ul class="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
             @for (unknown of live.unknownValues; track unknown.value) {
             <li
-              class="max-w-full truncate font-mono text-xs"
-              [title]="unknown.value"
+              class="min-w-0 max-w-full font-mono text-xs"
+              [lkTruncate]="unknown.value"
             >
               {{ unknown.value || '–' }} ({{ unknown.count }})
             </li>
@@ -378,7 +375,9 @@
                 {{ i + 1 }}
               </td>
               @for (cell of cells(row); track $index) {
-              <td hlmTd class="max-w-48 truncate" [title]="cell">{{ cell }}</td>
+              <td hlmTd class="max-w-64">
+                <span [lkTruncate]="cell">{{ cell }}</span>
+              </td>
               }
             </tr>
             }

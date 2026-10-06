@@ -7,6 +7,8 @@ import {
   inject,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideCircleCheck } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -19,6 +21,7 @@ import {
   type AiProvider,
   type AiSettings,
 } from '../../../../core/api/api.types';
+import { AiErrorPanel } from '../../../../shared/ai/ai-error-panel';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
@@ -34,8 +37,10 @@ import { AI_PRESETS, AiSettingsPageService } from './ai-settings-page.service';
   imports: [
     DatePipe,
     ReactiveFormsModule,
+    NgIcon,
     TranslatePipe,
     PageHeader,
+    AiErrorPanel,
     EmptyState,
     ...HlmBadgeImports,
     ...HlmButtonImports,
@@ -44,6 +49,7 @@ import { AI_PRESETS, AiSettingsPageService } from './ai-settings-page.service';
     ...HlmLabelImports,
     ...HlmSkeletonImports,
   ],
+  providers: [provideIcons({ lucideCircleCheck })],
   templateUrl: './ai-settings-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

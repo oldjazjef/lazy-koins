@@ -18,8 +18,11 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import { BOOKING_KINDS } from '../../../../core/api/api.types';
+import { AiErrorPanel } from '../../../../shared/ai/ai-error-panel';
 import { MappingPreviewView } from '../mapping-preview';
 import { AiAssistState } from './ai-assist.state';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
  * The dialogs of the AI flows (state in `AiAssistState`): pick a file, "not switched on", the
@@ -33,7 +36,10 @@ import { AiAssistState } from './ai-assist.state';
     RouterLink,
     NgIcon,
     TranslatePipe,
+    Paginator,
+    Truncate,
     MappingPreviewView,
+    AiErrorPanel,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
@@ -48,6 +54,17 @@ import { AiAssistState } from './ai-assist.state';
 })
 export class AiAssist {
   protected readonly state = inject(AiAssistState);
+
+  /** The balances read from the PDF, 10 per page; the index is the one `kept` uses. */
+  protected readonly holdingsPager = paginate(
+    computed(() =>
+      (this.state.statement()?.holdings ?? []).map((holding, index) => ({
+        holding,
+        index,
+      })),
+    ),
+    { storageKey: 'statement-review' },
+  );
 
   protected readonly title = computed(() =>
     this.state.mode() === 'mapping' ? 'ai.mapping.title' : 'ai.statement.title',
