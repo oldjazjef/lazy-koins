@@ -27,8 +27,8 @@ two as a package (F1.3).
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
 > stored per user). **Desktop app** (`apps/desktop`, Electron, see Desktop) and the **release /
 > deploy pipeline** (`deploy/`, `.github/workflows/`) exist, and **wallets** (F6, see Wallets).
-> **Not built yet:** bookings persisted as rows; the follow-up project (F4.4a) does not carry
-> wallets over yet. Update this file whenever the code makes a section concrete or wrong.
+> **Not built yet:** bookings persisted as rows. Update this file whenever the code makes a section
+> concrete or wrong.
 
 ## Stack
 
@@ -535,7 +535,11 @@ tooltip + crosshair (mouse, arrow keys), a visually hidden table, colours from t
 their period reaches into the new year (linked, same stored file, origin `from_project:`),
 corrections offered only when they apply beyond the year (reclassify of a booking whose file
 reaches into the new year, manual bookings; never overrides or dated manual holdings), open items
-not done (latest snapshot + carried ones), notes; `GET|POST /projects/:id/take-over` (F4.4: files
+not done (latest snapshot + carried ones), notes, and the project's **wallets** (preselected;
+linked in the same transaction via `ProjectBundle.walletIds`, carry-over kind `wallet` — the
+wallets migration widens that CHECK; their derived files are made anew by `WalletDerivedFiles.sync`
+after the write, files with origin `wallet:` are never offered or linked; manual balances stay with
+their year); `GET|POST /projects/:id/take-over` (F4.4: files
 of other projects, already-linked ones skipped). Every item is recorded in `project_carryover`
 ("aus Projekt X", `GET …/carryovers`); a carried open item is ticked via `open_item_state` with
 the key `carried:<carryover id>`. A closed source project is fine (only read). Writes go through

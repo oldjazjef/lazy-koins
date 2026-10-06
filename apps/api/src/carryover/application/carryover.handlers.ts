@@ -38,6 +38,9 @@ import {
   CarryoverRepositoryPort,
   ProjectBundleRepositoryPort,
 } from '../ports/carryover.repository.port';
+import { WalletDerivedFiles } from '../../wallets/application/wallet-derived-files';
+import { originWalletId, type Wallet } from '../../wallets/domain/wallet';
+import { WalletRepositoryPort } from '../../wallets/ports/wallet.repository.port';
 
 function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -51,6 +54,33 @@ export interface FileOption {
   readonly periodFrom: string | null;
   readonly periodTo: string | null;
   readonly preselected: boolean;
+}
+
+export interface WalletOption {
+  readonly walletId: string;
+  readonly label: string;
+  readonly address: string;
+  readonly networks: readonly string[];
+  readonly preselected: true;
+}
+
+/** The project's wallets (the owner's only). */
+async function walletsOf(
+  wallets: WalletRepositoryPort,
+  project: Project,
+): Promise<Wallet[]> {
+  const ids = await wallets.listWalletIds(project.id);
+  return (await wallets.findByIds(ids)).filter(
+    (w) => w.ownerId === project.ownerId,
+  );
+}
+
+/**
+ * Files a wallet fetch derived (origin `wallet:`) are never linked: the wallet itself is carried
+ * over and makes them anew for the new project (else a later fetch would count them twice).
+ */
+function isWalletFile(file: ProjectFile): boolean {
+  return originWalletId(file.origin) !== undefined;
 }
 
 export interface CorrectionOption {
@@ -82,8 +112,10 @@ export interface FollowUpOptions {
   /** Projects of the owner that already cover the new year (a hint, not a block). */
   readonly existing: readonly { readonly id: string; readonly name: string }[];
   readonly files: readonly FileOption[];
-  /** Wallets are not an entity yet (F6): the group is shown disabled. */
-  readonly walletsAvailable: false;
+  /** F4.4a with F6: wallets are carried over by linking them (always offered). */
+  readonly walletsAvailable: true;
+  /** The source project's wallets — preselected; their derived files are made anew. */
+  readonly wallets: readonly WalletOption[];
   readonly corrections: readonly CorrectionOption[];
   readonly openItems: readonly OpenItemOption[];
   readonly notes: string;
@@ -170,6 +202,7 @@ export class GetFollowUpOptionsHandler implements IQueryHandler<
     private readonly snapshots: CalculationSnapshotRepositoryPort,
     private readonly states: OpenItemStateRepositoryPort,
     private readonly carryovers: CarryoverRepositoryPort,
+    private readonly wallets: WalletRepositoryPort,
   ) {}
 
   async execute({
@@ -178,7 +211,9 @@ export class GetFollowUpOptionsHandler implements IQueryHandler<
   }: GetFollowUpOptionsQuery): Promise<FollowUpOptions> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     const taxYear = project.taxYear + 1;
-    const files = await this.files.listByProject(project.id);
+    const files = (await this.files.listByProject(project.id)).filter(
+      (f) => !isWalletFile(f),
+    );
     const newYearStart = `${taxYear}-01-01`;
     return {
       source: {
@@ -208,7 +243,14 @@ export class GetFollowUpOptionsHandler implements IQueryHandler<
             compareText(a.platform ?? '', b.platform ?? '') ||
             compareText(a.displayName, b.displayName),
         ),
-      walletsAvailable: false,
+      walletsAvailable: true,
+      wallets: (await walletsOf(this.wallets, project)).map((w) => ({
+        walletId: w.id,
+        label: w.label,
+        address: w.address,
+        networks: w.networks,
+        preselected: true,
+      })),
       corrections: carryableCorrections(
         await this.corrections.listByProject(project.id),
         files,
@@ -242,6 +284,8 @@ export interface FollowUpInput {
   readonly correctionIds: readonly string[];
   readonly openItemKeys: readonly string[];
   readonly notes: boolean;
+  /** Wallets of the source project to link (absent = none). */
+  readonly walletIds?: readonly string[];
 }
 
 export class CreateFollowUpProjectCommand {
@@ -270,6 +314,8 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
     private readonly states: OpenItemStateRepositoryPort,
     private readonly carryovers: CarryoverRepositoryPort,
     private readonly bundles: ProjectBundleRepositoryPort,
+    private readonly wallets: WalletRepositoryPort,
+    private readonly derived: WalletDerivedFiles,
   ) {}
 
   async execute({
@@ -293,10 +339,22 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
 
     const sourceFiles = await this.files.listByProject(source.id);
     const fileById = new Map(sourceFiles.map((f) => [f.id, f]));
-    const chosenFiles = [...new Set(input.fileIds)].map((id) => {
-      const file = fileById.get(id);
-      if (!file) throw new NotFoundException('No such file in this project');
-      return file;
+    const chosenFiles = [...new Set(input.fileIds)]
+      .map((id) => {
+        const file = fileById.get(id);
+        if (!file) throw new NotFoundException('No such file in this project');
+        return file;
+      })
+      .filter((file) => !isWalletFile(file));
+
+    const sourceWallets = new Map(
+      (await walletsOf(this.wallets, source)).map((w) => [w.id, w]),
+    );
+    const chosenWallets = [...new Set(input.walletIds ?? [])].map((id) => {
+      const wallet = sourceWallets.get(id);
+      if (!wallet)
+        throw new NotFoundException('No such wallet in this project');
+      return wallet;
     });
 
     const offered = new Map(
@@ -362,6 +420,7 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
         .filter((o) => o.note !== '')
         .map((o) => ({ carryoverKey: o.key, done: false, note: o.note })),
       exports: [],
+      walletIds: chosenWallets.map((w) => w.id),
       carryovers: [
         {
           ...from,
@@ -390,12 +449,23 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
           label: o.item.reason,
           data: { item: o.item, note: o.note, sourceKey: o.key },
         })),
+        ...chosenWallets.map((w) => ({
+          ...from,
+          kind: 'wallet' as const,
+          label: w.label,
+          data: { walletId: w.id, address: w.address },
+        })),
         ...(input.notes && source.notes.trim() !== ''
           ? [{ ...from, kind: 'notes' as const, label: '', data: {} }]
           : []),
       ],
     };
     const result = await this.bundles.write(userId, bundle);
+    // The wallets' fetched data becomes the new project's derived files (F6.3) — after the
+    // transaction, like a wallet added by hand; manual balances (dated 31.12.) stay behind.
+    for (const wallet of chosenWallets) {
+      await this.derived.sync(userId, result.projectId, wallet);
+    }
     return { projectId: result.projectId };
   }
 }

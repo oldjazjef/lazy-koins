@@ -91,5 +91,7 @@ import { WalletsService } from './wallets.service';
     SaveChainSettingsHandler,
     TestChainServiceHandler,
   ],
+  // F4.4a: the follow-up project links wallets and lets them write their derived files.
+  exports: [WalletDerivedFiles],
 })
 export class WalletsModule {}

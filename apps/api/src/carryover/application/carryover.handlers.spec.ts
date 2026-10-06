@@ -1,3 +1,4 @@
+import { WalletDerivedFiles } from '../../wallets/application/wallet-derived-files';
 import {
   BadRequestException,
   ConflictException,
@@ -54,6 +55,7 @@ async function setup() {
       t.snapshots,
       t.states,
       t.carryovers,
+      t.wallets,
     ),
     followUp: new CreateFollowUpProjectHandler(
       t.projects,
@@ -63,6 +65,8 @@ async function setup() {
       t.states,
       t.carryovers,
       t.bundles,
+      t.wallets,
+      new WalletDerivedFiles(t.wallets, t.projects, t.files, t.analysis),
     ),
     sources: new GetTakeOverSourcesHandler(t.projects, t.files),
     takeOver: new TakeOverFilesHandler(t.projects, t.files, t.bundles),
@@ -112,7 +116,8 @@ describe('follow-up project (F4.4a)', () => {
     );
     expect(options.taxYear).toBe(2026);
     expect(options.canton).toBe('ZH');
-    expect(options.walletsAvailable).toBe(false);
+    expect(options.walletsAvailable).toBe(true);
+    expect(options.wallets).toEqual([]);
     expect(options.files.map((f) => [f.displayName, f.preselected])).toEqual([
       ['bitstamp.csv', true],
       ['bestaende.csv', false],
@@ -296,6 +301,110 @@ describe('files from another project (F4.4)', () => {
     await expect(
       t.takeOver.execute(
         new TakeOverFilesCommand('bob', target.id, [t.ledger.id]),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('wallets in the follow-up project (F4.4a, F6)', () => {
+  it('offers the wallets preselected, links them, re-derives their files and never links derived files', async () => {
+    const t = await setup();
+    const wallet = await t.wallets.create({
+      ownerId: 'anna',
+      label: 'Ledger',
+      address: '0x1111111111111111111111111111111111111111',
+      addressKind: 'evm',
+      networks: ['ethereum'],
+      notes: '',
+    });
+    await t.wallets.addToProject(t.project.id, wallet.id);
+    await t.wallets.saveData({
+      walletId: wallet.id,
+      network: 'ethereum',
+      status: 'ok',
+      errorCode: null,
+      errorDetail: null,
+      movements: [
+        {
+          txHash: '0x01',
+          timestamp: '2025-06-01T00:00:00.000Z',
+          asset: 'ETH',
+          tokenId: null,
+          tokenName: null,
+          quantity: '1.5',
+          fee: null,
+          feeAsset: null,
+          type: 'transfer',
+          counterparty: null,
+          verified: null,
+        },
+      ],
+      info: {},
+      fetchedAt: '2026-01-02T00:00:00.000Z',
+    });
+    const derived = new WalletDerivedFiles(
+      t.wallets,
+      t.projects,
+      t.files,
+      t.analysis,
+    );
+    await derived.sync('anna', t.project.id, wallet);
+    const sourceDerived = [...t.files.entries.values()].find(
+      (e) => e.projectId === t.project.id && e.origin === `wallet:${wallet.id}`,
+    );
+    expect(sourceDerived).toBeDefined();
+
+    const options = await t.options.execute(
+      new GetFollowUpOptionsQuery('anna', t.project.id),
+    );
+    expect(options.wallets).toEqual([
+      expect.objectContaining({
+        walletId: wallet.id,
+        label: 'Ledger',
+        preselected: true,
+      }),
+    ]);
+    expect(
+      options.files.some((f) => f.projectFileId === sourceDerived?.id),
+    ).toBe(false);
+
+    const { projectId } = await t.followUp.execute(
+      new CreateFollowUpProjectCommand('anna', t.project.id, {
+        name: 'Steuern 2026',
+        taxYear: 2026,
+        canton: 'ZH',
+        fileIds: [sourceDerived?.id ?? ''],
+        correctionIds: [],
+        openItemKeys: [],
+        notes: false,
+        walletIds: [wallet.id],
+      }),
+    );
+    expect(await t.wallets.listWalletIds(projectId)).toEqual([wallet.id]);
+    const files = [...t.files.entries.values()].filter(
+      (e) => e.projectId === projectId,
+    );
+    // One derived file, made for the new project — the source's copy was not linked.
+    expect(files.map((f) => f.origin)).toEqual([`wallet:${wallet.id}`]);
+    const carried = await t.listCarryovers.execute(
+      new ListCarryoversQuery('anna', projectId),
+    );
+    expect(
+      carried.filter((c) => c.kind === 'wallet').map((c) => c.label),
+    ).toEqual(['Ledger']);
+
+    await expect(
+      t.followUp.execute(
+        new CreateFollowUpProjectCommand('anna', t.project.id, {
+          name: 'Steuern 2026 b',
+          taxYear: 2026,
+          canton: 'ZH',
+          fileIds: [],
+          correctionIds: [],
+          openItemKeys: [],
+          notes: false,
+          walletIds: ['00000000-0000-7000-8000-999999999999'],
+        }),
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });

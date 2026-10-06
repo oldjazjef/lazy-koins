@@ -131,7 +131,6 @@
       "noPlatform": "Ohne Plattform",
       "noFiles": "Dieses Projekt hat keine Dateien.",
       "wallets": "Wallets",
-      "walletsUnavailable": "Wallets (Adressen, Netzwerke) gibt es noch nicht als eigene Einträge – sobald es sie gibt, lassen sie sich hier übernehmen.",
       "corrections": "Korrekturen",
       "correctionsHint": "Nur solche, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im neuen Jahr vorkommen; manuelle Buchungen). Kurs-Overrides per 31.12. werden nicht angeboten.",
       "noCorrections": "Keine Korrektur gilt über das Jahr hinaus.",
@@ -143,11 +142,13 @@
       "notes": "Notizen übernehmen",
       "all": "Alle",
       "none": "Keine",
-      "summary": "Übernommen werden {{files}} Datei(en), {{corrections}} Korrektur(en) und {{openItems}} offene(r) Punkt(e).",
+      "summary": "Übernommen werden {{files}} Datei(en), {{wallets}} Wallet(s), {{corrections}} Korrektur(en) und {{openItems}} offene(r) Punkt(e).",
       "summaryNotes": "Dazu die Notizen.",
       "create": "Folgeprojekt erstellen",
       "created": "Folgeprojekt erstellt",
-      "createFailed": "Folgeprojekt konnte nicht erstellt werden"
+      "createFailed": "Folgeprojekt konnte nicht erstellt werden",
+      "walletsHint": "Die Wallets des Projekts werden mit dem neuen Projekt verknüpft (vorausgewählt); ihre abgerufenen Daten erscheinen dort als abgeleitete Dateien. Manuelle Saldi per 31.12. gehören zum Jahr und bleiben hier.",
+      "noWallets": "Dieses Projekt hat keine Wallets."
     },
     "import": {
       "button": "Projekt importieren",
@@ -164,7 +165,8 @@
         "file": "Datei",
         "correction": "Korrektur",
         "open_item": "Offener Punkt",
-        "notes": "Notizen"
+        "notes": "Notizen",
+        "wallet": "Wallet"
       }
     },
     "sent": {

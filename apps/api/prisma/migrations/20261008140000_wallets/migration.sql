@@ -158,5 +158,26 @@ ALTER TABLE "new_project_file" RENAME TO "project_file";
 CREATE INDEX "project_file_file_id_idx" ON "project_file"("file_id");
 CREATE INDEX "project_file_mapping_id_idx" ON "project_file"("mapping_id");
 CREATE UNIQUE INDEX "project_file_project_id_file_id_key" ON "project_file"("project_id", "file_id");
+
+-- RedefineTables (project_carryover: kind CHECK widened to `wallet`, F4.4a carries wallets over;
+-- every other column, constraint and index copied unchanged from 20261008110000_dashboard_carryover)
+CREATE TABLE "new_project_carryover" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "project_id" TEXT NOT NULL,
+    "source_project_id" TEXT,
+    "source_project_name" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "ref" TEXT,
+    "label" TEXT NOT NULL DEFAULT '',
+    "data" TEXT NOT NULL DEFAULT '{}',
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "project_carryover_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "project_carryover_kind" CHECK ("kind" IN ('project', 'file', 'correction', 'open_item', 'notes', 'wallet')),
+    CONSTRAINT "project_carryover_data_json" CHECK (json_valid("data"))
+);
+INSERT INTO "new_project_carryover" ("id", "project_id", "source_project_id", "source_project_name", "kind", "ref", "label", "data", "created_at") SELECT "id", "project_id", "source_project_id", "source_project_name", "kind", "ref", "label", "data", "created_at" FROM "project_carryover";
+DROP TABLE "project_carryover";
+ALTER TABLE "new_project_carryover" RENAME TO "project_carryover";
+CREATE INDEX "project_carryover_project_id_idx" ON "project_carryover"("project_id");
 PRAGMA foreign_keys=ON;
 PRAGMA defer_foreign_keys=OFF;
