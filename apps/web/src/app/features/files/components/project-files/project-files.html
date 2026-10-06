@@ -99,9 +99,20 @@
 
     @if (service.overview.hasValue()) { @let overview =
     service.overview.value(); @if (overview.missing.length > 0) {
-    <div class="lk-panel flex flex-col gap-2 p-4" role="note">
-      <h3 class="font-medium">{{ 'files.missing.title' | translate }}</h3>
-      <ul class="flex flex-col gap-2 text-sm">
+    <details class="lk-panel group text-sm" role="note">
+      <summary
+        class="flex cursor-pointer list-none items-center gap-2 p-3 font-medium"
+      >
+        <ng-icon
+          name="lucideChevronRight"
+          size="16"
+          aria-hidden="true"
+          class="transition-transform group-open:rotate-90"
+        />
+        {{ 'files.missing.summary' | translate: { count: overview.missing.length
+        } }}
+      </summary>
+      <ul class="flex flex-col gap-2 px-4 pb-4">
         @for (hint of overview.missing; track hint.platform + hint.accountId +
         hint.kind) {
         <li>
@@ -116,7 +127,7 @@
         </li>
         }
       </ul>
-    </div>
+    </details>
     } @if (overview.groups.length === 0) {
     <lk-empty-state [message]="'files.empty' | translate" />
     } @else { @for (group of overview.groups; track group.platform) {
@@ -252,42 +263,46 @@
       <h3 hlmDialogTitle>{{ current.file.displayName }}</h3>
       <p hlmDialogDescription>{{ 'files.preview.description' | translate }}</p>
     </hlm-dialog-header>
-    @if (current.file.kind === 'pdf') { @if (safePdfUrl(); as url) {
-    <iframe
-      class="h-[70vh] w-full rounded border"
-      [src]="url"
-      [title]="current.file.displayName"
-    ></iframe>
+    <div class="lk-dialog-body">
+      @if (current.file.kind === 'pdf') { @if (safePdfUrl(); as url) {
+      <iframe
+        class="h-[65vh] w-full rounded border"
+        [src]="url"
+        [title]="current.file.displayName"
+      ></iframe>
+      } } @else if (tablePreview(); as preview) { @for (sheet of preview.sheets
+      ?? []; track sheet.name) {
+      <div class="flex flex-col gap-2">
+        <p class="text-muted-foreground text-sm">
+          {{ 'files.preview.sheet' | translate: { name: sheet.name, shown:
+          sheet.rows.length, total: sheet.totalRows } }}
+        </p>
+        <div hlmTableContainer class="lk-panel">
+          <table hlmTable>
+            <tbody hlmTBody>
+              @for (row of sheet.rows; track $index; let first = $first) {
+              <tr hlmTr [class.font-medium]="first">
+                @for (cell of row; track $index) {
+                <td hlmTd class="font-mono text-xs">
+                  <span class="max-w-64" [lkTruncate]="cell">{{ cell }}</span>
+                </td>
+                }
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      } } @else {
+      <hlm-skeleton class="h-64 w-full" />
+      }
+    </div>
+    @if (current.file.kind === 'pdf') {
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" (click)="openPdfInTab()">
         {{ 'files.preview.openInTab' | translate }}
       </button>
     </hlm-dialog-footer>
-    } } @else if (tablePreview(); as preview) { @for (sheet of preview.sheets ??
-    []; track sheet.name) {
-    <div class="flex flex-col gap-2">
-      <p class="text-muted-foreground text-sm">
-        {{ 'files.preview.sheet' | translate: { name: sheet.name, shown:
-        sheet.rows.length, total: sheet.totalRows } }}
-      </p>
-      <div hlmTableContainer class="lk-panel max-h-[60vh] overflow-y-auto">
-        <table hlmTable>
-          <tbody hlmTBody>
-            @for (row of sheet.rows; track $index; let first = $first) {
-            <tr hlmTr [class.font-medium]="first">
-              @for (cell of row; track $index) {
-              <td hlmTd class="font-mono text-xs">
-                <span class="max-w-64" [lkTruncate]="cell">{{ cell }}</span>
-              </td>
-              }
-            </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-    } } @else {
-    <hlm-skeleton class="h-64 w-full" />
     } }
   </hlm-dialog-content>
 </hlm-dialog>
@@ -305,6 +320,7 @@
         {{ 'files.removeBody' | translate: { name: current.file.displayName } }}
       </p>
     </hlm-dialog-header>
+    <div class="lk-dialog-body"></div>
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
@@ -336,30 +352,33 @@
       </h3>
       <p hlmDialogDescription>{{ 'files.assign.body' | translate }}</p>
     </hlm-dialog-header>
-    @if (current.file.kind !== 'pdf') {
-    <div class="flex flex-wrap items-end gap-2">
-      <div class="flex min-w-64 flex-1 flex-col gap-2">
-        <label class="text-sm font-medium" for="assign-mapping"
-          >{{ 'files.assign.mapping' | translate }}</label
-        >
-        <select
-          hlmInput
-          id="assign-mapping"
-          [ngModel]="selectedMappingId()"
-          (ngModelChange)="selectedMappingId.set($event); assignPreview.set(null)"
-        >
-          <option value="">{{ 'files.assign.choose' | translate }}</option>
-          @for (mapping of service.myMappings.value() ?? []; track mapping.id) {
-          <option [value]="mapping.id">
-            {{ mapping.name }} ({{ mapping.platform }})
-          </option>
-          }
-        </select>
+    <div class="lk-dialog-body">
+      @if (current.file.kind !== 'pdf') {
+      <div class="flex flex-wrap items-end gap-2">
+        <div class="flex min-w-64 flex-1 flex-col gap-2">
+          <label class="text-sm font-medium" for="assign-mapping"
+            >{{ 'files.assign.mapping' | translate }}</label
+          >
+          <select
+            hlmInput
+            id="assign-mapping"
+            [ngModel]="selectedMappingId()"
+            (ngModelChange)="selectedMappingId.set($event); assignPreview.set(null)"
+          >
+            <option value="">{{ 'files.assign.choose' | translate }}</option>
+            @for (mapping of service.myMappings.value() ?? []; track mapping.id)
+            {
+            <option [value]="mapping.id">
+              {{ mapping.name }} ({{ mapping.platform }})
+            </option>
+            }
+          </select>
+        </div>
       </div>
+      @if (assignPreview(); as preview) {
+      <lk-mapping-preview [preview]="preview" />
+      } }
     </div>
-    @if (assignPreview(); as preview) {
-    <lk-mapping-preview [preview]="preview" />
-    } }
     <hlm-dialog-footer class="flex-wrap">
       @if (current.file.kind !== 'pdf') {
       <button

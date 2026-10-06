@@ -2,6 +2,7 @@
   "$comment": "Warning ceilings for scripts/check-lint-budget.mjs (`pnpm lint:budget`, part of `pnpm check`). A workspace's number may only go DOWN. Lower it in the same change that clears the warnings; never raise it to get CI green. Errors fail regardless of these numbers.",
   "$comment2": "libs/ui/** is deliberately absent: vendored spartan code that the migrate-* generators overwrite. Its Nx lint targets still run, so errors still fail there.",
   "apps/api": 0,
+  "apps/desktop": 0,
   "apps/web": 0,
   "libs/engine": 0,
   "scripts": 0,

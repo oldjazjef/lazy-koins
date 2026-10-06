@@ -38,6 +38,8 @@ export interface ExportLabels {
   readonly incomeTitle: string;
   readonly securitiesList: string;
   readonly noTaxAdvice: string;
+  /** Footnote of a position or event without a price in a statement — a fact, no instruction. */
+  readonly noPriceNote: string;
   /** Where the two figures go in the tax return, per canton when it differs. */
   readonly formReference: (canton: string) => string;
   readonly categories: Readonly<Record<IncomeCategory, string>>;
@@ -83,6 +85,7 @@ export const chRules: CountryRules = {
     securitiesList: 'Wertschriften- und Guthabenverzeichnis',
     noTaxAdvice:
       'Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.',
+    noPriceNote: 'Kein Kurswert verfügbar; nicht im Total enthalten.',
     formReference: (canton) =>
       `Wertschriftenverzeichnis (Kanton ${canton}): Kryptowährungen als Vermögen ohne Verrechnungssteuer; Ertrag als Einkommen aus beweglichem Vermögen.`,
     categories: {

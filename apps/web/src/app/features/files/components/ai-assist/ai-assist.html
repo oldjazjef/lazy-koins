@@ -239,126 +239,131 @@
       <h3 hlmDialogTitle>{{ 'ai.statement.reviewTitle' | translate }}</h3>
       <p hlmDialogDescription>{{ 'ai.statement.reviewBody' | translate }}</p>
     </hlm-dialog-header>
-    <p class="text-muted-foreground text-xs">
-      {{ 'ai.meta' | translate: { model: statement.model, rounds:
-      statement.rounds } }} @if (state.usage(); as usage) { {{ 'ai.usage' |
-      translate: { input: usage.inputTokens, output: usage.outputTokens } }} }
-      @else { {{ 'ai.noUsage' | translate }} } @if (statement.truncated) {
-      <span class="text-destructive block"
-        >{{ 'ai.statement.truncated' | translate }}</span
-      >
-      }
-    </p>
-    @if (statement.holdings.length === 0) {
-    <p class="text-sm">{{ 'ai.statement.none' | translate }}</p>
-    } @else {
-    <div>
-      <div hlmTableContainer class="lk-panel">
-        <table hlmTable class="table-fixed">
-          <colgroup>
-            <col class="w-10" />
-            <col />
-            <col class="w-36" />
-            <col class="hidden w-32 lg:table-column" />
-            <col class="w-28" />
-            <col class="hidden w-40 md:table-column" />
-            <col class="hidden w-32 xl:table-column" />
-            <col class="w-14" />
-            <col class="w-40" />
-          </colgroup>
-          <thead hlmTHead>
-            <tr hlmTr>
-              <th hlmTh>
-                <span class="sr-only"
-                  >{{ 'ai.statement.keep' | translate }}</span
-                >
-              </th>
-              <th hlmTh>{{ 'ai.statement.fields.asset' | translate }}</th>
-              <th hlmTh class="text-right">
-                {{ 'ai.statement.fields.quantity' | translate }}
-              </th>
-              <th hlmTh class="hidden lg:table-cell">
-                {{ 'ai.statement.fields.printed' | translate }}
-              </th>
-              <th hlmTh>{{ 'ai.statement.fields.asOf' | translate }}</th>
-              <th hlmTh class="hidden md:table-cell">
-                {{ 'ai.statement.fields.platform' | translate }}
-              </th>
-              <th hlmTh class="hidden text-right xl:table-cell">
-                {{ 'ai.statement.fields.price' | translate }}
-              </th>
-              <th hlmTh>{{ 'ai.statement.fields.page' | translate }}</th>
-              <th hlmTh>{{ 'ai.statement.fields.check' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody hlmTBody>
-            @for (row of holdingsPager.visible(); track row.index) { @let
-            holding = row.holding; @let i = row.index;
-            <tr hlmTr [class.text-muted-foreground]="!state.kept().has(i)">
-              <td hlmTd>
-                <input
-                  type="checkbox"
-                  [attr.aria-label]="'ai.statement.keep' | translate"
-                  [checked]="state.kept().has(i)"
-                  [disabled]="holding.quantity === null"
-                  (change)="state.toggleKept(i)"
-                />
-              </td>
-              <td hlmTd class="max-w-0 font-medium">
-                <span [lkTruncate]="holding.asset">{{ holding.asset }}</span>
-              </td>
-              <td hlmTd class="max-w-0 text-right font-mono tabular-nums">
-                @let quantity = holding.quantity ?? '–';
-                <span [lkTruncate]="quantity">{{ quantity }}</span>
-              </td>
-              <td hlmTd class="hidden max-w-0 font-mono text-xs lg:table-cell">
-                <span [lkTruncate]="holding.quantityAsPrinted"
-                  >{{ holding.quantityAsPrinted }}</span
-                >
-              </td>
-              <td hlmTd class="tabular-nums">
-                {{ holding.asOf | date: 'dd.MM.yyyy' }}
-              </td>
-              <td hlmTd class="hidden max-w-0 md:table-cell">
-                @let where = holding.platform + ' · ' + holding.account;
-                <span [lkTruncate]="where">{{ where }}</span>
-              </td>
-              <td
-                hlmTd
-                class="hidden max-w-0 text-right font-mono text-xs tabular-nums xl:table-cell"
-              >
-                @if (holding.priceChf) { @let chf = 'ai.statement.priceChf' |
-                translate: { value: holding.priceChf };
-                <span [lkTruncate]="chf">{{ chf }}</span>
-                } @if (holding.priceUsd) { @let usd = 'ai.statement.priceUsd' |
-                translate: { value: holding.priceUsd };
-                <span [lkTruncate]="usd">{{ usd }}</span>
-                }
-              </td>
-              <td hlmTd class="tabular-nums">{{ holding.page }}</td>
-              <td hlmTd class="max-w-0">
-                <div class="flex flex-wrap gap-1">
-                  @if (holding.issues.length === 0) {
-                  <span hlmBadge variant="secondary"
-                    >{{ 'ai.statement.verbatim' | translate }}</span
+    <div class="lk-dialog-body">
+      <p class="text-muted-foreground text-xs">
+        {{ 'ai.meta' | translate: { model: statement.model, rounds:
+        statement.rounds } }} @if (state.usage(); as usage) { {{ 'ai.usage' |
+        translate: { input: usage.inputTokens, output: usage.outputTokens } }} }
+        @else { {{ 'ai.noUsage' | translate }} } @if (statement.truncated) {
+        <span class="text-destructive block"
+          >{{ 'ai.statement.truncated' | translate }}</span
+        >
+        }
+      </p>
+      @if (statement.holdings.length === 0) {
+      <p class="text-sm">{{ 'ai.statement.none' | translate }}</p>
+      } @else {
+      <div>
+        <div hlmTableContainer class="lk-panel">
+          <table hlmTable class="table-fixed">
+            <colgroup>
+              <col class="w-10" />
+              <col />
+              <col class="w-36" />
+              <col class="hidden w-32 lg:table-column" />
+              <col class="w-28" />
+              <col class="hidden w-40 md:table-column" />
+              <col class="hidden w-32 xl:table-column" />
+              <col class="w-14" />
+              <col class="w-40" />
+            </colgroup>
+            <thead hlmTHead>
+              <tr hlmTr>
+                <th hlmTh>
+                  <span class="sr-only"
+                    >{{ 'ai.statement.keep' | translate }}</span
                   >
-                  } @for (issue of holding.issues; track issue) {
-                  <span hlmBadge variant="destructive"
-                    >{{ 'ai.statement.issues.' + issue | translate }}</span
+                </th>
+                <th hlmTh>{{ 'ai.statement.fields.asset' | translate }}</th>
+                <th hlmTh class="text-right">
+                  {{ 'ai.statement.fields.quantity' | translate }}
+                </th>
+                <th hlmTh class="hidden lg:table-cell">
+                  {{ 'ai.statement.fields.printed' | translate }}
+                </th>
+                <th hlmTh>{{ 'ai.statement.fields.asOf' | translate }}</th>
+                <th hlmTh class="hidden md:table-cell">
+                  {{ 'ai.statement.fields.platform' | translate }}
+                </th>
+                <th hlmTh class="hidden text-right xl:table-cell">
+                  {{ 'ai.statement.fields.price' | translate }}
+                </th>
+                <th hlmTh>{{ 'ai.statement.fields.page' | translate }}</th>
+                <th hlmTh>{{ 'ai.statement.fields.check' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody hlmTBody>
+              @for (row of holdingsPager.visible(); track row.index) { @let
+              holding = row.holding; @let i = row.index;
+              <tr hlmTr [class.text-muted-foreground]="!state.kept().has(i)">
+                <td hlmTd>
+                  <input
+                    type="checkbox"
+                    [attr.aria-label]="'ai.statement.keep' | translate"
+                    [checked]="state.kept().has(i)"
+                    [disabled]="holding.quantity === null"
+                    (change)="state.toggleKept(i)"
+                  />
+                </td>
+                <td hlmTd class="max-w-0 font-medium">
+                  <span [lkTruncate]="holding.asset">{{ holding.asset }}</span>
+                </td>
+                <td hlmTd class="max-w-0 text-right font-mono tabular-nums">
+                  @let quantity = holding.quantity ?? '–';
+                  <span [lkTruncate]="quantity">{{ quantity }}</span>
+                </td>
+                <td
+                  hlmTd
+                  class="hidden max-w-0 font-mono text-xs lg:table-cell"
+                >
+                  <span [lkTruncate]="holding.quantityAsPrinted"
+                    >{{ holding.quantityAsPrinted }}</span
                   >
+                </td>
+                <td hlmTd class="tabular-nums">
+                  {{ holding.asOf | date: 'dd.MM.yyyy' }}
+                </td>
+                <td hlmTd class="hidden max-w-0 md:table-cell">
+                  @let where = holding.platform + ' · ' + holding.account;
+                  <span [lkTruncate]="where">{{ where }}</span>
+                </td>
+                <td
+                  hlmTd
+                  class="hidden max-w-0 text-right font-mono text-xs tabular-nums xl:table-cell"
+                >
+                  @if (holding.priceChf) { @let chf = 'ai.statement.priceChf' |
+                  translate: { value: holding.priceChf };
+                  <span [lkTruncate]="chf">{{ chf }}</span>
+                  } @if (holding.priceUsd) { @let usd = 'ai.statement.priceUsd'
+                  | translate: { value: holding.priceUsd };
+                  <span [lkTruncate]="usd">{{ usd }}</span>
                   }
-                </div>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
+                </td>
+                <td hlmTd class="tabular-nums">{{ holding.page }}</td>
+                <td hlmTd class="max-w-0">
+                  <div class="flex flex-wrap gap-1">
+                    @if (holding.issues.length === 0) {
+                    <span hlmBadge variant="secondary"
+                      >{{ 'ai.statement.verbatim' | translate }}</span
+                    >
+                    } @for (issue of holding.issues; track issue) {
+                    <span hlmBadge variant="destructive"
+                      >{{ 'ai.statement.issues.' + issue | translate }}</span
+                    >
+                    }
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <lk-paginator [pager]="holdingsPager" />
       </div>
-      <lk-paginator [pager]="holdingsPager" />
+      } @if (state.error(); as error) {
+      <lk-ai-error-panel [error]="error" [collapsible]="true" />
+      }
     </div>
-    } @if (state.error(); as error) {
-    <lk-ai-error-panel [error]="error" [collapsible]="true" />
-    }
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
