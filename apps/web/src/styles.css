@@ -184,6 +184,14 @@
     background-color: var(--light-grey);
   }
 
+  /*
+   * Tables: the actions column stays visible at the right edge even when a table scrolls
+   * sideways; it carries the row's background so scrolled cells pass beneath it.
+   */
+  .lk-sticky-actions {
+    @apply bg-card sticky right-0 z-10;
+  }
+
   /* The word mark in the header and on the login card. */
   .lk-brand {
     @apply text-primary text-lg font-semibold tracking-tight;

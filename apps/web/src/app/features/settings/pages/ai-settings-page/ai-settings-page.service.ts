@@ -6,6 +6,7 @@ import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
 import type {
   AiConnectionTest,
+  TestAiConnectionRequest,
   AiProvider,
   AiSettings,
   SaveAiSettingsRequest,
@@ -127,13 +128,17 @@ export class AiSettingsPageService {
   }
 
   /** One tiny request without user data, with the SAVED settings. */
-  async test(): Promise<void> {
+  /** `draft` = the form's current values (unsaved ones included); omitted = the saved settings. */
+  async test(draft?: TestAiConnectionRequest): Promise<void> {
     this.testing.set(true);
     this.testResult.set(null);
     try {
       this.testResult.set(
         await firstValueFrom(
-          this.http.post<AiConnectionTest>(apiUrl('/ai/settings/test'), {}),
+          this.http.post<AiConnectionTest>(
+            apiUrl('/ai/settings/test'),
+            draft ?? {},
+          ),
         ),
       );
     } catch (error) {
