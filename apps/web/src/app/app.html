@@ -1,0 +1,8 @@
+<router-outlet />
+<!-- Above the CDK overlay container (z-index 1000), or toasts paint behind open dialogs. -->
+<hlm-toaster
+  [theme]="toasterTheme()"
+  richColors
+  position="bottom-right"
+  class="z-1100"
+/>

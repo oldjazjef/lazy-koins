@@ -1,0 +1,124 @@
+<div class="bg-muted flex min-h-dvh items-center justify-center p-6">
+  <section hlmCard class="w-full max-w-md">
+    <div hlmCardHeader>
+      <h1 hlmCardTitle class="lk-brand text-2xl">
+        {{ 'app.name' | translate }}
+      </h1>
+      <p hlmCardDescription>{{ 'login.tagline' | translate }}</p>
+    </div>
+
+    <div hlmCardContent>
+      @if (service.mode === 'firebase') {
+      <form
+        class="flex flex-col gap-4"
+        [formGroup]="form"
+        (ngSubmit)="signIn()"
+      >
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="login-email"
+            >{{ 'login.email' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="login-email"
+            type="email"
+            autocomplete="email"
+            formControlName="email"
+          />
+          @if ( form.controls.email.touched &&
+          form.controls.email.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="login-password"
+            >{{ 'login.password' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="login-password"
+            type="password"
+            autocomplete="current-password"
+            formControlName="password"
+          />
+          @if ( form.controls.password.touched &&
+          form.controls.password.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+        <button hlmBtn type="submit" [disabled]="service.isBusy()">
+          {{ 'login.signIn' | translate }}
+        </button>
+        <div class="flex items-center justify-between gap-2">
+          <button
+            hlmBtn
+            variant="link"
+            size="sm"
+            type="button"
+            class="px-0"
+            [disabled]="service.isBusy()"
+            (click)="resetPassword()"
+          >
+            {{ 'login.forgotPassword' | translate }}
+          </button>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            [disabled]="service.isBusy()"
+            (click)="register()"
+          >
+            {{ 'login.register' | translate }}
+          </button>
+        </div>
+      </form>
+
+      <div class="text-muted-foreground my-6 flex items-center gap-3 text-xs">
+        <hlm-separator class="flex-1" />
+        <span>{{ 'login.or' | translate }}</span>
+        <hlm-separator class="flex-1" />
+      </div>
+
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        class="w-full"
+        [disabled]="service.isBusy()"
+        (click)="signInWithGoogle()"
+      >
+        {{ 'login.withGoogle' | translate }}
+      </button>
+      } @else {
+      <form
+        class="flex flex-col gap-4"
+        [formGroup]="devForm"
+        (ngSubmit)="signInAsDevUser()"
+      >
+        <p class="bg-accent text-accent-foreground rounded-md p-3 text-sm">
+          {{ 'login.dev.hint' | translate }}
+        </p>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="dev-email"
+            >{{ 'login.email' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="dev-email"
+            type="email"
+            autocomplete="email"
+            formControlName="email"
+          />
+          @if (devForm.controls.email.errors?.['zod']; as error) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+        <button hlmBtn type="submit" [disabled]="service.isBusy()">
+          {{ 'login.dev.submit' | translate }}
+        </button>
+      </form>
+      }
+    </div>
+  </section>
+</div>

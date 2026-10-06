@@ -1,0 +1,139 @@
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+/* The `@theme inline` token mappings, `dark` + `data-*` variants, tw-animate-css and the CDK
+   overlay styles. This file supplies only the token VALUES below — never redeclare mappings. */
+@import '@spartan-ng/brain/hlm-tailwind-preset.css';
+
+/* Tailwind auto-detects sources next to this file; the UI libs sit outside that tree. */
+@source '../../../libs';
+
+/*
+ * lazy-koins palette — calm and neutral, made for reading figures: cool slate greys, an ink-blue
+ * primary, quiet surfaces, a modest radius and Inter (self-hosted via @fontsource-variable/inter,
+ * see project.json — no font CDN). The ONLY place colours live: components use semantic classes
+ * (`bg-primary`, `text-muted-foreground`, the `lk-*` classes below), and the
+ * `no-hardcoded-design-values` lint rule rejects raw colours in templates. Change the look here.
+ *
+ * Text colours are chosen for ≥ 4.5:1 contrast on their backgrounds in both modes.
+ */
+:root {
+  color-scheme: light;
+
+  --font-sans:
+    'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius: 0.5rem;
+  --background: #f7f8fa;
+  --foreground: #16202c;
+  --card: #ffffff;
+  --card-foreground: #16202c;
+  --popover: #ffffff;
+  --popover-foreground: #16202c;
+  --primary: #1f3a5f;
+  --primary-foreground: #f5f8fc;
+  --secondary: #e8edf3;
+  --secondary-foreground: #1f3a5f;
+  --muted: #eef1f5;
+  --muted-foreground: #556273;
+  --accent: #e9eef6;
+  --accent-foreground: #1c2f4a;
+  --destructive: #b42318;
+  --border: #dde2e9;
+  --input: #cfd6df;
+  --ring: #4a6fa5;
+  --chart-1: #1f3a5f;
+  --chart-2: #4a8c7a;
+  --chart-3: #b7791f;
+  --chart-4: #7a5aa6;
+  --chart-5: #8a96a8;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --background: #0f141b;
+  --foreground: #e4e9f0;
+  --card: #161d27;
+  --card-foreground: #e4e9f0;
+  --popover: #161d27;
+  --popover-foreground: #e4e9f0;
+  --primary: #9db8dc;
+  --primary-foreground: #0f1a2a;
+  --secondary: #222c39;
+  --secondary-foreground: #d5dfec;
+  --muted: #1c2430;
+  --muted-foreground: #9aa6b6;
+  --accent: #232e3d;
+  --accent-foreground: #dbe5f2;
+  --destructive: #f97066;
+  --border: #2a3441;
+  --input: #344050;
+  --ring: #7d9cc8;
+  --chart-1: #9db8dc;
+  --chart-2: #7cc2ad;
+  --chart-3: #e0b25a;
+  --chart-4: #b49be0;
+  --chart-5: #8f9bad;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  /* The word mark in the header and on the login card. */
+  .lk-brand {
+    @apply text-primary text-lg font-semibold tracking-tight;
+  }
+
+  /* Header navigation. */
+  .lk-nav-link {
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors;
+  }
+
+  .lk-nav-active {
+    @apply bg-secondary text-secondary-foreground;
+  }
+
+  /* A bordered surface for tables and lists. */
+  .lk-panel {
+    @apply bg-card rounded-lg border;
+  }
+
+  /* Label/value pairs, e.g. a project's facts. */
+  .lk-facts {
+    @apply grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm;
+  }
+
+  .lk-facts dt {
+    @apply text-muted-foreground;
+  }
+
+  .lk-facts dd {
+    @apply font-medium;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-nav-link {
+    transition: none;
+  }
+}
