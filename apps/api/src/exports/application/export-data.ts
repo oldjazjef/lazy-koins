@@ -17,6 +17,8 @@ export interface ExportData {
   /** ISO timestamp of the export (F10.4). */
   readonly createdAt: string;
   readonly calculatedAt: string;
+  /** The app that made it, `X.Y.Z+<commit>` (src/app/build-info.ts) — shown under Methodik. */
+  readonly appVersion: string;
   readonly rules: CountryRules;
   readonly result: StoredResult;
   /**

@@ -180,7 +180,7 @@ export function internalReport(data: ExportData): InternalReport {
 
   return {
     title: INTERNAL_TITLE,
-    meta: `${data.projectName} · ${data.ownerName} · Steuerjahr ${data.taxYear} · Kanton ${data.canton} · erstellt am ${swissDate(data.createdAt)} · berechnet am ${swissDate(data.calculatedAt)}`,
+    meta: `${data.projectName} · ${data.ownerName} · Steuerjahr ${data.taxYear} · Kanton ${data.canton} · erstellt am ${swissDate(data.createdAt)} · berechnet am ${swissDate(data.calculatedAt)} · lazy-koins ${data.appVersion}`,
     note: 'Arbeitsunterlage für dich und deinen Treuhänder – nicht der Steuererklärung beilegen. Die Auszüge für die Steuerbehörde enthalten diese Punkte nicht.',
     figures: [
       [

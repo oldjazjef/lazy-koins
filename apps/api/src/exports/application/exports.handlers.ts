@@ -11,6 +11,7 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import { countryRules, missingFileHints } from '@lazykoins/engine';
+import { BUILD_INFO } from '../../app/build-info';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CalculationService } from '../../calculation/calculation.service';
 import type { Snapshot } from '../../calculation/domain/calculation';
@@ -109,6 +110,7 @@ export class ExportDataService {
       advisorEmail: settings.advisorEmail,
       createdAt,
       calculatedAt: snapshot.createdAt,
+      appVersion: BUILD_INFO.full,
       rules,
       result: snapshot.result,
       items: snapshot.result.openItems.map((item) => ({

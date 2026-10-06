@@ -3,6 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "lk-note-no-test-target": "Deliberate — see the Testing section in CLAUDE.md. Vitest fails inside Nx's run-commands spawn, so tests run via `pnpm test` or `pnpm vitest run --project web`.",
+  "lk-note-desktop-build": "build:desktop = the build the desktop app serves via app:// (apps/desktop), into dist/apps/web-desktop. Production, but without critical-CSS inlining: its `onload` handler would need inline script under the desktop's strict CSP.",
   "prefix": "lk",
   "sourceRoot": "apps/web/src",
   "tags": [],
@@ -41,6 +42,15 @@
             }
           ],
           "outputHashing": "all"
+        },
+        "desktop": {
+          "outputPath": "dist/apps/web-desktop",
+          "outputHashing": "all",
+          "optimization": {
+            "scripts": true,
+            "styles": { "minify": true, "inlineCritical": false },
+            "fonts": true
+          }
         },
         "development": {
           "optimization": false,
