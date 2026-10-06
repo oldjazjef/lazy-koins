@@ -36,7 +36,8 @@
     "toggleTheme": "Hell/Dunkel umschalten",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "userMenu": "Benutzermenü"
+    "userMenu": "Benutzermenü",
+    "dashboard": "Dashboard"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -116,6 +117,54 @@
       "notFound": "Dieses Projekt gibt es nicht (mehr).",
       "loadFailed": "Projekt konnte nicht geladen werden.",
       "backToList": "Zu den Projekten"
+    },
+    "followUp": {
+      "open": "Folgeprojekt erstellen",
+      "title": "Folgeprojekt erstellen",
+      "subtitle": "Aus {{name}} – das Vorjahresprojekt bleibt unverändert.",
+      "factsTitle": "Neues Projekt",
+      "defaultName": "Steuern {{year}}",
+      "existing": "Für dieses Jahr gibt es schon ein Projekt ({{names}}).",
+      "files": "Dateien",
+      "filesHint": "Werden verknüpft, nicht kopiert. Vorausgewählt: Dateien, deren Zeitraum ins neue Jahr reicht.",
+      "noPlatform": "Ohne Plattform",
+      "noFiles": "Dieses Projekt hat keine Dateien.",
+      "wallets": "Wallets",
+      "walletsUnavailable": "Wallets (Adressen, Netzwerke) gibt es noch nicht als eigene Einträge – sobald es sie gibt, lassen sie sich hier übernehmen.",
+      "corrections": "Korrekturen",
+      "correctionsHint": "Nur solche, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im neuen Jahr vorkommen; manuelle Buchungen). Kurs-Overrides per 31.12. werden nicht angeboten.",
+      "noCorrections": "Keine Korrektur gilt über das Jahr hinaus.",
+      "reclassify": "Umklassierung zu «{{kind}}»",
+      "manualBooking": "Manuelle Buchung {{quantity}} {{asset}} ({{platform}})",
+      "openItems": "Offene Punkte",
+      "openItemsHint": "Noch nicht erledigte Punkte werden im neuen Projekt als offene Punkte geführt.",
+      "noOpenItems": "Keine offenen Punkte.",
+      "notes": "Notizen übernehmen",
+      "all": "Alle",
+      "none": "Keine",
+      "summary": "Übernommen werden {{files}} Datei(en), {{corrections}} Korrektur(en) und {{openItems}} offene(r) Punkt(e).",
+      "summaryNotes": "Dazu die Notizen.",
+      "create": "Folgeprojekt erstellen",
+      "created": "Folgeprojekt erstellt",
+      "createFailed": "Folgeprojekt konnte nicht erstellt werden"
+    },
+    "import": {
+      "button": "Projekt importieren",
+      "done": "Projekt importiert",
+      "failed": "Das Projekt-Paket konnte nicht importiert werden (beschädigt, verändert oder kein lazy-koins-Paket)"
+    },
+    "carryover": {
+      "title": "Übernommen",
+      "from": "aus {{name}}",
+      "fromPackage": "aus einem Paket ({{name}})",
+      "done": "Erledigt",
+      "kind": {
+        "project": "Folgeprojekt",
+        "file": "Datei",
+        "correction": "Korrektur",
+        "open_item": "Offener Punkt",
+        "notes": "Notizen"
+      }
     }
   },
   "bookings": {
@@ -245,6 +294,17 @@
       "invalidDate": "Kein gültiges Datum (JJJJ-MM-TT).",
       "negative": "Darf nicht negativ sein.",
       "headerNotFound": "Die Kopfzeile des Mappings wurde in der Datei nicht gefunden."
+    },
+    "takeOver": {
+      "open": "Aus anderem Projekt übernehmen",
+      "title": "Dateien aus anderen Projekten übernehmen",
+      "hint": "Die Dateien werden verknüpft, nicht kopiert, und gleich gelesen wie dort.",
+      "already": "schon im Projekt",
+      "empty": "Deine anderen Projekte haben keine Dateien.",
+      "confirm": "{{count}} übernehmen",
+      "done": "{{count}} Datei(en) übernommen",
+      "failed": "Die Dateien konnten nicht übernommen werden",
+      "loadFailed": "Die anderen Projekte konnten nicht geladen werden"
     }
   },
   "mappings": {
@@ -999,6 +1059,24 @@
       "copied": "In die Zwischenablage kopiert",
       "copyFailed": "Kopieren fehlgeschlagen",
       "failed": "Mail-Entwurf nicht verfügbar – zuerst berechnen"
+    },
+    "data": {
+      "title": "Daten",
+      "hint": "Buchungen und Bestände im Standardformat – mit angewendeten Korrekturen, verwendetem Kurs und Kursquelle sowie Quelldatei und Zeile. Die Datei lässt sich unverändert wieder importieren.",
+      "platform": "Plattform",
+      "account": "Konto",
+      "asset": "Asset",
+      "kind": "Art",
+      "allKinds": "Alle Arten",
+      "from": "Von",
+      "to": "Bis",
+      "csvBookings": "Buchungen (CSV)",
+      "csvHoldings": "Bestände (CSV)",
+      "xlsx": "Buchungen + Bestände (Excel)",
+      "package": "Projekt-Paket herunterladen",
+      "packageHint": "Das Projekt-Paket (.lkproj.zip) enthält Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse, Prüf-Notizen und die erstellten Auszüge – zum Import in die Web- oder Desktop-App.",
+      "failed": "Der Datenexport ist fehlgeschlagen",
+      "packageFailed": "Das Projekt-Paket konnte nicht erstellt werden"
     }
   },
   "profile": {
@@ -1026,6 +1104,17 @@
     "errors": {
       "tooLong": "Der Text ist zu lang.",
       "email": "Bitte eine gültige E-Mail-Adresse eingeben."
+    },
+    "data": {
+      "title": "Daten",
+      "hint": "Alle deine Daten als Konto-Paket: jedes Projekt als Projekt-Paket, alle Mappings, Einstellungen und Profil – ohne API-Schlüssel. Importierbar in dieses oder ein anderes Konto (später auch in die Desktop-App).",
+      "download": "Alle Daten herunterladen",
+      "import": "Konto-Paket importieren",
+      "downloadFailed": "Das Konto-Paket konnte nicht erstellt werden",
+      "imported": "Konto-Paket importiert",
+      "importFailed": "Das Konto-Paket konnte nicht importiert werden",
+      "importSummary": "{{projects}} Projekt(e) importiert, {{created}} Mapping(s) neu, {{reused}} wiederverwendet.",
+      "limits": "Pakete bis 200 MB (über den Web-Server bis 50 MB); Einstellungen werden nur übernommen, wenn dieses Konto noch keine hat."
     }
   },
   "hints": {
@@ -1149,6 +1238,84 @@
       "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
       "statementReady": "Kontoauszug {{name}} ist ausgelesen"
     }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Dein Krypto-Vermögen über alle Projekte – aus denselben Daten und Kursen wie die Steuerberechnung.",
+    "empty": "Noch kein Projekt – lege eines an und lade Dateien hoch, dann erscheint hier die Übersicht.",
+    "loadFailed": "Das Dashboard konnte nicht geladen werden.",
+    "recordsFailed": "Die Buchungen konnten nicht geladen werden.",
+    "total": "Gesamtwert per {{date}}",
+    "sinceStart": "seit {{date}}",
+    "noStartValue": "Zu Beginn des Zeitraums war noch kein bewerteter Bestand vorhanden.",
+    "chartLabel": "Gesamtwert in CHF pro Tag",
+    "allocation": "Verteilung nach Asset",
+    "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden und fehlen in der Übersicht.",
+    "period": {
+      "label": "Zeitraum",
+      "ytd": "Seit 1. Januar",
+      "last12": "Letzte 12 Monate",
+      "taxYear": "Steuerjahr {{year}}",
+      "custom": "Eigener Zeitraum",
+      "from": "Von",
+      "to": "Bis (Stichtag)"
+    },
+    "kpi": {
+      "label": "Kennzahlen im Zeitraum",
+      "deposits": "Einzahlungen (In)",
+      "withdrawals": "Auszahlungen (Out)",
+      "income": "Ertrag",
+      "costs": "Kosten / Verluste",
+      "tradingFees": "Handelsgebühren",
+      "incomeShare": "{{pct}} % des Vermögens",
+      "missing": "{{count}} Buchung(en) ohne Kurs nicht enthalten",
+      "bookings": "{{count}} Buchung(en) – anklicken für Details"
+    },
+    "missing": {
+      "title": "Fehlende Kurse",
+      "body": "Ohne Kurs (nicht als 0 gezählt): {{assets}}.",
+      "afterRefresh": "Nach der Aktualisierung von {{count}} Asset(s) fehlen diese Kurse weiterhin."
+    },
+    "rates": {
+      "refresh": "Kurse aktualisieren",
+      "progress": "Lade Kurse {{done}}/{{total}}: {{asset}}",
+      "fx": "Wechselkurse",
+      "offlineHint": "Kursabfragen aus dem Internet sind ausgeschaltet (Einstellungen › Kurse).",
+      "done": "Kurse aktualisiert: {{fetched}} geladen, {{missing}} ohne Kurs",
+      "offline": "Kursabfragen aus dem Internet sind ausgeschaltet",
+      "failed": "Kurse konnten nicht aktualisiert werden"
+    },
+    "holdings": {
+      "title": "Bestände",
+      "asOf": "Stichtag {{date}} – aufklappen für Plattformen und Konten",
+      "search": "Asset oder Plattform suchen",
+      "empty": "Keine Bestände am Stichtag.",
+      "asset": "Asset",
+      "quantity": "Menge",
+      "price": "Kurs CHF",
+      "value": "Marktwert CHF",
+      "trend": "Kursverlauf",
+      "trendOf": "Kursverlauf {{asset}} im Zeitraum",
+      "noPrice": "kein Kurs",
+      "status": {
+        "ok": "bewertet",
+        "missingPrice": "kein Kurs",
+        "negative": "negativ"
+      }
+    },
+    "card": {
+      "title": "Übersicht {{year}}"
+    }
+  },
+  "charts": {
+    "date": "Datum",
+    "valueChf": "Wert CHF",
+    "missing": "Ohne Kurs",
+    "missingOn": "Ohne Kurs: {{assets}}",
+    "missingLegend": "Tage, an denen für mindestens ein Asset kein Kurs vorliegt (nicht als 0 gezählt)",
+    "asset": "Asset",
+    "share": "Anteil",
+    "others": "Andere ({{count}})"
   },
   "estv": {
     "title": "ESTV-Kursliste automatisch",

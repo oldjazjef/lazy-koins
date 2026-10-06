@@ -1,0 +1,386 @@
+<lk-page-header
+  [title]="'dashboard.title' | translate"
+  [subtitle]="'dashboard.subtitle' | translate"
+/>
+
+<!-- Period (F11.4) and "Kurse aktualisieren" -->
+<section
+  class="mb-6 flex flex-wrap items-end gap-4"
+  [attr.aria-label]="'dashboard.period.label' | translate"
+>
+  <div class="flex flex-col gap-1">
+    <label hlmLabel for="dashboard-preset"
+      >{{ 'dashboard.period.label' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="dashboard-preset"
+      class="w-56"
+      [value]="presetValue()"
+      (change)="choosePreset($any($event.target).value)"
+    >
+      <option value="ytd">{{ 'dashboard.period.ytd' | translate }}</option>
+      <option value="last12">
+        {{ 'dashboard.period.last12' | translate }}
+      </option>
+      @for (year of service.taxYears(); track year) {
+      <option [value]="'year:' + year">
+        {{ 'dashboard.period.taxYear' | translate: { year: year } }}
+      </option>
+      }
+      <option value="custom">
+        {{ 'dashboard.period.custom' | translate }}
+      </option>
+    </select>
+  </div>
+  <div class="flex flex-col gap-1">
+    <label hlmLabel for="dashboard-from"
+      >{{ 'dashboard.period.from' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="dashboard-from"
+      type="date"
+      class="w-40"
+      [value]="service.period().from"
+      [max]="service.period().to"
+      (change)="setFrom($any($event.target).value)"
+    />
+  </div>
+  <div class="flex flex-col gap-1">
+    <label hlmLabel for="dashboard-to"
+      >{{ 'dashboard.period.to' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="dashboard-to"
+      type="date"
+      class="w-40"
+      [value]="service.period().to"
+      [min]="service.period().from"
+      (change)="setTo($any($event.target).value)"
+    />
+  </div>
+  <span class="flex-1"></span>
+  @if (service.view.hasValue()) {
+  <div class="flex flex-col items-end gap-1">
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="!service.view.value().online || service.refreshing() !== null"
+      (click)="refresh()"
+    >
+      <ng-icon
+        name="lucideRefreshCw"
+        size="16"
+        aria-hidden="true"
+        [class.animate-spin]="service.refreshing() !== null"
+      />
+      {{ 'dashboard.rates.refresh' | translate }}
+    </button>
+    @if (service.refreshing(); as progress) {
+    <p class="text-muted-foreground text-xs" role="status">
+      {{ 'dashboard.rates.progress' | translate: { done: progress.done, total:
+      progress.total, asset: progress.asset ?? ('dashboard.rates.fx' |
+      translate) } }}
+    </p>
+    } @else if (!service.view.value().online) {
+    <p class="text-muted-foreground text-xs">
+      {{ 'dashboard.rates.offlineHint' | translate }}
+    </p>
+    }
+  </div>
+  }
+</section>
+
+@if (service.view.hasValue()) { @let view = service.view.value(); @if
+(service.isEmpty()) {
+<lk-empty-state [message]="'dashboard.empty' | translate">
+  <a hlmBtn routerLink="/app/projects/new"
+    >{{ 'projects.list.new' | translate }}</a
+  >
+</lk-empty-state>
+} @else {
+<div class="flex flex-col gap-6">
+  <!-- Total value and its course (F11.5) -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <p class="text-muted-foreground text-sm">
+        {{ 'dashboard.total' | translate: { date: (view.to | date: 'dd.MM.yyyy')
+        } }}
+      </p>
+      <p class="text-3xl font-semibold tabular-nums">
+        {{ 'common.chf' | translate }} {{ view.endValueChf | lkChf }}
+      </p>
+      <p class="text-sm tabular-nums">
+        @if (view.changePct !== null) {
+        <span
+          class="font-medium"
+          [class.lk-positive]="!isNegative(view.changeChf)"
+          [class.lk-negative]="isNegative(view.changeChf)"
+          >{{ isNegative(view.changeChf) ? '' : '+' }}{{ view.changePct }} % ({{
+          isNegative(view.changeChf) ? '' : '+' }}{{ view.changeChf | lkChf
+          }})</span
+        >
+        <span class="text-muted-foreground">
+          {{ 'dashboard.sinceStart' | translate: { date: (view.from | date:
+          'dd.MM.yyyy') } }}</span
+        >
+        } @else {
+        <span class="text-muted-foreground"
+          >{{ 'dashboard.noStartValue' | translate }}</span
+        >
+        }
+      </p>
+    </div>
+    <div hlmCardContent>
+      <lk-line-chart
+        [points]="points()"
+        [label]="'dashboard.chartLabel' | translate"
+      />
+    </div>
+  </section>
+
+  <!-- KPIs (F11.6), each a drill-down to its bookings -->
+  <section
+    class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+    [attr.aria-label]="'dashboard.kpi.label' | translate"
+  >
+    @for (kind of kpiKinds; track kind) { @if (kpi(kind); as figure) {
+    <button
+      type="button"
+      class="lk-panel hover:bg-muted flex flex-col items-start gap-1 p-4 text-left transition-colors"
+      (click)="openKpi(kind)"
+    >
+      <span class="text-muted-foreground text-sm"
+        >{{ 'dashboard.kpi.' + kind | translate }}</span
+      >
+      <span class="text-lg font-semibold tabular-nums"
+        >{{ figure.valueChf | lkChf }}</span
+      >
+      @if (kind === 'income' && view.incomeSharePct !== null) {
+      <span class="text-muted-foreground text-xs">
+        {{ 'dashboard.kpi.incomeShare' | translate: { pct: view.incomeSharePct }
+        }}</span
+      >
+      } @if (figure.missingPrices > 0) {
+      <span class="text-xs">
+        {{ 'dashboard.kpi.missing' | translate: { count: figure.missingPrices }
+        }}</span
+      >
+      }
+      <span class="text-muted-foreground text-xs"
+        >{{ 'dashboard.kpi.bookings' | translate: { count:
+        figure.recordIds.length } }}</span
+      >
+    </button>
+    } }
+  </section>
+
+  <!-- Allocation (F11.7) -->
+  @if (view.allocation.length > 0) {
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'dashboard.allocation' | translate }}</h2>
+    </div>
+    <div hlmCardContent>
+      <lk-allocation-bar
+        [parts]="view.allocation"
+        [label]="'dashboard.allocation' | translate"
+      />
+    </div>
+  </section>
+  }
+
+  <!-- Missing prices (F11.9) -->
+  @if (view.missingPrices.length > 0) {
+  <section class="lk-panel flex flex-col gap-1 p-4 text-sm" role="note">
+    <p class="font-medium">{{ 'dashboard.missing.title' | translate }}</p>
+    <p class="text-muted-foreground">
+      {{ 'dashboard.missing.body' | translate: { assets:
+      view.missingPrices.join(', ') } }}
+    </p>
+    @if (service.lastRefresh(); as results) {
+    <p class="text-muted-foreground">
+      {{ 'dashboard.missing.afterRefresh' | translate: { count: results.length }
+      }}
+    </p>
+    }
+  </section>
+  }
+
+  <!-- Holdings (F11.8) -->
+  <section hlmCard>
+    <div hlmCardHeader class="flex flex-wrap items-center gap-3">
+      <div class="min-w-0 flex-1">
+        <h2 hlmCardTitle>{{ 'dashboard.holdings.title' | translate }}</h2>
+        <p hlmCardDescription>
+          {{ 'dashboard.holdings.asOf' | translate: { date: (view.to | date:
+          'dd.MM.yyyy') } }}
+        </p>
+      </div>
+      <input
+        hlmInput
+        type="search"
+        class="w-56"
+        [attr.aria-label]="'dashboard.holdings.search' | translate"
+        [placeholder]="'dashboard.holdings.search' | translate"
+        [value]="service.search()"
+        (input)="search($event)"
+      />
+    </div>
+    <div hlmCardContent>
+      @if (service.holdings().length === 0) {
+      <lk-empty-state [message]="'dashboard.holdings.empty' | translate" />
+      } @else {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable class="w-full table-fixed">
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh class="w-1/4" [attr.aria-sort]="ariaSort('asset')">
+                <button
+                  type="button"
+                  class="font-medium"
+                  (click)="sortBy('asset')"
+                >
+                  {{ 'dashboard.holdings.asset' | translate }}
+                </button>
+              </th>
+              <th
+                hlmTh
+                class="text-right"
+                [attr.aria-sort]="ariaSort('quantity')"
+              >
+                <button
+                  type="button"
+                  class="font-medium"
+                  (click)="sortBy('quantity')"
+                >
+                  {{ 'dashboard.holdings.quantity' | translate }}
+                </button>
+              </th>
+              <th hlmTh class="text-right" [attr.aria-sort]="ariaSort('price')">
+                <button
+                  type="button"
+                  class="font-medium"
+                  (click)="sortBy('price')"
+                >
+                  {{ 'dashboard.holdings.price' | translate }}
+                </button>
+              </th>
+              <th hlmTh class="text-right" [attr.aria-sort]="ariaSort('value')">
+                <button
+                  type="button"
+                  class="font-medium"
+                  (click)="sortBy('value')"
+                >
+                  {{ 'dashboard.holdings.value' | translate }}
+                </button>
+              </th>
+              <th hlmTh class="hidden w-32 md:table-cell">
+                {{ 'dashboard.holdings.trend' | translate }}
+              </th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (holding of service.holdings(); track holding.asset) {
+            <tr hlmTr>
+              <td hlmTd class="min-w-0">
+                <button
+                  type="button"
+                  class="flex max-w-full items-center gap-1 font-medium"
+                  [attr.aria-expanded]="service.expanded().has(holding.asset)"
+                  (click)="service.toggle(holding.asset)"
+                >
+                  <ng-icon
+                    [name]="service.expanded().has(holding.asset) ? 'lucideChevronDown' : 'lucideChevronRight'"
+                    size="14"
+                    aria-hidden="true"
+                  />
+                  <span [lkTruncate]="holding.asset">{{ holding.asset }}</span>
+                </button>
+              </td>
+              <td hlmTd class="truncate text-right tabular-nums">
+                {{ holding.quantity | lkQuantity: 8 }}
+              </td>
+              <td hlmTd class="text-right tabular-nums">
+                @if (holding.priceChf !== null) { {{ holding.priceChf | lkChf }}
+                } @else {
+                <span class="text-muted-foreground"
+                  >{{ 'dashboard.holdings.noPrice' | translate }}</span
+                >
+                }
+              </td>
+              <td hlmTd class="text-right tabular-nums">
+                @if (holding.status === 'ok') { {{ holding.valueChf | lkChf }} }
+                @else {
+                <span class="text-muted-foreground"
+                  >{{ 'dashboard.holdings.status.' + holding.status | translate
+                  }}</span
+                >
+                }
+              </td>
+              <td hlmTd class="hidden md:table-cell">
+                <lk-sparkline
+                  [values]="holding.sparkline"
+                  [label]="'dashboard.holdings.trendOf' | translate: { asset: holding.asset }"
+                />
+              </td>
+            </tr>
+            @if (service.expanded().has(holding.asset)) { @for (account of
+            holding.accounts; track account.platform + account.accountId) {
+            <tr hlmTr class="bg-muted/40">
+              <td hlmTd class="min-w-0 pl-8 text-sm">
+                <span
+                  [lkTruncate]="account.platform + ' · ' + account.accountId"
+                  >{{ account.platform }} · {{ account.accountId }}</span
+                >
+              </td>
+              <td hlmTd class="truncate text-right text-sm tabular-nums">
+                {{ account.quantity | lkQuantity: 8 }}
+              </td>
+              <td hlmTd></td>
+              <td hlmTd class="text-right text-sm tabular-nums">
+                {{ account.valueChf | lkChf }}
+              </td>
+              <td hlmTd class="hidden md:table-cell"></td>
+            </tr>
+            } } }
+          </tbody>
+        </table>
+      </div>
+      }
+    </div>
+  </section>
+
+  @if (view.unreadable > 0) {
+  <p class="text-muted-foreground text-sm">
+    {{ 'dashboard.unreadable' | translate: { count: view.unreadable } }}
+  </p>
+  }
+</div>
+} } @else if (service.view.error()) {
+<lk-empty-state [message]="'dashboard.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.view.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<div class="flex flex-col gap-4">
+  <hlm-skeleton class="h-80 w-full" />
+  <hlm-skeleton class="h-24 w-full" />
+  <hlm-skeleton class="h-64 w-full" />
+</div>
+}
+
+<lk-records-dialog
+  [title]="service.recordsOf()?.title ?? null"
+  [data]="service.records()"
+  (closed)="service.closeRecords()"
+/>

@@ -16,6 +16,8 @@ import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
+import { BOOKING_KINDS } from '../../../../core/api/api.types';
+import type { DataExportFilter } from '../../../../core/api/dashboard.types';
 import {
   type ExportKind,
   INTERNAL_KINDS,
@@ -87,6 +89,20 @@ export class ProjectExports {
   });
 
   protected readonly draft = signal<MailDraft | null>(null);
+  protected readonly bookingKinds = BOOKING_KINDS;
+  protected readonly filter = signal<DataExportFilter>({});
+
+  protected setFilter(key: keyof DataExportFilter, value: string): void {
+    this.filter.update((current) => ({ ...current, [key]: value }));
+  }
+
+  protected data(format: 'csv' | 'xlsx', type: 'bookings' | 'holdings'): void {
+    void this.service.downloadData(format, type, this.filter());
+  }
+
+  protected packageDownload(): void {
+    void this.service.downloadPackage();
+  }
 
   /** Each group of stored exports (F10), newest first, 10 per page. */
   protected readonly pagers = {

@@ -23,6 +23,7 @@ import {
   type ResultView,
   type StoredRate,
 } from '../../../../core/api/calculation.types';
+import type { DataExportFilter } from '../../../../core/api/dashboard.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
@@ -551,6 +552,65 @@ export class ProjectWorkspaceService {
       );
     } catch {
       this.notifications.error('exports.downloadFailed');
+    }
+  }
+
+  /** F10.7: bookings/holdings in the standard format, filtered, as CSV or Excel. */
+  async downloadData(
+    format: 'csv' | 'xlsx',
+    type: 'bookings' | 'holdings',
+    filter: DataExportFilter,
+  ): Promise<void> {
+    const params: Record<string, string> = { format, type };
+    for (const [key, value] of Object.entries(filter)) {
+      if (typeof value === 'string' && value.trim() !== '')
+        params[key] = value.trim();
+    }
+    await this.downloadFrom(
+      `/projects/${this.requireId()}/data-export`,
+      params,
+      `daten.${format}`,
+      'exports.data.failed',
+    );
+  }
+
+  /** F10.8: the project package (.lkproj.zip). */
+  async downloadPackage(): Promise<void> {
+    await this.downloadFrom(
+      `/projects/${this.requireId()}/package`,
+      {},
+      'projekt.lkproj.zip',
+      'exports.data.packageFailed',
+    );
+  }
+
+  /** A download is running (data export, package). */
+  readonly downloading = signal(false);
+
+  private async downloadFrom(
+    path: `/${string}`,
+    params: Record<string, string>,
+    fallback: string,
+    errorKey: string,
+  ): Promise<void> {
+    this.downloading.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.http.get(apiUrl(path), {
+          params,
+          observe: 'response',
+          responseType: 'blob',
+        }),
+      );
+      saveBlob(
+        this.document,
+        response.body ?? new Blob(),
+        fileNameFrom(response.headers.get('Content-Disposition'), fallback),
+      );
+    } catch {
+      this.notifications.error(errorKey);
+    } finally {
+      this.downloading.set(false);
     }
   }
 

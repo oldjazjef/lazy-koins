@@ -64,6 +64,7 @@ model User {
   mappings    ImportMapping[]
   settings    UserSettings?
   aiSettings  AiSettings?
+  rates       UserRate[]
 
   @@map("user")
 }
@@ -92,6 +93,7 @@ model Project {
   itemStates  OpenItemState[]
   exports     ProjectExport[]
   hintStates  ProjectHintState[]
+  carryovers  ProjectCarryover[]
 
   @@index([ownerId, taxYear])
   @@map("project")
@@ -337,20 +339,54 @@ model AiSettings {
   @@map("ai_settings")
 }
 
-/// A dismissed F5.8 hint ("Als in Ordnung markieren" / "Ignorieren"), keyed by the hint's stable
-/// key so it survives recalculation and new uploads. No row = open.
-model ProjectHintState {
-  projectId String   @map("project_id")
-  hintKey   String   @map("hint_key")
-  /// done | ignored (CHECK)
-  status    String
-  note      String   @default("")
-  updatedAt DateTime @updatedAt @map("updated_at")
+/// A user's own rate cache (F11.4): daily series fetched for the dashboard over any period, shared
+/// by all projects of the user for the dashboard only — a project's calculation reads only its
+/// own `project_rate` rows (F7.4). No overrides here (`manual` lives in the project).
+model UserRate {
+  id        String   @id @default(uuid(7))
+  userId    String   @map("user_id")
+  /// price | fx. CHECK in the migration.
+  kind      String
+  asset     String
+  /// CHF | USD. CHECK in the migration.
+  currency  String
+  /// ISO date.
+  date      String
+  /// Decimal string.
+  value     String
+  /// binance | coingecko | ecb. CHECK in the migration.
+  source    String
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, asset, currency, date, source])
+  @@map("user_rate")
+}
+
+/// What a project took over from another one (F4.4, F4.4a) or from a package (F10.8), one row per
+/// item — so the new project shows "aus Projekt X". The source project may be deleted later; its
+/// name is kept. A carried-over open item lives here (`data` = the item and its note) and is
+/// ticked off through `open_item_state` with the key `carried:<id>`.
+model ProjectCarryover {
+  id                String   @id @default(uuid(7))
+  projectId         String   @map("project_id")
+  /// null for a package import.
+  sourceProjectId   String?  @map("source_project_id")
+  sourceProjectName String   @map("source_project_name")
+  /// project | file | correction | open_item | notes. CHECK in the migration.
+  kind              String
+  /// The new project's item (project file id, correction id), when there is one.
+  ref               String?
+  label             String   @default("")
+  /// JSON. CHECK json_valid in the migration.
+  data              String   @default("{}")
+  createdAt         DateTime @default(now()) @map("created_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@id([projectId, hintKey])
-  @@map("project_hint_state")
+  @@index([projectId])
+  @@map("project_carryover")
 }
 
 /// The ESTV Kursliste (ICTax) of one tax year, **once per deployment** (F7.4a) — not per user: the
@@ -407,4 +443,20 @@ model EstvCheck {
   error     String?
 
   @@map("estv_check")
+}
+
+/// A dismissed F5.8 hint ("Als in Ordnung markieren" / "Ignorieren"), keyed by the hint's stable
+/// key so it survives recalculation and new uploads. No row = open.
+model ProjectHintState {
+  projectId String   @map("project_id")
+  hintKey   String   @map("hint_key")
+  /// done | ignored (CHECK)
+  status    String
+  note      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, hintKey])
+  @@map("project_hint_state")
 }

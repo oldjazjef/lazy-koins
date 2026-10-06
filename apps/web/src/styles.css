@@ -56,6 +56,19 @@
   --light-yellow: #d9a514;
   --light-red: #c0392b;
   --light-grey: #a0a9b6;
+  /* Gains and losses as text (dashboard change), >= 4.5:1 on the card. */
+  --positive: #1f7a4a;
+  --negative: #b42318;
+  /* Categorical slots of the allocation bar (F11.7), fixed order — a validated palette (CVD-safe
+     on adjacent pairs); "Andere" is neutral. Same hues stepped for the dark surface below. */
+  --alloc-1: #2a78d6;
+  --alloc-2: #eb6834;
+  --alloc-3: #1baf7a;
+  --alloc-4: #eda100;
+  --alloc-5: #e87ba4;
+  --alloc-6: #008300;
+  --alloc-7: #4a3aa7;
+  --alloc-other: #a0a9b6;
 }
 
 :root.dark {
@@ -88,6 +101,16 @@
   --light-yellow: #e8bf4a;
   --light-red: #f07167;
   --light-grey: #6b7686;
+  --positive: #4fbf83;
+  --negative: #f97066;
+  --alloc-1: #3987e5;
+  --alloc-2: #d95926;
+  --alloc-3: #199e70;
+  --alloc-4: #c98500;
+  --alloc-5: #d55181;
+  --alloc-6: #008300;
+  --alloc-7: #9085e9;
+  --alloc-other: #6b7686;
 }
 
 @layer base {
@@ -301,6 +324,123 @@
 
   .lk-facts dd {
     @apply font-medium;
+  }
+}
+
+@layer components {
+  /* Charts (F11.5–F11.8): hand-rolled SVG, coloured only through these tokens. */
+  .lk-chart-line {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-chart-area {
+    fill: var(--primary);
+    fill-opacity: 0.08;
+    stroke: none;
+  }
+
+  .lk-chart-grid {
+    stroke: var(--border);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-chart-crosshair {
+    stroke: var(--muted-foreground);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Days with an asset without a price (F11.9): a warning strip under the line. */
+  .lk-chart-missing {
+    fill: var(--light-yellow);
+  }
+
+  .lk-chart-tooltip {
+    @apply bg-popover text-popover-foreground pointer-events-none absolute top-0 z-10 w-56 -translate-x-1/2 rounded-md border px-3 py-2 text-xs shadow-md;
+  }
+
+  .lk-spark-up {
+    stroke: var(--positive);
+  }
+
+  .lk-spark-down {
+    stroke: var(--negative);
+  }
+
+  .lk-spark {
+    fill: none;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-positive {
+    color: var(--positive);
+  }
+
+  .lk-negative {
+    color: var(--negative);
+  }
+
+  /* Allocation slices and their legend swatches. The surface stroke keeps a 2px gap. */
+  .lk-alloc {
+    stroke: var(--card);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-alloc-1 {
+    fill: var(--alloc-1);
+    background-color: var(--alloc-1);
+  }
+
+  .lk-alloc-2 {
+    fill: var(--alloc-2);
+    background-color: var(--alloc-2);
+  }
+
+  .lk-alloc-3 {
+    fill: var(--alloc-3);
+    background-color: var(--alloc-3);
+  }
+
+  .lk-alloc-4 {
+    fill: var(--alloc-4);
+    background-color: var(--alloc-4);
+  }
+
+  .lk-alloc-5 {
+    fill: var(--alloc-5);
+    background-color: var(--alloc-5);
+  }
+
+  .lk-alloc-6 {
+    fill: var(--alloc-6);
+    background-color: var(--alloc-6);
+  }
+
+  .lk-alloc-7 {
+    fill: var(--alloc-7);
+    background-color: var(--alloc-7);
+  }
+
+  .lk-alloc-other {
+    fill: var(--alloc-other);
+    background-color: var(--alloc-other);
+  }
+
+  .lk-swatch-missing {
+    background-color: var(--light-yellow);
+  }
+
+  .lk-swatch {
+    @apply inline-block size-3 shrink-0 rounded-sm;
   }
 }
 

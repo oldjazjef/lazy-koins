@@ -43,6 +43,138 @@
   </div>
 </section>
 
+<!-- F10.7 / F10.8: the data itself, in the standard format, and the project package -->
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'exports.data.title' | translate }}</h3>
+    <p hlmCardDescription>{{ 'exports.data.hint' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-4">
+    <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div class="flex min-w-0 flex-col gap-1">
+        <label hlmLabel for="data-platform"
+          >{{ 'exports.data.platform' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="data-platform"
+          type="text"
+          [value]="filter().platform ?? ''"
+          (input)="setFilter('platform', $any($event.target).value)"
+        />
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label hlmLabel for="data-account"
+          >{{ 'exports.data.account' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="data-account"
+          type="text"
+          [value]="filter().account ?? ''"
+          (input)="setFilter('account', $any($event.target).value)"
+        />
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label hlmLabel for="data-asset"
+          >{{ 'exports.data.asset' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="data-asset"
+          type="text"
+          [value]="filter().asset ?? ''"
+          (input)="setFilter('asset', $any($event.target).value)"
+        />
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label hlmLabel for="data-kind"
+          >{{ 'exports.data.kind' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="data-kind"
+          [value]="filter().kind ?? ''"
+          (change)="setFilter('kind', $any($event.target).value)"
+        >
+          <option value="">{{ 'exports.data.allKinds' | translate }}</option>
+          @for (kind of bookingKinds; track kind) {
+          <option [value]="kind">
+            {{ 'bookings.kind.' + kind | translate }}
+          </option>
+          }
+        </select>
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label hlmLabel for="data-from"
+          >{{ 'exports.data.from' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="data-from"
+          type="date"
+          [value]="filter().from ?? ''"
+          (change)="setFilter('from', $any($event.target).value)"
+        />
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label hlmLabel for="data-to"
+          >{{ 'exports.data.to' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="data-to"
+          type="date"
+          [value]="filter().to ?? ''"
+          (change)="setFilter('to', $any($event.target).value)"
+        />
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.downloading()"
+        (click)="data('csv', 'bookings')"
+      >
+        {{ 'exports.data.csvBookings' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.downloading()"
+        (click)="data('csv', 'holdings')"
+      >
+        {{ 'exports.data.csvHoldings' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="service.downloading()"
+        (click)="data('xlsx', 'bookings')"
+      >
+        {{ 'exports.data.xlsx' | translate }}
+      </button>
+      <span class="flex-1"></span>
+      <button
+        hlmBtn
+        variant="secondary"
+        type="button"
+        [disabled]="service.downloading()"
+        (click)="packageDownload()"
+      >
+        {{ 'exports.data.package' | translate }}
+      </button>
+    </div>
+    <p class="text-muted-foreground text-xs">
+      {{ 'exports.data.packageHint' | translate }}
+    </p>
+  </div>
+</section>
+
 <section class="flex flex-col gap-2">
   <h3 class="font-medium">{{ 'exports.listTitle' | translate }}</h3>
   @if (service.exports.hasValue()) { @if (service.exports.value().length === 0)

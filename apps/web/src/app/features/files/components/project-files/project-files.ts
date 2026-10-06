@@ -49,6 +49,7 @@ import { AiAssistState } from '../ai-assist';
 import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
+import { TakeOverFiles } from '../take-over-files';
 import { ProjectFilesService } from './project-files.service';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
@@ -72,6 +73,7 @@ type Dialog =
 @Component({
   selector: 'lk-project-files',
   imports: [
+    TakeOverFiles,
     DatePipe,
     DecimalPipe,
     UpperCasePipe,
