@@ -201,6 +201,16 @@ const bookings = z
     priceUsd: columnOnly
       .optional()
       .describe('Price of one unit in USD, if the export has it.'),
+    valueUsd: columnOnly
+      .optional()
+      .describe(
+        'Total USD value of the movement, if the export has it (e.g. Kraken "amountusd"). Income is valued from it.',
+      ),
+    feeValueUsd: columnOnly
+      .optional()
+      .describe(
+        'USD value of the fee, if the export has it (e.g. Kraken "feeusd").',
+      ),
   })
   .describe('How rows become Buchungen.');
 

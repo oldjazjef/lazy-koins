@@ -110,6 +110,12 @@
     },
     "group": {
       "column": "refid"
+    },
+    "valueUsd": {
+      "column": "amountusd"
+    },
+    "feeValueUsd": {
+      "column": "feeusd"
     }
   },
   "holdings": {

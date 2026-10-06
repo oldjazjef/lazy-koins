@@ -132,6 +132,12 @@ describe('mapping: Kraken ledger (2024+ layout with feecurrency)', () => {
     expect(byRow(result.bookings, 7)?.accountId).toBe('earn / flexible');
   });
 
+  it('keeps the USD values the ledger states (amountusd, feeusd) for income valuation', () => {
+    expect(str(byRow(result.bookings, 12)?.valueUsd)).toBe('-180');
+    expect(str(byRow(result.bookings, 12)?.feeValueUsd)).toBe('4.5');
+    expect(byRow(result.bookings, 7)?.feeValueUsd?.isZero()).toBe(true);
+  });
+
   it('turns the running balance into the latest balance per account and raw asset', () => {
     const holdings = result.holdings.map((h) => [
       h.accountId,

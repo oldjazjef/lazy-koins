@@ -93,6 +93,13 @@ export interface Booking extends SourceRef {
   /** Price of one unit in CHF / USD at `timestamp`, when the source states one. */
   readonly priceChf?: Decimal;
   readonly priceUsd?: Decimal;
+  /**
+   * The movement's total USD value as the platform states it (Kraken `amountusd`). Income is
+   * valued from it (× USD/CHF of the day) before any price lookup (FACHREGELN, Kraken).
+   */
+  readonly valueUsd?: Decimal;
+  /** The fee's USD value as the platform states it (Kraken `feeusd`). */
+  readonly feeValueUsd?: Decimal;
   /** Bookings of one event (the legs of a trade) share a group (Kraken `refid`, …). */
   readonly group?: string;
   readonly note?: string;
