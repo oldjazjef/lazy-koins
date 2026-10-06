@@ -26,6 +26,7 @@ import {
   lucideTrash2,
   lucideUpload,
 } from '@ng-icons/lucide';
+import type { Pagination } from '../../../../shared/components/paginator';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -46,6 +47,14 @@ import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
 import { ProjectFilesService } from './project-files.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
+
+type FileAction = 'preview' | 'download' | 'ai' | 'assign' | 'remove';
 
 type Dialog =
   | { readonly kind: 'preview'; readonly file: ProjectFile }
@@ -67,6 +76,9 @@ type Dialog =
     RouterLink,
     NgIcon,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     EmptyState,
     AiAssist,
     MappingPreviewView,
@@ -86,11 +98,8 @@ type Dialog =
     provideIcons({
       lucideChevronRight,
       lucideDownload,
-      lucideEye,
-      lucideLink2,
       lucideScanText,
       lucideSparkles,
-      lucideTrash2,
       lucideUpload,
     }),
   ],
@@ -129,8 +138,32 @@ export class ProjectFiles implements OnDestroy {
   });
   private scrolledTo: string | null = null;
 
+  /** One pager per platform group (10 rows per page, chosen size remembered). */
+  private readonly pagers = new Map<string, Pagination<ProjectFile>>();
+
+  /** The row menu per file (user rule: actions behind "⋯"); none but preview/download when closed. */
+  private readonly actions = computed(() => {
+    const closed = this.closed();
+    const files = this.service.overview.hasValue()
+      ? this.service.overview.value().groups.flatMap((group) => group.files)
+      : [];
+    return new Map(
+      files.map((file) => [file.id, fileActions(file, closed)] as const),
+    );
+  });
+
   constructor() {
     effect(() => this.service.projectId.set(this.projectId()));
+    // `#file-<id>` on another page of its group: show that page first.
+    effect(() => {
+      const id = this.highlighted();
+      if (!id || !this.service.overview.hasValue()) return;
+      for (const group of this.service.overview.value().groups) {
+        if (group.files.some((file) => file.id === id)) {
+          this.pagerFor(group.platform).reveal((file) => file.id === id);
+        }
+      }
+    });
     // The rows arrive after the route did its own (anchor-less) scrolling: scroll once they exist.
     afterRenderEffect(() => {
       const id = this.highlighted();
@@ -146,6 +179,50 @@ export class ProjectFiles implements OnDestroy {
 
   ngOnDestroy(): void {
     this.releasePdf();
+  }
+
+  protected pagerFor(platform: string | null): Pagination<ProjectFile> {
+    const key = platform ?? '';
+    let pager = this.pagers.get(key);
+    if (!pager) {
+      pager = paginate(
+        computed(() =>
+          this.service.overview.hasValue()
+            ? (this.service.overview
+                .value()
+                .groups.find((group) => (group.platform ?? '') === key)
+                ?.files ?? [])
+            : [],
+        ),
+        { storageKey: 'files' },
+      );
+      this.pagers.set(key, pager);
+    }
+    return pager;
+  }
+
+  protected actionsFor(file: ProjectFile): readonly RowAction<FileAction>[] {
+    return this.actions().get(file.id) ?? [];
+  }
+
+  protected act(action: FileAction, file: ProjectFile): void {
+    switch (action) {
+      case 'preview':
+        void this.openPreview(file);
+        return;
+      case 'download':
+        void this.service.download(file);
+        return;
+      case 'ai':
+        this.withAi(file);
+        return;
+      case 'assign':
+        this.openAssign(file);
+        return;
+      case 'remove':
+        this.dialog.set({ kind: 'remove', file });
+        return;
+    }
   }
 
   protected statusVariant(
@@ -262,4 +339,45 @@ export class ProjectFiles implements OnDestroy {
     if (url) URL.revokeObjectURL(url);
     this.pdfUrl.set(null);
   }
+}
+
+/**
+ * Vorschau, Herunterladen, Mit AI auslesen (a PDF) / Mit AI erstellen (a table without a
+ * mapping), Zuordnen, Entfernen — the last three only while the project is open (F4.5).
+ */
+export function fileActions(
+  file: ProjectFile,
+  closed: boolean,
+): RowAction<FileAction>[] {
+  const ai =
+    file.kind === 'pdf'
+      ? { labelKey: 'files.actions.aiStatement', icon: lucideScanText }
+      : { labelKey: 'files.actions.aiMapping', icon: lucideSparkles };
+  return [
+    { id: 'preview', labelKey: 'files.actions.preview', icon: lucideEye },
+    {
+      id: 'download',
+      labelKey: 'files.actions.download',
+      icon: lucideDownload,
+    },
+    {
+      id: 'ai',
+      ...ai,
+      hidden:
+        closed || (file.kind !== 'pdf' && file.status !== 'needs_mapping'),
+    },
+    {
+      id: 'assign',
+      labelKey: 'files.actions.assign',
+      icon: lucideLink2,
+      hidden: closed,
+    },
+    {
+      id: 'remove',
+      labelKey: 'files.actions.remove',
+      icon: lucideTrash2,
+      danger: true,
+      hidden: closed,
+    },
+  ];
 }

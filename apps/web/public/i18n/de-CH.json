@@ -12,7 +12,18 @@
     "retry": "Erneut versuchen",
     "save": "Speichern",
     "close": "Schliessen",
-    "chf": "CHF"
+    "chf": "CHF",
+    "actions": "Aktionen",
+    "pagination": {
+      "label": "Seiten",
+      "range": "Zeile {{from}}–{{to}} von {{total}}",
+      "pageSize": "Pro Seite",
+      "page": "Seite {{page}} von {{count}}",
+      "first": "Erste Seite",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "last": "Letzte Seite"
+    }
   },
   "countries": {
     "CH": "Schweiz"
@@ -306,7 +317,7 @@
     "list": {
       "subtitle": "Alle deine Mappings. Sie gelten für alle deine Projekte: Dateien mit denselben Spalten werden beim Hochladen automatisch damit gelesen.",
       "new": "Neues Mapping",
-      "newDescription": "Das Mapping als JSON. «Speichern» prüft es vollständig; die Vorschau mit einer Datei gibt es auf der Seite des Mappings, sobald eine Datei es nutzt.",
+      "newDescription": "Lade eine Beispieldatei (CSV oder XLSX) – dann siehst du ihre Spalten, kannst eine Vorlage daraus erzeugen oder das Mapping mit AI schreiben lassen und siehst live, was das Mapping aus der Datei liest. «Speichern» prüft das Mapping vollständig.",
       "search": "Suchen",
       "searchPlaceholder": "Name oder Plattform",
       "sort": "Sortieren nach",
@@ -330,7 +341,7 @@
       "created": "Erstellt",
       "jsonTitle": "Mapping (JSON)",
       "edit": "Bearbeiten",
-      "editHint": "Ändere das JSON, prüfe es mit einer Datei, die das Mapping nutzt, und speichere. Die Dateien behalten ihr bisheriges Ergebnis, bis du sie neu lesen lässt.",
+      "editHint": "Ändere das JSON und sieh live, was es aus der Beispieldatei liest (eine Datei, die das Mapping nutzt, ist schon geladen). Die Dateien behalten ihr bisheriges Ergebnis, bis du sie neu lesen lässt.",
       "usageTitle": "Wird genutzt in",
       "usageEmpty": "Noch keine Datei wird mit diesem Mapping gelesen. Lade in einem Projekt einen Export mit diesen Spalten hoch – er wird automatisch damit gelesen.",
       "project": "Projekt",
@@ -351,6 +362,52 @@
       "reapplyClosed": "Davon in abgeschlossenen Projekten: {{count}} – sie bleiben unverändert.",
       "reapplied": "{{reapplied}} Datei(en) neu gelesen.",
       "reappliedSkipped": "{{reapplied}} Datei(en) neu gelesen, {{skipped}} in abgeschlossenen Projekten unverändert gelassen."
+    },
+    "sample": {
+      "title": "Beispieldatei",
+      "notStored": "Nur für diese Bearbeitung – die Datei wird nicht gespeichert und keinem Projekt hinzugefügt.",
+      "drop": "Export hierher ziehen (CSV oder XLSX)",
+      "pick": "Datei auswählen",
+      "fromProjectPick": "Datei aus einem Projekt wählen",
+      "limits": "Höchstens 20 MB, wie beim Hochladen.",
+      "loading": "Datei wird gelesen …",
+      "project": "Projekt",
+      "chooseProject": "Projekt wählen …",
+      "file": "Datei",
+      "chooseFile": "Datei wählen …",
+      "noFiles": "Keine CSV- oder XLSX-Datei in diesem Projekt",
+      "use": "Verwenden",
+      "remove": "Andere Datei",
+      "template": "Vorlage aus Datei",
+      "size": "{{kb}} KB",
+      "rows": "{{count}} Zeilen",
+      "sheet": "Blatt «{{name}}»",
+      "fromProject": "aus «{{name}}»",
+      "recognisedStandard": "Diese Datei ist im Standardformat – sie braucht kein Mapping.",
+      "recognisedBy": "Wird heute schon erkannt mit:",
+      "noSample": "Lade oben eine Beispieldatei, dann siehst du hier live, was das Mapping aus ihr liest.",
+      "tabPreview": "Vorschau",
+      "tabRaw": "Datei (roh)",
+      "previewing": "Vorschau wird aktualisiert …",
+      "previewFailed": "Die Vorschau konnte nicht erstellt werden.",
+      "stale": "Das JSON ist gerade ungültig – die Vorschau zeigt den letzten gültigen Stand.",
+      "invalidSpec": "Das Mapping ist noch nicht gültig – die Hinweise stehen beim JSON.",
+      "rawHint": "Die ersten Zeilen, wie sie in der Datei stehen. Kopfzeile vermutlich in Zeile {{row}} (hervorgehoben); Zeilen darüber sind Vorspann.",
+      "moreRows": "{{shown}} von {{total}} Zeilen gezeigt.",
+      "aiProposal": "Vorschlag der AI – prüfe ihn in der Vorschau, bevor du speicherst.",
+      "fingerprint": {
+        "this": "Diese Datei würde beim Hochladen mit diesem Mapping erkannt.",
+        "other": "Beim Hochladen würde stattdessen «{{name}}» gewählt – es passt genauer auf die Spalten.",
+        "standard": "Die Datei ist im Standardformat: Sie wird ohne Mapping gelesen.",
+        "none": "Die Spalten in match.headers passen nicht zu dieser Datei – sie würde nicht erkannt."
+      },
+      "addToProject": "Nach dem Speichern auch hinzufügen zu",
+      "noProject": "keinem Projekt",
+      "addedToProject": "Datei zum Projekt hinzugefügt und mit dem neuen Mapping gelesen",
+      "openFile": "Datei öffnen",
+      "notTable": "Das ist keine lesbare Tabelle (CSV oder XLSX)",
+      "empty": "Die Datei ist leer",
+      "loadFailed": "Die Datei konnte nicht geladen werden"
     }
   },
   "ai": {
@@ -449,6 +506,32 @@
       "badResponse": "Die Antwort des Anbieters war unbrauchbar.",
       "providerError": "Der Anbieter meldet einen Fehler.",
       "modelNotFound": "Das Modell oder die Adresse gibt es beim Anbieter nicht."
+    },
+    "details": {
+      "show": "Details anzeigen",
+      "summary": "Fehler",
+      "status": "HTTP-Status des Anbieters",
+      "providerMessage": "Meldung des Anbieters",
+      "providerType": "Fehlertyp / -code",
+      "url": "Adresse",
+      "model": "Modell",
+      "code": "Fehlercode",
+      "cause": "Ursache",
+      "detail": "Details",
+      "hint": "Tipp",
+      "copy": "Details kopieren",
+      "copied": "Kopiert"
+    },
+    "hints": {
+      "key": "Prüfe den API-Schlüssel: richtig kopiert, noch gültig und für diesen Anbieter?",
+      "model": "Prüfe den Modellnamen und die Adresse (bei OpenAI-kompatiblen Anbietern bis und mit /v1).",
+      "rateLimit": "Limit erreicht oder kein Guthaben mehr – prüfe dein Konto beim Anbieter oder versuche es später.",
+      "refused": "Niemand antwortet unter dieser Adresse – läuft der lokale Server (Ollama, LM Studio) und stimmt der Port?",
+      "notFound": "Der Rechnername ist unbekannt – prüfe die Adresse auf Tippfehler.",
+      "tls": "Das Zertifikat des Servers ist ungültig – prüfe die Adresse (https vs. http).",
+      "timeout": "Der Anbieter hat nicht rechtzeitig geantwortet – ein lokales Modell lädt beim ersten Mal lange; versuche es nochmals.",
+      "address": "Prüfe die Adresse: eine öffentliche http(s)-Adresse ohne Benutzer, Query oder Fragment.",
+      "unreachable": "Die lazy-koins-API ist nicht erreichbar – läuft der Server?"
     }
   },
   "settings": {
@@ -567,8 +650,8 @@
       "subtitle": "Kurse aus dem Internet, CoinGecko-Schlüssel, ESTV-Kursliste",
       "hint": "Ausgeschaltet holt lazy-koins keine Kurse aus dem Internet; gespeicherte und manuell erfasste Kurse gelten weiter.",
       "coingeckoHint": "Für Assets ohne Binance-Kurs (CoinGecko Demo-Schlüssel). Wird verschlüsselt gespeichert.",
-      "estvTitle": "ESTV-Kursliste",
-      "estvHint": "Die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
+      "estvTitle": "ESTV-Kursliste manuell importieren",
+      "estvHint": "Ersatz, wenn der automatische Bezug nicht geht: die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
       "project": "Projekt"
     },
     "wallets": {
@@ -1189,6 +1272,52 @@
       "remove": "Entfernen",
       "added": "Saldo erfasst.",
       "removed": "Saldo entfernt."
+    }
+  },
+  "estv": {
+    "title": "ESTV-Kursliste automatisch",
+    "hint": "lazy-koins bezieht die offizielle Kursliste (ICTax) einmal je Steuerjahr und Stand für alle und prüft täglich, ob die ESTV einen neueren Stand veröffentlicht hat. Daraus gelten die Jahresendkurse der Kryptowährungen und Devisen (USD, EUR) – vor allen anderen Quellen.",
+    "disabled": "Der automatische Bezug ist auf diesem Server ausgeschaltet. Der manuelle Import bleibt möglich.",
+    "offline": "Kursabfragen aus dem Internet sind ausgeschaltet – die Kursliste wird nicht bezogen.",
+    "none": "Noch keine Kursliste geladen.",
+    "notLoaded": "nicht geladen",
+    "downloadedAt": "geladen {{date}}",
+    "lastCheck": "Zuletzt geprüft: {{date}}",
+    "update": "ESTV-Kursliste aktualisieren",
+    "apply": "Neuen Stand übernehmen",
+    "running": "Kursliste {{year}} wird bezogen",
+    "updated": "Neuer Stand der ESTV-Kursliste geladen",
+    "current": "Die ESTV-Kursliste ist aktuell",
+    "checkFailed": "ESTV-Kursliste konnte nicht bezogen werden",
+    "updateFailed": "ESTV-Kursliste konnte nicht aktualisiert werden",
+    "applyFailed": "ESTV-Kursliste konnte nicht übernommen werden",
+    "applied": "{{count}} Kryptowährungen aus der {{label}} übernommen",
+    "noneForYear": "Für {{year}} ist noch keine ESTV-Kursliste geladen",
+    "loadFailed": "Der Stand der ESTV-Kursliste konnte nicht geladen werden.",
+    "projectTitle": "ESTV-Kursliste {{year}}",
+    "inUse": "Verwendet: {{label}}",
+    "notApplied": "Noch keine ESTV-Werte in diesem Projekt.",
+    "newer": "Verfügbar: {{label}}",
+    "projectOffline": "Automatischer Bezug aus (Einstellungen oder Server) – ein gespeicherter Stand kann trotzdem übernommen werden.",
+    "matched": "{{count}} Kryptowährungen und {{fx}} Devisenkurse aus der Kursliste",
+    "ambiguous": "{{asset}}: mehrere Einträge in der Kursliste ({{names}}) – kein ESTV-Wert übernommen, bitte den Kurs per 31.12. überschreiben.",
+    "fields": {
+      "year": "Steuerjahr",
+      "version": "Stand",
+      "crypto": "Kryptowährungen",
+      "fx": "Devisen",
+      "checked": "Letzte Prüfung"
+    },
+    "outcome": {
+      "updated": "neu geladen",
+      "current": "aktuell",
+      "failed": "Fehler"
+    },
+    "phase": {
+      "metadata": "Stand prüfen",
+      "download": "herunterladen",
+      "parse": "lesen",
+      "store": "speichern"
     }
   }
 }

@@ -24,7 +24,11 @@
 </lk-page-header>
 
 <div class="grid gap-6 lg:grid-cols-3">
-  <section hlmCard class="min-w-0 lg:col-span-2">
+  <section
+    hlmCard
+    class="min-w-0"
+    [class]="service.editing() ? 'lg:col-span-3' : 'lg:col-span-2'"
+  >
     <div hlmCardHeader>
       <h2 hlmCardTitle>{{ 'mappings.detail.jsonTitle' | translate }}</h2>
       @if (service.editing()) {
@@ -33,17 +37,7 @@
     </div>
     <div hlmCardContent class="flex flex-col gap-4">
       @if (service.editing()) {
-      <lk-mapping-editor-form
-        [idPrefix]="'mapping-detail'"
-        [text]="service.text()"
-        (textChange)="service.text.set($event)"
-        [checkFileId]="service.checkFileId()"
-        (checkFileIdChange)="service.checkFileId.set($event)"
-        [checkFiles]="service.checkFiles()"
-        [issues]="service.issues()"
-        [invalidJson]="service.invalidJson()"
-        [preview]="service.preview()"
-      />
+      <lk-mapping-workbench [idPrefix]="'mapping-detail'" />
       <div class="flex flex-wrap justify-end gap-2">
         <button
           hlmBtn
@@ -55,17 +49,8 @@
         </button>
         <button
           hlmBtn
-          variant="outline"
           type="button"
-          [disabled]="service.busy() || !service.canCheck()"
-          (click)="service.check()"
-        >
-          {{ 'mappings.editor.check' | translate }}
-        </button>
-        <button
-          hlmBtn
-          type="button"
-          [disabled]="service.busy()"
+          [disabled]="service.busy() || workbench.invalidJson()"
           (click)="service.save()"
         >
           {{ 'common.save' | translate }}
@@ -131,37 +116,47 @@
     </p>
     } @else {
     <div hlmTableContainer class="lk-panel">
-      <table hlmTable>
+      <table hlmTable class="table-fixed">
+        <colgroup>
+          <col class="w-2/5" />
+          <col class="w-20" />
+          <col class="hidden w-32 md:table-column" />
+          <col />
+        </colgroup>
         <thead hlmTHead>
           <tr hlmTr>
             <th hlmTh>{{ 'mappings.detail.project' | translate }}</th>
             <th hlmTh>{{ 'mappings.detail.taxYear' | translate }}</th>
-            <th hlmTh>{{ 'mappings.detail.status' | translate }}</th>
+            <th hlmTh class="hidden md:table-cell">
+              {{ 'mappings.detail.status' | translate }}
+            </th>
             <th hlmTh>{{ 'mappings.detail.files' | translate }}</th>
           </tr>
         </thead>
         <tbody hlmTBody>
-          @for (project of projects; track project.id) {
+          @for (project of usagePager.visible(); track project.id) {
           <tr hlmTr>
-            <td hlmTd>
+            <td hlmTd class="max-w-0 align-top">
               <a
                 class="font-medium hover:underline"
                 [routerLink]="['/app/projects', project.id]"
+                [lkTruncate]="project.name"
                 >{{ project.name }}</a
               >
             </td>
-            <td hlmTd class="tabular-nums">{{ project.taxYear }}</td>
-            <td hlmTd>
+            <td hlmTd class="align-top tabular-nums">{{ project.taxYear }}</td>
+            <td hlmTd class="hidden align-top md:table-cell">
               <lk-project-status-badge [status]="project.status" />
             </td>
-            <td hlmTd>
+            <td hlmTd class="max-w-0">
               <ul class="flex flex-col gap-1 text-sm">
                 @for (file of project.files; track file.id) {
-                <li>
+                <li class="min-w-0">
                   <a
                     class="hover:underline"
                     [routerLink]="['/app/projects', project.id]"
                     [fragment]="'file-' + file.id"
+                    [lkTruncate]="file.displayName"
                     >{{ file.displayName }}</a
                   >
                 </li>
@@ -173,6 +168,7 @@
         </tbody>
       </table>
     </div>
+    <lk-paginator [pager]="usagePager" />
     }
   </div>
 </section>

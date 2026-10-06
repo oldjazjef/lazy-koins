@@ -69,17 +69,49 @@ export const AI_ERROR_CODES = [
 export type AiErrorCode = (typeof AI_ERROR_CODES)[number];
 
 /**
- * A failed call, mapped to a code. `message` never contains the key or the request body; the
- * provider's own error text is kept short for the log.
+ * What went wrong, precisely enough to fix it (user rule: "genaue Fehlerinfos"). Every text is
+ * already **redacted** (`redactSecrets`: no key, no `Bearer …`, no `sk-…`) and short (≤ 500
+ * characters) when an adapter builds it; the gate redacts once more with the actual key.
+ */
+export interface AiErrorDetails {
+  /** The provider's HTTP status. */
+  readonly status?: number;
+  /** The provider's own error text (OpenAI/Anthropic `error.message`, Ollama `error`). */
+  readonly providerMessage?: string;
+  /** OpenAI `error.type` / Anthropic `error.type` (`authentication_error`, …). */
+  readonly providerType?: string;
+  /** OpenAI `error.code` (`invalid_api_key`, `model_not_found`, …). */
+  readonly providerCode?: string;
+  /** `scheme://host/path` that was called — never the query. */
+  readonly url?: string;
+  readonly model?: string;
+  /** A transport failure's system cause (`ECONNREFUSED`, `ENOTFOUND`, a TLS code) or a short reason. */
+  readonly cause?: string;
+  /** Set on `timeout`: how long was waited. */
+  readonly timeoutMs?: number;
+}
+
+/**
+ * A failed call, mapped to a code plus redacted details. Neither `message` nor `details` ever
+ * contain the key or the request body.
  */
 export class AiProviderError extends Error {
   constructor(
     readonly code: AiErrorCode,
-    readonly status?: number,
-    detail?: string,
+    readonly details: AiErrorDetails = {},
   ) {
-    super(detail ? `${code}: ${detail}` : code);
+    const reason = details.providerMessage ?? details.cause;
+    super(reason ? `${code}: ${reason}` : code);
     this.name = 'AiProviderError';
+  }
+
+  get status(): number | undefined {
+    return this.details.status;
+  }
+
+  /** The same failure with context the caller knows (URL, model); existing values win. */
+  with(context: AiErrorDetails): AiProviderError {
+    return new AiProviderError(this.code, { ...context, ...this.details });
   }
 }
 

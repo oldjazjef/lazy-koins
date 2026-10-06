@@ -39,7 +39,8 @@ Plattformen beschreiben, was diese Mappings ausdrücken müssen.
 
 Rangfolge je Position (erste vorhandene gilt):
 
-1. **ESTV-Kurs** (Kursliste, manuell/Override) – CHF je Einheit
+1. **ESTV-Kurs** (Kursliste, automatisch bezogen oder manuell importiert; Override geht vor) –
+   CHF je Einheit per 31.12., Quelle „ESTV-Kursliste <Jahr>, Stand <Datum>“
 2. **Kurs CHF direkt** – z. B. aus dem Kraken Account Statement (CHF-Bewertung per Stichtag)
 3. **Kurs USD × USD/CHF** des Stichtags
 
@@ -49,8 +50,9 @@ Rangfolge je Position (erste vorhandene gilt):
   letzter Kurs ≤ Datum, höchstens **14 Tage** alt, sonst erster Kurs danach (≤ 14 Tage); sonst
   kein Kurs. Weitere Quellen: Börsen-Kerzen (Kraken/Bitfinex), CoinGecko.
 - Umbenannte Assets beim Kursabruf abbilden (z. B. `MATIC` → `POL` ab der Umstellung).
-- Devisen: EZB-Referenzkurse, fehlende Tage mit dem letzten Fixing auffüllen; Stichtagskurs =
-  letztes Fixing ≤ 31.12. Für die Deklaration durch den ESTV-Wert ersetzbar (Parameter).
+- Devisen per 31.12.: **zuerst der ESTV-Jahresendkurs** (USD, EUR aus der Kursliste, Quelle
+  „ESTV-Kursliste <Jahr>, Stand <Datum>“); fehlt er, das letzte EZB-Fixing ≤ 31.12. Alle anderen
+  Tage: EZB-Referenzkurse, fehlende Tage mit dem letzten Fixing auffüllen.
 - Jede Position nennt ihre **Mengenquelle** und **Kursquelle**. Ohne Kurs: Position bleibt mit
   Menge, Wert leer, Status „ohne Kurswert“, Fussnote „Kein Kurswert verfügbar; nicht im Total
   enthalten.“; intern zählt sie als offener Punkt (Prüfbericht).

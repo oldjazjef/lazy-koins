@@ -133,6 +133,13 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
   heruntergeladen und gespeichert (nicht pro Benutzer), danach regelmässig auf neue Stände
   geprüft. Kryptowährungen ohne ESTV-Kurs fallen auf die übrigen Quellen zurück (F7.4).
   Respektiert „Kursabfragen aus dem Internet“ (F11.3); der manuelle Import bleibt als Ersatz.
+  Präzisiert (08.10.2026): Prüfung täglich und beim Start (Desktop), Download nur bei neuerem
+  Stand (anderer Datei-Hash, nicht älter); auf dem Server abschaltbar (`ESTV_AUTO=false`).
+  Zuordnung über Kürzel, bekannte Umbenennungen und Namen; passen mehrere Einträge, wird **kein**
+  ESTV-Wert übernommen (Hinweis: Kurs per 31.12. überschreiben). Die ESTV-Jahresendkurse USD und
+  EUR gelten per 31.12. ebenfalls vor den EZB-Kursen. Ein neuer Stand wird mit „Kurse
+  aktualisieren“ bzw. „Neuen Stand übernehmen“ ins Projekt übernommen; die Berechnung ist danach
+  veraltet. Status (Stand je Jahr, letzte Prüfung, Fehler) unter Einstellungen › Kurse.
 - **F7.5** Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (Klick auf Betrag → zugrunde liegende Buchungen → Quelldatei und Zeile).
 - **F7.6** Neuberechnung jederzeit per Knopfdruck; gleiche Daten ergeben gleiches Ergebnis.
 - **F7.7** Landesregeln sind austauschbar; zunächst nur Schweiz wählbar.
@@ -336,6 +343,20 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Anleitung/Konfigurationsschnipsel für gängige Clients. Web: Zugriff über persönliche
   Zugriffstoken (erstellen, benennen, Ablauf, widerrufen); Desktop: lokaler Server
   (stdio oder 127.0.0.1) ohne Netzwerkzugriff von aussen. Jeder MCP-Aufruf wird protokolliert.
+
+## 11b. Bedienung
+
+- **U1 Tabellen**: Alle Tabellen passen ab 1024 px Breite ohne seitliches Scrollen. Zu lange
+  Texte werden mit „…“ abgeschnitten, der volle Text erscheint als Tooltip. Die Aktionen einer
+  Zeile stehen fix am rechten Rand: eine einzelne Aktion als Symbol-Knopf, mehrere hinter einem
+  Knopf mit drei senkrechten Punkten, der ein Menü öffnet (z. B. Dateien: Vorschau,
+  Herunterladen, Mit AI auslesen/erstellen, Zuordnen, Entfernen).
+- **U2 Seitenweise Anzeige**: Jede Tabelle, die gross werden kann, zeigt 10 Zeilen pro Seite
+  (wählbar 10 / 25 / 50 / 100, pro Tabelle gemerkt), mit „Zeile 1–10 von 57“ und Blättern.
+- **U3 Genaue AI-Fehler**: Schlägt eine AI-Anfrage oder der Verbindungstest fehl, zeigt die App
+  neben der Zusammenfassung die Details (HTTP-Status und Meldung des Anbieters, Adresse, Modell,
+  Fehlercode, Ursache) mit einem Hinweis, was zu prüfen ist, und „Details kopieren“. Der
+  API-Schlüssel erscheint nie in einer Meldung oder einem Log.
 
 ## 12. Abnahme
 

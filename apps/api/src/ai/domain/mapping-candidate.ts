@@ -1,5 +1,8 @@
-import type { ImportResult } from '@lazykoins/engine';
-import type { MappingSample } from './mapping-sample';
+import {
+  type ImportResult,
+  kindSummary,
+  type MappingSample,
+} from '@lazykoins/engine';
 
 /**
  * Judging an AI-written mapping by what it does to the WHOLE file (dry run of `applyMapping`),
@@ -30,15 +33,7 @@ export interface CandidateQuality {
 }
 
 export function judge(result: ImportResult): CandidateQuality {
-  const kindCounts: Record<string, number> = {};
-  const unknownCounts = new Map<string, number>();
-  for (const booking of result.bookings) {
-    kindCounts[booking.kind] = (kindCounts[booking.kind] ?? 0) + 1;
-    if (booking.kind === 'unknown') {
-      const value = booking.rawType;
-      unknownCounts.set(value, (unknownCounts.get(value) ?? 0) + 1);
-    }
-  }
+  const { kindCounts, unknownValues } = kindSummary(result);
   const records = result.bookings.length + result.holdings.length;
   const errors = result.errors.length;
   const unknown = kindCounts['unknown'] ?? 0;
@@ -62,10 +57,7 @@ export function judge(result: ImportResult): CandidateQuality {
     errors,
     unknown,
     kindCounts,
-    unknownValues: [...unknownCounts.entries()]
-      .map(([value, count]) => ({ value, count }))
-      .sort((a, b) => b.count - a.count || compare(a.value, b.value))
-      .slice(0, 30),
+    unknownValues,
     problems,
   };
 }
@@ -174,8 +166,4 @@ function sampleValues(sample: MappingSample): Set<string> {
     for (const value of column.values) values.add(value);
   }
   return values;
-}
-
-function compare(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
 }

@@ -142,7 +142,7 @@
             <col class="w-44" />
             <col class="hidden w-52 lg:table-column" />
             <col class="hidden w-36 md:table-column" />
-            <col class="w-48" />
+            <col class="w-14" />
           </colgroup>
           <thead hlmTHead>
             <tr hlmTr>
@@ -155,14 +155,13 @@
                 {{ 'files.fields.records' | translate }}
               </th>
               <th hlmTh class="lk-sticky-actions text-right">
-                <span class="sr-only"
-                  >{{ 'files.fields.actions' | translate }}</span
-                >
+                <span class="sr-only">{{ 'common.actions' | translate }}</span>
               </th>
             </tr>
           </thead>
           <tbody hlmTBody>
-            @for (file of group.files; track file.id) {
+            @let pager = pagerFor(group.platform); @for (file of
+            pager.visible(); track file.id) {
             <tr
               hlmTr
               class="scroll-mt-24"
@@ -170,9 +169,7 @@
               [class.bg-muted]="highlighted() === file.id"
             >
               <td hlmTd class="max-w-0">
-                <span
-                  class="block truncate font-medium"
-                  [attr.title]="file.displayName"
+                <span class="font-medium" [lkTruncate]="file.displayName"
                   >{{ file.displayName }}</span
                 >
                 <span class="text-muted-foreground block truncate text-xs"
@@ -195,8 +192,8 @@
                 >
                 @if (file.mappingName && file.mappingId) {
                 <a
-                  class="text-muted-foreground block truncate text-xs hover:underline"
-                  [attr.title]="file.mappingName"
+                  class="text-muted-foreground text-xs hover:underline"
+                  [lkTruncate]="file.mappingName"
                   [routerLink]="['/app/mappings', file.mappingId]"
                   >{{ file.mappingName }}</a
                 >
@@ -218,79 +215,18 @@
                 >
                 }
               </td>
-              <td hlmTd class="lk-sticky-actions text-right whitespace-nowrap">
-                <button
-                  hlmBtn
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'files.actions.preview' | translate"
-                  (click)="openPreview(file)"
-                >
-                  <ng-icon name="lucideEye" size="16" aria-hidden="true" />
-                </button>
-                <button
-                  hlmBtn
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'files.actions.download' | translate"
-                  (click)="service.download(file)"
-                >
-                  <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
-                </button>
-                @if (!closed()) { @if (file.kind === 'pdf') {
-                <button
-                  hlmBtn
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'files.actions.aiStatement' | translate"
-                  [attr.title]="'files.actions.aiStatement' | translate"
-                  (click)="withAi(file)"
-                >
-                  <ng-icon name="lucideScanText" size="16" aria-hidden="true" />
-                </button>
-                } @else if (file.status === 'needs_mapping') {
-                <button
-                  hlmBtn
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'files.actions.aiMapping' | translate"
-                  [attr.title]="'files.actions.aiMapping' | translate"
-                  (click)="withAi(file)"
-                >
-                  <ng-icon name="lucideSparkles" size="16" aria-hidden="true" />
-                </button>
-                }
-                <button
-                  hlmBtn
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'files.actions.assign' | translate"
-                  (click)="openAssign(file)"
-                >
-                  <ng-icon name="lucideLink2" size="16" aria-hidden="true" />
-                </button>
-                <button
-                  hlmBtn
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  [attr.aria-label]="'files.actions.remove' | translate"
-                  (click)="dialog.set({ kind: 'remove', file })"
-                >
-                  <ng-icon name="lucideTrash2" size="16" aria-hidden="true" />
-                </button>
-                }
+              <td hlmTd class="lk-sticky-actions text-right">
+                <lk-row-actions
+                  [actions]="actionsFor(file)"
+                  (selected)="act($event, file)"
+                />
               </td>
             </tr>
             }
           </tbody>
         </table>
       </div>
+      <lk-paginator [pager]="pagerFor(group.platform)" />
     </div>
     } } } @else if (service.overview.error()) {
     <lk-empty-state [message]="'files.loadFailed' | translate">
@@ -348,8 +284,8 @@
               @for (row of sheet.rows; track $index; let first = $first) {
               <tr hlmTr [class.font-medium]="first">
                 @for (cell of row; track $index) {
-                <td hlmTd class="font-mono text-xs whitespace-nowrap">
-                  {{ cell }}
+                <td hlmTd class="font-mono text-xs">
+                  <span class="max-w-64" [lkTruncate]="cell">{{ cell }}</span>
                 </td>
                 }
               </tr>

@@ -131,19 +131,22 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
       prisma/               #     PrismaService, sqlite-url, mappers, repositories/*.prisma.repository.ts
     integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers
       ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
-      rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs
+      rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs;
+                            #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser
       pdf/                  #     PlaywrightPdfRenderer (Chromium, lazily started)
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
     projects/               #   the reference feature slice — copy its shape
     files/                  #   F5: upload (raw body), list, download, preview, assignment, templates
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
-    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0)
-    ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings, PDF statements
-      domain/               #     pure: sample builder, prompts, repair logic, statement checks, SSRF guard
+    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0),
+                            #   stateless sample-file inspect/preview for the editor
+    ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings (project file or editor sample), PDF statements
+      domain/               #     pure: prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
                             #   items, corrections (undo/redo); testing/calculation-fixture.ts
-    rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import
+    rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import;
+                            #   F7.4a: automatic ESTV Kursliste (sync service + daily scheduler, matching)
     settings/               #   F11 profile data + CoinGecko/Etherscan keys (sealed), online rates on/off
     exports/                #   F10: Excel (ExcelJS, formulas) + HTML → PDF, stored exports, mail draft
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
@@ -159,7 +162,8 @@ apps/web/                   # Angular app
                             #   (shell + rates/wallets/ai), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
                             #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
-                            #   the editor body, also used by mappings)
+                            #   the editor body of a project's new mapping; the mappings feature uses its own
+                            #   components/mapping-workbench with a sample file)
     shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
@@ -177,7 +181,8 @@ libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angul
   src/importers/            #   importer.ts (Importer, SourceFile, ImportResult) + registry.ts + table.ts
     text/                   #     pure decoding: bytes→text (UTF-8/16, cp1252), CSV, numbers, timestamps
   src/standard/             #   standard format v1: German columns, zod row validation, template content
-  src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints
+  src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints,
+                            #   sample.ts (the AI/editor sample, kindSummary), spec-skeleton.ts (Vorlage aus Datei)
     fixtures/               #     SYNTHETIC exports + example mapping JSON (test data, not product code)
   src/coverage/             #   coverage per platform/account + F5.8 missing-file hints
   src/rules/                #   CountryRules (F7.7): chRules — thresholds, pegged assets, labels (F10.3)
@@ -262,8 +267,8 @@ are skipped). Deleting one resets its files to `needs_mapping` in the same trans
 **Mappings page (F11.0)** — `features/mappings`, `/app/mappings` in the main navigation: every
 mapping of mine (`GET /api/mappings` adds `filesUsing` / `projectsUsing`, counted by the
 database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json`, new.
-`/app/mappings/:id`: facts, JSON, edit (the shared `lk-mapping-editor-form`, preview against a
-file that uses it — any project), save → offer re-apply, download, delete (lists the affected
+`/app/mappings/:id`: facts, JSON, edit (`lk-mapping-workbench` with a sample file — a file that
+uses it is preloaded; see Beispieldatei below), save → offer re-apply, download, delete (lists the affected
 files; disabled while a closed project uses it — the API's 409), and "Wird genutzt in"
 (`GET /api/mappings/:id/usage`: projects newest year first, files linking to
 `/app/projects/:id#file-<id>`, where the row is scrolled to and marked). The project's mappings
@@ -271,6 +276,28 @@ section only lists the mappings its files use (linking here), uploads a `.json`,
 "Mit AI erstellen" and the editor of a new mapping for one file; edits happen on this page. After
 a save from a project (editor, upload, AI) the toast links to the new mapping's page.
 
+**Beispieldatei (sample file) in the mapping editor** — "Neues Mapping" (dialog, `sm:max-w-6xl`)
+and editing on `/app/mappings/:id` use `features/mappings/components/mapping-workbench`
+(component + `MappingWorkbenchService`, provided by the host page; the host owns save/cancel).
+A sample is a CSV/XLSX from this computer (drop zone/picker) or a file of one of my projects
+(its bytes downloaded via `…/content`); it is **held in the browser only** and sent with every
+request — the API is **stateless** (`POST /api/mapping-samples/inspect|preview`, multipart
+`file` + text fields, multer in memory, upload limits; `mappings/application/sample-file.ts`).
+Inspect = the raw table as the AI would see it (`MappingSample`, preamble + header guess),
+"Vorlage aus Datei" (`specSkeleton`, engine: header roles, date/number guesses, one `unknown`
+rule per kind value — a new, untouched editor gets it automatically) and which reader an upload
+would pick today. Preview = `applyMapping` on the whole file (debounced 600 ms while typing,
+stale answers dropped; an invalid spec comes back as `valid: false` + issues, not a 400), kind
+counts, unknown values, row errors, and the **fingerprint verdict** (`this | other | standard |
+none`, decided like the upload: file read without the spec's CSV options, standard first, surest
+mapping, tie → the one being saved; `mappingId` excludes the edited mapping). Its own per-account
+budget (600 / 10 min). "Mit AI erstellen" from the sample: `POST /api/ai/mapping-sample/payload`
+→ consent (nested dialog) → `POST /api/ai/mapping-sample` (same `MappingWriter` round trip as for
+project files) → the proposal lands in the editor; saving it uses `POST
+/api/ai/mapping-sample/accept` (origin `ai`). After saving a new mapping, "auch hinzufügen zu
+<Projekt>" uploads the sample through the normal upload and PATCHes it to the new mapping if
+another reader won. On the mapping page the first file that uses the mapping is preloaded as the
+sample. Nothing about the sample is stored unless the user adds it to a project.
 To support a new platform: write (or let the AI write — "Mit AI erstellen") a mapping JSON, check it with the
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
 fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
@@ -296,10 +323,24 @@ request)` → parsed JSON + text + usage). `ProviderSwitchingAiCompletion` dispa
 keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement}/payload` returns
   exactly the data that will be sent; the app shows it before EVERY request; the first request
   needs `consent: true` and stores `consent_at` (revocable in the settings).
+- **Precise error details** (user rule: "genaue Fehlerinfos"): `AiProviderError(code, details)`
+  — `postJson` (`integrations/ai/ai-http.ts`) fills `status`, the provider's own
+  `providerMessage` / `providerType` / `providerCode` (OpenAI `error.{message,type,code}`,
+  Anthropic `error.{type,message}`, Ollama `error` string, an HTML page → its text), `url`
+  (scheme://host/path, never the query), `model`, and for transport failures the system `cause`
+  (`ECONNREFUSED`, `ENOTFOUND (host)`, TLS codes — undici hides them in `cause`, sometimes an
+  `AggregateError`) or `timeoutMs`. `AiGate.call(work, connection)` puts them into the 502 body
+  next to `code` plus a one-line `detail`, and logs that line at warn. **Everything passes
+  `redactSecrets`** (`integrations/ai/redact.ts`): every non-public header value of the request,
+  the connection's key again in the gate, `Bearer …`, `sk-…`, `x-api-key/api_key/token=…`, cut
+  to 500 characters. 409s from the gate carry a human `detail` (what is missing). Web:
+  `shared/ai/ai-error-details.ts` (`aiErrorInfo` + a hint per typical case) and
+  `lk-ai-error-panel` (summary, hint, details list, "Details kopieren"; `collapsible` in the AI
+  dialogs) — the settings test shows it under the buttons, the AI dialogs above their footer.
 - **SSRF guard**: the API itself calls the base URL, so private/loopback hosts are refused unless
   `AI_ALLOW_PRIVATE_URLS=true` — default: allowed with `AUTH_MODE=local|dev`, refused with
   `firebase`. Literal host check only (no DNS-rebinding protection).
-- **Mapping** (`POST /api/projects/:p/files/:f/ai/mapping`): sample (`ai/domain/mapping-sample.ts`:
+- **Mapping** (`POST /api/projects/:p/files/:f/ai/mapping`): sample (`libs/engine/src/mapping/sample.ts`:
   file name, encoding, delimiter guessed over the first 30 lines, first ≤25 raw rows incl.
   preamble — up to 40 with a long preamble — distinct values of category-like columns ≤40, row
   count; never amounts/dates/ids as "distinct values") → system prompt with the standard format,
@@ -387,6 +428,52 @@ the internal report in separate cards, the list grouped „Auszüge für die Ste
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
 
+**ESTV Kursliste, automatic (F7.4a)** — once per **deployment**, not per user: tables
+`estv_kursliste` (PK year: the newest `THIRD.INIT.<n>` export downloaded — type, export date,
+file hash, schema version, counts), `estv_rate` (year-end values: `crypto` / `currency` from
+`currencyNote` + `yearend@taxValueCHF`, `fx` from `exchangeRateYearEnd@value`; CHF per unit, i.e.
+divided by `denomination`) and `estv_check` (last check per year, outcome `updated|current|failed`
+
+- error). Only the newest version per year is kept.
+
+* **Client** (`integrations/rates/ictax/`, own implementation; the protocol as documented by the
+  MIT project OpenSteuerAuszug): `GET /extern/api/authentication/session.json` → `data.csrfToken`
+  (header `X-CSRF-TOKEN`) + the session cookies → `POST /extern/api/xml/xmls.json`
+  `{from:0,size:100,sort:[],year}` → `GET /extern/api/download/<fileId>/<fileHash>/<fileName>` = a
+  ZIP (`kursliste_<year>.xml` ≈ 410 MB for 2025, ISO-8859-1, plus `.idx` and the XSD). The ZIP is
+  **streamed** to a temp dir (≤ 250 MB, 15 min), the XML entry is inflated out of it
+  (`zip-entry.ts`, no ZIP64) and **SAX-parsed** with `saxes` by local name (namespaces
+  `…/ictax/2.0.0/kursliste` and `2.2.0`; deleted entities and `undefined` values skipped) — the
+  real 2025 list parses in ≈ 4 s with ≈ 40 MB heap (82 cryptos, 166 FX). Retries (3, backoff ×2)
+  on network/timeout/429/5xx; errors are `EstvSourceError` with a code and a URL-free message.
+  Crypto tickers are `securityAppendix` (`BTC`, `IOT` = IOTA), names `securityName`.
+* **Selection** (`rates/domain/estv.ts`): `THIRD.INIT.*` only (never `DELTA`), highest numeric
+  suffix (= schema, 220 = 2.2.0), newest `exportDate`; download only when the file hash differs
+  and the export is not older (`isNewerExport`).
+* **Sync** (`EstvSyncService`): one run at a time (a covered request joins it, others queue),
+  progress `{phase: metadata|download|parse|store, bytes, totalBytes, entries}` for polling.
+  `EstvScheduler`: 60 s after start (desktop: every start) and every 24 h — years = every stored
+  year + last year; never in `NODE_ENV=test`. Gates: `ESTV_AUTO=false` or `RATES_ONLINE=false` →
+  off (manual import stays); on demand also the user's F11.3 switch; desktop (`AUTH_MODE=local`)
+  ticks only with the local user's switch on. `ESTV_BASE_URL` points at a fake server for live
+  checks (`node scripts/dev/fake-ictax-server.mjs`, port 11436, `POST /bump` = newer version).
+* **API**: `GET /api/rates/estv` (status: versions per year with label/counts, checks + errors,
+  `running`, `lastCheckAt`, `online`), `POST /api/rates/estv/update {year?}` (202, starts in the
+  background; 409 when gated), `POST /projects/:id/rates/estv/apply` (local data, works offline).
+* **Projects**: `EstvProjectRatesService.apply` runs first in "Kurse aktualisieren" (and on
+  "übernehmen"): assets = `assetsNeedingPrices` + stablecoin positions, matched by ticker, then
+  `ESTV_SYMBOL_ALIASES` / `RATE_ALIASES`, then exact name; several entries of one ticker → the
+  one whose name is the known coin name (CoinGecko id table / user ids), else **ambiguous: no
+  value** (the UI asks for an override). Writes `estv` rates at 31.12. (price CHF + fx USD/EUR) with
+  `project_rate.note` = `ESTV-Kursliste <Jahr>, Stand <dd.MM.yyyy>`; automatic rows that no longer
+  match are removed. ESTV wins by the price priority (also USD/CHF at 31.12. over the ECB fixing);
+  a new version changes values → the input hash → the snapshot is stale. `GET …/rates` has `estv`
+  (`available`, `applied`, `outdated`). The note is not part of the input hash.
+* Web: `shared/estv/estv.service.ts` (status, start, poll every 1.5 s, toast per outcome — there is
+  no shared activity snackbar yet); Einstellungen › Kurse shows the status table and the button;
+  the project's Kurse tab the version in use, "Neuen Stand übernehmen", "ESTV-Kursliste
+  aktualisieren" (download + apply) and ambiguous assets; the ESTV label replaces the source.
+
 ## Database (SQLite)
 
 One file, no database server. Prisma talks to it through `@prisma/adapter-better-sqlite3`, a
@@ -425,6 +512,11 @@ prisma/schema.prisma` must still report **no difference**.
   latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
   (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
   the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
+- **ESTV** (migration `20261008100000_estv_kursliste`): `project_rate.note` (nullable, `ADD
+COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`, counts),
+  `estv_rate` (kind CHECK, positive plain decimal, cascade with its year), `estv_check` (outcome
+  CHECK). Deployment-wide: no user/project column. Prisma writes `AUTOINCREMENT` for the `Int @id`
+  year keys — harmless, the year is always given. `estv.persistence.integration.spec.ts`.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -587,9 +679,45 @@ are provided by the component (`providers: [...]`), list/form services are root.
 
 - spartan components are generated, never hand-written: `npx nx g @spartan-ng/cli:ui
 --name=<c> --no-interactive` (skill `add-ui-component`). `libs/ui/**` is vendored — don't edit
-  or format it. `ls libs/ui/` for what exists (badge, button, card, dialog, input, label,
-  separator, skeleton, sonner, table, textarea, utils). Selects are native `<select hlmInput>`,
-  as in surf-lend.
+  or format it. `ls libs/ui/` for what exists (badge, button, card, dialog, dropdown-menu,
+  input, label, separator, skeleton, sonner, table, textarea, tooltip, utils). Selects are
+  native `<select hlmInput>`, as in surf-lend.
+- **Tables** (user rule, 07.10.2026: "cutte zu lange Texte, fixiere den Interaktionsbereich",
+  Pagination überall, wo es gross werden kann). Every `hlmTable` follows one pattern — copy
+  `project-files.html` or `project-rates.html`:
+  - `<table hlmTable class="table-fixed">` with a `<colgroup>`: **one** flexible `<col />` (the
+    main column), compact fixed widths for the rest (`w-14` … `w-48`); columns that matter less
+    get `hidden md:table-column` / `lg:` / `xl:` on the `col` **and** `hidden md:table-cell` on
+    `th`/`td`. Secondary info is a second muted line (`text-muted-foreground text-xs`) under the
+    main cell. **No horizontal scrolling at ≥ 1024 px** (checked at 1024 and 1280).
+  - Long text: the cell gets `max-w-0` (a fixed-layout cell may then shrink below its text),
+    the text sits in `<span [lkTruncate]="text">{{ text }}</span>`
+    (`shared/components/truncate`): block, one line, "…", and the full text as a tooltip
+    **only when it is actually cut** (measured on hover). For a computed text use `@let`.
+    Badges/fixed bits next to a cut text: `flex min-w-0 items-center gap-2` + `shrink-0`.
+  - Actions: the last column (`<col class="w-14" />`) is `lk-sticky-actions text-right` on
+    `th` (with `<span class="sr-only">{{ 'common.actions' | translate }}</span>`) and `td`, and
+    holds **`<lk-row-actions [actions]="…" (selected)="…" />`** (`shared/components/row-actions`):
+    a list of `{ id, labelKey, icon (the lucide SVG import, no provideIcons), danger?,
+disabled?, hidden? }`. Exactly one visible action → a plain icon button with tooltip; more
+    → one vertical-dots button (`lucideEllipsisVertical`, aria-label "Aktionen") opening the
+    spartan dropdown menu (icon + label, destructive ones last after a separator, in the danger
+    colour; CDK menu = arrow keys, Escape, focus return). It stops click propagation, so it works
+    in clickable rows. Build the arrays once (a `computed`, or a `Map` per row id) — not a new
+    array per change detection. `hidden: closed()` for changes on a closed project (F4.5).
+  - Pagination: `pager = paginate(rows, { storageKey, resetOn })` (`shared/components/paginator`)
+    over the already filtered/sorted signal, render `pager.visible()` and
+    `<lk-paginator [pager]="pager" />` under the table. Default 10 rows, 10 / 25 / 50 / 100
+    selectable and remembered per `storageKey` (localStorage, try/catch), „Zeile 1–10 von 57",
+    first/previous/next/last; hidden while everything fits on 10 rows; back to page 1 when
+    `resetOn()` (search, filter, sort, opened group) changes; the page stays valid when rows
+    disappear; `pager.reveal(row => …)` shows the page holding a row (`#file-<id>`). Every table
+    that can grow is paged (projects, files per platform, mappings, usage, rates, positions,
+    income lines, Earn gaps, one-off events, records drill-down, open items, corrections,
+    exports, mapping preview, PDF review); small fixed summaries (platform/category totals) are
+    not. No endpoint pages server-side yet — the drill-down is capped by the API.
+  - The raw-data preview of a file keeps its own horizontal scroll inside the dialog (raw rows
+    are wide) but cuts each cell at `max-w-64` with `lkTruncate`.
 - Colours live **only** in `apps/web/src/styles.css` (light + `:root.dark`). Templates use
   semantic classes; `no-hardcoded-design-values` rejects hex, arbitrary px and inline styles.
 - The look: calm and neutral for reading figures — cool slate greys, an ink-blue primary, Inter,
@@ -624,7 +752,10 @@ etx), so no `project.json` has a `test` target, deliberately.
   engine + exceljs against in-memory ports. The calculation slices share
   `calculation/testing/calculation-fixture.ts` (synthetic standard-format files + every handler
   over port doubles); rate sources are faked (`rates/testing/`), adapters get a fake `fetch`; the
-  exports spec opens the generated workbook with ExcelJS and checks the formulas. The real
+  exports spec opens the generated workbook with ExcelJS and checks the formulas. The ICTax
+  client runs against a local `node:http` fake with the recorded response shapes and synthetic
+  ZIP/XML fixtures (`integrations/rates/ictax/testing/kursliste-fixtures.ts`, both namespaces,
+  a ~5 MB file for streaming) — never the real API. The real
   Chromium print (`playwright-pdf.renderer.spec.ts`) skips itself when no browser is installed.
 - **Integration** (`*.integration.spec.ts`, excluded from `pnpm test`): the Prisma adapters
   against a real SQLite file with the real migrations — owner listing, empty updates, cascade,
@@ -802,6 +933,13 @@ A1). It is git-ignored and must stay that way.
 - **Uploads are raw bodies**: `RawBodyMiddleware` is bound to exactly `POST
 projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parser's 413 into a
   Nest exception. The web sends `application/octet-stream` with `?name=`.
+- **Sample-file requests are multipart** (`mapping-samples/*`, `ai/mapping-sample*`): a file
+  _and_ a spec in one stateless request. `FileInterceptor` (multer from
+  `@nestjs/platform-express`, memory only, `SAMPLE_UPLOAD_LIMITS`); form fields arrive as
+  strings (`@Type(() => Number)`, `consent` "true"/"false" via `@Transform`); there is no
+  `@types/multer`, so the part is typed as `UploadedSample`. Multer decodes the part's file name
+  as latin1 — the app sends the UTF-8 name as the `name` field. `HttpTestingController`
+  matches a string URL against `urlWithParams`: match an upload with `?name=` by function.
 - Angular's fetch backend (`withFetch()`) emits **no upload progress** events; the files area
   shows per-file state and the batch's progress instead.
 - `hlmBtn` styles `button`/`a` only — a `<label hlmBtn>` renders unstyled; use a button that

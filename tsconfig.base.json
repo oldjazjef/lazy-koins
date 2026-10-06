@@ -24,7 +24,9 @@
       "@lazykoins/ui/dialog": ["./libs/ui/dialog/src/index.ts"],
       "@lazykoins/ui/table": ["./libs/ui/table/src/index.ts"],
       "@lazykoins/ui/skeleton": ["./libs/ui/skeleton/src/index.ts"],
-      "@lazykoins/ui/separator": ["./libs/ui/separator/src/index.ts"]
+      "@lazykoins/ui/separator": ["./libs/ui/separator/src/index.ts"],
+      "@lazykoins/ui/tooltip": ["./libs/ui/tooltip/src/index.ts"],
+      "@lazykoins/ui/dropdown-menu": ["./libs/ui/dropdown-menu/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "private"]

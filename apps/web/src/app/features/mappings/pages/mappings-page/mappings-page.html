@@ -81,44 +81,65 @@
 <lk-empty-state [message]="'mappings.list.noMatch' | translate" />
 } @else {
 <div hlmTableContainer class="lk-panel">
-  <table hlmTable>
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-36" />
+      <col class="hidden w-28 md:table-column" />
+      <col class="hidden w-20 lg:table-column" />
+      <col class="w-36" />
+      <col class="hidden w-48 md:table-column" />
+    </colgroup>
     <thead hlmTHead>
       <tr hlmTr>
         <th hlmTh>{{ 'mappings.fields.name' | translate }}</th>
         <th hlmTh>{{ 'mappings.fields.platform' | translate }}</th>
-        <th hlmTh>{{ 'mappings.fields.origin' | translate }}</th>
-        <th hlmTh class="text-right">
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'mappings.fields.origin' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right lg:table-cell">
           {{ 'mappings.list.version' | translate }}
         </th>
         <th hlmTh>{{ 'mappings.fields.updated' | translate }}</th>
-        <th hlmTh>{{ 'mappings.list.usedBy' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'mappings.list.usedBy' | translate }}
+        </th>
       </tr>
     </thead>
     <tbody hlmTBody>
-      @for (mapping of service.visible(); track mapping.id) {
+      @for (mapping of pager.visible(); track mapping.id) {
       <tr hlmTr class="cursor-pointer" (click)="open(mapping.id)">
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
           <a
             class="font-medium hover:underline"
             [routerLink]="mapping.id"
+            [lkTruncate]="mapping.name"
             (click)="$event.stopPropagation()"
             >{{ mapping.name }}</a
           >
         </td>
-        <td hlmTd>{{ mapping.platform }}</td>
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
+          <span [lkTruncate]="mapping.platform">{{ mapping.platform }}</span>
+        </td>
+        <td hlmTd class="hidden md:table-cell">
           <span hlmBadge variant="outline"
             >{{ 'mappings.origin.' + mapping.origin | translate }}</span
           >
         </td>
-        <td hlmTd class="text-right tabular-nums">{{ mapping.version }}</td>
+        <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+          {{ mapping.version }}
+        </td>
         <td hlmTd class="tabular-nums">
           {{ mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}
         </td>
-        <td hlmTd class="text-sm">
-          @if (mapping.filesUsing > 0) { {{ 'mappings.list.usage' | translate: {
-          files: mapping.filesUsing, projects: mapping.projectsUsing } }} }
-          @else {
+        <td hlmTd class="hidden max-w-0 text-sm md:table-cell">
+          @if (mapping.filesUsing > 0) {
+          <span
+            [lkTruncate]="'mappings.list.usage' | translate: { files: mapping.filesUsing, projects: mapping.projectsUsing }"
+            >{{ 'mappings.list.usage' | translate: { files: mapping.filesUsing,
+            projects: mapping.projectsUsing } }}</span
+          >
+          } @else {
           <span class="text-muted-foreground"
             >{{ 'mappings.list.unused' | translate }}</span
           >
@@ -129,11 +150,12 @@
     </tbody>
   </table>
 </div>
+<lk-paginator [pager]="pager" />
 } }
 
 <!-- New mapping -->
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
-  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
+  <hlm-dialog-content *hlmDialogPortal class="w-full sm:max-w-6xl">
     <hlm-dialog-header>
       <h3 hlmDialogTitle>{{ 'mappings.editor.newTitle' | translate }}</h3>
       <p hlmDialogDescription>
@@ -141,22 +163,43 @@
       </p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">
-      <lk-mapping-editor-form
-        [idPrefix]="'new-mapping'"
-        [text]="text()"
-        (textChange)="text.set($event)"
-        [checkFileId]="checkFileId()"
-        (checkFileIdChange)="checkFileId.set($event)"
-        [checkFiles]="[]"
-        [issues]="issues()"
-        [invalidJson]="invalidJson()"
-      />
+      <lk-mapping-workbench [idPrefix]="'new-mapping'" />
     </div>
     <hlm-dialog-footer>
+      @if (workbench.sample()) {
+      <div
+        class="flex min-w-0 flex-col gap-1 sm:mr-auto sm:flex-row sm:items-center sm:gap-2"
+      >
+        <label class="text-sm" for="new-mapping-add-project"
+          >{{ 'mappings.sample.addToProject' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="new-mapping-add-project"
+          class="sm:max-w-64"
+          [ngModel]="addToProjectId()"
+          (ngModelChange)="addToProjectId.set($event)"
+        >
+          <option value="">
+            {{ 'mappings.sample.noProject' | translate }}
+          </option>
+          @for (project of workbench.openProjects(); track project.id) {
+          <option [value]="project.id">
+            {{ project.name }} ({{ project.taxYear }})
+          </option>
+          }
+        </select>
+      </div>
+      }
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
       </button>
-      <button hlmBtn type="button" [disabled]="busy()" (click)="saveNew()">
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="busy() || workbench.invalidJson()"
+        (click)="saveNew()"
+      >
         {{ 'common.save' | translate }}
       </button>
     </hlm-dialog-footer>
