@@ -62,7 +62,36 @@ jobs:
             docker buildx imagetools create "${tags[@]}" "$registry/$image:$SOURCE_TAG"
           done
 
+      # Not configured yet (no Coolify token / URL / resource for this environment): the images are
+      # built and tagged above, the deploy and the smoke test are skipped with a notice instead of
+      # failing every merge to main. Setup: deploy/coolify/SETUP.md, steps 7–8.
+      - name: Deploy target configured?
+        id: target
+        env:
+          DEPLOY_ENV: ${{ inputs.environment }}
+          HAS_TOKEN: ${{ env.HAS_DEPLOY_TARGET }}
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_RESOURCE_UUIDS: ${{ vars.COOLIFY_RESOURCE_UUIDS }}
+        run: |
+          missing=()
+          [ "$HAS_TOKEN" = true ] || missing+=("secret COOLIFY_TOKEN")
+          [ -n "$COOLIFY_URL" ] || missing+=("variable COOLIFY_URL")
+          [ -n "$COOLIFY_RESOURCE_UUIDS" ] || missing+=("variable COOLIFY_RESOURCE_UUIDS")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            list="$(IFS=,; echo "${missing[*]}")"
+            echo "::notice title=Deploy skipped (${DEPLOY_ENV})::Environment '${DEPLOY_ENV}' is not configured yet (missing: ${list}). Images are built and tagged; see deploy/coolify/SETUP.md."
+            {
+              echo "### Deploy to \`${DEPLOY_ENV}\` skipped"
+              echo "Missing in GitHub → Settings → Environments → \`${DEPLOY_ENV}\`: ${list}."
+              echo "The images were built and tagged \`:${DEPLOY_ENV}\`. Setup: \`deploy/coolify/SETUP.md\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy
+        if: steps.target.outputs.ready == 'true'
         env:
           DEPLOY_ENV: ${{ inputs.environment }}
           REGISTRY: ghcr.io/${{ github.repository_owner }}
@@ -74,7 +103,7 @@ jobs:
         run: bash deploy/deploy.sh
 
       - name: Smoke test
-        if: vars.LAZYKOINS_SITE_URL != '' && env.HAS_DEPLOY_TARGET == 'true'
+        if: steps.target.outputs.ready == 'true' && vars.LAZYKOINS_SITE_URL != ''
         env:
           LAZYKOINS_SITE_URL: ${{ vars.LAZYKOINS_SITE_URL }}
         run: bash deploy/smoke-test.sh

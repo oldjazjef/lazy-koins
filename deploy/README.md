@@ -63,8 +63,10 @@ One **Docker Compose Empty** resource per environment, pasted from
 `.github/workflows/_deploy.yml` re-tags the images, then runs [`deploy.sh`](deploy.sh): it calls the
 Coolify API (`POST /api/v1/deploy?uuid=…`), waits for the deployment and fails the job if it fails.
 [`smoke-test.sh`](smoke-test.sh) then checks `/api/health`, `/` and `/env.js` (only when
-`LAZYKOINS_SITE_URL` and `COOLIFY_TOKEN` are set). Without `COOLIFY_TOKEN` the deploy step only
-reports the built images and succeeds.
+`LAZYKOINS_SITE_URL` and `COOLIFY_TOKEN` are set). **Not configured yet** — `COOLIFY_TOKEN`,
+`COOLIFY_URL` or `COOLIFY_RESOURCE_UUIDS` missing in the environment: the images are still built
+and tagged, the deploy and smoke test are skipped with a notice (and a line in the run summary)
+naming what is missing, and the run stays green.
 
 ## Secrets and variables
 

@@ -3,8 +3,10 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { desktopApiEnv } from './lib/api-env';
+import type { PdfPrintOptions } from './lib/print-options';
 import { applyMigrations } from './lib/migrations';
 import { DATABASE_FILE, ensureSecretKey } from './lib/storage';
+import { printToPdf } from './pdf-printer';
 
 /** What `dist/apps/desktop-api/main.js` (apps/api/src/desktop.ts) exports. */
 interface ApiBundle {
@@ -14,6 +16,10 @@ interface ApiBundle {
     shutdownHooks?: boolean;
     accessToken?: string;
     logger?: string[] | false;
+    pdfPrinter?: (
+      html: string,
+      options: PdfPrintOptions,
+    ) => Promise<Uint8Array>;
   }): Promise<{
     app: { close(): Promise<void> };
     port: number;
@@ -63,6 +69,8 @@ export async function startApi(options: {
     shutdownHooks: false,
     accessToken,
     logger: ['error', 'warn', 'log'],
+    // PDF exports with Electron's own Chromium — no browser to install on the user's machine.
+    pdfPrinter: printToPdf,
   });
 
   return {

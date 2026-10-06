@@ -10,3 +10,7 @@ export {
   DESKTOP_ACCESS_HEADER,
   type RunningApi,
 } from './bootstrap';
+export type {
+  HostPdfPrinter,
+  PdfPrintOptions,
+} from './integrations/pdf/print-options';
