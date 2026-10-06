@@ -1,9 +1,11 @@
 import {
   NotFoundException,
+  Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { ImportMappingRepositoryPort } from '../../../mappings/ports/import-mapping.repository.port';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import { EVIDENCE_ONLY, type ProjectFile } from '../../domain/project-file';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
@@ -45,6 +47,7 @@ export class ChangeProjectFileHandler implements ICommandHandler<
     private readonly files: ProjectFileRepositoryPort,
     private readonly mappings: ImportMappingRepositoryPort,
     private readonly analysis: FileAnalysisService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -88,6 +91,8 @@ export class ChangeProjectFileHandler implements ICommandHandler<
     }
     const updated = await this.files.updateAnalysis(file.id, next);
     if (!updated) throw new NotFoundException('No such file in this project');
+    // A file that got its mapping resolves its "Datei ohne Mapping" by itself (F11.11).
+    await this.projectNotifications?.filesChanged(userId, project.id);
     return updated;
   }
 }

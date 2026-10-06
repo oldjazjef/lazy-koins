@@ -103,6 +103,39 @@ export function setupComplete(
   );
 }
 
+/** The optional steps and the fact whose absence has a consequence (the summary's "fehlt"). */
+const OPTIONAL_FACTS: ReadonlyArray<{
+  step: SetupStepId;
+  fact: keyof SetupFacts;
+  only?: PinMode;
+}> = [
+  { step: 'advisor', fact: 'advisor' },
+  { step: 'ai', fact: 'ai' },
+  { step: 'rates', fact: 'coingeckoKey' },
+  { step: 'wallets', fact: 'etherscanKey' },
+  { step: 'mail', fact: 'mail' },
+  { step: 'pin', fact: 'pin', only: 'web' },
+];
+
+/**
+ * F11.12 "Einrichtung unvollständig": the optional steps that were skipped or left open and whose
+ * settings are still missing (each with a consequence in the summary). Only once the wizard was
+ * finished ("App starten") — before that the user is in it anyway.
+ */
+export function setupGaps(
+  progress: SetupProgress,
+  mode: PinMode,
+  facts: SetupFacts,
+): SetupStepId[] {
+  if (progress.completedAt === null) return [];
+  return OPTIONAL_FACTS.filter(
+    ({ step, fact, only }) =>
+      (only === undefined || only === mode) &&
+      progress.steps[step] !== 'done' &&
+      !facts[fact],
+  ).map(({ step }) => step);
+}
+
 /** Whether a step may be marked `done` (its facts exist) — required steps are checked. */
 export function canMarkDone(step: SetupStepId, facts: SetupFacts): boolean {
   if (step === 'profile') return facts.profile;

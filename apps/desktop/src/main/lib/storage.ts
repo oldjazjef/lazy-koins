@@ -21,6 +21,8 @@ export const CONFIG_FILE = 'desktop-config.json';
 export interface DesktopConfig {
   /** The chosen data folder; absent = the default (`<userData>/data`). */
   dataDir?: string;
+  /** F11.13 "System-Benachrichtigungen"; absent = on. */
+  systemNotifications?: boolean;
 }
 
 export function defaultDataDir(userData: string): string {
@@ -34,9 +36,17 @@ export function readConfig(userData: string): DesktopConfig {
     );
     if (raw && typeof raw === 'object') {
       const dataDir = (raw as Record<string, unknown>)['dataDir'];
-      return typeof dataDir === 'string' && isAbsolute(dataDir)
-        ? { dataDir }
-        : {};
+      const notifications = (raw as Record<string, unknown>)[
+        'systemNotifications'
+      ];
+      return {
+        ...(typeof dataDir === 'string' && isAbsolute(dataDir)
+          ? { dataDir }
+          : {}),
+        ...(typeof notifications === 'boolean'
+          ? { systemNotifications: notifications }
+          : {}),
+      };
     }
   } catch {
     // Missing or unreadable: the defaults.

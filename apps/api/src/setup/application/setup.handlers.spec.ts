@@ -2,6 +2,9 @@ import { HttpException } from '@nestjs/common';
 import { SetPinCommand } from '../../pin/application/pin.handlers';
 import type { PinMode } from '../../pin/domain/pin';
 import { fakeConfig, pinSetup } from '../../pin/testing/pin-fixture';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
+import { InMemoryNotificationRepository } from '../../notifications/testing/in-memory-notification.repository';
 import { InMemorySetupProgressRepository } from '../testing/in-memory-setup-progress.repository';
 import {
   CompleteSetupCommand,
@@ -24,10 +27,13 @@ function setup(mode: PinMode, encryptionKey = 'k'.repeat(32)) {
     pin.state,
     fakeConfig({ SETTINGS_ENCRYPTION_KEY: encryptionKey }),
   );
-  const views = new SetupViews(progress, facts, pin.runtime);
+  const notificationRepo = new InMemoryNotificationRepository();
+  const notifications = new NotificationService(notificationRepo);
+  const views = new SetupViews(progress, facts, pin.runtime, notifications);
   return {
     ...pin,
     progress,
+    notificationRepo,
     get: new GetSetupHandler(views),
     update: new UpdateSetupHandler(progress, views),
     complete: new CompleteSetupHandler(progress, views, pin.clock),
@@ -183,6 +189,63 @@ describe('setup wizard (F11.0s)', () => {
     expect(after.complete).toBe(false);
     expect(after.missing).toEqual(['pin']);
     expect(after.steps.find((s) => s.id === 'pin')?.state).toBe('open');
+  });
+
+  it('F11.12: "Einrichtung unvollständig" after finishing with gaps; resolved once they are set up', async () => {
+    const t = setup('web');
+    const topic = Topics.setupIncomplete();
+    await t.settings.save('anna', { displayName: 'Anna', canton: 'ZH' });
+    await t.update.execute(
+      new UpdateSetupCommand('anna', {
+        states: { profile: 'done', advisor: 'skipped' },
+      }),
+    );
+    // Still in the wizard: nothing to notify.
+    expect(await t.notificationRepo.findByTopic('anna', topic)).toBeUndefined();
+
+    await t.complete.execute(new CompleteSetupCommand('anna'));
+    const raised = await t.notificationRepo.findByTopic('anna', topic);
+    expect(raised).toMatchObject({
+      kind: 'action',
+      resolvedAt: null,
+      params: { count: 6, steps: 'advisor, ai, rates, wallets, mail, pin' },
+      action: {
+        labelKey: 'notifications.action.toSetup',
+        route: '/app/setup',
+        query: { step: 'advisor' },
+      },
+    });
+
+    // Everything set up later (outside the wizard) → resolved on the next read.
+    await t.settings.save('anna', {
+      advisorEmail: 'tr@example.ch',
+      sealedKeys: { coingecko: 'enc:v1:a', etherscan: 'enc:v1:b' },
+    });
+    await t.ai.save('anna', {
+      enabled: true,
+      provider: 'anthropic',
+      baseUrl: '',
+      model: '',
+      apiKeyCipher: 'enc:v1:c',
+      apiKeyHint: '…cccc',
+      consentAt: null,
+    });
+    await t.mail.save('anna', {
+      enabled: true,
+      host: 'smtp.example.ch',
+      port: 587,
+      security: 'starttls',
+      username: '',
+      passwordCipher: null,
+      passwordHint: null,
+      fromName: '',
+      fromAddress: 'anna@example.ch',
+    });
+    await t.set.execute(new SetPinCommand({ userId: 'anna' }, '1234'));
+    await t.get.execute(new GetSetupQuery('anna'));
+    expect(
+      (await t.notificationRepo.findByTopic('anna', topic))?.resolvedAt,
+    ).not.toBeNull();
   });
 
   it('reads the facts from the settings, never a key', async () => {

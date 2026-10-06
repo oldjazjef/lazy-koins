@@ -171,7 +171,7 @@ export class GenerateMappingHandler implements ICommandHandler<
     );
     const { sample, readable } = await this.sources.mappingSample(file);
     const connection = await this.gate.connect(userId, consent);
-    return new MappingWriter(this.gate, this.analysis, this.ai).write(
+    return new MappingWriter(this.gate, this.analysis, this.ai, userId).write(
       connection,
       sample,
       readable,
@@ -191,6 +191,8 @@ export class MappingWriter {
     private readonly gate: AiGate,
     private readonly analysis: FileAnalysisService,
     private readonly ai: AiCompletionPort,
+    /** Whose request it is — a provider failure becomes their notification (F11.12). */
+    private readonly userId?: string,
   ) {}
 
   async write(
@@ -258,6 +260,7 @@ export class MappingWriter {
           },
         }),
       connection,
+      this.userId ? { userId: this.userId } : undefined,
     );
   }
 
@@ -398,7 +401,7 @@ export class GenerateSampleMappingHandler implements ICommandHandler<
   }: GenerateSampleMappingCommand): Promise<MappingCandidate> {
     const sample = await this.sources.sampleOf(file);
     const connection = await this.gate.connect(userId, consent);
-    return new MappingWriter(this.gate, this.analysis, this.ai).write(
+    return new MappingWriter(this.gate, this.analysis, this.ai, userId).write(
       connection,
       sample,
       file,

@@ -161,6 +161,7 @@ export class ExtractStatementHandler implements ICommandHandler<
             },
           }),
         connection,
+        { userId },
       );
       model = answer.model;
       if (answer.usage) {

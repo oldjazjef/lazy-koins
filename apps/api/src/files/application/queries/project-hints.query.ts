@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, Optional } from '@nestjs/common';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -6,6 +6,7 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import { missingFileHints } from '@lazykoins/engine';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { loadOwnProject } from '../../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import {
@@ -110,6 +111,7 @@ export class UpdateHintStateHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly states: HintStateRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -123,14 +125,18 @@ export class UpdateHintStateHandler implements ICommandHandler<
     if (project.status === 'closed') {
       throw new ConflictException('The project is closed: reopen it first');
     }
+    let saved: HintState | null = null;
     if (status === 'open') {
       await this.states.remove(project.id, hintKey);
-      return null;
+    } else {
+      saved = await this.states.save(project.id, hintKey, {
+        status,
+        note: note.trim(),
+      });
     }
-    return this.states.save(project.id, hintKey, {
-      status,
-      note: note.trim(),
-    });
+    // A hint marked done settles its notification; reopened, it comes back (F11.11).
+    await this.projectNotifications?.hintsChanged(userId, project.id);
+    return saved;
   }
 }
 

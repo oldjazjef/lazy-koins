@@ -26,6 +26,13 @@ export type StorageChangeResult =
   | { status: 'restarting' }
   | { status: 'failed'; message: string };
 
+/** An OS notification (F11.13) — error and "Handlungsbedarf" only, text without secrets. */
+export interface OsNotification {
+  readonly kind: 'error' | 'action';
+  readonly title: string;
+  readonly body: string;
+}
+
 export interface DesktopBridge {
   readonly platform: string;
   readonly storage: {
@@ -44,6 +51,14 @@ export interface DesktopBridge {
     /** The user's auto-lock time, so the shell's system-idle check uses it. */
     setIdleMinutes(minutes: number): Promise<void>;
   };
+  readonly notifications: {
+    /** Einstellungen › System › "System-Benachrichtigungen" (default on). */
+    enabled(): Promise<boolean>;
+    /** Stores the switch; resolves with the stored value. */
+    setEnabled(on: boolean): Promise<boolean>;
+    /** Shown only while enabled; clicking it brings the window to the front. */
+    show(notification: OsNotification): Promise<void>;
+  };
 }
 
 export const IPC = {
@@ -54,4 +69,7 @@ export const IPC = {
   /** main → window: the app was locked (reason). */
   locked: 'lk:lock:locked',
   lockIdleMinutes: 'lk:lock:idle-minutes',
+  notificationsEnabled: 'lk:notifications:enabled',
+  notificationsSetEnabled: 'lk:notifications:set-enabled',
+  notificationsShow: 'lk:notifications:show',
 } as const;

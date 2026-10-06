@@ -24,6 +24,12 @@ const bridge: DesktopBridge = {
     setIdleMinutes: (minutes) =>
       ipcRenderer.invoke(IPC.lockIdleMinutes, minutes),
   },
+  notifications: {
+    enabled: () => ipcRenderer.invoke(IPC.notificationsEnabled),
+    setEnabled: (on) => ipcRenderer.invoke(IPC.notificationsSetEnabled, on),
+    show: (notification) =>
+      ipcRenderer.invoke(IPC.notificationsShow, notification),
+  },
 };
 
 contextBridge.exposeInMainWorld('lazykoinsDesktop', bridge);

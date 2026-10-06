@@ -1,4 +1,4 @@
-import { BadGatewayException } from '@nestjs/common';
+import { BadGatewayException, Optional } from '@nestjs/common';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -10,6 +10,8 @@ import type {
   MailErrorDetail,
   MailSecurity,
 } from '../../integrations/mail/mail-transport.port';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import { UserRepositoryPort } from '../../users/ports/user.repository.port';
 import {
   checkSmtpHost,
@@ -124,6 +126,7 @@ export class SaveMailSettingsHandler implements ICommandHandler<
     private readonly gate: MailGate,
     private readonly runtime: MailRuntime,
     private readonly users: UserRepositoryPort,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({
@@ -174,6 +177,8 @@ export class SaveMailSettingsHandler implements ICommandHandler<
       fromName: input.fromName.trim(),
       fromAddress,
     });
+    // The user fixed the mailer: "Schlüssel prüfen" is settled until the next failure (F11.11).
+    await this.notifications?.resolve(userId, Topics.keyInvalid('mail'));
     const user = await this.users.findById(userId);
     return mailSettingsView(saved, this.runtime, user?.email ?? '');
   }
@@ -218,6 +223,7 @@ export class SendTestMailHandler implements ICommandHandler<
   constructor(
     private readonly gate: MailGate,
     private readonly users: UserRepositoryPort,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({
@@ -250,6 +256,10 @@ export class SendTestMailHandler implements ICommandHandler<
       attachments: [],
     });
     if (!outcome.ok) throw smtpFailure(outcome.detail);
+    if (draft?.password === undefined) {
+      // The saved password works again.
+      await this.notifications?.resolve(userId, Topics.keyInvalid('mail'));
+    }
     return {
       ok: true,
       to,

@@ -108,7 +108,7 @@ export class StartEstvUpdateHandler implements ICommandHandler<
       );
     }
     const years = year !== undefined ? [year] : await this.sync.yearsToCheck();
-    void this.sync.run(years).catch((error: unknown) => {
+    void this.sync.run(years, userId).catch((error: unknown) => {
       this.logger.warn(`ESTV update failed: ${(error as Error).message}`);
     });
     return statusFor(this.sync, this.settings, this.config, userId);

@@ -1,4 +1,6 @@
+import { Optional } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
 import { assertOpen, loadOwnProjectFile } from '../file-access';
@@ -23,6 +25,7 @@ export class RemoveProjectFileHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -39,5 +42,7 @@ export class RemoveProjectFileHandler implements ICommandHandler<
     );
     assertOpen(project);
     await this.files.remove(file.id);
+    // The removed file's own notifications are resolved with the rest (F11.11).
+    await this.projectNotifications?.filesChanged(userId, project.id);
   }
 }

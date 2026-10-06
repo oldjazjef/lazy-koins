@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Optional,
   PayloadTooLargeException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -9,6 +10,9 @@ import {
   type IQueryHandler,
   QueryHandler,
 } from '@nestjs/cqrs';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
+import { Topics } from '../../notifications/domain/notification';
 import { loadOwnProject } from '../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
 import { PackageError } from '../domain/package-format';
@@ -37,6 +41,41 @@ export function toHttp(error: unknown): never {
     throw new UnprocessableEntityException(body);
   }
   throw error;
+}
+
+/**
+ * F11.12: a failed package import becomes "Paket-Import fehlgeschlagen" (its code only); a
+ * successful one settles it, and the imported projects' conditions (files without mapping,
+ * hints …) are raised like after an upload.
+ */
+async function importNotified<T>(
+  userId: string,
+  work: () => Promise<T>,
+  projectIds: (result: T) => readonly string[],
+  notifications: NotificationService | undefined,
+  projects: ProjectNotifications | undefined,
+): Promise<T> {
+  let result: T;
+  try {
+    result = await work();
+  } catch (error) {
+    await notifications?.raise(userId, Topics.packageImportFailed(), {
+      kind: 'error',
+      params: {
+        reason: error instanceof PackageError ? error.code : 'unexpected',
+      },
+      action: {
+        labelKey: 'notifications.action.retry',
+        route: '/app/projects',
+      },
+    });
+    return toHttp(error);
+  }
+  await notifications?.resolve(userId, Topics.packageImportFailed());
+  for (const projectId of projectIds(result)) {
+    await projects?.filesChanged(userId, projectId);
+  }
+  return result;
 }
 
 export class ExportProjectPackageQuery {
@@ -83,18 +122,24 @@ export class ImportProjectPackageHandler implements ICommandHandler<
   ImportProjectPackageCommand,
   ImportedProject
 > {
-  constructor(private readonly packages: ProjectPackageService) {}
+  constructor(
+    private readonly packages: ProjectPackageService,
+    @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
+  ) {}
 
   async execute({
     userId,
     bytes,
   }: ImportProjectPackageCommand): Promise<ImportedProject> {
     if (bytes.length === 0) throw new BadRequestException('The file is empty');
-    try {
-      return await this.packages.import(userId, bytes);
-    } catch (error) {
-      return toHttp(error);
-    }
+    return importNotified(
+      userId,
+      () => this.packages.import(userId, bytes),
+      (imported) => [imported.projectId],
+      this.notifications,
+      this.projectNotifications,
+    );
   }
 }
 
@@ -136,17 +181,23 @@ export class ImportAccountPackageHandler implements ICommandHandler<
   ImportAccountPackageCommand,
   ImportedAccount
 > {
-  constructor(private readonly packages: AccountPackageService) {}
+  constructor(
+    private readonly packages: AccountPackageService,
+    @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
+  ) {}
 
   async execute({
     userId,
     bytes,
   }: ImportAccountPackageCommand): Promise<ImportedAccount> {
     if (bytes.length === 0) throw new BadRequestException('The file is empty');
-    try {
-      return await this.packages.import(userId, bytes);
-    } catch (error) {
-      return toHttp(error);
-    }
+    return importNotified(
+      userId,
+      () => this.packages.import(userId, bytes),
+      (imported) => imported.projects.map((project) => project.projectId),
+      this.notifications,
+      this.projectNotifications,
+    );
   }
 }

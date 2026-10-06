@@ -104,7 +104,8 @@ pnpm db:studio     # prisma studio — browse the database
 
 pnpm private:inspect   # structure of private/ (paths, sizes, headers, row counts) — never rows
 pnpm private:load [ZH] # loads private/ into the RUNNING dev API: project "Steuern 2025", mappings,
-                       #   files (not private/reference/**), rates, calculation — prints totals only
+                       #   files (not private/reference/**), rates, calculation — prints totals only;
+                       #   LK_UNLOCK_PIN=<pin> when the dev user has a PIN (F11.0p)
 pnpm exec playwright-core install chromium   # once: the browser for PDF exports
 pnpm vitest run --project engine   # one project's tests (api, web, engine, eslint-rules)
 ```
@@ -161,6 +162,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     mail/                   #   F11.10/F10.6a: mailer + template settings, compose/send, send log
     setup/                  #   F11.0s: setup wizard progress + facts (what is configured)
     pin/                    #   F11.0p: PIN (scrypt), unlock sessions, PinLockGuard (423), forgot
+    notifications/          #   F11.11–F11.13: NotificationService (raise/resolve by topic), ProjectNotifications,
+                            #   list/count/read/dismiss, activity + sync-conflict reports (global module)
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
@@ -169,7 +172,8 @@ apps/web/                   # Angular app
   public/i18n/de-CH.json    #   messages
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
-    core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/,
+    core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/ (toasts),
+                            #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
                             #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
     features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
                             #   mappings (F11.0: list + detail), profile (+ account package), settings
@@ -511,6 +515,91 @@ it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (def
 - The PIN guards an open app, not the files: whoever copies the data folder (database + key file)
   can try all PINs offline.
 
+## Notifications (F11.11–F11.13)
+
+The bell in the header (`core/notification-centre/notification-bell`, next to the theme toggle)
+with the unread badge; its panel (dialog layout: header with "Erledigte ausblenden", the only
+scrolling list grouped by project, footer "Alle als gelesen" / "Alle anzeigen"; Escape and a
+click outside close it, focus back on the bell) and the page `/app/notifications`
+(`features/notifications`, table pattern: truncate, row actions open/read/dismiss, paginator,
+filters kind / project / status). Slice `notifications/` (API), global module.
+
+- **Model** (`notification`, migration `20261008160000_notifications`, new table only): per user,
+  `kind` `error | action | info | success`, **topic** (unique per user — the dedupe key), project
+  (nullable, cascade), `title_key` (`notifications.%`) + `params` (JSON object), `action` (JSON
+  `{ labelKey, route under /app/, query?, fragment?, named? }`), `created_at` (first raise),
+  `occurred_at` (last raise — the sort key), `read_at`, `resolved_at`, `dismissed_at`. CHECKs in the
+  CREATE TABLE; `notifications.persistence.integration.spec.ts`.
+- **Topic naming**: `<area>.<what>[:<subject>]`, built only through `Topics` in
+  `notifications/domain/notification.ts`; the title key is `notifications.title.<area>.<what>`
+  (`TITLE_BASES`, mirrored in the web's `NOTIFICATION_TITLE_BASES`; a spec checks de-CH has every
+  one). Project topics end in the project id, file topics in the project file id.
+- **`NotificationService`** (`raise`, `resolve`, `resolveWhere`, `toggle`): upsert by topic. An
+  `event` (error/info/success) is news on every raise (unread, back from resolved/dismissed); a
+  `condition` (`action`) only when its content changed or it had been resolved — a recalculation
+  with the same 3 open items does not ring again, a dismissed one stays hidden. Params pass
+  `sanitizeParams` (flat values, ≤ 200 chars, keys/tokens/passwords/seed phrases/private keys →
+  `[…]`), actions `sanitizeAction` (app routes only). Storage errors are logged, never thrown into
+  the triggering operation. Resolved/dismissed rows older than 30 days are pruned on the next raise.
+  Handlers get it (and `ProjectNotifications`) as `@Optional()` last constructor parameters, so
+  specs that do not care construct them as before.
+- **`ProjectNotifications`** re-derives a project's conditions from stored state after every change
+  that can affect them, raising what is true and resolving the rest: `filesChanged` (upload,
+  derived file, assignment, remove, re-apply, mapping deleted, carry-over, package import),
+  `hintsChanged`, `calculated`, `openItemsChanged`, `sentChanged` (send, mark, undo, export,
+  correction). A hint marked done/ignored settles the matching file topic.
+- **Triggers** (F11.12):
+
+  | Topic                                             | Kind            | Raised by / resolved by                                                                                            |
+  | ------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+  | `rates.fetchFailed:<p>` (assets)                  | error           | "Kurse aktualisieren" with failed assets / a clean refresh; `retry:rates`                                          |
+  | `key.invalid:coingecko`                           | action          | CoinGecko 401/403 in a refresh / key accepted or saved                                                             |
+  | `estv.fetchFailed:<year>`                         | error           | scheduler **and** manual check fails (owners of the year's open projects + requester) / next success; `retry:estv` |
+  | `estv.newVersion:<p>`                             | info            | a new Kursliste stored / the project applies it (`EstvProjectRatesService`)                                        |
+  | `ai.callFailed`, `key.invalid:ai`                 | error / action  | `AiGate.call` with a context (code + HTTP status only) / a successful call, saved key                              |
+  | `mail.sendFailed:<p>`, `key.invalid:mail`         | error / action  | failed send (kind; auth → key) / successful send, test with the saved password, settings saved                     |
+  | `mail.sent:<p>`                                   | success         | successful send                                                                                                    |
+  | `export.failed:<p>`                               | error           | statement creation failed / next one succeeds                                                                      |
+  | `package.importFailed`                            | error           | project/account package import (its code) / next import                                                            |
+  | `file.needsMapping:<pf>`, `file.rowErrors:<pf>`   | action          | `ProjectNotifications.fileTopics` / file mapped, hint settled, file gone                                           |
+  | `file.readFailed:<p>`                             | error           | upload that cannot be read (422; the name only)                                                                    |
+  | `hints.open:<p>`                                  | action          | open F5.8 coverage hints (warnings/errors) / none left                                                             |
+  | `checks.openItems:<p>`, `rates.missingPrices:<p>` | action          | after a calculation (count) / ticked off, recalculated without                                                     |
+  | `project.changedSinceSent:<p>`                    | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
+  | `desktop.syncConflict`                            | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
+  | `setup.incomplete`                                | action          | wizard finished with skipped/open optional steps still missing settings / all set up (below)                       |
+  | `task.done:<label>[:<p>]`, `task.failed:…`        | success / error | the app's activity report (below)                                                                                  |
+
+  Plus `wallet.fetchFailed:<wallet>` (error: label, failed networks, first code — never the
+  address; resolved by a fetch without failures) and `key.invalid:chain` (a network's 401/403 →
+  Einstellungen › Wallets) from `FetchWalletHandler`. And `setup.incomplete` (action, condition,
+  F11.0s): `SetupViews.present` re-derives it whenever the wizard is read or changed — raised
+  once "App starten" was pressed while optional steps were skipped/left open **and** their
+  settings are still missing (`setupGaps`: Treuhänder, AI, CoinGecko, Etherscan, Mailer, web PIN;
+  params `count` + `steps`, button "Einrichten" → `/app/setup?step=<first gap>`), resolved when
+  none is left.
+
+- **API**: `GET /api/notifications?status=unread|all&includeResolved&kind&projectId&offset&limit`
+  (newest first, ≤ 500, `{ items, total, unread }`), `GET …/count`, `POST …/:id/read`,
+  `POST …/read-all`, `POST …/:id/dismiss` (someone else's id → 404), `POST …/activity`,
+  `PUT …/sync-conflict`.
+- **Web** (`NotificationCentreService`, root): polls the list every 60 s while the shell lives
+  and after every finished task; translates code params (`reason` → `notifications.reason.*`,
+  `code` → `ai.errors.*`, `kind` → `exports.kind.*`, `reasons` → `projects.sent.reason.*`, `task`
+  → the activity label); `open()` marks read, runs a named action (`retry:rates` posts the refresh
+  through the ActivityService, `retry:estv` starts the update) and navigates — `?tab=` opens a
+  workspace tab (`ProjectDetailPage.tab` → `ProjectWorkspace.initialTab`), `#file-<id>` marks the
+  file row. **F11.13**: `ActivityService.finished` emits every ended task with the URL at start and
+  end; the centre reports failures and tasks finished after the user left their page
+  (`POST /api/notifications/activity`; the server skips a failure it already notified within 2
+  min, checks project ownership, accepts only `activity.*` labels).
+- **Desktop**: `window.lazykoinsDesktop.notifications` (`enabled`, `setEnabled`, `show`) →
+  Electron `Notification` for new unread `error`/`action` items (never what was there at start),
+  only while "System-Benachrichtigungen" (Einstellungen › System, stored in
+  `desktop-config.json` as `systemNotifications`, default on) is on; input validated by
+  `lib/os-notification.ts`; click focuses the window; `setAppUserModelId` on Windows. Never in the
+  web.
+
 ## Calculation, rates, checks, corrections, exports (F7–F10)
 
 **Engine** (`libs/engine/src/calculation/calculate.ts`, pure): `calculate(input)` takes the
@@ -827,6 +916,10 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `user_id`; `steps` must be a JSON object, `current_step` CHECK) and `user_pin` (PK `user_id`;
   `pin_hash LIKE 'scrypt$%'`, counters ≥ 0, auto-lock 1–240) — both cascade with the user;
   `setup.persistence.integration.spec.ts`.
+- **Notifications** (migration `20261008160000_notifications`, new table only): `notification`
+  (unique `(user_id, topic)`, index `(user_id, occurred_at)`; CHECKs: kind, topic 1–300,
+  `title_key LIKE 'notifications.%'`, params a JSON object ≤ 4000, action null or a JSON object;
+  cascade with user and project); `notifications.persistence.integration.spec.ts`.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -1318,7 +1411,8 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
   component host like `lk-lock-screen` has no box of its own — wait for `.lk-lock-screen`.
 - A user with a PIN gets **423** from every data endpoint without the unlock token: scripts and
   Scalar calls against such an account need `x-lazykoins-unlock` (`POST /api/pin/unlock`), or use
-  an account without a PIN. Deleting `user_pin` rows behind a running API leaves its per-user PIN
+  an account without a PIN. `pnpm private:load` does it with `LK_UNLOCK_PIN=<pin>` (sent to the
+  API only, never printed). Deleting `user_pin` rows behind a running API leaves its per-user PIN
   cache stale — restart it.
 - **Desktop native module**: better-sqlite3 must have a **prebuilt binary for Electron's ABI**
   (GitHub release assets `better-sqlite3-v<x>-electron-v<abi>-<os>-<arch>.tar.gz`). 12.11.1 has

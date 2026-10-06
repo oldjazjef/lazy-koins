@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -22,6 +23,8 @@ import {
 import { assertProjectOpen } from '../../calculation/application/calculation.handlers';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import type { Env } from '../../config/env';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { projectRoute, Topics } from '../../notifications/domain/notification';
 import { loadOwnProject } from '../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
 import { SettingsReader } from '../../settings/application/settings.handlers';
@@ -238,6 +241,7 @@ export class RefreshRatesHandler implements ICommandHandler<
     private readonly config: ConfigService<Env, true>,
     private readonly progress: RefreshProgress,
     private readonly estv: EstvProjectRatesService,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({
@@ -265,13 +269,64 @@ export class RefreshRatesHandler implements ICommandHandler<
     });
     const stored = await this.rates.listByProject(project.id);
     this.progress.start(project.id, assets.length + 2);
+    const keyUse: KeyUse = { accepted: false, rejected: false };
     try {
-      return {
-        ...(await this.fetchAll(project, assets, stored, force, settings)),
+      const summary = {
+        ...(await this.fetchAll(
+          project,
+          assets,
+          stored,
+          force,
+          settings,
+          keyUse,
+        )),
         estv,
       };
+      await this.notify(userId, project.id, summary, keyUse);
+      return summary;
     } finally {
       this.progress.finish(project.id);
+    }
+  }
+
+  /**
+   * F11.12: assets whose lookup failed → one error per project (which assets, "Erneut
+   * versuchen"); a CoinGecko 401/403 → "Schlüssel prüfen". A clean refresh resolves both.
+   */
+  private async notify(
+    userId: string,
+    projectId: string,
+    summary: RefreshSummary,
+    keyUse: KeyUse,
+  ): Promise<void> {
+    if (!this.notifications) return;
+    const failed = summary.assets
+      .filter((a) => a.status === 'failed')
+      .map((a) => a.asset);
+    await this.notifications.toggle(
+      userId,
+      Topics.ratesFetchFailed(projectId),
+      failed.length > 0,
+      {
+        kind: 'error',
+        projectId,
+        params: { assets: failed.slice(0, 10), count: failed.length },
+        action: projectRoute(projectId, 'notifications.action.retry', 'rates', {
+          named: 'retry:rates',
+        }),
+      },
+    );
+    if (keyUse.rejected) {
+      await this.notifications.raise(userId, Topics.keyInvalid('coingecko'), {
+        kind: 'action',
+        params: { service: 'CoinGecko' },
+        action: {
+          labelKey: 'notifications.action.checkKey',
+          route: '/app/settings/rates',
+        },
+      });
+    } else if (keyUse.accepted) {
+      await this.notifications.resolve(userId, Topics.keyInvalid('coingecko'));
     }
   }
 
@@ -281,6 +336,7 @@ export class RefreshRatesHandler implements ICommandHandler<
     stored: readonly ProjectRate[],
     force: boolean,
     settings: Awaited<ReturnType<SettingsReader['resolve']>>,
+    keyUse: KeyUse,
   ): Promise<Omit<RefreshSummary, 'estv'>> {
     const { from, to } = fetchWindow(project.taxYear);
     let fx = 0;
@@ -299,7 +355,7 @@ export class RefreshRatesHandler implements ICommandHandler<
       this.progress.working(project.id, asset);
       await this.devDelay();
       results.push(
-        await this.fetchAsset(project, asset, stored, force, settings),
+        await this.fetchAsset(project, asset, stored, force, settings, keyUse),
       );
       this.progress.step(project.id);
     }
@@ -318,11 +374,13 @@ export class RefreshRatesHandler implements ICommandHandler<
     stored: readonly ProjectRate[],
     force: boolean,
     settings: Awaited<ReturnType<SettingsReader['resolve']>>,
+    keyUse: KeyUse,
   ): Promise<RefreshSummary['assets'][number]> {
     const { from, to } = fetchWindow(project.taxYear);
     if (!force && covered(stored, 'price', asset, project.taxYear)) {
       return { asset, status: 'cached', source: null, points: 0 };
     }
+    let keyed = false;
     try {
       const symbols = [asset, ...(RATE_ALIASES[asset] ?? [])];
       let entries: RateEntry[] = [];
@@ -335,6 +393,7 @@ export class RefreshRatesHandler implements ICommandHandler<
       const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
       const apiKey = settings.keys.coingecko;
       if (entries.length === 0 && coinId && apiKey) {
+        keyed = true;
         entries = await this.chf.dailyChf({
           asset,
           symbol: asset,
@@ -344,6 +403,7 @@ export class RefreshRatesHandler implements ICommandHandler<
           apiKey,
         });
         if (entries.length > 0) source = this.chf.name;
+        keyUse.accepted = true;
       }
       await this.rates.upsertMany(project.id, entries);
       return {
@@ -352,10 +412,23 @@ export class RefreshRatesHandler implements ICommandHandler<
         source,
         points: entries.length,
       };
-    } catch {
+    } catch (error) {
+      if (keyed && isAuthFailure(error)) keyUse.rejected = true;
       return { asset, status: 'failed', source: null, points: 0 };
     }
   }
+}
+
+/** Whether a keyed source accepted or refused the user's key during one refresh. */
+interface KeyUse {
+  accepted: boolean;
+  rejected: boolean;
+}
+
+/** A source's 401/403 (`RateSourceError.status`): the key is invalid or expired. */
+function isAuthFailure(error: unknown): boolean {
+  const status = (error as { status?: unknown } | null)?.status;
+  return status === 401 || status === 403;
 }
 
 export class GetRefreshStatusQuery {

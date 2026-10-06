@@ -1,4 +1,10 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  Optional,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import { ConfigService } from '@nestjs/config';
 import {
   CommandHandler,
@@ -26,6 +32,7 @@ import {
   type SetupProgress,
   type SetupStepId,
   setupComplete,
+  setupGaps,
   type StepState,
   stepsFor,
 } from '../domain/setup';
@@ -91,10 +98,41 @@ export class SetupViews {
     private readonly progress: SetupProgressRepositoryPort,
     private readonly facts: SetupFactsReader,
     private readonly runtime: PinRuntime,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   get mode(): PinMode {
     return this.runtime.mode;
+  }
+
+  /**
+   * The view, after re-deriving F11.12 "Einrichtung unvollständig" (`setup.incomplete`): raised
+   * while optional steps were skipped/left open with a consequence, resolved once nothing is
+   * missing. A condition — reading the wizard again does not ring again.
+   */
+  async present(
+    userId: string,
+    progress: SetupProgress,
+    facts: SetupFacts,
+  ): Promise<SetupView> {
+    const gaps = setupGaps(progress, this.mode, facts);
+    const first = gaps[0];
+    await this.notifications?.toggle(
+      userId,
+      Topics.setupIncomplete(),
+      first !== undefined,
+      {
+        kind: 'action',
+        mode: 'condition',
+        params: { count: gaps.length, steps: gaps.join(', ') },
+        action: {
+          labelKey: 'notifications.action.toSetup',
+          route: '/app/setup',
+          ...(first ? { query: { step: first } } : {}),
+        },
+      },
+    );
+    return this.view(progress, facts);
   }
 
   async load(
@@ -152,7 +190,7 @@ export class GetSetupHandler implements IQueryHandler<
 
   async execute({ userId }: GetSetupQuery): Promise<SetupView> {
     const { progress, facts } = await this.views.load(userId);
-    return this.views.view(progress, facts);
+    return this.views.present(userId, progress, facts);
   }
 }
 
@@ -212,7 +250,7 @@ export class UpdateSetupHandler implements ICommandHandler<
       currentStep,
       completedAt: progress.completedAt,
     });
-    return this.views.view(saved, facts);
+    return this.views.present(userId, saved, facts);
   }
 }
 
@@ -256,7 +294,7 @@ export class CompleteSetupHandler implements ICommandHandler<
       completedAt:
         progress.completedAt ?? new Date(this.clock.now()).toISOString(),
     });
-    return this.views.view(saved, facts);
+    return this.views.present(userId, saved, facts);
   }
 }
 

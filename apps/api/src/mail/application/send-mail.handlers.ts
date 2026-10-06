@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Optional } from '@nestjs/common';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -12,6 +12,9 @@ import type {
   ProjectExportMeta,
 } from '../../exports/domain/project-export';
 import { ProjectExportRepositoryPort } from '../../exports/ports/project-export.repository.port';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
+import { projectRoute, Topics } from '../../notifications/domain/notification';
 import { loadOwnProject } from '../../projects/application/project-access';
 import {
   projectSentView,
@@ -230,6 +233,8 @@ export class SendMailHandler implements ICommandHandler<
     private readonly gate: MailGate,
     private readonly log: MailLogRepositoryPort,
     private readonly sent: ProjectSentRepositoryPort,
+    @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -307,6 +312,7 @@ export class SendMailHandler implements ICommandHandler<
           .slice(0, 500),
         messageId: null,
       });
+      await this.notifyFailure(userId, project.id, detail.kind);
       throw smtpFailure(detail);
     }
     const entry = await this.log.add(project.id, {
@@ -326,7 +332,54 @@ export class SendMailHandler implements ICommandHandler<
       mailLogId: entry.id,
       snapshotHash: facts.latestSnapshot?.inputHash ?? null,
     });
+    await this.notifySent(userId, project.id, attachments.length);
     return { log: entry, sent: await projectSentView(this.sent, project.id) };
+  }
+
+  /** F11.12: "Mail-Versand fehlgeschlagen" (the kind, never the server's text); auth → key. */
+  private async notifyFailure(
+    userId: string,
+    projectId: string,
+    kind: string,
+  ): Promise<void> {
+    if (!this.notifications) return;
+    await this.notifications.raise(userId, Topics.mailSendFailed(projectId), {
+      kind: 'error',
+      projectId,
+      params: { reason: kind },
+      action: projectRoute(projectId, 'notifications.action.retry', 'exports'),
+    });
+    if (kind === 'auth') {
+      await this.notifications.raise(userId, Topics.keyInvalid('mail'), {
+        kind: 'action',
+        params: { service: 'Mail' },
+        action: {
+          labelKey: 'notifications.action.checkKey',
+          route: '/app/settings/mail',
+        },
+      });
+    }
+  }
+
+  /** "Mail gesendet" (success), the failure and the key problem are settled; F4.7 re-checked. */
+  private async notifySent(
+    userId: string,
+    projectId: string,
+    attachments: number,
+  ): Promise<void> {
+    if (this.notifications) {
+      await this.notifications.resolve(userId, [
+        Topics.mailSendFailed(projectId),
+        Topics.keyInvalid('mail'),
+      ]);
+      await this.notifications.raise(userId, Topics.mailSent(projectId), {
+        kind: 'success',
+        projectId,
+        params: { count: attachments },
+        action: projectRoute(projectId, 'notifications.action.show', 'exports'),
+      });
+    }
+    await this.projectNotifications?.sentChanged(userId, projectId);
   }
 
   /** The chosen statements of this project, at most 20 MB together. */
