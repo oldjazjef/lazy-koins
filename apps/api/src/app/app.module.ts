@@ -20,6 +20,7 @@ import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { MailModule } from '../mail/mail.module';
 import { MappingsModule } from '../mappings/mappings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PersistenceModule } from '../persistence/persistence.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { RatesModule } from '../rates/rates.module';
@@ -46,6 +47,8 @@ import { AppController } from './app.controller';
     PersistenceModule,
     // Global: identity-token verifier → its adapter (chosen by AUTH_MODE).
     IntegrationsModule,
+    // Global: the notification centre (F11.11) every feature raises into.
+    NotificationsModule,
     AuthModule,
     UsersModule,
     ProjectsModule,

@@ -11,6 +11,12 @@ const bridge: DesktopBridge = {
     useDefault: () => ipcRenderer.invoke(IPC.storageUseDefault),
     reveal: () => ipcRenderer.invoke(IPC.storageReveal),
   },
+  notifications: {
+    enabled: () => ipcRenderer.invoke(IPC.notificationsEnabled),
+    setEnabled: (on) => ipcRenderer.invoke(IPC.notificationsSetEnabled, on),
+    show: (notification) =>
+      ipcRenderer.invoke(IPC.notificationsShow, notification),
+  },
 };
 
 contextBridge.exposeInMainWorld('lazykoinsDesktop', bridge);

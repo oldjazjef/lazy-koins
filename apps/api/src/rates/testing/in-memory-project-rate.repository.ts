@@ -57,6 +57,8 @@ function datesOf(from: string, to: string): string[] {
 export class FakeUsdSource extends UsdPriceSourcePort {
   readonly name = 'binance' as const;
   readonly calls: SeriesRequest[] = [];
+  /** Symbols whose request fails (network error). */
+  readonly failFor = new Set<string>();
 
   constructor(private readonly prices: Readonly<Record<string, string>>) {
     super();
@@ -64,6 +66,11 @@ export class FakeUsdSource extends UsdPriceSourcePort {
 
   async dailyUsd(request: SeriesRequest): Promise<RateEntry[]> {
     this.calls.push(request);
+    if (this.failFor.has(request.symbol)) {
+      throw Object.assign(new Error('binance: request failed'), {
+        status: null,
+      });
+    }
     const value = this.prices[request.symbol];
     if (value === undefined) return [];
     return datesOf(request.from, request.to).map((date) => ({
@@ -84,6 +91,8 @@ export class FakeFiatSource extends FiatPriceSourcePort {
     apiKey: string;
     currency: string;
   })[] = [];
+  /** Every request fails with this HTTP status (401 = key refused). */
+  failWithStatus: number | undefined;
 
   async dailyFiat(
     request: SeriesRequest & {
@@ -93,6 +102,11 @@ export class FakeFiatSource extends FiatPriceSourcePort {
     },
   ): Promise<RateEntry[]> {
     this.calls.push(request);
+    if (this.failWithStatus !== undefined) {
+      throw Object.assign(new Error('coingecko: request failed'), {
+        status: this.failWithStatus,
+      });
+    }
     return datesOf(request.from, request.to).map((date) => ({
       kind: 'price',
       asset: request.asset,

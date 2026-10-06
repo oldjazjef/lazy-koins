@@ -40,6 +40,14 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
     return rows.map(toProject);
   }
 
+  async findByTaxYear(taxYear: number): Promise<Project[]> {
+    const rows = await this.prisma.project.findMany({
+      where: { taxYear },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(toProject);
+  }
+
   async findById(id: string): Promise<Project | undefined> {
     const row = await this.prisma.project.findUnique({ where: { id } });
     return row ? toProject(row) : undefined;

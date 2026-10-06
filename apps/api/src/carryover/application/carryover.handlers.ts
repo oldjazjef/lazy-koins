@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   CommandHandler,
@@ -10,6 +11,7 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import type { CorrectionData, OpenItem } from '@lazykoins/engine';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
 import {
   CalculationSnapshotRepositoryPort,
   CorrectionRepositoryPort,
@@ -319,6 +321,7 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
     private readonly bundles: ProjectBundleRepositoryPort,
     private readonly wallets: WalletRepositoryPort,
     private readonly derived: WalletDerivedFiles,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -470,6 +473,7 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
     for (const wallet of chosenWallets) {
       await this.derived.sync(userId, result.projectId, wallet);
     }
+    await this.projectNotifications?.filesChanged(userId, result.projectId);
     return { projectId: result.projectId };
   }
 }
@@ -562,6 +566,7 @@ export class TakeOverFilesHandler implements ICommandHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
     private readonly bundles: ProjectBundleRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -630,6 +635,7 @@ export class TakeOverFilesHandler implements ICommandHandler<
         data: { sourceProjectFileId: f.id },
       })),
     });
+    await this.projectNotifications?.filesChanged(userId, target.id);
     return { added: chosen.length, skipped };
   }
 }

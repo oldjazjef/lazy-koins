@@ -84,6 +84,8 @@ export class ProjectDetailPage {
 
   /** Route param `:id` — no default, absent params bind as `undefined` (see CLAUDE.md). */
   readonly id = input<string | undefined>();
+  /** Query `?tab=hints` — a notification's link to a workspace tab (F11.11). No default. */
+  readonly tab = input<string | undefined>();
 
   protected readonly confirm = signal<Confirm | null>(null);
   /** F4.1a: changes waiting for the confirmation of a new tax currency. */

@@ -56,4 +56,21 @@
       >
     </dd>
   </dl>
+
+  @if (osNotifications() !== null) {
+  <div class="lk-panel flex flex-col gap-2 p-4">
+    <label class="flex items-center gap-2 text-sm font-medium">
+      <input
+        type="checkbox"
+        data-os-notifications
+        [checked]="osNotifications()"
+        (change)="setOsNotifications($event)"
+      />
+      {{ 'settings.system.osNotifications' | translate }}
+    </label>
+    <p class="text-muted-foreground text-sm">
+      {{ 'settings.system.osNotificationsHint' | translate }}
+    </p>
+  </div>
+  }
 </section>

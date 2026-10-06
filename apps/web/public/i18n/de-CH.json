@@ -741,7 +741,9 @@
       "runtimeDesktop": "Desktop-App",
       "repository": "Quellcode",
       "support": "Unterstützen",
-      "supportLink": "Buy me a coffee"
+      "supportLink": "Buy me a coffee",
+      "osNotifications": "System-Benachrichtigungen",
+      "osNotificationsHint": "Fehler und Handlungsbedarf zusätzlich als Benachrichtigung des Betriebssystems anzeigen. Sie enthalten nie Schlüssel, Passwörter oder Buchungen."
     },
     "rates": {
       "title": "Kursabfragen",
@@ -1567,6 +1569,143 @@
       "count": "{{shown}} von {{total}} Fehlern",
       "column": "Spalte",
       "problem": "Problem"
+    }
+  },
+  "notifications": {
+    "heading": "Benachrichtigungen",
+    "bell": "Benachrichtigungen",
+    "bellUnread": "Benachrichtigungen, {{count}} ungelesen",
+    "hideResolved": "Erledigte ausblenden",
+    "empty": "Keine Benachrichtigungen – alles erledigt.",
+    "loadFailed": "Die Benachrichtigungen konnten nicht geladen werden.",
+    "updateFailed": "Die Benachrichtigung konnte nicht aktualisiert werden.",
+    "general": "Allgemein",
+    "markRead": "Als gelesen markieren",
+    "markAllRead": "Alle als gelesen",
+    "dismiss": "Ausblenden",
+    "showAll": "Alle anzeigen",
+    "resolved": "erledigt",
+    "unread": "ungelesen",
+    "read": "gelesen",
+    "osBody": "lazy-koins",
+    "retryDone": "Kurse wurden erneut abgerufen",
+    "retryFailed": "Der erneute Kursabruf ist fehlgeschlagen",
+    "kind": {
+      "error": "Fehler",
+      "action": "Handlungsbedarf",
+      "info": "Info",
+      "success": "Erfolg"
+    },
+    "action": {
+      "show": "Anzeigen",
+      "retry": "Erneut versuchen",
+      "checkKey": "Schlüssel prüfen",
+      "checkSettings": "Einstellungen prüfen",
+      "toFile": "Zur Datei",
+      "toFiles": "Zu den Dateien",
+      "toHint": "Zum Hinweis",
+      "toChecks": "Zu den Prüfungen",
+      "toRates": "Zu den Kursen",
+      "toExports": "Zu den Auszügen",
+      "toStorage": "Speicherort prüfen"
+    },
+    "title": {
+      "rates": {
+        "fetchFailed": "Kurse konnten nicht abgerufen werden: {{assets}}",
+        "missingPrices": "{{count}} Position(en) oder Erträge ohne Kurs"
+      },
+      "estv": {
+        "fetchFailed": "ESTV-Kursliste {{year}} konnte nicht bezogen werden ({{reason}})",
+        "newVersion": "Neue Fassung verfügbar: {{label}}"
+      },
+      "key": {
+        "invalid": "Schlüssel für {{service}} ungültig oder abgelaufen"
+      },
+      "ai": {
+        "callFailed": "AI-Aufruf fehlgeschlagen: {{code}}"
+      },
+      "mail": {
+        "sendFailed": "Mail an den Treuhänder konnte nicht gesendet werden ({{reason}})",
+        "sent": "Mail an den Treuhänder gesendet ({{count}} Anhänge)"
+      },
+      "export": {
+        "failed": "Auszug konnte nicht erstellt werden: {{kind}}"
+      },
+      "package": {
+        "importFailed": "Paket-Import fehlgeschlagen ({{reason}})"
+      },
+      "wallet": {
+        "fetchFailed": "Wallet-Abruf fehlgeschlagen: {{label}} – {{networks}} ({{reason}})"
+      },
+      "file": {
+        "needsMapping": "Datei ohne Mapping: {{name}}",
+        "rowErrors": "{{count}} Zeilenfehler in {{name}}",
+        "readFailed": "Datei konnte nicht gelesen werden: {{name}}"
+      },
+      "hints": {
+        "open": "{{count}} offene Hinweise zu fehlenden Dateien"
+      },
+      "checks": {
+        "openItems": "{{count}} offene Punkte nach der Berechnung"
+      },
+      "project": {
+        "changedSinceSent": "Seit dem Versand an den Treuhänder geändert: {{reasons}}"
+      },
+      "desktop": {
+        "syncConflict": "Sync-Konflikt: {{count}} Konfliktkopie(n) der Datenbank gefunden"
+      },
+      "task": {
+        "done": "Fertig: {{task}}",
+        "failed": "Fehlgeschlagen: {{task}}"
+      }
+    },
+    "reason": {
+      "network": "nicht erreichbar",
+      "timeout": "Zeitüberschreitung",
+      "http": "Fehler des Servers",
+      "badResponse": "unerwartete Antwort",
+      "tooLarge": "zu gross",
+      "badArchive": "ungültiges Archiv",
+      "badXml": "ungültige Daten",
+      "notFound": "noch nicht veröffentlicht",
+      "processing": "Verarbeitung fehlgeschlagen",
+      "auth": "Anmeldung abgelehnt",
+      "tls": "Verschlüsselung fehlgeschlagen",
+      "connection": "keine Verbindung",
+      "dns": "Server unbekannt",
+      "rejected": "abgelehnt",
+      "protocol": "Protokollfehler",
+      "unknown": "unbekannter Fehler",
+      "notZip": "keine ZIP-Datei",
+      "unsafePath": "unsicherer Pfad im Paket",
+      "manifest": "kein lazy-koins-Paket",
+      "tampered": "Paket verändert",
+      "version": "neuere Paketversion",
+      "content": "ungültiger Inhalt",
+      "unexpected": "unerwarteter Fehler",
+      "notConfigured": "Schlüssel fehlt",
+      "invalidKey": "Schlüssel abgelehnt",
+      "rateLimited": "zu viele Anfragen",
+      "chainNotOnPlan": "Netzwerk nicht im Abo",
+      "providerError": "Fehler des Anbieters",
+      "invalidAddress": "ungültige Adresse",
+      "unsupported": "nicht unterstützt"
+    },
+    "page": {
+      "title": "Benachrichtigungen",
+      "subtitle": "Fehler, Handlungsbedarf und erledigte Aufgaben – sie verschwinden von selbst, wenn die Ursache behoben ist.",
+      "kind": "Typ",
+      "allKinds": "Alle Typen",
+      "project": "Projekt",
+      "allProjects": "Alle Projekte",
+      "status": "Status",
+      "message": "Meldung",
+      "when": "Zeit",
+      "statuses": {
+        "all": "Offene",
+        "unread": "Ungelesene",
+        "resolved": "Mit erledigten"
+      }
     }
   },
   "activity": {

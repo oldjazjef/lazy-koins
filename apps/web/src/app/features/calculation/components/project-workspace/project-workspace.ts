@@ -69,6 +69,8 @@ export class ProjectWorkspace {
   readonly taxYear = input.required<number>();
   /** F4.1a: the project's tax currency. */
   readonly taxCurrency = input('CHF');
+  /** A tab to show, e.g. from a notification's link (`?tab=hints`); unknown values are ignored. */
+  readonly initialTab = input<string | undefined>();
 
   /** Open (unticked) items of the checks per `platform|account` and `platform|*` (F8.2 ↔ F5.8). */
   protected readonly openItems = computed(() => {
@@ -100,6 +102,12 @@ export class ProjectWorkspace {
       if (untracked(() => this.service.projectCurrency()) === currency) return;
       this.service.projectCurrency.set(currency);
       untracked(() => this.service.result.reload());
+    });
+    effect(() => {
+      const tab = this.initialTab();
+      if (tab && (WORKSPACE_TABS as readonly string[]).includes(tab)) {
+        this.service.tab.set(tab as WorkspaceTab);
+      }
     });
   }
 

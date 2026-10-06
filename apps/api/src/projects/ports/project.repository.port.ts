@@ -13,6 +13,12 @@ export abstract class ProjectRepositoryPort {
   /** The owner's projects, newest tax year first (then newest created). */
   abstract findByOwner(ownerId: string): Promise<Project[]>;
 
+  /**
+   * Every user's projects of one tax year — only for deployment-wide events that concern them
+   * (a new ESTV Kursliste, F7.4a → F11.12). Never for answering a user's request.
+   */
+  abstract findByTaxYear(taxYear: number): Promise<Project[]>;
+
   abstract findById(id: string): Promise<Project | undefined>;
 
   abstract create(ownerId: string, input: CreateProjectInput): Promise<Project>;

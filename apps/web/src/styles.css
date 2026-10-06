@@ -215,6 +215,57 @@
     background-color: var(--light-grey);
   }
 
+  /* Notification centre (F11.11): kind colours (ng-icon reads --ng-icon__color, unlayered),
+     the bell's badge and its panel. */
+  .lk-kind-error {
+    color: var(--destructive);
+    --ng-icon__color: var(--destructive);
+  }
+
+  .lk-kind-action {
+    color: var(--warning-text);
+    --ng-icon__color: var(--warning-text);
+  }
+
+  .lk-kind-info {
+    color: var(--primary);
+    --ng-icon__color: var(--primary);
+  }
+
+  .lk-kind-success {
+    color: var(--positive);
+    --ng-icon__color: var(--positive);
+  }
+
+  .lk-count-badge {
+    @apply bg-destructive pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] leading-none font-semibold text-primary-foreground tabular-nums;
+  }
+
+  /* Like a dialog: header and footer fixed, only the list scrolls (user rule). */
+  .lk-notification-panel {
+    @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex max-h-[min(36rem,calc(100dvh-5rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-md border shadow-lg outline-none;
+  }
+
+  .lk-notification-panel-header {
+    @apply flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3;
+  }
+
+  .lk-notification-panel-body {
+    @apply min-h-0 flex-1 overflow-y-auto pb-2;
+  }
+
+  .lk-notification-panel-footer {
+    @apply flex shrink-0 items-center justify-between gap-2 border-t px-4 py-3;
+  }
+
+  .lk-notification-item {
+    @apply flex items-start gap-3 px-4 py-2;
+  }
+
+  .lk-notification-unread {
+    @apply bg-accent/40;
+  }
+
   /* A hint that needs attention without being an error (F4.7 "seit dem Versand geändert"). */
   .lk-warning-text {
     color: var(--warning-text);

@@ -14,6 +14,7 @@ import {
   MailSettingsRepositoryPort,
   MailTemplateRepositoryPort,
 } from '../mail/ports/mail.repository.port';
+import { NotificationRepositoryPort } from '../notifications/ports/notification.repository.port';
 import { ProjectRepositoryPort } from '../projects/ports/project.repository.port';
 import { ProjectSentRepositoryPort } from '../projects/ports/project-sent.repository.port';
 import { EstvKurslisteRepositoryPort } from '../rates/ports/estv.port';
@@ -48,6 +49,7 @@ import {
   MailSettingsPrismaRepository,
   MailTemplatePrismaRepository,
 } from './prisma/repositories/mail.prisma.repository';
+import { NotificationPrismaRepository } from './prisma/repositories/notification.prisma.repository';
 import { ProjectExportPrismaRepository } from './prisma/repositories/project-export.prisma.repository';
 import { ProjectSentPrismaRepository } from './prisma/repositories/project-sent.prisma.repository';
 import { ProjectFilePrismaRepository } from './prisma/repositories/project-file.prisma.repository';
@@ -131,6 +133,10 @@ import {
       useClass: ProjectBundlePrismaRepository,
     },
     { provide: UserRateRepositoryPort, useClass: UserRatePrismaRepository },
+    {
+      provide: NotificationRepositoryPort,
+      useClass: NotificationPrismaRepository,
+    },
   ],
   exports: [
     UserRepositoryPort,
@@ -155,6 +161,7 @@ import {
     CarryoverRepositoryPort,
     ProjectBundleRepositoryPort,
     UserRateRepositoryPort,
+    NotificationRepositoryPort,
   ],
 })
 export class PersistenceModule {}

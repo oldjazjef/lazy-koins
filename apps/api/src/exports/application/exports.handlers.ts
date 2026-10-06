@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import {
@@ -25,6 +26,9 @@ import {
 } from '../../calculation/ports/calculation.repository.port';
 import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
+import { projectRoute, Topics } from '../../notifications/domain/notification';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -170,6 +174,8 @@ export class CreateExportHandler implements ICommandHandler<
     private readonly exports: ProjectExportRepositoryPort,
     private readonly data: ExportDataService,
     private readonly pdf: PdfRendererPort,
+    @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -178,6 +184,35 @@ export class CreateExportHandler implements ICommandHandler<
     kind,
   }: CreateExportCommand): Promise<ProjectExportMeta> {
     const project = await loadOwnProject(this.projects, userId, projectId);
+    const topic = Topics.exportFailed(project.id);
+    let created: ProjectExportMeta;
+    try {
+      created = await this.create(userId, project, kind);
+    } catch (error) {
+      // F11.12: "Auszug konnte nicht erstellt werden" — which kind, "Erneut versuchen".
+      await this.notifications?.raise(userId, topic, {
+        kind: 'error',
+        projectId: project.id,
+        params: { kind },
+        action: projectRoute(
+          project.id,
+          'notifications.action.retry',
+          'exports',
+        ),
+      });
+      throw error;
+    }
+    await this.notifications?.resolve(userId, topic);
+    // A statement made after sending is "seit dem Versand geändert" (F4.7).
+    await this.projectNotifications?.sentChanged(userId, project.id);
+    return created;
+  }
+
+  private async create(
+    userId: string,
+    project: Project,
+    kind: ExportKind,
+  ): Promise<ProjectExportMeta> {
     const snapshot = await this.data.currentSnapshot(userId, project);
     const data = await this.data.build(
       userId,

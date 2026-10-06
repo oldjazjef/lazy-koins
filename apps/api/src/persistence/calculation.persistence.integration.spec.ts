@@ -68,6 +68,7 @@ function result(wealthChf: string): StoredResult {
     engineVersion: 1,
     taxYear: 2025,
     country: 'CH',
+    currency: 'CHF',
     yearEnd: '2025-12-31',
     totals: {
       wealthChf,

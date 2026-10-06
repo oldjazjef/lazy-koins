@@ -1,4 +1,8 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Optional,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   CommandHandler,
@@ -7,6 +11,8 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import type { Env } from '../../config/env';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import {
   API_KEY_NAMES,
   type ApiKeyName,
@@ -131,6 +137,7 @@ export class UpdateSettingsHandler implements ICommandHandler<
     private readonly settings: UserSettingsRepositoryPort,
     private readonly secrets: SettingsSecrets,
     private readonly reader: SettingsReader,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({
@@ -161,6 +168,10 @@ export class UpdateSettingsHandler implements ICommandHandler<
       advisorEmail: rest.advisorEmail?.trim(),
       sealedKeys,
     });
+    // A new or removed CoinGecko key settles "Schlüssel prüfen" (F11.11).
+    if (sealedKeys.coingecko !== undefined) {
+      await this.notifications?.resolve(userId, Topics.keyInvalid('coingecko'));
+    }
     return this.reader.view(userId);
   }
 }

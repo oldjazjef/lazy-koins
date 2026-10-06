@@ -198,6 +198,7 @@
   [closed]="service.isClosed()"
   [taxYear]="project.taxYear"
   [taxCurrency]="project.taxCurrency"
+  [initialTab]="tab()"
 />
 
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">

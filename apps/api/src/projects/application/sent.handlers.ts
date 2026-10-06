@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Optional } from '@nestjs/common';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -6,6 +6,7 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import { ProjectExportRepositoryPort } from '../../exports/ports/project-export.repository.port';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
 import {
   type ChangeReason,
   changesSinceSent,
@@ -96,6 +97,7 @@ export class MarkProjectSentHandler implements ICommandHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly sent: ProjectSentRepositoryPort,
     private readonly exports: ProjectExportRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -128,6 +130,7 @@ export class MarkProjectSentHandler implements ICommandHandler<
       mailLogId: null,
       snapshotHash: facts.latestSnapshot?.inputHash ?? null,
     });
+    await this.projectNotifications?.sentChanged(userId, project.id);
     return projectSentView(this.sent, project.id);
   }
 }
@@ -148,6 +151,7 @@ export class UndoProjectSentHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly sent: ProjectSentRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -156,6 +160,7 @@ export class UndoProjectSentHandler implements ICommandHandler<
   }: UndoProjectSentCommand): Promise<ProjectSentView> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     await this.sent.remove(project.id);
+    await this.projectNotifications?.sentChanged(userId, project.id);
     return { sent: null, changes: [] };
   }
 }

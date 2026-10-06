@@ -1,6 +1,7 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, Optional } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { ImportMappingRepositoryPort } from '../../../mappings/ports/import-mapping.repository.port';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
 import { orUnreadable, readableOf } from '../file-access';
@@ -30,6 +31,7 @@ export class ReapplyMappingHandler implements ICommandHandler<
     private readonly files: ProjectFileRepositoryPort,
     private readonly mappings: ImportMappingRepositoryPort,
     private readonly analysis: FileAnalysisService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -59,6 +61,11 @@ export class ReapplyMappingHandler implements ICommandHandler<
       );
       await this.files.updateAnalysis(file.id, next);
       reapplied += 1;
+    }
+    for (const [projectId, status] of statusOf) {
+      if (status !== 'closed') {
+        await this.projectNotifications?.filesChanged(userId, projectId);
+      }
     }
     return { reapplied, skippedClosed };
   }

@@ -69,6 +69,7 @@ model User {
   rates         UserRate[]
   wallets       Wallet[]
   chainSettings ChainSettings?
+  notifications Notification[]
 
   @@map("user")
 }
@@ -93,18 +94,19 @@ model Project {
   /// Deleting an account deletes its projects (F2.2).
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  files       ProjectFile[]
-  rates       ProjectRate[]
-  snapshots   CalculationSnapshot[]
-  corrections Correction[]
-  itemStates  OpenItemState[]
-  exports     ProjectExport[]
+  files          ProjectFile[]
+  rates          ProjectRate[]
+  snapshots      CalculationSnapshot[]
+  corrections    Correction[]
+  itemStates     OpenItemState[]
+  exports        ProjectExport[]
   wallets        ProjectWallet[]
   walletBalances WalletManualBalance[]
-  hintStates  ProjectHintState[]
-  mailLog     MailLog[]
-  sentState   ProjectSentState?
-  carryovers  ProjectCarryover[]
+  hintStates     ProjectHintState[]
+  mailLog        MailLog[]
+  sentState      ProjectSentState?
+  carryovers     ProjectCarryover[]
+  notifications  Notification[]
 
   @@index([ownerId, taxYear])
   @@map("project")
@@ -683,4 +685,36 @@ model ProjectHintState {
 
   @@id([projectId, hintKey])
   @@map("project_hint_state")
+}
+
+/// F11.11–F11.13: one message of the notification centre, per user, deduplicated by its stable
+/// topic (`rates.fetchFailed:<projectId>`, `file.needsMapping:<projectFileId>`, …). Raising a
+/// topic again updates the row; resolving it marks the cause as gone. Never holds keys, passwords
+/// or booking details — only an i18n key and short params.
+model Notification {
+  id          String    @id @default(uuid(7))
+  userId      String    @map("user_id")
+  projectId   String?   @map("project_id")
+  /// error | action | info | success (CHECK)
+  kind        String
+  topic       String
+  /// i18n key, translated by the app.
+  titleKey    String    @map("title_key")
+  /// JSON object of i18n params (json_valid CHECK).
+  params      String    @default("{}")
+  /// JSON `{ route, query?, fragment? }` or `{ named }`; null = no action (json_valid CHECK).
+  action      String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  /// The last time the topic was raised — the list is sorted by it.
+  occurredAt  DateTime  @map("occurred_at")
+  readAt      DateTime? @map("read_at")
+  resolvedAt  DateTime? @map("resolved_at")
+  dismissedAt DateTime? @map("dismissed_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topic])
+  @@index([userId, occurredAt])
+  @@map("notification")
 }

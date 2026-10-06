@@ -19,6 +19,13 @@ export type StorageChangeResult =
   | { status: 'restarting' }
   | { status: 'failed'; message: string };
 
+/** An OS notification (F11.13) — error and "Handlungsbedarf" only, text without secrets. */
+export interface OsNotification {
+  readonly kind: 'error' | 'action';
+  readonly title: string;
+  readonly body: string;
+}
+
 export interface DesktopBridge {
   readonly platform: string;
   readonly storage: {
@@ -26,6 +33,14 @@ export interface DesktopBridge {
     choose(): Promise<StorageChangeResult>;
     useDefault(): Promise<StorageChangeResult>;
     reveal(): Promise<void>;
+  };
+  /** Absent in desktop builds older than the notification centre. */
+  readonly notifications?: {
+    /** Einstellungen › System › "System-Benachrichtigungen" (default on). */
+    enabled(): Promise<boolean>;
+    setEnabled(on: boolean): Promise<boolean>;
+    /** Shown only while enabled; clicking it brings the window to the front. */
+    show(notification: OsNotification): Promise<void>;
   };
 }
 
