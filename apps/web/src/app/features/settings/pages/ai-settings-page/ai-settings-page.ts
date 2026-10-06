@@ -110,6 +110,17 @@ export class AiSettingsPage {
     }
   }
 
+  /** Tests what is in the form right now — saved or not; a typed key is used, never stored. */
+  protected test(): void {
+    const { provider, baseUrl, model, apiKey } = this.form.getRawValue();
+    void this.service.test({
+      provider,
+      baseUrl: baseUrl.trim(),
+      model: model.trim(),
+      ...(apiKey.trim() !== '' ? { apiKey: apiKey.trim() } : {}),
+    });
+  }
+
   protected async removeKey(settings: AiSettings): Promise<void> {
     if (await this.service.removeKey(settings)) this.form.markAsPristine();
   }
