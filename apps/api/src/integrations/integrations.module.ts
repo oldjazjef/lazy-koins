@@ -13,7 +13,8 @@ import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
 import { FirebaseIdentityTokenVerifier } from './firebase/firebase-identity-token.verifier';
 import { LocalIdentityVerifier } from './local-identity.verifier';
-import { PlaywrightPdfRenderer } from './pdf/playwright-pdf.renderer';
+import { registeredHostPdfPrinter } from './pdf/host-pdf.renderer';
+import { selectPdfRenderer } from './pdf/select-pdf-renderer';
 import { BinanceKlinesSource } from './rates/binance-klines.source';
 import { CoinGeckoSource } from './rates/coingecko.source';
 import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
@@ -54,10 +55,12 @@ import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
     {
       provide: PdfRendererPort,
       inject: [ConfigService],
+      // Desktop: Electron's printToPDF (registered by bootstrap); server: Playwright Chromium.
       useFactory: (config: ConfigService<Env, true>) =>
-        new PlaywrightPdfRenderer(
-          config.get('PDF_CHROMIUM_PATH', { infer: true }) ?? '',
-        ),
+        selectPdfRenderer({
+          hostPrinter: registeredHostPdfPrinter(),
+          chromiumPath: config.get('PDF_CHROMIUM_PATH', { infer: true }) ?? '',
+        }),
     },
     {
       provide: AiCompletionPort,
