@@ -17,6 +17,8 @@ import {
 export interface ActivityProgress {
   readonly done: number;
   readonly total: number;
+  /** Shown as "45 %" instead of "12/40" (bytes of a download, …). */
+  readonly asPercent?: boolean;
 }
 
 export interface ActivityOptions {

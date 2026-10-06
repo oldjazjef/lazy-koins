@@ -13,21 +13,15 @@ import {
 import { FormsModule } from '@angular/forms';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
-  lucideArrowUpDown,
   lucideCheck,
   lucideChevronDown,
   lucideChevronRight,
-  lucideDownload,
-  lucideFileWarning,
-  lucideLink2,
-  lucidePenLine,
+  lucideInfo,
   lucideRotateCcw,
-  lucideScanText,
-  lucideSparkles,
   lucideUpload,
   lucideX,
 } from '@ng-icons/lucide';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
 import { HlmDialogImports } from '@lazykoins/ui/dialog';
@@ -46,6 +40,16 @@ import {
   type ProjectHint,
 } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import {
+  paginate,
+  type Pagination,
+  Paginator,
+} from '../../../../shared/components/paginator';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
+import { Truncate } from '../../../../shared/components/truncate';
 import { AiAssistState } from '../ai-assist';
 import { ProjectFilesService } from '../project-files/project-files.service';
 import {
@@ -86,6 +90,9 @@ export interface ManualHoldingRequest {
     NgIcon,
     TranslatePipe,
     EmptyState,
+    Paginator,
+    RowActions,
+    Truncate,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,
@@ -96,17 +103,10 @@ export interface ManualHoldingRequest {
   ],
   providers: [
     provideIcons({
-      lucideArrowUpDown,
       lucideCheck,
       lucideChevronDown,
       lucideChevronRight,
-      lucideDownload,
-      lucideFileWarning,
-      lucideLink2,
-      lucidePenLine,
       lucideRotateCcw,
-      lucideScanText,
-      lucideSparkles,
       lucideUpload,
       lucideX,
     }),
@@ -117,6 +117,7 @@ export interface ManualHoldingRequest {
 export class ProjectHints {
   protected readonly service = inject(ProjectFilesService);
   private readonly ai = inject(AiAssistState);
+  private readonly translate = inject(TranslateService);
 
   /** F4.5: a closed project shows the hints but changes nothing. */
   readonly closed = input(false);
@@ -175,17 +176,116 @@ export class ProjectHints {
     });
   }
 
+  /** The fixing actions per hint key (built once per change of hints/files/closed). */
+  private readonly fixes = computed(() => {
+    const files = this.service.files();
+    return new Map(
+      (this.view()?.hints ?? []).map(
+        (hint) => [hint.key, hintActions(hint, files)] as const,
+      ),
+    );
+  });
+
+  /** The row menu per hint key (user rule: actions behind "⋯"). */
+  private readonly rowActions = computed(() => {
+    const closed = this.closed();
+    const expanded = this.expanded();
+    return new Map(
+      (this.view()?.hints ?? []).map((hint) => {
+        const open = hint.status === 'open';
+        const actions: RowAction[] = [
+          ...(this.fixes().get(hint.key) ?? []).map((fix) => ({
+            id: fix.kind,
+            labelKey: fix.label,
+            icon: fix.icon,
+            hidden: closed || !open,
+          })),
+          {
+            id: 'markOk',
+            labelKey: 'hints.actions.markOk',
+            icon: lucideCheck,
+            hidden: closed || !open,
+          },
+          {
+            id: 'reopen',
+            labelKey: 'hints.actions.reopen',
+            icon: lucideRotateCcw,
+            hidden: closed || open,
+          },
+          {
+            id: 'details',
+            labelKey: expanded.has(hint.key) ? 'hints.less' : 'hints.more',
+            icon: lucideInfo,
+          },
+        ];
+        return [hint.key, actions] as const;
+      }),
+    );
+  });
+
+  /** One pager per platform group (10 rows per page, the chosen size remembered). */
+  private readonly pagers = new Map<string, Pagination<ProjectHint>>();
+
+  protected pagerFor(platform: string): Pagination<ProjectHint> {
+    let pager = this.pagers.get(platform);
+    if (!pager) {
+      pager = paginate(
+        computed(
+          () =>
+            this.groups().find((group) => group.platform === platform)?.hints ??
+            [],
+        ),
+        {
+          storageKey: 'hints',
+          resetOn: () => [
+            this.kindFilter(),
+            this.statusFilter(),
+            this.sort(),
+            this.service.hintPlatform(),
+          ],
+        },
+      );
+      this.pagers.set(platform, pager);
+    }
+    return pager;
+  }
+
   protected actionsOf(hint: ProjectHint): readonly HintAction[] {
-    return hintActions(hint, this.service.files());
+    return this.fixes().get(hint.key) ?? [];
+  }
+
+  protected rowActionsFor(hint: ProjectHint): readonly RowAction[] {
+    return this.rowActions().get(hint.key) ?? [];
+  }
+
+  protected act(id: string, hint: ProjectHint): void {
+    switch (id) {
+      case 'markOk':
+        this.openDismiss(hint);
+        return;
+      case 'reopen':
+        this.reopen(hint);
+        return;
+      case 'details':
+        this.toggleRow(hint);
+        return;
+    }
+    const fix = this.actionsOf(hint).find((action) => action.kind === id);
+    if (fix) this.run(hint, fix);
   }
 
   protected severityClass(severity: HintSeverity): string {
     return `lk-severity lk-severity-${severity}`;
   }
 
-  protected where(hint: ProjectHint): string {
+  /** The account(s) or file of a hint; "ganze Plattform" when it names none. */
+  protected whereOf(hint: ProjectHint): string {
     if (hint.fileName) return hint.fileName;
-    return hint.accountId || hint.accounts.join(', ');
+    return (
+      hint.accountId ||
+      hint.accounts.join(', ') ||
+      this.translate.instant('hints.wholePlatform')
+    );
   }
 
   protected openItemsOf(hint: ProjectHint): number {

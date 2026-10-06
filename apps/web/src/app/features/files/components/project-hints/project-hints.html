@@ -82,242 +82,204 @@
     <lk-empty-state
       [message]="(view.hints.length === 0 ? 'hints.none' : 'hints.noneFiltered') | translate"
     />
-    } @else {
-    <div hlmTableContainer class="lk-panel">
-      <table hlmTable class="table-fixed">
-        <colgroup>
-          <col class="w-44" />
-          <col class="w-36" />
-          <col />
-          <col class="w-28" />
-          <col class="w-24" />
-          <col class="w-32" />
-        </colgroup>
-        <thead hlmTHead>
-          <tr hlmTr>
-            <th hlmTh [attr.aria-sort]="sort() === 'kind' ? 'ascending' : null">
-              {{ 'hints.fields.kind' | translate }}
-            </th>
-            <th hlmTh>{{ 'hints.fields.account' | translate }}</th>
-            <th hlmTh>{{ 'hints.fields.description' | translate }}</th>
-            <th hlmTh [attr.aria-sort]="sort() === 'date' ? 'ascending' : null">
-              {{ 'hints.fields.date' | translate }}
-            </th>
-            <th hlmTh>{{ 'hints.fields.status' | translate }}</th>
-            <th hlmTh class="text-right">
-              {{ 'hints.fields.actions' | translate }}
-            </th>
-          </tr>
-        </thead>
-        @for (group of groups(); track group.platform) { @let open =
-        !collapsed().has(group.platform);
-        <tbody hlmTBody>
-          <tr hlmTr class="bg-muted/50 hover:bg-muted/50">
-            <th hlmTh colspan="6" class="h-auto py-1">
-              <button
-                type="button"
-                class="flex w-full items-center gap-2 py-1 text-left font-medium"
-                [attr.aria-expanded]="open"
-                (click)="toggleGroup(group.platform)"
+    } @else { @for (group of groups(); track group.platform) { @let open =
+    !collapsed().has(group.platform); @let pager = pagerFor(group.platform);
+    <div class="flex flex-col gap-2">
+      <button
+        type="button"
+        class="flex items-center gap-2 text-left font-medium"
+        [attr.aria-expanded]="open"
+        (click)="toggleGroup(group.platform)"
+      >
+        <ng-icon
+          [name]="open ? 'lucideChevronDown' : 'lucideChevronRight'"
+          size="14"
+          aria-hidden="true"
+        />
+        <span class="truncate"
+          >{{ group.platform || ('hints.unreadFiles' | translate) }}</span
+        >
+        <span class="text-muted-foreground text-xs font-normal"
+          >{{ 'hints.groupCount' | translate: { count: group.hints.length, open:
+          group.open } }}</span
+        >
+      </button>
+      @if (open) {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col class="w-48" />
+            <col class="hidden w-36 md:table-column" />
+            <col />
+            <col class="hidden w-28 lg:table-column" />
+            <col class="w-24" />
+            <col class="w-14" />
+          </colgroup>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th
+                hlmTh
+                [attr.aria-sort]="sort() === 'kind' ? 'ascending' : null"
               >
-                <ng-icon
-                  [name]="open ? 'lucideChevronDown' : 'lucideChevronRight'"
-                  size="14"
-                  aria-hidden="true"
+                {{ 'hints.fields.kind' | translate }}
+              </th>
+              <th hlmTh class="hidden md:table-cell">
+                {{ 'hints.fields.account' | translate }}
+              </th>
+              <th hlmTh>{{ 'hints.fields.description' | translate }}</th>
+              <th
+                hlmTh
+                class="hidden lg:table-cell"
+                [attr.aria-sort]="sort() === 'date' ? 'ascending' : null"
+              >
+                {{ 'hints.fields.date' | translate }}
+              </th>
+              <th hlmTh>{{ 'hints.fields.status' | translate }}</th>
+              <th hlmTh class="lk-sticky-actions text-right">
+                <span class="sr-only">{{ 'common.actions' | translate }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (hint of pager.visible(); track hint.key) { @let more =
+            expanded().has(hint.key); @let where = whereOf(hint); @let short =
+            'hints.short.' + hint.kind + (hint.zeroBalance ? 'Zero' : '') |
+            translate: { date: (hint.date | date: 'dd.MM.yyyy'), year:
+            view.taxYear, count: hint.count ?? hint.accounts.length };
+            <tr
+              hlmTr
+              class="align-top"
+              [class.text-muted-foreground]="hint.status !== 'open'"
+              [class.border-b-0]="more"
+            >
+              <td hlmTd class="max-w-0">
+                <span [class]="severityClass(hint.severity)">
+                  <span class="sr-only"
+                    >{{ 'hints.severity.' + hint.severity | translate }}:</span
+                  >
+                  {{ 'hints.kind.' + hint.kind | translate }}
+                </span>
+                <span
+                  class="text-muted-foreground mt-1 text-xs md:hidden"
+                  [lkTruncate]="where"
+                  >{{ where }}</span
+                >
+              </td>
+              <td hlmTd class="hidden max-w-0 md:table-cell">
+                <span [lkTruncate]="where">{{ where }}</span>
+              </td>
+              <td hlmTd class="max-w-0">
+                <span [lkTruncate]="short">{{ short }}</span>
+                @if (openItemsOf(hint) > 0) {
+                <button
+                  hlmBtn
+                  variant="link"
+                  size="sm"
+                  type="button"
+                  class="h-auto p-0 text-xs"
+                  (click)="showChecks.emit(hint.platform)"
+                >
+                  {{ 'hints.openItems' | translate: { count: openItemsOf(hint) }
+                  }}
+                </button>
+                }
+              </td>
+              <td hlmTd class="hidden tabular-nums lg:table-cell">
+                {{ hint.date ? (hint.date | date: 'dd.MM.yyyy') : '–' }}
+              </td>
+              <td hlmTd class="max-w-0">
+                {{ 'hints.status.' + hint.status | translate }} @if (hint.note)
+                {
+                <span
+                  class="text-muted-foreground text-xs"
+                  [lkTruncate]="hint.note"
+                  >{{ hint.note }}</span
+                >
+                }
+              </td>
+              <td hlmTd class="lk-sticky-actions text-right">
+                <lk-row-actions
+                  [actions]="rowActionsFor(hint)"
+                  (selected)="act($event, hint)"
                 />
-                <span class="truncate"
-                  >{{ group.platform || ('hints.unreadFiles' | translate)
-                  }}</span
-                >
-                <span class="text-muted-foreground text-xs font-normal"
-                  >{{ 'hints.groupCount' | translate: { count:
-                  group.hints.length, open: group.open } }}</span
-                >
-              </button>
-            </th>
-          </tr>
-          @if (open) { @for (hint of group.hints; track hint.key) { @let actions
-          = actionsOf(hint); @let more = expanded().has(hint.key);
-          <tr
-            hlmTr
-            class="align-top"
-            [class.text-muted-foreground]="hint.status !== 'open'"
-            [class.border-b-0]="more"
-          >
-            <td hlmTd>
-              <span [class]="severityClass(hint.severity)">
-                <span class="sr-only"
-                  >{{ 'hints.severity.' + hint.severity | translate }}:</span
-                >
-                {{ 'hints.kind.' + hint.kind | translate }}
-              </span>
-            </td>
-            <td hlmTd>
-              <span class="block truncate" [title]="where(hint)"
-                >{{ where(hint) || ('hints.wholePlatform' | translate) }}</span
-              >
-            </td>
-            <td hlmTd class="whitespace-normal">
-              <span class="line-clamp-2"
-                >{{ 'hints.short.' + hint.kind + (hint.zeroBalance ? 'Zero' :
-                '') | translate: { date: (hint.date | date: 'dd.MM.yyyy'), year:
-                view.taxYear, count: hint.count ?? hint.accounts.length }
-                }}</span
-              >
-              @if (openItemsOf(hint) > 0) {
-              <button
-                hlmBtn
-                variant="link"
-                size="sm"
-                type="button"
-                class="h-auto p-0 text-xs"
-                (click)="showChecks.emit(hint.platform)"
-              >
-                {{ 'hints.openItems' | translate: { count: openItemsOf(hint) }
-                }}
-              </button>
-              }
-            </td>
-            <td hlmTd class="tabular-nums">
-              {{ hint.date ? (hint.date | date: 'dd.MM.yyyy') : '–' }}
-            </td>
-            <td hlmTd class="whitespace-normal">
-              {{ 'hints.status.' + hint.status | translate }} @if (hint.note) {
-              <span
-                class="text-muted-foreground block truncate text-xs"
-                [title]="hint.note"
-                >{{ hint.note }}</span
-              >
-              }
-            </td>
-            <td hlmTd class="text-right whitespace-nowrap">
-              @if (!closed() && hint.status === 'open') { @if (actions[0]; as
-              first) {
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                type="button"
-                [attr.aria-label]="first.label | translate"
-                [title]="first.label | translate"
-                (click)="run(hint, first)"
-              >
-                <ng-icon [name]="first.icon" size="16" aria-hidden="true" />
-              </button>
-              }
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                type="button"
-                [attr.aria-label]="'hints.actions.markOk' | translate"
-                [title]="'hints.actions.markOk' | translate"
-                (click)="openDismiss(hint)"
-              >
-                <ng-icon name="lucideCheck" size="16" aria-hidden="true" />
-              </button>
-              } @else if (!closed()) {
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                type="button"
-                [attr.aria-label]="'hints.actions.reopen' | translate"
-                [title]="'hints.actions.reopen' | translate"
-                (click)="reopen(hint)"
-              >
-                <ng-icon name="lucideRotateCcw" size="16" aria-hidden="true" />
-              </button>
-              }
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                type="button"
-                [attr.aria-expanded]="more"
-                [attr.aria-controls]="'hint-' + hint.key"
-                [attr.aria-label]="(more ? 'hints.less' : 'hints.more') | translate"
-                [title]="(more ? 'hints.less' : 'hints.more') | translate"
-                (click)="toggleRow(hint)"
-              >
-                <ng-icon
-                  [name]="more ? 'lucideChevronDown' : 'lucideChevronRight'"
-                  size="16"
-                  aria-hidden="true"
-                />
-              </button>
-            </td>
-          </tr>
-          @if (more) {
-          <tr hlmTr [id]="'hint-' + hint.key">
-            <td hlmTd colspan="6" class="whitespace-normal">
-              <div class="flex flex-col gap-3 pb-2 text-sm">
-                <p>{{ hint.hintKey | translate }}</p>
-                @if (hint.accounts.length > 1) {
-                <p class="text-muted-foreground">
-                  {{ 'hints.accounts' | translate: { accounts:
-                  hint.accounts.join(', ') } }}
-                </p>
-                } @if (hint.note) {
-                <p class="text-muted-foreground">
-                  {{ 'hints.noteLabel' | translate }} {{ hint.note }}
-                </p>
-                } @if (!closed()) {
-                <div class="flex flex-wrap gap-2">
-                  @if (hint.status === 'open') { @for (action of actions; track
-                  action.kind) {
-                  <button
-                    hlmBtn
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    (click)="run(hint, action)"
-                  >
-                    <ng-icon
-                      [name]="action.icon"
-                      size="14"
-                      aria-hidden="true"
-                    />
-                    {{ action.label | translate }}
-                  </button>
-                  }
-                  <button
-                    hlmBtn
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    (click)="openDismiss(hint)"
-                  >
-                    <ng-icon name="lucideCheck" size="14" aria-hidden="true" />
-                    {{ 'hints.actions.markOk' | translate }}
-                  </button>
-                  } @else {
-                  <button
-                    hlmBtn
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    (click)="reopen(hint)"
-                  >
-                    <ng-icon
-                      name="lucideRotateCcw"
-                      size="14"
-                      aria-hidden="true"
-                    />
-                    {{ 'hints.actions.reopen' | translate }}
-                  </button>
+              </td>
+            </tr>
+            @if (more) {
+            <tr hlmTr [id]="'hint-' + hint.key">
+              <td hlmTd colspan="6" class="whitespace-normal">
+                <div class="flex flex-col gap-3 pb-2 text-sm">
+                  <p>{{ hint.hintKey | translate }}</p>
+                  @if (hint.accounts.length > 1) {
+                  <p class="text-muted-foreground">
+                    {{ 'hints.accounts' | translate: { accounts:
+                    hint.accounts.join(', ') } }}
+                  </p>
+                  } @if (hint.note) {
+                  <p class="text-muted-foreground">
+                    {{ 'hints.noteLabel' | translate }} {{ hint.note }}
+                  </p>
+                  } @if (!closed()) {
+                  <div class="flex flex-wrap gap-2">
+                    @if (hint.status === 'open') { @for (action of
+                    actionsOf(hint); track action.kind) {
+                    <button
+                      hlmBtn
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      (click)="run(hint, action)"
+                    >
+                      <ng-icon
+                        [svg]="action.icon"
+                        size="14"
+                        aria-hidden="true"
+                      />
+                      {{ action.label | translate }}
+                    </button>
+                    }
+                    <button
+                      hlmBtn
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      (click)="openDismiss(hint)"
+                    >
+                      <ng-icon
+                        name="lucideCheck"
+                        size="14"
+                        aria-hidden="true"
+                      />
+                      {{ 'hints.actions.markOk' | translate }}
+                    </button>
+                    } @else {
+                    <button
+                      hlmBtn
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      (click)="reopen(hint)"
+                    >
+                      <ng-icon
+                        name="lucideRotateCcw"
+                        size="14"
+                        aria-hidden="true"
+                      />
+                      {{ 'hints.actions.reopen' | translate }}
+                    </button>
+                    }
+                  </div>
                   }
                 </div>
-                }
-              </div>
-            </td>
-          </tr>
-          } } }
-        </tbody>
-        }
-      </table>
+              </td>
+            </tr>
+            } }
+          </tbody>
+        </table>
+      </div>
+      <lk-paginator [pager]="pager" />
+      }
     </div>
-    } } @else if (service.hints.error()) {
+    } } } @else if (service.hints.error()) {
     <lk-empty-state [message]="'hints.loadFailed' | translate">
       <button
         hlmBtn
@@ -345,7 +307,7 @@
       <h3 hlmDialogTitle>{{ 'hints.dismiss.title' | translate }}</h3>
       <p hlmDialogDescription>
         {{ 'hints.kind.' + current.hint.kind | translate }} · {{
-        (current.hint.platform ?? '') }} {{ where(current.hint) }}
+        (current.hint.platform ?? '') }} {{ whereOf(current.hint) }}
       </p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">

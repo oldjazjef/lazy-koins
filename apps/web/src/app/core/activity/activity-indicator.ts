@@ -44,6 +44,12 @@ export class ActivityIndicator {
   protected text(task: ActivityTask): string {
     const label = this.translate.instant(task.label, task.params());
     const progress = task.progress();
+    if (progress?.asPercent) {
+      return this.translate.instant('activity.withPercent', {
+        label,
+        percent: this.percent(task) ?? 0,
+      });
+    }
     return progress
       ? this.translate.instant('activity.withProgress', {
           label,

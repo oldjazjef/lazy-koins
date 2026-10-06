@@ -1221,6 +1221,7 @@
   "activity": {
     "running": "{{label}} …",
     "withProgress": "{{label}} ({{done}}/{{total}}) …",
+    "withPercent": "{{label}} ({{percent}} %) …",
     "several": "{{count}} Aufgaben laufen",
     "expand": "Laufende Aufgaben anzeigen",
     "collapse": "Laufende Aufgaben ausblenden",
@@ -1228,6 +1229,7 @@
     "calculate": "Ergebnis wird berechnet",
     "rates": "Kurse werden aktualisiert",
     "estv": "ESTV-Kursliste wird importiert",
+    "estvUpdate": "ESTV-Kursliste {{year}} wird bezogen · {{phase}}",
     "export": "Auszug wird erstellt ({{kind}})",
     "upload": "Dateien werden hochgeladen",
     "reapply": "Mapping wird auf die Dateien angewendet",

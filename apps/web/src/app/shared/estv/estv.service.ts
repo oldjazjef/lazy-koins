@@ -1,7 +1,12 @@
 import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../core/actions/action';
+import {
+  type ActivityProgress,
+  ActivityService,
+} from '../../core/activity/activity.service';
 import { ActionRunner } from '../../core/actions/action-runner';
 import { apiUrl } from '../../core/api/api-url';
 import type { EstvStatus } from '../../core/api/calculation.types';
@@ -24,14 +29,16 @@ export function estvPercent(running: EstvStatus['running']): number | null {
  * The deployment's ESTV Kursliste (F7.4a), shared by Einstellungen › Kurse and a project's Kurse
  * tab: the status (versions per year, last check, errors) and "ESTV-Kursliste aktualisieren" —
  * the API starts the download in the background, this service polls until it is done and then
- * reports the outcome. (A shared activity/progress snackbar does not exist yet; the progress is
- * shown where the button is.)
+ * reports the outcome. While it runs, the app-wide activity indicator (`ActivityService`) shows
+ * the phase and the download progress.
  */
 @Injectable({ providedIn: 'root' })
 export class EstvService {
   private readonly http = inject(HttpClient);
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
+  private readonly activity = inject(ActivityService);
+  private readonly translate = inject(TranslateService);
 
   private readonly loadRequested = signal(false);
   private readonly loaded = httpResource<EstvStatus>(() =>
@@ -76,6 +83,32 @@ export class EstvService {
    * and reports this run's outcome: updated, current, or the error. Resolves with the final status.
    */
   async update(year?: number): Promise<EstvStatus> {
+    // The app-wide activity indicator shows the run with its phase and download progress.
+    return this.activity.track(
+      'activity.estvUpdate',
+      () => this.runUpdate(year),
+      { params: this.activityParams, progress: this.activityProgress },
+    );
+  }
+
+  private readonly activityParams = computed(() => {
+    const running = this.running();
+    return {
+      year: running?.year ?? '',
+      phase: running
+        ? this.translate.instant(`estv.phase.${running.progress.phase}`)
+        : '',
+    };
+  });
+
+  private readonly activityProgress = computed<ActivityProgress | null>(() => {
+    const percent = this.percent();
+    return percent === null
+      ? null
+      : { done: percent, total: 100, asPercent: true };
+  });
+
+  private async runUpdate(year?: number): Promise<EstvStatus> {
     this.polling.set(true);
     try {
       let status = await this.actions.run(

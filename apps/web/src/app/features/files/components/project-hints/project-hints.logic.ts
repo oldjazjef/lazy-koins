@@ -1,3 +1,12 @@
+import {
+  lucideDownload,
+  lucideFileWarning,
+  lucideLink2,
+  lucidePenLine,
+  lucideScanText,
+  lucideSparkles,
+  lucideUpload,
+} from '@ng-icons/lucide';
 import type { ProjectFile, ProjectHint } from '../../../../core/api/api.types';
 
 /** A fixing action of a hint (F5.8); the first one is shown in the row, the rest when expanded. */
@@ -12,6 +21,7 @@ export interface HintAction {
     | 'rowErrors';
   /** i18n key. */
   readonly label: string;
+  /** The lucide SVG (import), as `RowAction` takes it. */
   readonly icon: string;
   /** The file the action works on (AI, assignment). */
   readonly fileId?: string;
@@ -20,12 +30,12 @@ export interface HintAction {
 const UPLOAD: HintAction = {
   kind: 'upload',
   label: 'hints.actions.upload',
-  icon: 'lucideUpload',
+  icon: lucideUpload,
 };
 const TEMPLATE: HintAction = {
   kind: 'template',
   label: 'hints.actions.template',
-  icon: 'lucideDownload',
+  icon: lucideDownload,
 };
 
 /**
@@ -55,7 +65,7 @@ export function hintActions(
         {
           kind: 'aiStatement',
           label: 'hints.actions.aiStatement',
-          icon: 'lucideScanText',
+          icon: lucideScanText,
           fileId: pdf.id,
         },
       ]
@@ -72,7 +82,7 @@ export function hintActions(
         {
           kind: 'manualHolding',
           label: 'hints.actions.manualHolding',
-          icon: 'lucidePenLine',
+          icon: lucidePenLine,
         },
         { ...TEMPLATE, label: 'hints.actions.holdingsTemplate' },
       ];
@@ -82,13 +92,13 @@ export function hintActions(
             {
               kind: 'aiMapping',
               label: 'hints.actions.aiMapping',
-              icon: 'lucideSparkles',
+              icon: lucideSparkles,
               fileId: hint.fileId,
             },
             {
               kind: 'assign',
               label: 'hints.actions.assign',
-              icon: 'lucideLink2',
+              icon: lucideLink2,
               fileId: hint.fileId,
             },
           ]
@@ -99,7 +109,7 @@ export function hintActions(
             {
               kind: 'rowErrors',
               label: 'hints.actions.rowErrors',
-              icon: 'lucideFileWarning',
+              icon: lucideFileWarning,
               fileId: hint.fileId,
             },
           ]
