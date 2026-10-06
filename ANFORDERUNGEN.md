@@ -137,6 +137,12 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F10.4** Kopfzeile mit Name, Steuerjahr, Kanton, Erstellungsdatum und Hinweis „keine Steuerberatung“.
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
 - **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
+- **F10.6a** Mail direkt aus der App senden: Im Projekt (Exporte) „An Treuhänder senden“ öffnet
+  einen Dialog mit Empfänger (aus dem Profil, änderbar), CC an mich, Betreff und Text aus der
+  Vorlage (F11.10, im Dialog noch bearbeitbar), auswählbaren Anhängen (erstellte Auszüge PDF/Excel)
+  und Vorschau. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
+  protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
+  eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
 
 ### Datenexport
 
@@ -170,8 +176,16 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
 - **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert: **AI** (Anbieter, Modell,
   Schlüssel, Zustimmung, F5.13/F5.14), **Kurse** (Internet-Kurse ein/aus F11.3, CoinGecko-Schlüssel,
   ESTV-Kursliste), **Wallets/Netzwerke** (API-Schlüssel wie Etherscan, F6.7), **Speicherort**
-  (Desktop, F3.1) und **Cloud-Verbindungen** (Web, F3.2). Schlüssel werden nie wieder angezeigt
-  (nur die letzten Zeichen).
+  (Desktop, F3.1), **Cloud-Verbindungen** (Web, F3.2) und **Mail** (F11.10). Schlüssel und
+  Passwörter werden nie wieder angezeigt (nur die letzten Zeichen).
+- **F11.10 Mail** (Einstellungen): **Mailer** hinterlegen – SMTP (Server, Port, Verschlüsselung
+  TLS/STARTTLS, Benutzer, Passwort verschlüsselt gespeichert, Absendername und -adresse) mit
+  „Test-Mail an mich senden“. **Text-Vorlage** für die Treuhänder-Mail definieren: Betreff und
+  Text mit Platzhaltern (z. B. `{{name}}`, `{{treuhaender}}`, `{{steuerjahr}}`, `{{kanton}}`,
+  `{{vermoegen}}`, `{{ertrag}}`, `{{anhaenge}}`, `{{offene_punkte}}`, `{{datum}}`), Liste der
+  Platzhalter mit Erklärung, Live-Vorschau mit Beispielwerten, „auf Standard zurücksetzen“.
+  Eine Standardvorlage je Sprache (F11.2) ist vorhanden; die eigene Vorlage gilt für alle
+  Projekte.
 - Im Projekt bleiben nur projektbezogene Dinge (Dateien, die im Projekt genutzten Mappings mit
   Link auf die Mappings-Seite, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
   Exporte).
