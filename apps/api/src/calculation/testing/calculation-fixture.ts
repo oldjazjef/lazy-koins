@@ -9,6 +9,7 @@ import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memor
 import { ListMyProjectsHandler } from '../../projects/application/queries/list-my-projects.query';
 import { InMemoryProjectRepository } from '../../projects/testing/in-memory-project.repository';
 import { InMemoryProjectRateRepository } from '../../rates/testing/in-memory-project-rate.repository';
+import { InMemoryWalletRepository } from '../../wallets/testing/in-memory-wallet.repository';
 import { CalculationInputService } from '../application/calculation-input.service';
 import {
   CalculateProjectHandler,
@@ -60,6 +61,7 @@ export async function calculationSetup() {
   const snapshots = new InMemorySnapshotRepository();
   const states = new InMemoryOpenItemStateRepository();
   const reader = new SourceFileReader();
+  const wallets = new InMemoryWalletRepository();
   const inputs = new CalculationInputService(
     projects,
     files,
@@ -68,6 +70,7 @@ export async function calculationSetup() {
     corrections,
     snapshots,
     reader,
+    wallets,
   );
   const project = await projects.create('anna', {
     name: 'Steuern 2025',
@@ -126,6 +129,9 @@ export async function calculationSetup() {
   return {
     projects,
     files,
+    wallets,
+    reader,
+    mappings,
     rates,
     corrections,
     snapshots,

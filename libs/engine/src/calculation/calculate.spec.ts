@@ -808,7 +808,7 @@ describe('checks (F8.1)', () => {
     });
   });
 
-  it('groups unclassified bookings and always lists the wallet-network placeholder', () => {
+  it('groups unclassified bookings; without wallets the wallet check is not applicable', () => {
     const result = calculate(
       input({
         bookings: [
@@ -833,7 +833,7 @@ describe('checks (F8.1)', () => {
       params: { count: '2', rawType: 'odd', quantity: '3' },
     });
     expect(result.checks.find((c) => c.kind === 'walletNetworks')?.light).toBe(
-      'yellow',
+      'grey',
     );
     expect(result.checks.find((c) => c.kind === 'openingBalance')?.light).toBe(
       'grey',

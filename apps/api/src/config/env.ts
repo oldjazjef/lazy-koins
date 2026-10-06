@@ -152,6 +152,13 @@ export class Env {
   /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
   @IsIn(['true', 'false'])
   RATES_ONLINE = 'true';
+
+  /**
+   * `1` = the wallet lookups (F6.3/F6.4) answer from synthetic fake chains, no network and no
+   * keys needed — for development and demos. Refused with NODE_ENV=production.
+   */
+  @IsIn(['', '0', '1'])
+  LK_CHAINS_FAKE = '';
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */
@@ -198,6 +205,12 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   }
   if (env.AUTH_MODE !== 'local' && env.LOCAL_MODE === 'true') {
     messages.push('  LOCAL_MODE: `true` is only valid with AUTH_MODE=local');
+  }
+
+  if (env.LK_CHAINS_FAKE === '1' && env.NODE_ENV === NodeEnv.Production) {
+    messages.push(
+      '  LK_CHAINS_FAKE: fake chains answer with synthetic data — never in production',
+    );
   }
 
   if (messages.length > 0) {

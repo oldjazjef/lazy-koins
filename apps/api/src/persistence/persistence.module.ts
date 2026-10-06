@@ -12,6 +12,10 @@ import { ProjectRepositoryPort } from '../projects/ports/project.repository.port
 import { ProjectRateRepositoryPort } from '../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
+import {
+  ChainSettingsRepositoryPort,
+  WalletRepositoryPort,
+} from '../wallets/ports/wallet.repository.port';
 import { PrismaService } from './prisma/prisma.service';
 import {
   CalculationSnapshotPrismaRepository,
@@ -26,6 +30,10 @@ import { ProjectRatePrismaRepository } from './prisma/repositories/project-rate.
 import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
 import { UserSettingsPrismaRepository } from './prisma/repositories/user-settings.prisma.repository';
 import { UserPrismaRepository } from './prisma/repositories/user.prisma.repository';
+import {
+  ChainSettingsPrismaRepository,
+  WalletPrismaRepository,
+} from './prisma/repositories/wallet.prisma.repository';
 
 /**
  * The only persistence layer, and the swap seam: every repository port is bound to its adapter
@@ -68,6 +76,11 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
       useClass: ProjectExportPrismaRepository,
     },
     { provide: AiSettingsRepositoryPort, useClass: AiSettingsPrismaRepository },
+    { provide: WalletRepositoryPort, useClass: WalletPrismaRepository },
+    {
+      provide: ChainSettingsRepositoryPort,
+      useClass: ChainSettingsPrismaRepository,
+    },
   ],
   exports: [
     UserRepositoryPort,
@@ -81,6 +94,8 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
     OpenItemStateRepositoryPort,
     ProjectExportRepositoryPort,
     AiSettingsRepositoryPort,
+    WalletRepositoryPort,
+    ChainSettingsRepositoryPort,
   ],
 })
 export class PersistenceModule {}

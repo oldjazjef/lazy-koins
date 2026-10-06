@@ -1,4 +1,5 @@
 import { type Booking, isIncome } from '../bookings/booking';
+import { walletCheckItems } from './wallet-check';
 import {
   applyCorrections,
   isCorrectionRecord,
@@ -625,20 +626,10 @@ export function calculate(input: CalculationInput): CalculationResult {
     });
   }
 
-  // F6.4 is not built yet: say so instead of pretending the check passed.
-  items.walletNetworks.push({
-    key: 'walletNetworks:notAvailable',
-    check: 'walletNetworks',
-    reason: 'walletNetworksNotAvailable',
-    light: 'yellow',
-    platform: null,
-    accountId: null,
-    asset: null,
-    date: null,
-    params: {},
-    impactChf: null,
-    recordIds: [],
-  });
+  // F6.4 / F8.1: every wallet of the project checked and fetched on all its networks.
+  const wallets = input.wallets ?? [];
+  applicable.walletNetworks = wallets.length > 0;
+  items.walletNetworks.push(...walletCheckItems(wallets));
 
   const checks: Check[] = CHECK_KINDS.map((kind) => ({
     kind,

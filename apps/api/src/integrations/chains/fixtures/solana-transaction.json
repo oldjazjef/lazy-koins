@@ -1,0 +1,67 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "blockTime": 1740000000,
+    "slot": 320000000,
+    "meta": {
+      "err": null,
+      "fee": 5000,
+      "preBalances": [3000000000, 1000000000, 2039280, 1],
+      "postBalances": [1999995000, 2000000000, 2039280, 1],
+      "preTokenBalances": [
+        {
+          "accountIndex": 2,
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "owner": "FakeWa11et1111111111111111111111111111111111",
+          "uiTokenAmount": {
+            "amount": "50000000",
+            "decimals": 6,
+            "uiAmount": 50.0,
+            "uiAmountString": "50"
+          }
+        }
+      ],
+      "postTokenBalances": [
+        {
+          "accountIndex": 2,
+          "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "owner": "FakeWa11et1111111111111111111111111111111111",
+          "uiTokenAmount": {
+            "amount": "170000000",
+            "decimals": 6,
+            "uiAmount": 170.0,
+            "uiAmountString": "170"
+          }
+        }
+      ]
+    },
+    "transaction": {
+      "signatures": ["5igFakeSignature111"],
+      "message": {
+        "accountKeys": [
+          {
+            "pubkey": "FakeWa11et1111111111111111111111111111111111",
+            "signer": true,
+            "writable": true
+          },
+          {
+            "pubkey": "FakeRecipient111111111111111111111111111111",
+            "signer": false,
+            "writable": true
+          },
+          {
+            "pubkey": "FakeTokenAccount11111111111111111111111111",
+            "signer": false,
+            "writable": true
+          },
+          {
+            "pubkey": "11111111111111111111111111111111",
+            "signer": false,
+            "writable": false
+          }
+        ]
+      }
+    }
+  }
+}

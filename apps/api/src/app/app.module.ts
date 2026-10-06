@@ -21,6 +21,7 @@ import { ProjectsModule } from '../projects/projects.module';
 import { RatesModule } from '../rates/rates.module';
 import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
+import { WalletsModule } from '../wallets/wallets.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -48,6 +49,7 @@ import { AppController } from './app.controller';
     RatesModule,
     ExportsModule,
     AiModule,
+    WalletsModule,
   ],
   controllers: [AppController],
   providers: [

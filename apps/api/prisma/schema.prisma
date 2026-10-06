@@ -64,6 +64,8 @@ model User {
   mappings    ImportMapping[]
   settings    UserSettings?
   aiSettings  AiSettings?
+  wallets       Wallet[]
+  chainSettings ChainSettings?
 
   @@map("user")
 }
@@ -91,6 +93,8 @@ model Project {
   corrections Correction[]
   itemStates  OpenItemState[]
   exports     ProjectExport[]
+  wallets        ProjectWallet[]
+  walletBalances WalletManualBalance[]
 
   @@index([ownerId, taxYear])
   @@map("project")
@@ -167,13 +171,16 @@ model ProjectFile {
   /// JSON array of coverage entries per platform/account (F5.8).
   coverage     String   @default("[]")
   /// `uploaded`, `from_project:<id>` when the bytes were already in another project (F4.4), or
-  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF.
+  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF, or
+  /// `wallet:<wallet id>` for the standard-format records a wallet fetch derived (F6.3).
   origin       String   @default("uploaded")
   addedAt      DateTime @default(now()) @map("added_at")
 
   project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
   mapping ImportMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  walletEvidence WalletManualBalance[]
 
   @@unique([projectId, fileId])
   @@index([fileId])
@@ -330,4 +337,131 @@ model AiSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ai_settings")
+}
+
+/// A wallet of one user (F6.1): a public address — or a Bitcoin xpub/ypub/zpub — with a label, the
+/// networks it is used on and notes. Seed phrases and private keys never get here (F6.2: refused
+/// before anything is stored). Projects include wallets through `project_wallet`.
+model Wallet {
+  id           String   @id @default(uuid(7))
+  ownerId      String   @map("owner_id")
+  label        String
+  /// The public identifier as entered (trimmed).
+  address      String
+  /// evm | bitcoinAddress | bitcoinXpub | solana | cardano | polkadot | cosmos. CHECK in the migration.
+  addressKind  String   @map("address_kind")
+  /// JSON array of network ids (`ethereum`, `bitcoin`, …).
+  networks     String   @default("[]")
+  notes        String   @default("")
+  /// F6.4: JSON `{ checkedAt, results: [{ network, used, txCount, error }] }`; null = never checked.
+  networkCheck String?  @map("network_check")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  owner          User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  projects       ProjectWallet[]
+  data           WalletNetworkData[]
+  tokenOverrides WalletTokenOverride[]
+  balances       WalletManualBalance[]
+
+  @@index([ownerId])
+  @@map("wallet")
+}
+
+/// A wallet included in a project; its fetched records reach the project as a derived file.
+model ProjectWallet {
+  projectId String   @map("project_id")
+  walletId  String   @map("wallet_id")
+  addedAt   DateTime @default(now()) @map("added_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wallet  Wallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, walletId])
+  @@index([walletId])
+  @@map("project_wallet")
+}
+
+/// The last fetch of one wallet on one network (F6.3): the normalised movements as JSON (amounts
+/// as decimal strings), what the network delivers, and the error of a failed fetch (a code and the
+/// provider's message, never a key).
+model WalletNetworkData {
+  walletId    String   @map("wallet_id")
+  network     String
+  /// ok | error. CHECK in the migration.
+  status      String
+  errorCode   String?  @map("error_code")
+  errorDetail String?  @map("error_detail")
+  /// JSON array of ChainMovement (libs/engine wallets/wallet-records.ts).
+  movements   String   @default("[]")
+  /// JSON: current balances (information only), truncation, notes.
+  info        String   @default("{}")
+  fetchedAt   DateTime @map("fetched_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@id([walletId, network])
+  @@map("wallet_network_data")
+}
+
+/// F6.6: a token the user marked "kein Spam" (overrides the heuristics) on one network.
+model WalletTokenOverride {
+  walletId  String   @map("wallet_id")
+  network   String
+  /// Contract / mint, or `native`.
+  tokenKey  String   @map("token_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@id([walletId, network, tokenKey])
+  @@map("wallet_token_override")
+}
+
+/// F6.5: a balance entered by hand for a wallet on a network at a date (the project's 31.12.),
+/// with its evidence — a PDF in the project's files (evidence only). Becomes a holding record.
+model WalletManualBalance {
+  id             String   @id @default(uuid(7))
+  projectId      String   @map("project_id")
+  walletId       String   @map("wallet_id")
+  network        String
+  asset          String
+  /// Decimal string.
+  quantity       String
+  /// ISO date.
+  asOf           String   @map("as_of")
+  evidenceFileId String?  @map("evidence_file_id")
+  note           String   @default("")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  project  Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wallet   Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  evidence ProjectFile? @relation(fields: [evidenceFileId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, walletId])
+  @@index([walletId])
+  @@index([evidenceFileId])
+  @@map("wallet_manual_balance")
+}
+
+/// F6.7: what the wallet lookups need besides the Etherscan key (kept in `user_settings`): the
+/// Helius key and Solana RPC URL, the Subscan key (sealed like every key) and address overrides.
+model ChainSettings {
+  userId       String   @id @map("user_id")
+  /// `enc:v1:…` or null.
+  heliusKey    String?  @map("helius_key")
+  /// Any Solana JSON-RPC URL; empty = Helius with the key, else the public endpoint.
+  solanaRpcUrl String   @default("") @map("solana_rpc_url")
+  subscanKey   String?  @map("subscan_key")
+  /// Esplora-compatible API; empty = https://mempool.space/api.
+  esploraUrl   String   @default("") @map("esplora_url")
+  /// Koios; empty = https://api.koios.rest/api/v1.
+  koiosUrl     String   @default("") @map("koios_url")
+  /// Cosmos LCD (REST); empty = the public endpoint.
+  cosmosLcdUrl String   @default("") @map("cosmos_lcd_url")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chain_settings")
 }
