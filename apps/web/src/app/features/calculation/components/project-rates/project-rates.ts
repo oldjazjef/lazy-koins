@@ -46,7 +46,8 @@ const ManualRateSchema = z.object({
 /**
  * Kurse (F7.4): the stored series with their source and the value used for 31.12., overrides
  * and ESTV values, "Kurse aktualisieren" (only with rate lookups on, F11.3) and the Kursliste
- * import.
+ * import. F7.4a: the automatic ESTV Kursliste of the tax year — the version in use, a newer one,
+ * "ESTV-Kursliste aktualisieren" and ambiguous assets (no value; set an override).
  */
 @Component({
   selector: 'lk-project-rates',
@@ -162,6 +163,23 @@ export class ProjectRates {
     const file = target.files?.[0];
     target.value = '';
     if (file) void this.service.importKursliste(file).catch(() => undefined);
+  }
+
+  /** F7.4a: download the tax year's Kursliste if newer, then take it into the project. */
+  protected updateEstv(): void {
+    void this.service.updateEstv(this.taxYear()).catch(() => undefined);
+  }
+
+  protected applyEstv(): void {
+    void this.service.applyEstv().catch(() => undefined);
+  }
+
+  protected candidateNames(
+    candidates: readonly { name: string; valorNumber: string | null }[],
+  ): string {
+    return candidates
+      .map((c) => (c.valorNumber ? `${c.name} (${c.valorNumber})` : c.name))
+      .join(', ');
   }
 
   protected search(event: Event): void {

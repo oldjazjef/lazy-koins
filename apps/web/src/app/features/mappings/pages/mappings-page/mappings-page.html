@@ -155,7 +155,7 @@
 
 <!-- New mapping -->
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
-  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
+  <hlm-dialog-content *hlmDialogPortal class="w-full sm:max-w-6xl">
     <hlm-dialog-header>
       <h3 hlmDialogTitle>{{ 'mappings.editor.newTitle' | translate }}</h3>
       <p hlmDialogDescription>
@@ -163,22 +163,43 @@
       </p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">
-      <lk-mapping-editor-form
-        [idPrefix]="'new-mapping'"
-        [text]="text()"
-        (textChange)="text.set($event)"
-        [checkFileId]="checkFileId()"
-        (checkFileIdChange)="checkFileId.set($event)"
-        [checkFiles]="[]"
-        [issues]="issues()"
-        [invalidJson]="invalidJson()"
-      />
+      <lk-mapping-workbench [idPrefix]="'new-mapping'" />
     </div>
     <hlm-dialog-footer>
+      @if (workbench.sample()) {
+      <div
+        class="flex min-w-0 flex-col gap-1 sm:mr-auto sm:flex-row sm:items-center sm:gap-2"
+      >
+        <label class="text-sm" for="new-mapping-add-project"
+          >{{ 'mappings.sample.addToProject' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="new-mapping-add-project"
+          class="sm:max-w-64"
+          [ngModel]="addToProjectId()"
+          (ngModelChange)="addToProjectId.set($event)"
+        >
+          <option value="">
+            {{ 'mappings.sample.noProject' | translate }}
+          </option>
+          @for (project of workbench.openProjects(); track project.id) {
+          <option [value]="project.id">
+            {{ project.name }} ({{ project.taxYear }})
+          </option>
+          }
+        </select>
+      </div>
+      }
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
       </button>
-      <button hlmBtn type="button" [disabled]="busy()" (click)="saveNew()">
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="busy() || workbench.invalidJson()"
+        (click)="saveNew()"
+      >
         {{ 'common.save' | translate }}
       </button>
     </hlm-dialog-footer>

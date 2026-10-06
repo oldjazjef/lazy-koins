@@ -45,6 +45,74 @@
 </div>
 <p class="text-muted-foreground mb-4 text-sm">{{ 'rates.hint' | translate }}</p>
 
+<section
+  class="lk-panel mb-6 flex flex-wrap items-start gap-3 p-4 text-sm"
+  aria-labelledby="estv-project-title"
+>
+  <div class="flex min-w-64 flex-1 flex-col gap-1">
+    <h3 id="estv-project-title" class="font-medium">
+      {{ 'estv.projectTitle' | translate: { year: view.taxYear } }}
+    </h3>
+    @if (view.estv.applied; as applied) {
+    <span>{{ 'estv.inUse' | translate: { label: applied } }}</span>
+    } @else {
+    <span class="text-muted-foreground"
+      >{{ 'estv.notApplied' | translate }}</span
+    >
+    } @if (view.estv.outdated && view.estv.available; as available) {
+    <span>
+      <span hlmBadge variant="secondary"
+        >{{ 'estv.newer' | translate: { label: available } }}</span
+      >
+    </span>
+    } @if (!view.estv.autoEnabled) {
+    <span class="text-muted-foreground text-xs"
+      >{{ 'estv.projectOffline' | translate }}</span
+    >
+    } @if (service.estv.running(); as running) {
+    <span aria-live="polite"
+      >{{ 'estv.running' | translate: { year: running.year } }} · {{
+      'estv.phase.' + running.progress.phase | translate }} @if
+      (service.estv.percent() !== null) { {{ service.estv.percent() }} % }</span
+    >
+    } @if (service.lastEstv(); as last) { @if (last.label) {
+    <span class="text-muted-foreground text-xs"
+      >{{ 'estv.matched' | translate: { count: last.matched.length, fx:
+      last.fx.length } }}</span
+    >
+    } @for (item of last.ambiguous; track item.asset) {
+    <span class="text-destructive text-xs" role="note"
+      >{{ 'estv.ambiguous' | translate: { asset: item.asset, names:
+      candidateNames(item.candidates) } }}</span
+    >
+    } }
+  </div>
+  @if (!closed()) {
+  <div class="flex flex-wrap gap-2">
+    @if (view.estv.outdated) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.isBusy() || service.estv.isBusy()"
+      (click)="applyEstv()"
+    >
+      {{ 'estv.apply' | translate }}
+    </button>
+    }
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="!view.estv.autoEnabled || service.isBusy() || service.estv.isBusy()"
+      (click)="updateEstv()"
+    >
+      {{ 'estv.update' | translate }}
+    </button>
+  </div>
+  }
+</section>
+
 @if (service.lastRefresh(); as summary) {
 <div class="lk-panel mb-6 p-4 text-sm" aria-live="polite">
   <p class="font-medium">
@@ -171,8 +239,10 @@
             @let value = (rate.value | lkQuantity: 10) + ' ' + rate.currency;
             <span [lkTruncate]="value">{{ value }}</span>
           </td>
-          <td hlmTd class="hidden md:table-cell">
-            {{ 'rates.source.' + rate.source | translate }}
+          <td hlmTd class="hidden max-w-0 md:table-cell">
+            @let source = rate.note ?? ('rates.source.' + rate.source |
+            translate);
+            <span [lkTruncate]="source">{{ source }}</span>
           </td>
           <td hlmTd class="lk-sticky-actions text-right">
             <lk-row-actions

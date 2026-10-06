@@ -192,6 +192,28 @@ describe('dashboard (F11.4–F11.9)', () => {
     ).toHaveLength(2);
   });
 
+  it('uses an ESTV year-end value on its day, over the market price (F7.4a)', () => {
+    const result = dashboard({
+      ...base,
+      rates: [
+        ...rates,
+        {
+          kind: 'price',
+          asset: 'ETH',
+          currency: 'CHF',
+          date: '2025-01-03',
+          value: '1100',
+          source: 'estv',
+        },
+      ],
+    });
+    // 1.39 ETH × 1100 (ESTV) + 500 CHF instead of × 1200 (Binance)
+    expect(result.endValueChf).toBe('2029');
+    expect(result.holdings.find((h) => h.asset === 'ETH')?.priceChf).toBe(
+      '1100',
+    );
+  });
+
   it('names the largest seven assets and sums the rest as "Andere"', () => {
     const assets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
     const result = dashboard({

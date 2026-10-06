@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { RateEntry } from '@lazykoins/engine';
 import type { ProjectRate as ProjectRateRow } from '../../../generated/prisma/client';
-import type { ProjectRate, RateKey } from '../../../rates/domain/project-rate';
+import type {
+  ProjectRate,
+  RateKey,
+  StoredRateEntry,
+} from '../../../rates/domain/project-rate';
 import { ProjectRateRepositoryPort } from '../../../rates/ports/project-rate.repository.port';
 import { toIsoString } from '../mappers/scalar.mapper';
 import { PrismaService } from '../prisma.service';
@@ -16,6 +19,7 @@ function toRate(row: ProjectRateRow): ProjectRate {
     date: row.date,
     value: row.value,
     source: row.source as ProjectRate['source'],
+    note: row.note,
     fetchedAt: toIsoString(row.fetchedAt),
   };
 }
@@ -45,7 +49,7 @@ export class ProjectRatePrismaRepository extends ProjectRateRepositoryPort {
 
   async upsertMany(
     projectId: string,
-    entries: readonly RateEntry[],
+    entries: readonly StoredRateEntry[],
   ): Promise<number> {
     for (let start = 0; start < entries.length; start += CHUNK) {
       const chunk = entries.slice(start, start + CHUNK);
@@ -62,8 +66,21 @@ export class ProjectRatePrismaRepository extends ProjectRateRepositoryPort {
                 source: entry.source,
               },
             },
-            create: { projectId, ...entry },
-            update: { value: entry.value, fetchedAt: new Date() },
+            create: {
+              projectId,
+              kind: entry.kind,
+              asset: entry.asset,
+              currency: entry.currency,
+              date: entry.date,
+              value: entry.value,
+              source: entry.source,
+              note: entry.note ?? null,
+            },
+            update: {
+              value: entry.value,
+              note: entry.note ?? null,
+              fetchedAt: new Date(),
+            },
           }),
         ),
       );

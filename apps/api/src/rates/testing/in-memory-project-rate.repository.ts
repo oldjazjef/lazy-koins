@@ -1,5 +1,9 @@
 import type { RateEntry } from '@lazykoins/engine';
-import type { ProjectRate, RateKey } from '../domain/project-rate';
+import type {
+  ProjectRate,
+  RateKey,
+  StoredRateEntry,
+} from '../domain/project-rate';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
 import {
   ChfPriceSourcePort,
@@ -24,12 +28,13 @@ export class InMemoryProjectRateRepository extends ProjectRateRepositoryPort {
 
   async upsertMany(
     projectId: string,
-    entries: readonly RateEntry[],
+    entries: readonly StoredRateEntry[],
   ): Promise<number> {
     for (const entry of entries) {
       this.seq += 1;
       this.rows.set(keyOf(projectId, entry), {
         ...entry,
+        note: entry.note ?? null,
         id: `r${this.seq}`,
         projectId,
         fetchedAt: '2026-01-01T00:00:00.000Z',
