@@ -30,7 +30,8 @@
     "db:studio": "nx run api:db:studio",
     "db:seed": "node scripts/dev/seed.mjs",
     "db:reset:test": "node scripts/dev/with-test-db.mjs --reset",
-    "private:inspect": "node scripts/private-inspect.mjs"
+    "private:inspect": "node scripts/private-inspect.mjs",
+    "private:load": "node scripts/dev/load-private.mjs"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "~2.6.0",
