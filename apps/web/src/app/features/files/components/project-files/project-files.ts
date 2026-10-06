@@ -16,6 +16,8 @@ import {
   lucideDownload,
   lucideEye,
   lucideLink2,
+  lucideScanText,
+  lucideSparkles,
   lucideTrash2,
   lucideUpload,
 } from '@ng-icons/lucide';
@@ -34,6 +36,7 @@ import type {
   ProjectFileStatus,
 } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { AiAssist, AiAssistState } from '../ai-assist';
 import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
@@ -59,6 +62,7 @@ type Dialog =
     NgIcon,
     TranslatePipe,
     EmptyState,
+    AiAssist,
     MappingPreviewView,
     ProjectMappings,
     ...HlmBadgeImports,
@@ -72,10 +76,13 @@ type Dialog =
   providers: [
     ProjectFilesService,
     MappingEditorState,
+    AiAssistState,
     provideIcons({
       lucideDownload,
       lucideEye,
       lucideLink2,
+      lucideScanText,
+      lucideSparkles,
       lucideTrash2,
       lucideUpload,
     }),
@@ -86,6 +93,7 @@ type Dialog =
 export class ProjectFiles implements OnDestroy {
   protected readonly service = inject(ProjectFilesService);
   private readonly editor = inject(MappingEditorState);
+  protected readonly ai = inject(AiAssistState);
   private readonly sanitizer = inject(DomSanitizer);
 
   readonly projectId = input.required<string>();
@@ -193,6 +201,12 @@ export class ProjectFiles implements OnDestroy {
   protected async newMappingFor(file: ProjectFile): Promise<void> {
     this.dialog.set(null);
     await this.editor.openNew(file);
+  }
+
+  /** F5.13: "Mit AI erstellen" (a table) or "Mit AI auslesen" (a PDF statement). */
+  protected withAi(file: ProjectFile): void {
+    this.dialog.set(null);
+    void this.ai.start(file, file.kind === 'pdf' ? 'statement' : 'mapping');
   }
 
   protected confirmRemove(file: ProjectFile): void {

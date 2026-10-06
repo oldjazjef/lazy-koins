@@ -4,7 +4,7 @@
  *
  * - `users/dto/me-response.dto.ts`
  * - `projects/dto/project.dto.ts`, `projects/domain/project.ts`
- * - `files/dto/project-file.dto.ts`, `mappings/dto/mapping.dto.ts`
+ * - `files/dto/project-file.dto.ts`, `mappings/dto/mapping.dto.ts`, `ai/dto/ai.dto.ts`
  *
  * Quantities and amounts will arrive as decimal **strings** — never declare them as `number`.
  */
@@ -117,9 +117,13 @@ export interface ProjectFile {
   bookingCount: number;
   holdingCount: number;
   errorCount: number;
-  origin: 'uploaded' | 'from_project';
+  /** derived = a standard-format file the AI converted from a PDF of the project. */
+  origin: 'uploaded' | 'from_project' | 'derived';
   originProjectId: string | null;
   originProjectName: string | null;
+  /** The PDF a derived file was converted from (same project). */
+  derivedFromFileId: string | null;
+  derivedFromName: string | null;
   addedAt: string;
 }
 
@@ -254,4 +258,118 @@ export interface UpdatedMapping {
 export interface SpecIssue {
   path: string;
   message: string;
+}
+
+// --- AI plugin (F5.13, F5.14) — mirrors apps/api `ai/dto/ai.dto.ts` ---
+
+export const AI_PROVIDERS = ['openai_compatible', 'anthropic'] as const;
+export type AiProvider = (typeof AI_PROVIDERS)[number];
+
+/** `GET /api/ai/settings` — the key itself never comes back, only its hint. */
+export interface AiSettings {
+  enabled: boolean;
+  provider: AiProvider;
+  baseUrl: string;
+  model: string;
+  hasApiKey: boolean;
+  apiKeyHint: string | null;
+  consentAt: string | null;
+  ready: boolean;
+  canStoreKey: boolean;
+  privateUrlsAllowed: boolean;
+}
+
+/** `PUT /api/ai/settings` — `apiKey` omitted = keep, `''` = remove. */
+export interface SaveAiSettingsRequest {
+  enabled: boolean;
+  provider: AiProvider;
+  baseUrl: string;
+  model: string;
+  apiKey?: string;
+  revokeConsent?: boolean;
+}
+
+export interface AiUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/** `POST /api/ai/settings/test` */
+export interface AiConnectionTest {
+  ok: true;
+  model: string;
+  usage: AiUsage | null;
+  millis: number;
+}
+
+/** `GET …/ai/mapping/payload` and `…/ai/statement/payload`: exactly what would be sent. */
+export interface AiRequestPreview<T = unknown> {
+  payload: T;
+  provider: AiProvider;
+  baseUrl: string;
+  model: string;
+  consentGiven: boolean;
+}
+
+/** `POST …/ai/mapping` — a proposal; nothing is saved. */
+export interface MappingCandidate {
+  spec: Record<string, unknown>;
+  valid: boolean;
+  issues: SpecIssue[];
+  preview: MappingPreview | null;
+  kindCounts: Partial<Record<BookingKind, number>>;
+  unknownValues: { value: string; count: number }[];
+  problems: string[];
+  rounds: number;
+  model: string;
+  usage: AiUsage | null;
+}
+
+export const HOLDING_ISSUES = [
+  'notVerbatim',
+  'pageMismatch',
+  'invalidNumber',
+  'ambiguousSeparator',
+  'priceNotVerbatim',
+  'pageOutOfRange',
+  'invalidRecord',
+] as const;
+export type HoldingIssue = (typeof HOLDING_ISSUES)[number];
+
+/** One balance the AI read from a PDF statement. Quantities are decimal strings. */
+export interface ExtractedHolding {
+  asset: string;
+  quantityAsPrinted: string;
+  quantity: string | null;
+  asOf: string;
+  platform: string;
+  account: string;
+  priceChf: string | null;
+  priceUsd: string | null;
+  priceChfAsPrinted?: string;
+  priceUsdAsPrinted?: string;
+  page: number;
+  verbatim: boolean;
+  issues: HoldingIssue[];
+}
+
+/** `POST …/ai/statement` */
+export interface StatementCandidate {
+  holdings: ExtractedHolding[];
+  truncated: boolean;
+  rounds: number;
+  model: string;
+  usage: AiUsage | null;
+}
+
+/** `POST …/ai/statement/accept` — the kept records as the extraction returned them. */
+export interface ConfirmedHolding {
+  asset: string;
+  quantityAsPrinted: string;
+  asOf: string;
+  platform: string;
+  account?: string;
+  priceChfAsPrinted?: string;
+  priceUsdAsPrinted?: string;
+  page: number;
 }

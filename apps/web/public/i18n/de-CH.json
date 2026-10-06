@@ -18,7 +18,8 @@
     "label": "Hauptnavigation",
     "projects": "Projekte",
     "signOut": "Abmelden",
-    "toggleTheme": "Hell/Dunkel umschalten"
+    "toggleTheme": "Hell/Dunkel umschalten",
+    "settings": "Einstellungen"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -191,13 +192,17 @@
     "origin": {
       "fromProject": "aus Projekt «{{name}}»",
       "uploaded": "neu",
-      "unknownProject": "unbekannt"
+      "unknownProject": "unbekannt",
+      "derived": "aus «{{name}}» (AI)",
+      "unknownFile": "entfernter Datei"
     },
     "actions": {
       "preview": "Vorschau",
       "download": "Herunterladen",
       "assign": "Zuordnen",
-      "remove": "Entfernen"
+      "remove": "Entfernen",
+      "aiMapping": "Mapping mit AI erstellen",
+      "aiStatement": "Mit AI auslesen"
     },
     "preview": {
       "description": "Die ersten Zeilen der Datei, unverändert.",
@@ -232,7 +237,6 @@
     "subtitle": "Ein Mapping übersetzt den Export einer Plattform ins Standardformat. Hier siehst du, welche dieses Projekt verwendet.",
     "new": "Neues Mapping",
     "withAi": "Mit AI erstellen",
-    "aiSoon": "Kommt in einer nächsten Version.",
     "empty": "Dieses Projekt verwendet noch kein Mapping.",
     "saved": "Mapping gespeichert",
     "saveFailed": "Mapping konnte nicht gespeichert werden",
@@ -291,6 +295,167 @@
       "holdings": "Bestände",
       "errors": "Zeilen mit Fehlern",
       "errorAt": "Zeile {{row}}, Spalte {{column}}:"
+    }
+  },
+  "ai": {
+    "next": "Weiter",
+    "loading": "Einstellungen und Ausschnitt werden geladen …",
+    "working": "Die AI arbeitet – das kann bei lokalen Modellen eine Minute dauern …",
+    "meta": "Modell {{model}}, {{rounds}} Runde(n).",
+    "usage": "Verbrauch: {{input}} Eingabe- und {{output}} Ausgabe-Tokens.",
+    "noUsage": "Der Anbieter meldet keinen Token-Verbrauch.",
+    "notReady": {
+      "title": "AI ist nicht eingerichtet",
+      "disabled": "Das AI-Plugin ist ausgeschaltet. Schalte es in den Einstellungen ein und wähle einen Anbieter.",
+      "notConfigured": "Das AI-Plugin ist eingeschaltet, aber noch nicht vollständig eingerichtet: Es fehlt der API-Schlüssel oder die Adresse eines lokalen Modells.",
+      "withoutAi": "Ohne AI funktioniert alles weiter: Lade die Vorlage im Standardformat herunter oder schreibe ein Mapping von Hand.",
+      "openSettings": "Zu den Einstellungen"
+    },
+    "consent": {
+      "mappingBody": "Für das Mapping wird dieser Ausschnitt der Datei an {{provider}} gesendet (Modell {{model}}, Adresse {{address}}). Die AI schreibt nur das Mapping, nicht die Buchungen; nichts wird ohne deine Bestätigung gespeichert.",
+      "statementBody": "Zum Auslesen der Bestände wird dieser Text des PDFs an {{provider}} gesendet (Modell {{model}}, Adresse {{address}}). Nichts wird ohne deine Bestätigung gespeichert.",
+      "payload": "Das wird gesendet:",
+      "alsoSent": "Dazu kommen die allgemeinen Anweisungen und das erwartete Antwortformat (JSON-Schema) – sie enthalten keine Daten von dir.",
+      "agree": "Ich bin einverstanden, dass dieser Ausschnitt an den Anbieter gesendet wird. (Einmalige Zustimmung – vor jeder Anfrage siehst du wieder, was gesendet wird. Widerrufbar in den Einstellungen.)",
+      "send": "Senden",
+      "defaultModel": "Standard",
+      "defaultAddress": "Standard"
+    },
+    "mapping": {
+      "title": "Mapping mit AI erstellen",
+      "pickFile": "Für welche Datei soll die AI ein Mapping schreiben?",
+      "pickFileLabel": "Datei",
+      "noFile": "Keine Datei braucht ein Mapping.",
+      "reviewTitle": "Vorschlag der AI prüfen",
+      "reviewBody": "So würde das Mapping «{{name}}» lesen. Prüfe Arten, Fehler und unbekannte Werte, passe das JSON bei Bedarf an und speichere es dann.",
+      "kindCounts": "Arten in der ganzen Datei",
+      "unknownValues": "Nicht zugeordnete Werte",
+      "save": "Mapping speichern",
+      "saved": "Mapping gespeichert – die Datei ist jetzt gelesen. Gleich aufgebaute Dateien werden künftig ohne AI erkannt.",
+      "problems": {
+        "invalidSpec": "Das Mapping ist noch nicht gültig.",
+        "headerNotFound": "Die Kopfzeile wurde in der Datei nicht gefunden.",
+        "noRecords": "Das Mapping liest keine einzige Buchung.",
+        "rowErrors": "Viele Zeilen können nicht gelesen werden.",
+        "unknownKinds": "Viele Buchungen haben noch keine Art (unknown)."
+      }
+    },
+    "statement": {
+      "title": "Kontoauszug mit AI auslesen",
+      "reviewTitle": "Bestände prüfen",
+      "reviewBody": "Die AI hat diese Bestände gelesen. Jede Menge wurde mit dem Text des PDFs verglichen. Wähle aus, was übernommen wird – es entsteht eine neue Datei im Standardformat, das PDF bleibt als Beleg.",
+      "truncated": "Das PDF ist lang: Nur die ersten Seiten wurden gesendet.",
+      "none": "Die AI hat keine Bestände gefunden.",
+      "keep": "Übernehmen",
+      "verbatim": "im PDF gefunden",
+      "priceChf": "{{value}} CHF",
+      "priceUsd": "{{value}} USD",
+      "save": "{{count}} Bestände übernehmen",
+      "saved": "Bestände als Datei im Standardformat gespeichert.",
+      "duplicate": "Genau diese Bestände sind schon als Datei im Projekt.",
+      "fields": {
+        "asset": "Asset",
+        "quantity": "Menge",
+        "printed": "Im PDF",
+        "asOf": "Stichtag",
+        "platform": "Plattform · Konto",
+        "price": "Kurs",
+        "page": "Seite",
+        "check": "Prüfung"
+      },
+      "issues": {
+        "notVerbatim": "Menge nicht im PDF",
+        "pageMismatch": "andere Seite",
+        "invalidNumber": "keine Zahl",
+        "ambiguousSeparator": "Trennzeichen unklar",
+        "priceNotVerbatim": "Kurs nicht im PDF",
+        "pageOutOfRange": "Seite fehlt",
+        "invalidRecord": "ungültig"
+      }
+    },
+    "errors": {
+      "failed": "Die AI-Anfrage ist fehlgeschlagen.",
+      "unreachable": "Der Server ist nicht erreichbar.",
+      "closed": "Das Projekt ist abgeschlossen – öffne es zuerst wieder.",
+      "aiDisabled": "Das AI-Plugin ist ausgeschaltet.",
+      "aiNotConfigured": "Das AI-Plugin ist noch nicht eingerichtet.",
+      "consentRequired": "Bitte zuerst dem Senden zustimmen.",
+      "keyUnreadable": "Der gespeicherte API-Schlüssel kann nicht mehr entschlüsselt werden – bitte neu eingeben.",
+      "privateUrl": "Lokale Adressen sind auf diesem Server nicht erlaubt.",
+      "invalidUrl": "Die Adresse ist keine gültige http(s)-URL.",
+      "encryptionUnavailable": "Auf diesem Server können keine API-Schlüssel gespeichert werden.",
+      "noText": "Das PDF enthält keinen Text (gescannt?). Erfasse die Bestände von Hand.",
+      "invalidAnswer": "Die Antwort der AI hatte nicht das erwartete Format.",
+      "invalidKey": "Der Anbieter lehnt den API-Schlüssel ab.",
+      "rateLimited": "Zu viele Anfragen beim Anbieter – bitte später nochmals versuchen.",
+      "network": "Der Anbieter ist nicht erreichbar (Adresse prüfen, läuft das lokale Modell?).",
+      "timeout": "Der Anbieter hat zu lange nicht geantwortet.",
+      "badResponse": "Die Antwort des Anbieters war unbrauchbar.",
+      "providerError": "Der Anbieter meldet einen Fehler.",
+      "modelNotFound": "Das Modell oder die Adresse gibt es beim Anbieter nicht."
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "ai": {
+      "title": "AI-Plugin",
+      "subtitle": "AI-Anbieter für Mappings und Kontoauszüge",
+      "intro": "Die AI schreibt Mappings für unbekannte Exporte und liest Bestände aus PDF-Kontoauszügen. Gesendet wird nur ein kleiner Ausschnitt, den du vor jeder Anfrage siehst. Ohne AI funktioniert alles mit der Vorlage und Mappings.",
+      "loadFailed": "Die Einstellungen konnten nicht geladen werden.",
+      "enabled": "AI-Plugin verwenden",
+      "provider": "Anbieter",
+      "providers": {
+        "openai_compatible": "OpenAI-kompatibel",
+        "anthropic": "Anthropic"
+      },
+      "presets": {
+        "label": "Schnellwahl",
+        "openai": "OpenAI",
+        "anthropic": "Anthropic (Claude)",
+        "mistral": "Mistral",
+        "groq": "Groq",
+        "openrouter": "OpenRouter",
+        "ollama": "Ollama (lokal)",
+        "lmstudio": "LM Studio (lokal)"
+      },
+      "baseUrl": "Adresse (Base URL)",
+      "baseUrlPlaceholder": "leer = Standard des Anbieters",
+      "baseUrlHint": "OpenAI-kompatibel: bis und mit /v1, z. B. http://localhost:11434/v1 für Ollama.",
+      "privateUrlsHint": "Lokale Adressen (localhost, Heimnetz) sind auf diesem Server nicht erlaubt.",
+      "model": "Modell",
+      "modelPlaceholder": "leer = Standardmodell",
+      "apiKey": "API-Schlüssel",
+      "apiKeyPlaceholder": "Schlüssel einfügen",
+      "apiKeyKeep": "leer lassen = gespeicherten Schlüssel behalten",
+      "apiKeyStored": "Gespeichert (verschlüsselt): {{hint}}",
+      "apiKeyNone": "Kein Schlüssel gespeichert – für lokale Modelle nicht nötig.",
+      "apiKeyRemove": "Schlüssel entfernen",
+      "keyRemoved": "API-Schlüssel entfernt",
+      "noEncryption": "Auf diesem Server kann kein Schlüssel gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt). Lokale Modelle ohne Schlüssel funktionieren trotzdem.",
+      "saved": "AI-Einstellungen gespeichert",
+      "test": "Verbindung testen",
+      "testSaveFirst": "Zuerst speichern",
+      "testing": "Verbindung wird getestet …",
+      "testOk": "Verbindung funktioniert: {{model}} hat in {{millis}} ms geantwortet.",
+      "status": {
+        "ready": "bereit",
+        "off": "aus",
+        "notConfigured": "unvollständig"
+      },
+      "consent": {
+        "title": "Zustimmung (Datenschutz)",
+        "body": "Bevor zum ersten Mal Daten an einen Anbieter gehen, fragt die App nach deiner Zustimmung. Vor jeder Anfrage siehst du genau, was gesendet wird.",
+        "given": "Zugestimmt am {{date}}.",
+        "none": "Noch keine Zustimmung – sie wird bei der ersten Anfrage eingeholt.",
+        "revoke": "Zustimmung widerrufen"
+      },
+      "consentRevoked": "Zustimmung widerrufen",
+      "form": {
+        "providerRequired": "Bitte einen Anbieter wählen.",
+        "baseUrlInvalid": "Bitte eine http(s)-Adresse eingeben.",
+        "modelTooLong": "Der Modellname ist zu lang.",
+        "apiKeyTooLong": "Der Schlüssel ist zu lang."
+      }
     }
   }
 }

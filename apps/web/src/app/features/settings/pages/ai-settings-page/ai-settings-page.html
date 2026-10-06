@@ -1,0 +1,202 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'settings.ai.subtitle' | translate"
+/>
+
+@if (current(); as settings) {
+<section hlmCard class="max-w-3xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle class="flex items-center gap-2">
+      {{ 'settings.ai.title' | translate }} @if (!settings.enabled) {
+      <span hlmBadge variant="outline"
+        >{{ 'settings.ai.status.off' | translate }}</span
+      >
+      } @else if (settings.ready) {
+      <span hlmBadge variant="secondary"
+        >{{ 'settings.ai.status.ready' | translate }}</span
+      >
+      } @else {
+      <span hlmBadge variant="destructive"
+        >{{ 'settings.ai.status.notConfigured' | translate }}</span
+      >
+      }
+    </h2>
+    <p hlmCardDescription>{{ 'settings.ai.intro' | translate }}</p>
+  </div>
+  <div hlmCardContent>
+    <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" formControlName="enabled" />
+        {{ 'settings.ai.enabled' | translate }}
+      </label>
+
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium"
+          >{{ 'settings.ai.presets.label' | translate }}</span
+        >
+        <div class="flex flex-wrap gap-2">
+          @for (preset of presets(); track preset.id) {
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="applyPreset(preset.id)"
+          >
+            {{ 'settings.ai.presets.' + preset.id | translate }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="ai-provider"
+            >{{ 'settings.ai.provider' | translate }}</label
+          >
+          <select hlmInput id="ai-provider" formControlName="provider">
+            @for (provider of providers; track provider) {
+            <option [value]="provider">
+              {{ 'settings.ai.providers.' + provider | translate }}
+            </option>
+            }
+          </select>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="ai-model"
+            >{{ 'settings.ai.model' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="ai-model"
+            type="text"
+            formControlName="model"
+            [placeholder]="'settings.ai.modelPlaceholder' | translate"
+          />
+          @if (form.controls.model.errors?.['zod']; as error) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="ai-base-url"
+          >{{ 'settings.ai.baseUrl' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="ai-base-url"
+          type="url"
+          formControlName="baseUrl"
+          [placeholder]="'settings.ai.baseUrlPlaceholder' | translate"
+        />
+        <p class="text-muted-foreground text-xs">
+          {{ 'settings.ai.baseUrlHint' | translate }} @if
+          (!settings.privateUrlsAllowed) { {{ 'settings.ai.privateUrlsHint' |
+          translate }} }
+        </p>
+        @if ( form.controls.baseUrl.touched &&
+        form.controls.baseUrl.errors?.['zod']; as error ) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="ai-key"
+          >{{ 'settings.ai.apiKey' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="ai-key"
+          type="password"
+          autocomplete="off"
+          formControlName="apiKey"
+          [attr.disabled]="settings.canStoreKey ? null : true"
+          [placeholder]="(settings.hasApiKey ? 'settings.ai.apiKeyKeep' : 'settings.ai.apiKeyPlaceholder') | translate"
+        />
+        <p class="text-muted-foreground text-xs">
+          @if (!settings.canStoreKey) { {{ 'settings.ai.noEncryption' |
+          translate }} } @else if (settings.hasApiKey) { {{
+          'settings.ai.apiKeyStored' | translate: { hint: settings.apiKeyHint }
+          }} } @else { {{ 'settings.ai.apiKeyNone' | translate }} }
+        </p>
+      </div>
+
+      <div class="flex flex-wrap justify-end gap-2">
+        @if (settings.hasApiKey) {
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.isSaving()"
+          (click)="removeKey(settings)"
+        >
+          {{ 'settings.ai.apiKeyRemove' | translate }}
+        </button>
+        }
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.testing() || !settings.ready || form.dirty"
+          [attr.title]="form.dirty ? ('settings.ai.testSaveFirst' | translate) : null"
+          (click)="service.test()"
+        >
+          {{ 'settings.ai.test' | translate }}
+        </button>
+        <button hlmBtn type="submit" [disabled]="service.isSaving()">
+          {{ 'common.save' | translate }}
+        </button>
+      </div>
+      @if (service.testing()) {
+      <p class="text-muted-foreground text-sm" aria-live="polite">
+        {{ 'settings.ai.testing' | translate }}
+      </p>
+      } @if (service.testResult(); as result) {
+      <p class="text-sm" aria-live="polite">
+        {{ 'settings.ai.testOk' | translate: { model: result.model, millis:
+        result.millis } }}
+      </p>
+      }
+    </form>
+  </div>
+</section>
+
+<section hlmCard class="mt-6 max-w-3xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'settings.ai.consent.title' | translate }}</h2>
+    <p hlmCardDescription>{{ 'settings.ai.consent.body' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-wrap items-center justify-between gap-3">
+    <p class="text-sm">
+      @if (settings.consentAt) { {{ 'settings.ai.consent.given' | translate: {
+      date: (settings.consentAt | date: 'dd.MM.yyyy HH:mm') } }} } @else { {{
+      'settings.ai.consent.none' | translate }} }
+    </p>
+    @if (settings.consentAt) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.isSaving()"
+      (click)="service.revokeConsent(settings)"
+    >
+      {{ 'settings.ai.consent.revoke' | translate }}
+    </button>
+    }
+  </div>
+</section>
+} @else if (service.settings.error()) {
+<lk-empty-state [message]="'settings.ai.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.settings.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<hlm-skeleton class="h-96 w-full max-w-3xl" />
+}

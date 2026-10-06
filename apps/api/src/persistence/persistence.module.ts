@@ -1,9 +1,11 @@
 import { Global, Module } from '@nestjs/common';
+import { AiSettingsRepositoryPort } from '../ai/ports/ai-settings.repository.port';
 import { ProjectFileRepositoryPort } from '../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../mappings/ports/import-mapping.repository.port';
 import { ProjectRepositoryPort } from '../projects/ports/project.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
 import { PrismaService } from './prisma/prisma.service';
+import { AiSettingsPrismaRepository } from './prisma/repositories/ai-settings.prisma.repository';
 import { ImportMappingPrismaRepository } from './prisma/repositories/import-mapping.prisma.repository';
 import { ProjectFilePrismaRepository } from './prisma/repositories/project-file.prisma.repository';
 import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
@@ -28,12 +30,14 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
       provide: ImportMappingRepositoryPort,
       useClass: ImportMappingPrismaRepository,
     },
+    { provide: AiSettingsRepositoryPort, useClass: AiSettingsPrismaRepository },
   ],
   exports: [
     UserRepositoryPort,
     ProjectRepositoryPort,
     ProjectFileRepositoryPort,
     ImportMappingRepositoryPort,
+    AiSettingsRepositoryPort,
   ],
 })
 export class PersistenceModule {}

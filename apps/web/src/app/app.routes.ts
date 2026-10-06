@@ -20,6 +20,10 @@ export const appRoutes: Route[] = [
         path: 'projects',
         loadChildren: () => import('./features/projects/projects.routes'),
       },
+      {
+        path: 'settings',
+        loadChildren: () => import('./features/settings/settings.routes'),
+      },
     ],
   },
   { path: '**', redirectTo: 'app' },

@@ -1,4 +1,4 @@
-import { lucideFolderOpen } from '@ng-icons/lucide';
+import { lucideFolderOpen, lucideSettings } from '@ng-icons/lucide';
 
 export interface NavItem {
   readonly path: string;
@@ -13,6 +13,11 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: 'nav.projects',
     icon: 'lucideFolderOpen',
   },
+  {
+    path: '/app/settings',
+    labelKey: 'nav.settings',
+    icon: 'lucideSettings',
+  },
 ];
 
-export const NAV_ICONS = { lucideFolderOpen };
+export const NAV_ICONS = { lucideFolderOpen, lucideSettings };
