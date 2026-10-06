@@ -6,7 +6,7 @@ import type {
 } from '../domain/project-rate';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
 import {
-  ChfPriceSourcePort,
+  FiatPriceSourcePort,
   FxRateSourcePort,
   type SeriesRequest,
   UsdPriceSourcePort,
@@ -77,18 +77,26 @@ export class FakeUsdSource extends UsdPriceSourcePort {
   }
 }
 
-export class FakeChfSource extends ChfPriceSourcePort {
+export class FakeFiatSource extends FiatPriceSourcePort {
   readonly name = 'coingecko' as const;
-  readonly calls: (SeriesRequest & { coinId: string; apiKey: string })[] = [];
+  readonly calls: (SeriesRequest & {
+    coinId: string;
+    apiKey: string;
+    currency: string;
+  })[] = [];
 
-  async dailyChf(
-    request: SeriesRequest & { coinId: string; apiKey: string },
+  async dailyFiat(
+    request: SeriesRequest & {
+      coinId: string;
+      apiKey: string;
+      currency: string;
+    },
   ): Promise<RateEntry[]> {
     this.calls.push(request);
     return datesOf(request.from, request.to).map((date) => ({
       kind: 'price',
       asset: request.asset,
-      currency: 'CHF',
+      currency: request.currency,
       date,
       value: '1.5',
       source: 'coingecko',
@@ -98,19 +106,28 @@ export class FakeChfSource extends ChfPriceSourcePort {
 
 export class FakeFxSource extends FxRateSourcePort {
   readonly name = 'ecb' as const;
+  /** `USD` / `EUR` for a CHF project (as before), `USD>EUR` for another quote. */
   readonly calls: string[] = [];
 
-  async dailyChf(
-    base: 'USD' | 'EUR',
+  async daily(
+    base: string,
+    quote: string,
     from: string,
     to: string,
   ): Promise<RateEntry[]> {
-    this.calls.push(base);
-    const value = base === 'USD' ? '0.8' : '0.93';
+    this.calls.push(quote === 'CHF' ? base : `${base}>${quote}`);
+    const value =
+      quote === 'CHF'
+        ? base === 'USD'
+          ? '0.8'
+          : '0.93'
+        : base === 'USD'
+          ? '0.86'
+          : '1.08';
     return datesOf(from, to).map((date) => ({
       kind: 'fx',
       asset: base,
-      currency: 'CHF',
+      currency: quote,
       date,
       value,
       source: 'ecb',

@@ -281,7 +281,8 @@
         >
         <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
           {{ open.item.platform }} {{ open.item.asset }} @if
-          (open.item.impactChf) { · {{ open.item.impactChf | lkChf }} }
+          (open.item.impactChf) { · {{ open.item.impactChf | lkChf:
+          options.taxCurrency }} }
         </span>
       </label>
       } @empty {

@@ -3,6 +3,7 @@ import {
   Component,
   effect,
   inject,
+  signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -12,6 +13,7 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import { CH_CANTONS } from '../../../../core/api/api.types';
+import { taxCurrencyOptions } from './tax-currency-options';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { ProjectFormSchema } from './project-form.schema';
@@ -40,12 +42,15 @@ function lastYear(): number {
 export class ProjectFormPage {
   protected readonly service = inject(ProjectFormPageService);
   protected readonly cantons = CH_CANTONS;
+  /** F4.1a: the country default (CH → CHF) first. */
+  protected readonly currencies = signal(taxCurrencyOptions('CH'));
 
   protected readonly form = inject(FormBuilder).nonNullable.group(
     {
       name: [''],
       taxYear: [lastYear()],
       canton: [''],
+      taxCurrency: ['CHF'],
       notes: [''],
     },
     { validators: zodValidator(ProjectFormSchema) },

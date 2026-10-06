@@ -52,11 +52,12 @@ const t = (text: string, extra: Partial<ReportCell> = {}): ReportCell => ({
 
 export function internalReport(data: ExportData): InternalReport {
   const { result } = data;
+  const T = data.rules.homeCurrency;
   const open = data.items.filter((item) => !item.done).length;
 
   const checks: ReportSection = {
     title: 'Prüfungen',
-    columns: ['Prüfung', 'Ampel', 'Punkte', 'Auswirkung CHF'],
+    columns: ['Prüfung', 'Ampel', 'Punkte', `Auswirkung ${T}`],
     numeric: [2, 3],
     rows: CHECK_KINDS.flatMap((kind) => {
       const check = result.checks.find((c) => c.kind === kind);
@@ -80,7 +81,7 @@ export function internalReport(data: ExportData): InternalReport {
       'Status',
       'Thema',
       'Beschreibung',
-      'Geschätzte Auswirkung CHF',
+      `Geschätzte Auswirkung ${T}`,
       'Notiz',
     ],
     numeric: [3],
@@ -185,11 +186,11 @@ export function internalReport(data: ExportData): InternalReport {
     figures: [
       [
         `${data.rules.labels.wealthTitle}${data.taxYear}`,
-        `CHF ${chf(result.totals.wealthChf)}`,
+        `${T} ${chf(result.totals.wealthChf)}`,
       ],
       [
         `${data.rules.labels.incomeTitle} ${data.taxYear}`,
-        `CHF ${chf(result.totals.incomeChf)}`,
+        `${T} ${chf(result.totals.incomeChf)}`,
       ],
       ['Offene Punkte', `${open} offen, ${data.items.length - open} erledigt`],
     ],

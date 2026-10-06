@@ -47,8 +47,8 @@ export const DEFAULT_MAIL_TEMPLATES: Readonly<
       '',
       'Anbei meine Unterlagen zu den Kryptowährungen für das Steuerjahr {{steuerjahr}} (Kanton {{kanton}}):',
       '',
-      '- Steuerwert per 31.12.{{steuerjahr}}: CHF {{vermoegen}}',
-      '- Ertrag aus beweglichem Vermögen {{steuerjahr}}: CHF {{ertrag}}',
+      '- Steuerwert per 31.12.{{steuerjahr}}: {{vermoegen}}',
+      '- Ertrag aus beweglichem Vermögen {{steuerjahr}}: {{ertrag}}',
       '',
       'Anhänge:',
       '{{anhaenge}}',
@@ -70,8 +70,8 @@ export const SAMPLE_MAIL_VALUES: MailValues = {
   treuhaender: 'Beat Treuhand',
   steuerjahr: '2025',
   kanton: 'ZH',
-  vermoegen: "12'345.65",
-  ertrag: '234.10',
+  vermoegen: "CHF 12'345.65",
+  ertrag: 'CHF 234.10',
   anhaenge: [
     '- Steuern-2025_einfach_2026-02-01.pdf',
     '- Steuern-2025_ausfuehrlich_2026-02-01.xlsx',
@@ -82,6 +82,13 @@ export const SAMPLE_MAIL_VALUES: MailValues = {
 };
 
 const TOKEN = /\{\{\s*([^{}]*?)\s*\}\}/g;
+
+/**
+ * `{{vermoegen}}` and `{{ertrag}}` carry their currency since F4.1a ("EUR 12'345.65"); a template
+ * saved before wrote "CHF {{vermoegen}}" — that literal "CHF " is dropped so the currency is not
+ * doubled (or wrong for a project in another currency).
+ */
+const LEGACY_CURRENCY = /CHF[ \t]+(?=\{\{\s*(?:vermoegen|ertrag)\s*\}\})/g;
 
 function isPlaceholder(name: string): name is MailPlaceholder {
   return (MAIL_PLACEHOLDERS as readonly string[]).includes(name);
@@ -128,13 +135,15 @@ export function renderTemplate(
 ): RenderedText {
   const singleLine = kind === 'subject';
   const unknown = new Set<string>();
-  const replaced = template.replace(TOKEN, (whole, name: string) => {
-    if (!isPlaceholder(name)) {
-      unknown.add(name);
-      return whole;
-    }
-    return plainTextValue(values[name], singleLine);
-  });
+  const replaced = template
+    .replace(LEGACY_CURRENCY, '')
+    .replace(TOKEN, (whole, name: string) => {
+      if (!isPlaceholder(name)) {
+        unknown.add(name);
+        return whole;
+      }
+      return plainTextValue(values[name], singleLine);
+    });
   const text = plainTextValue(replaced, singleLine);
   return {
     text: singleLine

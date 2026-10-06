@@ -10,7 +10,11 @@ import {
   type IQueryHandler,
   QueryHandler,
 } from '@nestjs/cqrs';
-import { countryRules, missingFileHints } from '@lazykoins/engine';
+import {
+  countryRules,
+  missingFileHints,
+  withTaxCurrency,
+} from '@lazykoins/engine';
 import { BUILD_INFO } from '../../app/build-info';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CalculationService } from '../../calculation/calculation.service';
@@ -93,8 +97,11 @@ export class ExportDataService {
     snapshot: Snapshot,
     createdAt: string,
   ): Promise<ExportData> {
-    const rules = countryRules(project.country);
-    if (!rules) throw new Error(`No country rules for ${project.country}`);
+    const countryRule = countryRules(project.country);
+    if (!countryRule)
+      throw new Error(`No country rules for ${project.country}`);
+    // F4.1a: the statement is in the currency the snapshot was calculated in.
+    const rules = withTaxCurrency(countryRule, snapshot.result.currency);
     const settings = await this.settings.resolve(userId);
     const user = await this.users.findById(userId);
     const states = new Map(

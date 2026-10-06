@@ -237,10 +237,13 @@ export interface AppliedCorrection {
   after: Record<string, string | null> | null;
 }
 
+/** Every `…Chf` amount is in `currency` — the project's tax currency (F4.1a). */
 export interface CalculationResult {
   engineVersion: number;
   taxYear: number;
   country: string;
+  /** ISO 4217 code (CHF, EUR, …). */
+  currency: string;
   yearEnd: string;
   totals: {
     wealthChf: string;
@@ -340,7 +343,7 @@ export type RateSource = 'manual' | 'estv' | 'binance' | 'coingecko' | 'ecb';
 export interface RateSeries {
   kind: 'price' | 'fx';
   asset: string;
-  currency: 'CHF' | 'USD';
+  currency: string;
   source: RateSource;
   points: number;
   from: string;
@@ -353,7 +356,7 @@ export interface StoredRate {
   id: string;
   kind: 'price' | 'fx';
   asset: string;
-  currency: 'CHF' | 'USD';
+  currency: string;
   date: string;
   value: string;
   source: RateSource;
@@ -365,6 +368,8 @@ export interface StoredRate {
 /** `GET /rates` */
 export interface RatesView {
   taxYear: number;
+  /** F4.1a: the project's tax currency — overrides and exchange rates are in it. */
+  currency: string;
   online: boolean;
   series: RateSeries[];
   manual: StoredRate[];
@@ -375,6 +380,8 @@ export interface RatesView {
     cryptoCount: number;
     applied: string | null;
     outdated: boolean;
+    /** F4.1a: the Kursliste is in CHF — false for a project in another currency. */
+    applicable: boolean;
   };
 }
 
@@ -459,7 +466,7 @@ export interface RefreshSummary {
 export interface ManualRateRequest {
   kind: 'price' | 'fx';
   asset: string;
-  currency: 'CHF' | 'USD';
+  currency: string;
   date: string;
   value: string;
 }

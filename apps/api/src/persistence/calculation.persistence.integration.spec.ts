@@ -163,6 +163,18 @@ describe('project rates', () => {
     await expect(
       rates.upsertMany(project.id, [{ ...entry, value: '1e5' }]),
     ).rejects.toThrow(/CHECK constraint failed/);
+    // F4.1a: any ISO 4217 code (a tax currency), never anything else.
+    await rates.upsertMany(project.id, [
+      { ...entry, kind: 'fx', asset: 'USD', currency: 'EUR', value: '0.85' },
+    ]);
+    expect(
+      (await rates.listByProject(project.id)).some((r) => r.currency === 'EUR'),
+    ).toBe(true);
+    for (const currency of ['eur', 'EURO', 'E1']) {
+      await expect(
+        rates.upsertMany(project.id, [{ ...entry, currency }]),
+      ).rejects.toThrow(/CHECK constraint failed/);
+    }
   });
 });
 

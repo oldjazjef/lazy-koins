@@ -24,8 +24,9 @@ import {
 import type { Env } from '../../config/env';
 import { COINGECKO_IDS, RATE_ALIASES } from '../../rates/domain/project-rate';
 import {
-  ChfPriceSourcePort,
+  FiatPriceSourcePort,
   FxRateSourcePort,
+  fxBasesFor,
   UsdPriceSourcePort,
 } from '../../rates/ports/rate-source.port';
 import { SettingsReader } from '../../settings/application/settings.handlers';
@@ -66,6 +67,11 @@ export interface DashboardView extends DashboardResult {
   }[];
   /** F11.3: whether "Kurse aktualisieren" may go to the internet. */
   readonly online: boolean;
+  /**
+   * F4.1a: every tax currency among the user's projects; with more than one, the dashboard shows
+   * one at a time (`currency`) — never a sum across currencies.
+   */
+  readonly currencies: readonly string[];
   /** Files that could not be read this time (counted only). */
   readonly unreadable: number;
 }
@@ -131,9 +137,10 @@ export class DashboardCalculator {
     from: string,
     to: string,
     projectId?: string,
+    currency?: string,
   ): Promise<Cached> {
     checkPeriod(from, to);
-    const sources = await this.inputs.sources(userId, projectId);
+    const sources = await this.inputs.sources(userId, projectId, currency);
     const key = `${userId}|${this.inputs.hash(sources, from, to)}`;
     const cached = this.cache.get(key);
     if (cached) return cached;
@@ -183,6 +190,7 @@ export class DashboardCalculator {
           name: p.name,
           taxYear: p.taxYear,
         })),
+        currencies: sources.currencies,
         unreadable: records.unreadable,
       },
       summaries,
@@ -212,6 +220,8 @@ export class GetDashboardQuery {
     readonly to: string,
     /** Only this project (the card on the project detail). */
     readonly projectId?: string,
+    /** F4.1a: the tax currency to show (absent = the newest project's). */
+    readonly currency?: string,
   ) {}
 }
 
@@ -231,8 +241,15 @@ export class GetDashboardHandler implements IQueryHandler<
     from,
     to,
     projectId,
+    currency,
   }: GetDashboardQuery): Promise<DashboardView> {
-    const { view } = await this.calculator.compute(userId, from, to, projectId);
+    const { view } = await this.calculator.compute(
+      userId,
+      from,
+      to,
+      projectId,
+      currency,
+    );
     const settings = await this.settings.resolve(userId);
     return { ...view, online: onlineAllowed(settings, this.config) };
   }
@@ -247,6 +264,7 @@ export class GetDashboardRecordsQuery {
     readonly to: string,
     readonly kpi: string,
     readonly projectId?: string,
+    readonly currency?: string,
   ) {}
 }
 
@@ -265,9 +283,16 @@ export class GetDashboardRecordsHandler implements IQueryHandler<
     to,
     kpi,
     projectId,
+    currency,
   }: GetDashboardRecordsQuery): Promise<DashboardRecords> {
     if (!isKpiKind(kpi)) throw new BadRequestException('Unknown figure');
-    const cached = await this.calculator.compute(userId, from, to, projectId);
+    const cached = await this.calculator.compute(
+      userId,
+      from,
+      to,
+      projectId,
+      currency,
+    );
     const figure = cached.view.kpis.find((k) => k.kind === (kpi as KpiKind));
     const ids = figure?.recordIds ?? [];
     const records: DashboardRecord[] = [];
@@ -311,13 +336,16 @@ export class RefreshDashboardRatesCommand {
     /** The assets to fetch now (the app asks one at a time to show progress); empty = FX only. */
     readonly assets: readonly string[],
     readonly force: boolean,
+    /** F4.1a: the tax currency shown (absent = the newest project's). */
+    readonly currency?: string,
   ) {}
 }
 
 /**
  * "Kurse aktualisieren" on the dashboard (F11.4, F11.9): fetches the daily series missing for
- * the shown period into the user's rate cache — USD/CHF and EUR/CHF from the ECB, then Binance
- * USD closes, CoinGecko CHF as the fallback with the user's key. A series that already covers the
+ * the shown period into the user's rate cache — USD and EUR in the shown tax currency T from the
+ * ECB (USD/CHF, EUR/CHF for CHF; F4.1a), then Binance USD closes, CoinGecko in T as the fallback
+ * with the user's key. A series that already covers the
  * period (project rates or cache, within the 14-day tolerance at both ends) is skipped unless
  * `force`. Refused (409) when rate lookups are off (F11.3); the sources are serialised.
  */
@@ -331,7 +359,7 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
     private readonly userRates: UserRateRepositoryPort,
     private readonly settings: SettingsReader,
     private readonly usd: UsdPriceSourcePort,
-    private readonly chf: ChfPriceSourcePort,
+    private readonly fiat: FiatPriceSourcePort,
     private readonly fx: FxRateSourcePort,
     private readonly config: ConfigService<Env, true>,
   ) {}
@@ -342,6 +370,7 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
     to,
     assets,
     force,
+    currency,
   }: RefreshDashboardRatesCommand): Promise<DashboardRefreshSummary> {
     checkPeriod(from, to);
     if (assets.length > 50) {
@@ -359,16 +388,17 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
         .slice(0, 10),
       to,
     };
-    const sources = await this.inputs.sources(userId);
+    const sources = await this.inputs.sources(userId, undefined, currency);
+    const quote = sources.currency;
     const known: RateEntry[] = [
       ...sources.projectRates.flatMap((p) => p.rates),
       ...sources.userRates,
     ];
     let fx = 0;
-    for (const base of ['USD', 'EUR'] as const) {
-      if (!force && covers(known, 'fx', base, from, to)) continue;
+    for (const base of fxBasesFor(quote)) {
+      if (!force && covers(known, 'fx', base, from, to, quote)) continue;
       const entries = await this.fx
-        .dailyChf(base, window.from, window.to)
+        .daily(base, quote, window.from, window.to)
         .catch(() => []);
       fx += await this.userRates.upsertMany(userId, entries);
     }
@@ -376,7 +406,7 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
     for (const raw of assets) {
       const asset = raw.trim().toUpperCase();
       if (!asset) continue;
-      if (!force && covers(known, 'price', asset, from, to)) {
+      if (!force && covers(known, 'price', asset, from, to, quote)) {
         results.push({ asset, status: 'cached', source: null, points: 0 });
         continue;
       }
@@ -397,15 +427,16 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
         const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
         const apiKey = settings.keys.coingecko;
         if (entries.length === 0 && coinId && apiKey) {
-          entries = await this.chf.dailyChf({
+          entries = await this.fiat.dailyFiat({
             asset,
             symbol: asset,
             from: window.from,
             to: window.to,
             coinId,
             apiKey,
+            currency: quote,
           });
-          if (entries.length > 0) source = this.chf.name;
+          if (entries.length > 0) source = this.fiat.name;
         }
         await this.userRates.upsertMany(userId, entries);
         results.push({
@@ -422,21 +453,25 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
   }
 }
 
-/** A stored series covers the period when it has a point near both ends (14-day tolerance). */
+/**
+ * A stored series covers the period when it has a point near both ends (14-day tolerance) — in
+ * the tax currency `quote` (or USD for a price).
+ */
 function covers(
   known: readonly RateEntry[],
   kind: 'price' | 'fx',
   asset: string,
   from: string,
   to: string,
+  quote: string,
 ): boolean {
   const table = new RateTable(
     known.filter(
       (r) => r.kind === kind && r.source !== 'manual' && r.source !== 'estv',
     ),
+    quote,
   );
-  const currencies =
-    kind === 'fx' ? (['CHF'] as const) : (['USD', 'CHF'] as const);
+  const currencies = kind === 'fx' ? [quote] : ['USD', quote];
   return currencies.some(
     (currency) =>
       table.lookup(kind, asset, currency, from, 14) !== undefined &&

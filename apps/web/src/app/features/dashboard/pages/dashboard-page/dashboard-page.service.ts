@@ -45,14 +45,26 @@ export class DashboardPageService {
   readonly period = signal<Period>(yearToDate(this.today()));
   /** Only this project (the compact card); undefined = all projects. */
   readonly projectId = signal<string | undefined>(undefined);
+  /**
+   * F4.1a: the tax currency shown — projects in different currencies are never added up, the
+   * dashboard shows one currency at a time. Undefined = the newest project's (the API decides).
+   */
+  readonly currency = signal<string | undefined>(undefined);
+
+  /** `from`, `to` and the project or currency, for every dashboard request. */
+  private params(from: string, to: string): Record<string, string> {
+    const params: Record<string, string> = { from, to };
+    const project = this.projectId();
+    const currency = this.currency();
+    if (project) params['project'] = project;
+    else if (currency) params['currency'] = currency;
+    return params;
+  }
 
   readonly view = httpResource<DashboardView>(() => {
     const { from, to } = this.period();
     if (!from || !to || from > to) return undefined;
-    const project = this.projectId();
-    const params: Record<string, string> = { from, to };
-    if (project) params['project'] = project;
-    return { url: apiUrl('/dashboard'), params };
+    return { url: apiUrl('/dashboard'), params: this.params(from, to) };
   });
 
   readonly isEmpty = computed(
@@ -150,16 +162,13 @@ export class DashboardPageService {
 
   async showRecords(kind: KpiKind, title: string): Promise<void> {
     const { from, to } = this.period();
-    const project = this.projectId();
     this.records.set(null);
     this.recordsOf.set({ kind, title });
     try {
       this.records.set(
         await firstValueFrom(
           this.http.get<DashboardRecords>(apiUrl('/dashboard/records'), {
-            params: project
-              ? { from, to, kpi: kind, project }
-              : ({ from, to, kpi: kind } as Record<string, string>),
+            params: { ...this.params(from, to), kpi: kind },
           }),
         ),
       );
@@ -245,7 +254,12 @@ export class DashboardPageService {
     return firstValueFrom(
       this.http.post<DashboardRefreshSummary>(
         apiUrl('/dashboard/rates/refresh'),
-        { from, to, assets },
+        {
+          from,
+          to,
+          assets,
+          ...(this.currency() ? { currency: this.currency() } : {}),
+        },
       ),
     );
   }

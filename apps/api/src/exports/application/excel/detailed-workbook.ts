@@ -36,6 +36,15 @@ export const SHEETS = {
   method: 'Methodik',
 } as const;
 
+/**
+ * The named Parameter cell of one exchange rate in the tax currency T (F4.1a): `USDCHF`,
+ * `EURCHF` for a CHF project, `USDEUR`, `EUREUR` (= 1) for an EUR project. The formulas keep
+ * their structure; only the names follow the currency.
+ */
+export function fxCellName(base: 'USD' | 'EUR', currency: string): string {
+  return `${base}${currency}`;
+}
+
 const H = `'${SHEETS.holdings}'`;
 const I = `'${SHEETS.income}'`;
 const G = `'${SHEETS.earnGap}'`;
@@ -82,6 +91,10 @@ function addFootnotes(
  */
 export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   const { result, rules } = data;
+  // F4.1a: every amount is in the project's tax currency T.
+  const T = rules.homeCurrency;
+  const usdName = fxCellName('USD', T);
+  const eurName = fxCellName('EUR', T);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'lazy-koins';
   workbook.created = new Date(data.createdAt);
@@ -98,23 +111,23 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   // --- Parameter ---
   parameters.addRow(['Parameter']).font = { bold: true, size: 14 };
   parameters.addRow([]);
-  const usdRow = parameters.addRow([`USD/CHF per 31.12.${data.taxYear}`]);
+  const usdRow = parameters.addRow([`USD/${T} per 31.12.${data.taxYear}`]);
   input(usdRow.getCell(2), num(result.parameters.usdChf), PRICE_FORMAT);
   usdRow.getCell(3).value = result.parameters.usdChfSource ?? '–';
-  const eurRow = parameters.addRow([`EUR/CHF per 31.12.${data.taxYear}`]);
+  const eurRow = parameters.addRow([`EUR/${T} per 31.12.${data.taxYear}`]);
   input(eurRow.getCell(2), num(result.parameters.eurChf), PRICE_FORMAT);
   eurRow.getCell(3).value = result.parameters.eurChfSource ?? '–';
   parameters.addRow([]);
   parameters.addRow([
-    'Die Formeln der übrigen Blätter rechnen mit diesen Werten (benannte Zellen USDCHF, EURCHF).',
+    `Die Formeln der übrigen Blätter rechnen mit diesen Werten (benannte Zellen ${usdName}, ${eurName}).`,
   ]);
   workbook.definedNames.add(
     `'${SHEETS.parameters}'!$B$${usdRow.number}`,
-    'USDCHF',
+    usdName,
   );
   workbook.definedNames.add(
     `'${SHEETS.parameters}'!$B$${eurRow.number}`,
-    'EURCHF',
+    eurName,
   );
   setWidths(parameters, [28, 16, 40]);
 
@@ -126,17 +139,17 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     'Asset',
     'Menge',
     'Kurs USD',
-    'USD/CHF',
-    'Kurs CHF direkt',
-    'ESTV-Kurs (Override)',
-    'Wert CHF',
+    `USD/${T}`,
+    `Kurs ${T} direkt`,
+    T === 'CHF' ? 'ESTV-Kurs (Override)' : 'Kurs (Override)',
+    `Wert ${T}`,
     'Status',
     'Quelle Menge',
     'Quelle Kurs',
     'Menge exakt',
   ]);
   for (const position of result.positions) {
-    addPositionRow(holdings, data.taxYear, position);
+    addPositionRow(holdings, data.taxYear, position, T);
   }
   addFootnotes(
     holdings,
@@ -154,10 +167,10 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     'Menge netto',
     'Kurs USD',
     'Wert USD',
-    'USD/CHF Tag',
-    'Kurs CHF',
-    'Wert CHF',
-    'Brutto CHF (Info)',
+    `USD/${T} Tag`,
+    `Kurs ${T}`,
+    `Wert ${T}`,
+    `Brutto ${T} (Info)`,
     'Referenz',
     'Status',
   ]);
@@ -196,7 +209,7 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     row.getCell(13).value = line.group ?? line.bookingId;
     row.getCell(14).value =
       line.status === 'ok'
-        ? priceSourceText(line.priceOrigin, line.priceSource, null)
+        ? priceSourceText(line.priceOrigin, line.priceSource, null, T)
         : STATUS_LABELS.missingPrice;
   }
   addFootnotes(
@@ -219,8 +232,8 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     'Bestand Ende',
     'Σ Historie',
     'Lücke',
-    'Ø Kurs CHF',
-    'Wert CHF',
+    `Ø Kurs ${T}`,
+    `Wert ${T}`,
     'Status',
   ]);
   for (const gap of result.earnGaps) {
@@ -264,7 +277,7 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     'Plattform',
     'Asset',
     'Menge',
-    'Wert CHF',
+    `Wert ${T}`,
     'Hinweis',
   ]);
   for (const event of result.oneOffEvents) {
@@ -294,7 +307,7 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   overview.addRow([`Vermögen per 31.12.${data.taxYear} je Plattform`]).font = {
     bold: true,
   };
-  headerRow(overview, ['Plattform', 'Steuerwert CHF']);
+  headerRow(overview, ['Plattform', `Steuerwert ${T}`]);
   overview.views = [];
   const firstPlatform = overview.rowCount + 1;
   for (const platform of result.platforms) {
@@ -329,7 +342,7 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   overview.addRow([`Ertrag ${data.taxYear} je Kategorie`]).font = {
     bold: true,
   };
-  const incomeHeader = overview.addRow(['Kategorie', 'Ertrag CHF']);
+  const incomeHeader = overview.addRow(['Kategorie', `Ertrag ${T}`]);
   incomeHeader.font = { bold: true };
   const firstCategory = overview.rowCount + 1;
   for (const category of INCOME_CATEGORIES) {
@@ -368,6 +381,7 @@ function addPositionRow(
   sheet: ExcelJS.Worksheet,
   taxYear: number,
   position: Position,
+  currency: string,
 ): void {
   const row = sheet.addRow([
     taxYear,
@@ -381,7 +395,7 @@ function addPositionRow(
     input(row.getCell(6), num(position.priceUsd), PRICE_FORMAT);
     formula(
       row.getCell(7),
-      'USDCHF',
+      fxCellName('USD', currency),
       num(position.usdChf),
       PRICE_FORMAT,
       PARAMETER_FONT,
@@ -391,7 +405,7 @@ function addPositionRow(
     if (position.priceOrigin === 'fx' && position.asset === 'EUR') {
       formula(
         row.getCell(8),
-        'EURCHF',
+        fxCellName('EUR', currency),
         num(position.chfDirect),
         PRICE_FORMAT,
         PARAMETER_FONT,
@@ -415,10 +429,11 @@ function addPositionRow(
     position.priceOrigin,
     position.priceSource,
     position.priceDate,
+    currency,
   );
   row.getCell(14).value = position.quantity;
   if (position.status === 'spam') row.font = { color: { argb: 'FF999999' } };
-  // Values in CHF are rounded only for display; the cell keeps the full product.
+  // Values are rounded only for display; the cell keeps the full product.
   if (position.valueChf !== null && parseDecimal(position.valueChf).isZero())
     row.getCell(10).numFmt = '0.00';
 }
@@ -426,13 +441,22 @@ function addPositionRow(
 /** The "Methodik" sheet / section (FACHREGELN in short). */
 export function methodLines(data: ExportData): string[] {
   const { rules } = data;
+  const T = rules.homeCurrency;
+  const prices =
+    T === 'CHF'
+      ? 'Kurse (erste vorhandene gilt): 1. ESTV-Kurs bzw. Override, 2. Kurs CHF direkt (z. B. aus dem Kontoauszug), 3. Kurs USD × USD/CHF des Stichtags.'
+      : `Bewertung in ${T} (Steuerwährung des Projekts). Kurse (erste vorhandene gilt): 1. Override, 2. Kurs ${T} direkt, 3. Kurs USD × USD/${T} des Stichtags.`;
+  const fiat =
+    T === 'CHF'
+      ? 'CHF = 1; EUR über EUR/CHF'
+      : `${T} = 1; andere Währungen über ihren Kurs in ${T} (EZB, wo nötig über USD bzw. EUR umgerechnet)`;
   return [
     'Methodik',
     '',
     `Vermögen: Bestand per 31.12.${data.taxYear} je Plattform/Konto und Asset. Hat ein Konto einen Kontoauszug per Stichtag, gilt dieser; sonst der Saldo aus dem Ledger (Σ Menge − Σ Gebühr aller Buchungen bis Jahresende). Positionen mit |Menge| < ${rules.dustThreshold} entfallen.`,
-    'Kurse (erste vorhandene gilt): 1. ESTV-Kurs bzw. Override, 2. Kurs CHF direkt (z. B. aus dem Kontoauszug), 3. Kurs USD × USD/CHF des Stichtags.',
-    `Stablecoins (${rules.usdPegged.join(', ')}) = 1 USD; CHF = 1; EUR über EUR/CHF. USD-Kurse: Tagesschluss (Binance, UTC), höchstens ${rules.priceToleranceDays} Tage alt, sonst erster Kurs danach (≤ ${rules.priceToleranceDays} Tage). Devisen: EZB-Referenzkurse, letztes Fixing.`,
-    'Ertrag: zum Zuflusszeitpunkt (Tag in UTC) bewertet, netto nach Gebühr im gleichen Asset; Brutto als Information. Liefert die Plattform einen USD-Wert (z. B. Kraken amountusd − feeusd), gilt dieser × USD/CHF des Tages.',
+    prices,
+    `Stablecoins (${rules.usdPegged.join(', ')}) = 1 USD; ${fiat}. USD-Kurse: Tagesschluss (Binance, UTC), höchstens ${rules.priceToleranceDays} Tage alt, sonst erster Kurs danach (≤ ${rules.priceToleranceDays} Tage). Devisen: EZB-Referenzkurse, letztes Fixing.`,
+    `Ertrag: zum Zuflusszeitpunkt (Tag in UTC) bewertet, netto nach Gebühr im gleichen Asset; Brutto als Information. Liefert die Plattform einen USD-Wert (z. B. Kraken amountusd − feeusd), gilt dieser × USD/${T} des Tages.`,
     `Earn-Lücke (Differenzmethode): (Bestand Ende − Bestand Anfang) − Σ Historie ohne interne Umbuchungen, je Konto und Asset; nur positive Lücken sind Ertrag, bewertet zum Jahresmittel. Ausgenommen: ${rules.earnGapExcluded.join(', ')}.`,
     'Einmalereignisse (Hardforks, Airdrops, Verluste) werden separat ausgewiesen.',
     'Positionen und Ereignisse ohne verfügbaren Kurswert werden mit ihrer Menge, ohne Wert aufgeführt und sind nicht im Total enthalten.',

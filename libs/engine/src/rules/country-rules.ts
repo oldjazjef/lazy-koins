@@ -51,8 +51,14 @@ export interface CountryRules {
   readonly dustThreshold: string;
   /** Assets worth exactly 1 USD (FACHREGELN, Kurse). */
   readonly usdPegged: readonly string[];
-  /** The home currency (worth 1). */
+  /**
+   * The currency every amount is valued in (worth 1) — the project's **tax currency** (F4.1a).
+   * The country's own rules carry its default (`defaultTaxCurrency`); a project with another
+   * currency runs on `withTaxCurrency(rules, currency)`.
+   */
   readonly homeCurrency: string;
+  /** The tax currency a new project of this country gets (CH → CHF). */
+  readonly defaultTaxCurrency: string;
   /** Fiat currencies — never "possible income" and not matched as transfers. */
   readonly fiat: readonly string[];
   /** Assets left out of the Earn-gap method (FACHREGELN: EUR, USDT). */
@@ -73,6 +79,7 @@ export const chRules: CountryRules = {
   dustThreshold: '0.0000001',
   usdPegged: ['USD', 'USDT', 'USDC', 'BUSD', 'FDUSD', 'USDD'],
   homeCurrency: 'CHF',
+  defaultTaxCurrency: 'CHF',
   fiat: ['CHF', 'EUR', 'USD', 'GBP'],
   earnGapExcluded: ['EUR', 'USDT'],
   priceToleranceDays: 14,
@@ -102,4 +109,71 @@ export const chRules: CountryRules = {
 /** F7.7: the rules of a country, `undefined` when it is not supported. */
 export function countryRules(country: string): CountryRules | undefined {
   return country === 'CH' ? chRules : undefined;
+}
+
+/**
+ * The currencies a project can be valued in (F4.1a): ISO 4217 codes the ECB publishes reference
+ * rates for (Frankfurter), so USD → T and EUR → T can be fetched. CHF is the only one with the
+ * ESTV Kursliste.
+ */
+export const TAX_CURRENCIES = [
+  'AUD',
+  'BGN',
+  'BRL',
+  'CAD',
+  'CHF',
+  'CNY',
+  'CZK',
+  'DKK',
+  'EUR',
+  'GBP',
+  'HKD',
+  'HUF',
+  'IDR',
+  'ILS',
+  'INR',
+  'ISK',
+  'JPY',
+  'KRW',
+  'MXN',
+  'MYR',
+  'NOK',
+  'NZD',
+  'PHP',
+  'PLN',
+  'RON',
+  'SEK',
+  'SGD',
+  'THB',
+  'TRY',
+  'USD',
+  'ZAR',
+] as const;
+export type TaxCurrency = (typeof TAX_CURRENCIES)[number];
+
+export function isTaxCurrency(value: string): value is TaxCurrency {
+  return (TAX_CURRENCIES as readonly string[]).includes(value);
+}
+
+/** The tax currency a new project in `country` gets (F4.1a: CH → CHF). */
+export function defaultTaxCurrency(country: string): string {
+  return countryRules(country)?.defaultTaxCurrency ?? 'CHF';
+}
+
+/**
+ * The country's rules valued in `currency` (F4.1a): that currency is worth 1 and counts as fiat;
+ * everything else (thresholds, pegged assets, labels) stays the country's. The country default
+ * returns the rules unchanged, so a CHF project computes exactly as before.
+ */
+export function withTaxCurrency(
+  rules: CountryRules,
+  currency: string,
+): CountryRules {
+  const upper = currency.toUpperCase();
+  if (upper === rules.homeCurrency) return rules;
+  return {
+    ...rules,
+    homeCurrency: upper,
+    fiat: rules.fiat.includes(upper) ? rules.fiat : [...rules.fiat, upper],
+  };
 }

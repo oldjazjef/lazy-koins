@@ -31,7 +31,7 @@
         >{{ 'checks.items' | translate: { count: check.items } }}</span
       >
       <span class="w-32 text-right tabular-nums"
-        >{{ 'common.chf' | translate }} {{ check.impactChf | lkChf }}</span
+        >{{ check.impactChf | lkChf: service.currency() }}</span
       >
     </li>
     }
@@ -58,7 +58,8 @@
           <th hlmTh>{{ 'checks.fields.done' | translate }}</th>
           <th hlmTh>{{ 'checks.fields.item' | translate }}</th>
           <th hlmTh class="text-right whitespace-normal">
-            {{ 'checks.fields.impact' | translate }}
+            {{ 'checks.fields.impact' | translate: { currency:
+            service.currency() } }}
           </th>
           <th hlmTh>{{ 'checks.fields.note' | translate }}</th>
         </tr>
@@ -203,13 +204,13 @@
   <dl class="lk-facts lk-panel p-4">
     <dt>{{ 'checks.comparison.wealth' | translate }}</dt>
     <dd class="tabular-nums">
-      {{ comparison.previousWealthChf | lkChf }} → {{ comparison.wealthDeltaChf
-      | lkChf }}
+      {{ comparison.previousWealthChf | lkChf: service.currency() }} → {{
+      comparison.wealthDeltaChf | lkChf: service.currency() }}
     </dd>
     <dt>{{ 'checks.comparison.income' | translate }}</dt>
     <dd class="tabular-nums">
-      {{ comparison.previousIncomeChf | lkChf }} → {{ comparison.incomeDeltaChf
-      | lkChf }}
+      {{ comparison.previousIncomeChf | lkChf: service.currency() }} → {{
+      comparison.incomeDeltaChf | lkChf: service.currency() }}
     </dd>
     <dt>{{ 'checks.comparison.new' | translate }}</dt>
     <dd>

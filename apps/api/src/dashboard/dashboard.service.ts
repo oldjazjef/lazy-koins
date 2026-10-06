@@ -22,9 +22,10 @@ export class DashboardService {
     from: string,
     to: string,
     projectId?: string,
+    currency?: string,
   ): Promise<DashboardView> {
     return this.queries.execute(
-      new GetDashboardQuery(userId, from, to, projectId),
+      new GetDashboardQuery(userId, from, to, projectId, currency),
     );
   }
 
@@ -34,9 +35,10 @@ export class DashboardService {
     to: string,
     kpi: string,
     projectId?: string,
+    currency?: string,
   ): Promise<DashboardRecords> {
     return this.queries.execute(
-      new GetDashboardRecordsQuery(userId, from, to, kpi, projectId),
+      new GetDashboardRecordsQuery(userId, from, to, kpi, projectId, currency),
     );
   }
 
@@ -46,9 +48,17 @@ export class DashboardService {
     to: string,
     assets: readonly string[],
     force: boolean,
+    currency?: string,
   ): Promise<DashboardRefreshSummary> {
     return this.commands.execute(
-      new RefreshDashboardRatesCommand(userId, from, to, assets, force),
+      new RefreshDashboardRatesCommand(
+        userId,
+        from,
+        to,
+        assets,
+        force,
+        currency,
+      ),
     );
   }
 }

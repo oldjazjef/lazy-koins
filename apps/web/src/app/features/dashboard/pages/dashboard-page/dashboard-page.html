@@ -97,6 +97,31 @@
 </lk-empty-state>
 } @else {
 <div class="flex flex-col gap-6">
+  <!-- F4.1a: projects in several tax currencies — one currency at a time, never summed -->
+  @if (view.currencies.length > 1) {
+  <section
+    class="lk-panel flex flex-wrap items-center gap-3 p-4 text-sm"
+    role="note"
+  >
+    <label hlmLabel for="dashboard-currency"
+      >{{ 'dashboard.currency.label' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="dashboard-currency"
+      class="w-28"
+      [value]="view.currency"
+      (change)="service.currency.set($any($event.target).value)"
+    >
+      @for (code of view.currencies; track code) {
+      <option [value]="code">{{ code }}</option>
+      }
+    </select>
+    <p class="text-muted-foreground min-w-64 flex-1">
+      {{ 'dashboard.currency.note' | translate: { currency: view.currency } }}
+    </p>
+  </section>
+  }
   <!-- Total value and its course (F11.5) -->
   <section hlmCard>
     <div hlmCardHeader>
@@ -105,7 +130,7 @@
         } }}
       </p>
       <p class="text-3xl font-semibold tabular-nums">
-        {{ 'common.chf' | translate }} {{ view.endValueChf | lkChf }}
+        {{ view.endValueChf | lkChf: view.currency }}
       </p>
       <p class="text-sm tabular-nums">
         @if (view.changePct !== null) {
@@ -131,7 +156,8 @@
     <div hlmCardContent>
       <lk-line-chart
         [points]="points()"
-        [label]="'dashboard.chartLabel' | translate"
+        [currency]="view.currency"
+        [label]="'dashboard.chartLabel' | translate: { currency: view.currency }"
       />
     </div>
   </section>
@@ -181,6 +207,7 @@
     <div hlmCardContent>
       <lk-allocation-bar
         [parts]="view.allocation"
+        [currency]="view.currency"
         [label]="'dashboard.allocation' | translate"
       />
     </div>
@@ -260,7 +287,8 @@
                   class="font-medium"
                   (click)="sortBy('price')"
                 >
-                  {{ 'dashboard.holdings.price' | translate }}
+                  {{ 'dashboard.holdings.price' | translate: { currency:
+                  view.currency } }}
                 </button>
               </th>
               <th hlmTh class="text-right" [attr.aria-sort]="ariaSort('value')">
@@ -269,7 +297,8 @@
                   class="font-medium"
                   (click)="sortBy('value')"
                 >
-                  {{ 'dashboard.holdings.value' | translate }}
+                  {{ 'dashboard.holdings.value' | translate: { currency:
+                  view.currency } }}
                 </button>
               </th>
               <th hlmTh class="hidden w-32 md:table-cell">

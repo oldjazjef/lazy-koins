@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TAX_CURRENCIES } from '@lazykoins/engine';
 import {
   IsBoolean,
   IsIn,
@@ -12,6 +13,10 @@ import {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ASSET = /^[A-Za-z0-9.]{1,40}$/;
+/** A rate is in USD or in a tax currency (F4.1a); the handler checks it is the project's. */
+const RATE_CURRENCIES: readonly string[] = [
+  ...new Set(['USD', ...TAX_CURRENCIES]),
+];
 
 export class RatesQueryDto {
   @ApiPropertyOptional({
@@ -43,9 +48,12 @@ export class ManualRateDto {
   @Matches(ASSET)
   asset!: string;
 
-  @ApiProperty({ enum: ['CHF', 'USD'] })
-  @IsIn(['CHF', 'USD'])
-  currency!: 'CHF' | 'USD';
+  @ApiProperty({
+    enum: RATE_CURRENCIES,
+    description: "USD, or the project's tax currency (F4.1a)",
+  })
+  @IsIn(RATE_CURRENCIES)
+  currency!: string;
 
   @ApiProperty({ example: '2025-12-31' })
   @IsString()
@@ -68,9 +76,12 @@ export class DeleteRateQueryDto {
   @Matches(ASSET)
   asset!: string;
 
-  @ApiProperty({ enum: ['CHF', 'USD'] })
-  @IsIn(['CHF', 'USD'])
-  currency!: 'CHF' | 'USD';
+  @ApiProperty({
+    enum: RATE_CURRENCIES,
+    description: "USD, or the project's tax currency (F4.1a)",
+  })
+  @IsIn(RATE_CURRENCIES)
+  currency!: string;
 
   @ApiProperty()
   @IsString()

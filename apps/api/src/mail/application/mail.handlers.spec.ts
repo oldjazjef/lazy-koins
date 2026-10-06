@@ -507,7 +507,7 @@ describe('compose (F10.6a)', () => {
       new ComposeMailQuery('anna', t.project.id),
     );
     expect(mail).toMatchObject({ mailerReady: false, calculated: false });
-    expect(mail.body).toContain('CHF –');
+    expect(mail.body).toContain('31.12.2025: –');
     expect(mail.body).toContain('- (keine Anhänge)');
   });
 

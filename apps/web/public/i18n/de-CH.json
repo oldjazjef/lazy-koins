@@ -12,7 +12,6 @@
     "retry": "Erneut versuchen",
     "save": "Speichern",
     "close": "Schliessen",
-    "chf": "CHF",
     "actions": "Aktionen",
     "pagination": {
       "label": "Seiten",
@@ -75,8 +74,9 @@
       "notes": "Notizen",
       "createdAt": "Erstellt",
       "updatedAt": "Zuletzt geändert",
-      "wealth": "Vermögen CHF",
-      "income": "Ertrag CHF"
+      "wealth": "Vermögen",
+      "income": "Ertrag",
+      "taxCurrency": "Steuerwährung"
     },
     "list": {
       "title": "Projekte",
@@ -96,7 +96,10 @@
       "nameTooLong": "Der Name ist zu lang (höchstens 120 Zeichen).",
       "taxYearInvalid": "Bitte ein Steuerjahr zwischen 2009 und 2100 eingeben.",
       "cantonRequired": "Bitte einen Kanton wählen.",
-      "notesTooLong": "Die Notizen sind zu lang (höchstens 5000 Zeichen)."
+      "notesTooLong": "Die Notizen sind zu lang (höchstens 5000 Zeichen).",
+      "taxCurrencyHint": "In dieser Währung werden Vermögen und Ertrag bewertet und ausgewiesen. Vorgabe aus dem Land (Schweiz: CHF).",
+      "taxCurrencyInvalid": "Wähle eine Währung.",
+      "taxCurrencyOthers": "Weitere Währungen"
     },
     "detail": {
       "title": "Projekt",
@@ -117,7 +120,10 @@
       "deleteBody": "Das Projekt wird mit allen Angaben gelöscht. Das lässt sich nicht rückgängig machen.",
       "notFound": "Dieses Projekt gibt es nicht (mehr).",
       "loadFailed": "Projekt konnte nicht geladen werden.",
-      "backToList": "Zu den Projekten"
+      "backToList": "Zu den Projekten",
+      "currencyTitle": "Steuerwährung ändern?",
+      "currencyBody": "Neu wird alles in {{currency}} statt in {{previous}} bewertet und ausgewiesen. Die letzte Berechnung ist danach veraltet: Aktualisiere die Kurse (Kurse › Kurse aktualisieren) und berechne neu. Die ESTV-Kursliste gilt nur für CHF.",
+      "currencyConfirm": "Währung ändern"
     },
     "followUp": {
       "open": "Folgeprojekt erstellen",
@@ -911,18 +917,18 @@
     "fields": {
       "platform": "Plattform/Wallet",
       "positions": "Positionen",
-      "valueChf": "Wert CHF",
+      "valueChf": "Wert {{currency}}",
       "asset": "Asset",
       "account": "Konto",
       "quantity": "Menge",
-      "priceChf": "Kurs CHF",
+      "priceChf": "Kurs {{currency}}",
       "source": "Quelle",
       "actions": "Aktionen",
       "category": "Kategorie",
       "bookings": "Buchungen",
       "date": "Datum",
       "netQuantity": "Menge netto",
-      "grossChf": "Brutto CHF",
+      "grossChf": "Brutto {{currency}}",
       "start": "Anfang",
       "end": "Ende",
       "booked": "Gebucht",
@@ -950,15 +956,15 @@
       "manual": "Manuell"
     },
     "priceOrigin": {
-      "home": "CHF",
+      "home": "{{currency}}",
       "override": "Überschrieben",
       "estv": "ESTV-Kursliste",
-      "recordChf": "Kurs CHF laut Beleg",
+      "recordChf": "Kurs {{currency}} laut Beleg",
       "recordUsd": "Kurs USD laut Beleg",
       "recordValueUsd": "USD-Wert der Plattform",
       "pegged": "Stablecoin = 1 USD",
       "fx": "Devisenkurs",
-      "tableChf": "Tageskurs CHF",
+      "tableChf": "Tageskurs {{currency}}",
       "tableUsd": "Tagesschluss USD"
     },
     "category": {
@@ -968,7 +974,8 @@
       "launchpool": "Launchpool",
       "hardfork": "Hardfork",
       "earn_gap": "Earn-Lücke"
-    }
+    },
+    "currencyChanged": "Diese Berechnung ist in {{currency}}; das Projekt ist jetzt in {{projectCurrency}}. Aktualisiere die Kurse und berechne neu."
   },
   "checks": {
     "title": "Prüfungen",
@@ -982,7 +989,7 @@
     "fields": {
       "done": "Erledigt",
       "item": "Punkt",
-      "impact": "Auswirkung CHF (geschätzt)",
+      "impact": "Auswirkung {{currency}} (geschätzt)",
       "note": "Notiz"
     },
     "light": {
@@ -1063,8 +1070,8 @@
       "reason": "Begründung",
       "asset": "Asset",
       "date": "Datum",
-      "priceChf": "Kurs CHF",
-      "priceChfOptional": "Kurs CHF (optional)",
+      "priceChf": "Kurs {{currency}}",
+      "priceChfOptional": "Kurs {{currency}} (optional)",
       "bookingId": "Buchung (Kennung)",
       "kind": "Neue Art",
       "platform": "Plattform/Wallet",
@@ -1109,7 +1116,7 @@
     "estvImported": "{{count}} ESTV-Kurse importiert",
     "loadFailed": "Die Kurse konnten nicht geladen werden.",
     "overrideTitle": "Kurs überschreiben",
-    "overrideHint": "Z. B. USD/CHF per 31.12. laut ESTV oder der Kurs eines Assets. Gilt vor allen anderen Quellen.",
+    "overrideHint": "Z. B. USD/{{currency}} per 31.12. oder der Kurs eines Assets in {{currency}}. Gilt vor allen anderen Quellen.",
     "override": "Überschreiben",
     "remove": "Entfernen",
     "manualTitle": "Überschriebene Kurse und ESTV-Werte",
@@ -1134,10 +1141,6 @@
       "price": "Kurs",
       "fx": "Devisenkurs"
     },
-    "currency": {
-      "CHF": "CHF",
-      "USD": "USD"
-    },
     "source": {
       "manual": "Überschrieben",
       "estv": "ESTV-Kursliste",
@@ -1155,7 +1158,8 @@
       "asset": "Bitte ein Asset-Kürzel eingeben.",
       "date": "Bitte ein Datum wählen.",
       "value": "Bitte einen positiven Wert mit Punkt als Dezimaltrennzeichen eingeben."
-    }
+    },
+    "estvNotApplicable": "Die ESTV-Kursliste gilt nur für Projekte in CHF – dieses Projekt ist in {{currency}}. Kurse kommen von der EZB, Binance und CoinGecko."
   },
   "exports": {
     "createTitle": "Auszug erstellen",
@@ -1193,8 +1197,8 @@
     "fields": {
       "createdAt": "Erstellt",
       "kind": "Auszug",
-      "wealth": "Vermögen CHF",
-      "income": "Ertrag CHF",
+      "wealth": "Vermögen {{currency}}",
+      "income": "Ertrag {{currency}}",
       "actions": "Aktionen"
     },
     "mail": {
@@ -1597,7 +1601,7 @@
     "total": "Gesamtwert per {{date}}",
     "sinceStart": "seit {{date}}",
     "noStartValue": "Zu Beginn des Zeitraums war noch kein bewerteter Bestand vorhanden.",
-    "chartLabel": "Gesamtwert in CHF pro Tag",
+    "chartLabel": "Gesamtwert in {{currency}} pro Tag",
     "allocation": "Verteilung nach Asset",
     "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden und fehlen in der Übersicht.",
     "period": {
@@ -1641,8 +1645,8 @@
       "empty": "Keine Bestände am Stichtag.",
       "asset": "Asset",
       "quantity": "Menge",
-      "price": "Kurs CHF",
-      "value": "Marktwert CHF",
+      "price": "Kurs {{currency}}",
+      "value": "Marktwert {{currency}}",
       "trend": "Kursverlauf",
       "trendOf": "Kursverlauf {{asset}} im Zeitraum",
       "noPrice": "kein Kurs",
@@ -1654,11 +1658,15 @@
     },
     "card": {
       "title": "Übersicht {{year}}"
+    },
+    "currency": {
+      "label": "Währung",
+      "note": "Deine Projekte haben verschiedene Steuerwährungen. Das Dashboard rechnet nicht um: Es zeigt die Projekte in {{currency}}. Wähle eine andere Währung für die übrigen Projekte."
     }
   },
   "charts": {
     "date": "Datum",
-    "valueChf": "Wert CHF",
+    "valueChf": "Wert {{currency}}",
     "missing": "Ohne Kurs",
     "missingOn": "Ohne Kurs: {{assets}}",
     "missingLegend": "Tage, an denen für mindestens ein Asset kein Kurs vorliegt (nicht als 0 gezählt)",
@@ -1718,8 +1726,8 @@
       "treuhaender": "Name des Treuhänders (Profil)",
       "steuerjahr": "Steuerjahr des Projekts",
       "kanton": "Kanton des Projekts",
-      "vermoegen": "Steuerwert per 31.12. in CHF (letzte Berechnung)",
-      "ertrag": "Ertrag in CHF (letzte Berechnung)",
+      "vermoegen": "Steuerwert per 31.12. mit Währung, z. B. „CHF 12’345.65“ (letzte Berechnung)",
+      "ertrag": "Ertrag mit Währung (letzte Berechnung)",
       "anhaenge": "Liste der Anhänge (eine Zeile pro Datei)",
       "offene_punkte": "Offene Punkte der Prüfungen, die nicht abgehakt sind",
       "datum": "Heutiges Datum",

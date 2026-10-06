@@ -1,3 +1,4 @@
+import { defaultTaxCurrency } from '@lazykoins/engine';
 import type {
   CreateProjectInput,
   Project,
@@ -35,6 +36,7 @@ export class InMemoryProjectRepository extends ProjectRepositoryPort {
       ownerId,
       status: 'in_progress',
       ...input,
+      taxCurrency: input.taxCurrency ?? defaultTaxCurrency(input.country),
       createdAt: now,
       updatedAt: now,
     };

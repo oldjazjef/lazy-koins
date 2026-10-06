@@ -10,7 +10,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { KPI_KINDS } from '@lazykoins/engine';
+import { KPI_KINDS, TAX_CURRENCIES } from '@lazykoins/engine';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -30,6 +30,15 @@ export class DashboardQueryDto {
   @IsOptional()
   @IsUUID()
   project?: string;
+
+  @ApiPropertyOptional({
+    example: 'CHF',
+    description:
+      'F4.1a: the tax currency to show — only the projects in it (absent = the newest project’s)',
+  })
+  @IsOptional()
+  @IsIn(TAX_CURRENCIES)
+  currency?: string;
 }
 
 export class DashboardRecordsQueryDto extends DashboardQueryDto {
@@ -58,6 +67,17 @@ export class RefreshDashboardRatesDto extends DashboardQueryDto {
 }
 
 export class DashboardResponseDto {
+  @ApiProperty({
+    example: 'CHF',
+    description: 'F4.1a: the tax currency every amount is in',
+  })
+  currency!: string;
+  @ApiProperty({
+    type: [String],
+    description:
+      'Every tax currency among my projects; with several, one is shown at a time',
+  })
+  currencies!: string[];
   @ApiProperty() from!: string;
   @ApiProperty() to!: string;
   @ApiProperty({

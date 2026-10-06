@@ -18,7 +18,7 @@ import {
   InMemoryEstvRepository,
 } from '../testing/in-memory-estv';
 import {
-  FakeChfSource,
+  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../testing/in-memory-project-rate.repository';
@@ -55,7 +55,7 @@ async function setup(online: 'true' | 'false' = 'true') {
   const secrets = new SettingsSecrets(config);
   const settings = new SettingsReader(settingsRepo, secrets);
   const usd = new FakeUsdSource({ DOT: '5', POL: '0.2' });
-  const chf = new FakeChfSource();
+  const chf = new FakeFiatSource();
   const fx = new FakeFxSource();
   const progress = new RefreshProgress();
   const estvStore = new InMemoryEstvRepository();
@@ -166,13 +166,13 @@ describe('rates (F7.4)', () => {
   it('reports its progress while it runs (for the activity indicator), and is idle after', async () => {
     const t = await setup();
     const seen: string[] = [];
-    const original = t.fx.dailyChf.bind(t.fx);
-    t.fx.dailyChf = async (base, from, to) => {
+    const original = t.fx.daily.bind(t.fx);
+    t.fx.daily = async (base, quote, from, to) => {
       const status = await t.refreshStatus.execute(
         new GetRefreshStatusQuery('anna', t.project.id),
       );
       seen.push(`${status.done}/${status.total}:${status.current}`);
-      return original(base, from, to);
+      return original(base, quote, from, to);
     };
     await t.refresh.execute(
       new RefreshRatesCommand('anna', t.project.id, false),
@@ -338,6 +338,7 @@ describe('automatic ESTV Kursliste in a project (F7.4a)', () => {
       cryptoCount: 3,
       applied: 'ESTV-Kursliste 2025, Stand 02.03.2026',
       outdated: false,
+      applicable: true,
     });
     expect(view.manual.find((r) => r.asset === 'BTC')).toMatchObject({
       source: 'estv',
@@ -410,5 +411,89 @@ describe('automatic ESTV Kursliste in a project (F7.4a)', () => {
       new GetRatesQuery('anna', t.project.id),
     )) as RatesView;
     expect(view.estv.autoEnabled).toBe(false);
+  });
+});
+
+describe('a project in another tax currency (F4.1a)', () => {
+  it('fetches USD/EUR and CoinGecko in EUR, skips the ESTV list and values in EUR', async () => {
+    const t = await setup();
+    await t.settingsRepo.save('anna', {
+      sealedKeys: { coingecko: t.secrets.box.seal('cg-key') },
+    });
+    await t.estvStore.replaceYear(version('2026-03-02T08:00:00.000Z', 'h1'), [
+      crypto('BTC', 'Bitcoin', '70000'),
+      estvFx('USD', '0.79'),
+    ]);
+    await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    await t.projects.update(t.project.id, { taxCurrency: 'EUR' });
+    // Another currency values everything anew: the snapshot is stale.
+    expect(
+      (await t.result.execute(new GetResultQuery('anna', t.project.id))).stale,
+    ).toBe(true);
+
+    const summary = await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, false),
+    );
+    expect(t.fx.calls).toEqual(['USD>EUR']);
+    expect(summary.estv).toMatchObject({ label: null, matched: [] });
+    expect(t.chf.calls.map((c) => [c.coinId, c.currency])).toContainEqual([
+      'ethereum',
+      'EUR',
+    ]);
+    expect(t.chf.calls.every((c) => c.currency === 'EUR')).toBe(true);
+    const view = (await t.getRates.execute(
+      new GetRatesQuery('anna', t.project.id),
+    )) as RatesView;
+    expect(view.currency).toBe('EUR');
+    expect(view.estv).toMatchObject({ applicable: false, available: null });
+    expect(view.manual.filter((r) => r.source === 'estv')).toEqual([]);
+
+    const { result } = await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    expect(result?.currency).toBe('EUR');
+    const value = (asset: string) =>
+      result?.positions.find((p) => p.asset === asset)?.valueChf;
+    // 1.5 DOT × 5 USD × 0.86 USD/EUR.
+    expect(value('DOT')).toBe('6.45');
+    // ETH from CoinGecko in EUR (1.5 EUR).
+    expect(value('ETH')).toBe('1.5');
+    // CHF through a cross rate: 1 / 0.8 (USD/CHF) × 0.86 (USD/EUR).
+    expect(value('CHF')).toBe('536.1025');
+    expect(result?.parameters.usdChf).toBe('0.86');
+  });
+
+  it('takes overrides in the tax currency or USD only', async () => {
+    const t = await setup();
+    await t.projects.update(t.project.id, { taxCurrency: 'EUR' });
+    const rate = {
+      kind: 'fx' as const,
+      asset: 'USD',
+      date: '2025-12-31',
+      value: '0.85',
+    };
+    await expect(
+      t.setManual.execute(
+        new SetManualRateCommand('anna', t.project.id, {
+          ...rate,
+          currency: 'CHF',
+        }),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await t.setManual.execute(
+      new SetManualRateCommand('anna', t.project.id, {
+        ...rate,
+        currency: 'EUR',
+      }),
+    );
+    const { result } = await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    expect(result?.parameters).toMatchObject({
+      usdChf: '0.85',
+      usdChfSource: 'manual 2025-12-31',
+    });
   });
 });

@@ -226,7 +226,10 @@ export interface DashboardHolding {
   readonly accounts: readonly DashboardAccount[];
 }
 
+/** Every `…Chf` amount is in `currency` — the tax currency of the projects shown (F4.1a). */
 export interface DashboardResult {
+  /** ISO 4217 code (`rules.homeCurrency`). */
+  readonly currency: string;
   readonly from: string;
   readonly to: string;
   readonly series: readonly DashboardPoint[];
@@ -298,6 +301,7 @@ export function dashboard(input: DashboardInput): DashboardResult {
     uniqueRecords(input.bookings),
     uniqueRecords(input.holdings),
     input.corrections,
+    rules.homeCurrency,
   );
   const bookings = [...corrected.bookings].sort(
     (a, b) => compareText(a.timestamp, b.timestamp) || compareText(a.id, b.id),
@@ -305,7 +309,10 @@ export function dashboard(input: DashboardInput): DashboardResult {
   const holdings = [...corrected.holdings].sort((a, b) =>
     compareText(a.id, b.id),
   );
-  const table = new RateTable([...input.rates, ...corrected.rates]);
+  const table = new RateTable(
+    [...input.rates, ...corrected.rates],
+    rules.homeCurrency,
+  );
 
   // Spam (F6.6): never valued, never counted.
   const spamKeys = new Set(
@@ -625,6 +632,7 @@ export function dashboard(input: DashboardInput): DashboardResult {
   }
 
   return {
+    currency: rules.homeCurrency,
     from,
     to,
     series,

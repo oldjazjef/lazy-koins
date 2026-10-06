@@ -109,6 +109,8 @@ export interface FollowUpOptions {
   readonly taxYear: number;
   readonly country: Project['country'];
   readonly canton: string;
+  /** F4.1a: the follow-up project keeps the source's tax currency. */
+  readonly taxCurrency: string;
   /** Projects of the owner that already cover the new year (a hint, not a block). */
   readonly existing: readonly { readonly id: string; readonly name: string }[];
   readonly files: readonly FileOption[];
@@ -225,6 +227,7 @@ export class GetFollowUpOptionsHandler implements IQueryHandler<
       taxYear,
       country: project.country,
       canton: project.canton,
+      taxCurrency: project.taxCurrency,
       existing: (await this.projects.findByOwner(userId))
         .filter((p) => p.taxYear === taxYear)
         .map((p) => ({ id: p.id, name: p.name })),
@@ -398,6 +401,7 @@ export class CreateFollowUpProjectHandler implements ICommandHandler<
           taxYear: input.taxYear,
           country: source.country,
           canton: input.canton,
+          taxCurrency: source.taxCurrency,
           notes: input.notes ? source.notes.trim() : '',
         },
       },

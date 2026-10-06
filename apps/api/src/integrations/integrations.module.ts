@@ -4,7 +4,7 @@ import { IdentityTokenVerifierPort } from '../auth/ports/identity-token-verifier
 import type { Env } from '../config/env';
 import { PdfRendererPort } from '../exports/ports/project-export.repository.port';
 import {
-  ChfPriceSourcePort,
+  FiatPriceSourcePort,
   FxRateSourcePort,
   UsdPriceSourcePort,
 } from '../rates/ports/rate-source.port';
@@ -57,7 +57,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
       provide: UsdPriceSourcePort,
       useFactory: () => new BinanceKlinesSource(),
     },
-    { provide: ChfPriceSourcePort, useFactory: () => new CoinGeckoSource() },
+    { provide: FiatPriceSourcePort, useFactory: () => new CoinGeckoSource() },
     { provide: FxRateSourcePort, useFactory: () => new FrankfurterFxSource() },
     {
       provide: EstvKurslisteSourcePort,
@@ -98,7 +98,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     IdentityTokenVerifierPort,
     AiCompletionPort,
     UsdPriceSourcePort,
-    ChfPriceSourcePort,
+    FiatPriceSourcePort,
     FxRateSourcePort,
     EstvKurslisteSourcePort,
     PdfRendererPort,

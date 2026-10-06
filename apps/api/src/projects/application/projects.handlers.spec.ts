@@ -65,7 +65,29 @@ describe('CreateProjectHandler', () => {
       status: 'in_progress',
       country: 'CH',
       canton: 'ZH',
+      // F4.1a: the country's default currency.
+      taxCurrency: 'CHF',
     });
+  });
+
+  it('takes another tax currency, changeable while the project is open (F4.1a)', async () => {
+    const { create, update } = setup();
+    const project = await create.execute(
+      new CreateProjectCommand('anna', { ...INPUT, taxCurrency: 'EUR' }),
+    );
+    expect(project.taxCurrency).toBe('EUR');
+    const changed = await update.execute(
+      new UpdateProjectCommand('anna', project.id, { taxCurrency: 'CHF' }),
+    );
+    expect(changed.taxCurrency).toBe('CHF');
+    await update.execute(
+      new UpdateProjectCommand('anna', project.id, { status: 'closed' }),
+    );
+    await expect(
+      update.execute(
+        new UpdateProjectCommand('anna', project.id, { taxCurrency: 'EUR' }),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('refuses a canton the country does not have', async () => {

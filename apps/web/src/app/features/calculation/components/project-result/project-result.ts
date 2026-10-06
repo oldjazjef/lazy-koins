@@ -151,7 +151,7 @@ export class ProjectResult {
       `result.quantitySource.${position.quantitySource}`,
     );
     return position.priceOrigin
-      ? `${quantity} · ${this.translate.instant(`result.priceOrigin.${position.priceOrigin}`)}`
+      ? `${quantity} · ${this.translate.instant(`result.priceOrigin.${position.priceOrigin}`, { currency: this.service.currency() })}`
       : quantity;
   }
 

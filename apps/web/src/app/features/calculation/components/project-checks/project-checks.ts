@@ -22,7 +22,7 @@ import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
 
 /**
- * Prüfungen (F8.1) with traffic lights, the open items (F8.2: tick off, note, estimated CHF
+ * Prüfungen (F8.1) with traffic lights, the open items (F8.2: tick off, note, estimated
  * impact, records behind them) and the previous-year comparison (F8.3).
  */
 @Component({

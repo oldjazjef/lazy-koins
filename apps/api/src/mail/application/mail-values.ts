@@ -13,6 +13,12 @@ export function swissToday(now: Date): string {
   }).format(now);
 }
 
+/** An amount with its tax currency (F4.1a: "EUR 12'345.65"); `–` before the first calculation. */
+function amount(data: ExportData | null, value: string | null): string {
+  if (!data || value === null) return chf(null);
+  return `${data.rules.homeCurrency} ${chf(value)}`;
+}
+
 /**
  * The placeholder values of one project's mail (F11.10): names from the settings, the two
  * figures of the latest calculation (`–` before the first one), the chosen attachments and the
@@ -37,8 +43,8 @@ export function mailValues(input: {
     treuhaender: input.advisorName,
     steuerjahr: String(project.taxYear),
     kanton: project.canton,
-    vermoegen: chf(data?.result.totals.wealthChf ?? null),
-    ertrag: chf(data?.result.totals.incomeChf ?? null),
+    vermoegen: amount(data, data?.result.totals.wealthChf ?? null),
+    ertrag: amount(data, data?.result.totals.incomeChf ?? null),
     anhaenge:
       input.attachmentNames.length > 0
         ? input.attachmentNames.map((name) => `- ${name}`).join('\n')

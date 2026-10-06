@@ -4,6 +4,7 @@ import {
   type FileKind,
   mappingFingerprint,
   RATE_SOURCES,
+  TAX_CURRENCIES,
   validateCorrectionData,
   validateMappingSpec,
 } from '@lazykoins/engine';
@@ -72,6 +73,8 @@ const ProjectFactsSchema = z.object({
   taxYear: z.number().int().min(MIN_TAX_YEAR).max(MAX_TAX_YEAR),
   country: z.enum(COUNTRIES),
   canton: z.enum(CH_CANTONS),
+  /** F4.1a; packages made before it carry none and are CHF. */
+  taxCurrency: z.enum(TAX_CURRENCIES).default('CHF'),
   status: z.enum(['in_progress', 'reviewed', 'closed']),
   notes: z.string().max(5000),
 });
@@ -152,7 +155,7 @@ const RatesSchema = z
     z.object({
       kind: z.enum(['price', 'fx']),
       asset: z.string().trim().min(1).max(40),
-      currency: z.enum(['CHF', 'USD']),
+      currency: z.string().regex(/^[A-Z]{3}$/),
       date: z.string().regex(ISO_DATE),
       value: z.string().regex(DECIMAL),
       source: z.enum(RATE_SOURCES),
@@ -370,6 +373,8 @@ export class ProjectPackageService {
         taxYear: project.taxYear,
         country: project.country,
         canton: project.canton as ProjectManifest['project']['canton'],
+        taxCurrency:
+          project.taxCurrency as ProjectManifest['project']['taxCurrency'],
         status: project.status,
         notes: project.notes,
       },
@@ -581,6 +586,7 @@ export class ProjectPackageService {
           taxYear: manifest.project.taxYear,
           country: manifest.project.country,
           canton: manifest.project.canton,
+          taxCurrency: manifest.project.taxCurrency,
           notes: manifest.project.notes,
           // Imported projects open for work: a recalculation is needed (no snapshot travels).
           status:

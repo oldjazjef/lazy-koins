@@ -65,6 +65,7 @@ function prepare(input: AnalysisInput): Prepared {
     input.bookings,
     input.holdings,
     input.corrections ?? [],
+    input.rules.homeCurrency,
   );
   const bookings = [...corrected.bookings].sort(
     (a, b) => compareText(a.timestamp, b.timestamp) || compareText(a.id, b.id),
@@ -292,7 +293,7 @@ export function dailyPricesChf(
   from: string,
   to: string,
 ): { readonly date: string; readonly priceChf: string | null }[] {
-  const table = new RateTable(rates);
+  const table = new RateTable(rates, rules.homeCurrency);
   const out: { date: string; priceChf: string | null }[] = [];
   for (
     let t = Date.parse(`${from}T00:00:00Z`);
