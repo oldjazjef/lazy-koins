@@ -6,7 +6,10 @@ description: Add or extend an importer in libs/engine for one exchange/wallet ex
 # Add an importer to libs/engine
 
 1. **Look first.** `ls libs/engine/src/importers/` and read the closest existing importer of the
-   same file kind (CSV / XLSX / PDF). Check F5.2 in `ANFORDERUNGEN.md` for the required types.
+   same file kind (CSV / XLSX / PDF), plus the contract in `importers/importer.ts` (`Importer`,
+   `SourceFile`, `ImportResult`). Check F5.2 in `ANFORDERUNGEN.md` for the required types. For
+   the shape of a real export, run `pnpm private:inspect` (headers and row counts only) — never
+   open files under `private/`.
 
 2. **One folder per platform**, one module per export type:
 
@@ -16,20 +19,22 @@ description: Add or extend an importer in libs/engine for one exchange/wallet ex
    importers/<platform>/fixtures/*.csv          # SYNTHETIC only
    ```
 
-   Register it in the importer registry so automatic detection (F5.2) tries it.
+   Add it to `IMPORTERS` in `importers/registry.ts` so automatic detection (F5.2) tries it; the
+   registry picks the single best match and reports near-ties as `ambiguous`.
 
-3. **detect()** decides from headers/structure alone, returns a confidence, and never throws on a
-   foreign file. Two importers must not both claim the same file — add a test for the nearest
+3. **detect()** decides from headers/structure alone, returns a confidence 0 … 1 (0 = not mine),
+   and never throws on a foreign file. Two importers must not both claim the same file — add a test for the nearest
    lookalike.
 
 4. **parse()** returns `Booking[]` and the detected period (F5.5, F5.8):
    - every booking has `sourceFileId` + `row` (1-based, as a spreadsheet shows it; page for PDFs);
-   - quantities and fees as `Decimal` from the **original string** — never through `number`;
+   - quantities and fees as `Decimal` from the **original string** with `parseDecimal`
+     (`money/decimal.ts`) — never through `number` (there is no `fromNumber`);
    - timestamps as UTC ISO strings; state the source's time zone in the code;
    - keep the platform's own type/sub-type verbatim next to the mapped kind, so a
      reclassification (F9.2) can be explained.
 
-5. **Fixtures are synthetic.** Copy the *shape* (headers, quirks, odd rows) of a real export,
+5. **Fixtures are synthetic.** Copy the _shape_ (headers, quirks, odd rows) of a real export,
    never values, addresses, txids or account ids from `private/`.
 
 6. **Test**: detection (yes + lookalike no), every booking kind the format has, fees, a
