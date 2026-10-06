@@ -32,6 +32,7 @@ import {
   type RateKey,
 } from '../domain/project-rate';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
+import { RefreshProgress, type RefreshStatus } from './refresh-progress';
 import {
   ChfPriceSourcePort,
   FxRateSourcePort,
@@ -196,6 +197,7 @@ export class RefreshRatesHandler implements ICommandHandler<
     private readonly chf: ChfPriceSourcePort,
     private readonly fx: FxRateSourcePort,
     private readonly config: ConfigService<Env, true>,
+    private readonly progress: RefreshProgress,
   ) {}
 
   async execute({
@@ -221,54 +223,121 @@ export class RefreshRatesHandler implements ICommandHandler<
       assembled.input.rules,
     );
     const stored = await this.rates.listByProject(project.id);
+    this.progress.start(project.id, assets.length + 2);
+    try {
+      return await this.fetchAll(project, assets, stored, force, settings);
+    } finally {
+      this.progress.finish(project.id);
+    }
+  }
 
+  private async fetchAll(
+    project: { readonly id: string; readonly taxYear: number },
+    assets: readonly string[],
+    stored: readonly ProjectRate[],
+    force: boolean,
+    settings: Awaited<ReturnType<SettingsReader['resolve']>>,
+  ): Promise<RefreshSummary> {
+    const { from, to } = fetchWindow(project.taxYear);
     let fx = 0;
     for (const base of ['USD', 'EUR'] as const) {
-      if (!force && covered(stored, 'fx', base, project.taxYear)) continue;
-      const entries = await this.fx.dailyChf(base, from, to).catch(() => []);
-      fx += await this.rates.upsertMany(project.id, entries);
+      this.progress.working(project.id, base);
+      await this.devDelay();
+      if (force || !covered(stored, 'fx', base, project.taxYear)) {
+        const entries = await this.fx.dailyChf(base, from, to).catch(() => []);
+        fx += await this.rates.upsertMany(project.id, entries);
+      }
+      this.progress.step(project.id);
     }
 
     const results: RefreshSummary['assets'][number][] = [];
     for (const asset of assets) {
-      if (!force && covered(stored, 'price', asset, project.taxYear)) {
-        results.push({ asset, status: 'cached', source: null, points: 0 });
-        continue;
-      }
-      try {
-        const symbols = [asset, ...(RATE_ALIASES[asset] ?? [])];
-        let entries: RateEntry[] = [];
-        let source: string | null = null;
-        for (const symbol of symbols) {
-          const found = await this.usd.dailyUsd({ asset, symbol, from, to });
-          entries = mergeByDate(entries, found);
-        }
-        if (entries.length > 0) source = this.usd.name;
-        const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
-        const apiKey = settings.keys.coingecko;
-        if (entries.length === 0 && coinId && apiKey) {
-          entries = await this.chf.dailyChf({
-            asset,
-            symbol: asset,
-            from,
-            to,
-            coinId,
-            apiKey,
-          });
-          if (entries.length > 0) source = this.chf.name;
-        }
-        await this.rates.upsertMany(project.id, entries);
-        results.push({
-          asset,
-          status: entries.length > 0 ? 'fetched' : 'notFound',
-          source,
-          points: entries.length,
-        });
-      } catch {
-        results.push({ asset, status: 'failed', source: null, points: 0 });
-      }
+      this.progress.working(project.id, asset);
+      await this.devDelay();
+      results.push(
+        await this.fetchAsset(project, asset, stored, force, settings),
+      );
+      this.progress.step(project.id);
     }
     return { fx, assets: results };
+  }
+
+  /** `RATES_DEV_DELAY_MS` (development only, validated in env.ts): makes the progress visible. */
+  private async devDelay(): Promise<void> {
+    const ms = this.config.get('RATES_DEV_DELAY_MS', { infer: true });
+    if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async fetchAsset(
+    project: { readonly id: string; readonly taxYear: number },
+    asset: string,
+    stored: readonly ProjectRate[],
+    force: boolean,
+    settings: Awaited<ReturnType<SettingsReader['resolve']>>,
+  ): Promise<RefreshSummary['assets'][number]> {
+    const { from, to } = fetchWindow(project.taxYear);
+    if (!force && covered(stored, 'price', asset, project.taxYear)) {
+      return { asset, status: 'cached', source: null, points: 0 };
+    }
+    try {
+      const symbols = [asset, ...(RATE_ALIASES[asset] ?? [])];
+      let entries: RateEntry[] = [];
+      let source: string | null = null;
+      for (const symbol of symbols) {
+        const found = await this.usd.dailyUsd({ asset, symbol, from, to });
+        entries = mergeByDate(entries, found);
+      }
+      if (entries.length > 0) source = this.usd.name;
+      const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
+      const apiKey = settings.keys.coingecko;
+      if (entries.length === 0 && coinId && apiKey) {
+        entries = await this.chf.dailyChf({
+          asset,
+          symbol: asset,
+          from,
+          to,
+          coinId,
+          apiKey,
+        });
+        if (entries.length > 0) source = this.chf.name;
+      }
+      await this.rates.upsertMany(project.id, entries);
+      return {
+        asset,
+        status: entries.length > 0 ? 'fetched' : 'notFound',
+        source,
+        points: entries.length,
+      };
+    } catch {
+      return { asset, status: 'failed', source: null, points: 0 };
+    }
+  }
+}
+
+export class GetRefreshStatusQuery {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+  ) {}
+}
+
+/** How far a running refresh of my project is (polled by the app only while it runs). */
+@QueryHandler(GetRefreshStatusQuery)
+export class GetRefreshStatusHandler implements IQueryHandler<
+  GetRefreshStatusQuery,
+  RefreshStatus
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly progress: RefreshProgress,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+  }: GetRefreshStatusQuery): Promise<RefreshStatus> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    return this.progress.of(project.id);
   }
 }
 

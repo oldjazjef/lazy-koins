@@ -152,6 +152,16 @@ export class Env {
   /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
   @IsIn(['true', 'false'])
   RATES_ONLINE = 'true';
+
+  /**
+   * Development only: waits this long before each series of "Kurse aktualisieren", so the
+   * progress in the app's activity indicator can be watched. Refused outside development/test.
+   */
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  RATES_DEV_DELAY_MS = 0;
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */
@@ -198,6 +208,17 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   }
   if (env.AUTH_MODE !== 'local' && env.LOCAL_MODE === 'true') {
     messages.push('  LOCAL_MODE: `true` is only valid with AUTH_MODE=local');
+  }
+
+  // A deliberate slowdown has no place outside development.
+  if (
+    env.RATES_DEV_DELAY_MS > 0 &&
+    env.NODE_ENV !== NodeEnv.Development &&
+    env.NODE_ENV !== NodeEnv.Test
+  ) {
+    messages.push(
+      '  RATES_DEV_DELAY_MS: only with NODE_ENV=development or test',
+    );
   }
 
   if (messages.length > 0) {

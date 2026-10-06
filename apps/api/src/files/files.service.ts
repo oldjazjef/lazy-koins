@@ -25,7 +25,13 @@ import {
   type MappingSource,
   PreviewMappingQuery,
 } from './application/queries/preview-mapping.query';
+import {
+  ListProjectHintsQuery,
+  type ProjectHints,
+  UpdateHintStateCommand,
+} from './application/queries/project-hints.query';
 import type { ProjectFile, StoredFileContent } from './domain/project-file';
+import type { HintState, HintStatus } from './domain/project-hint';
 
 /** Thin façade over the buses — no logic here; it lives in the handlers. */
 @Injectable()
@@ -109,5 +115,21 @@ export class FilesService {
 
   reapplyMapping(userId: string, mappingId: string): Promise<ReapplyResult> {
     return this.commands.execute(new ReapplyMappingCommand(userId, mappingId));
+  }
+
+  hints(userId: string, projectId: string): Promise<ProjectHints> {
+    return this.queries.execute(new ListProjectHintsQuery(userId, projectId));
+  }
+
+  updateHint(
+    userId: string,
+    projectId: string,
+    hintKey: string,
+    status: HintStatus,
+    note: string,
+  ): Promise<HintState | null> {
+    return this.commands.execute(
+      new UpdateHintStateCommand(userId, projectId, hintKey, status, note),
+    );
   }
 }

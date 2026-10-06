@@ -91,6 +91,7 @@ model Project {
   corrections Correction[]
   itemStates  OpenItemState[]
   exports     ProjectExport[]
+  hintStates  ProjectHintState[]
 
   @@index([ownerId, taxYear])
   @@map("project")
@@ -330,4 +331,20 @@ model AiSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ai_settings")
+}
+
+/// A dismissed F5.8 hint ("Als in Ordnung markieren" / "Ignorieren"), keyed by the hint's stable
+/// key so it survives recalculation and new uploads. No row = open.
+model ProjectHintState {
+  projectId String   @map("project_id")
+  hintKey   String   @map("hint_key")
+  /// done | ignored (CHECK)
+  status    String
+  note      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, hintKey])
+  @@map("project_hint_state")
 }

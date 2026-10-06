@@ -108,3 +108,12 @@ export class RefreshResponseDto {
   })
   assets!: Record<string, unknown>[];
 }
+
+export class RefreshStatusResponseDto {
+  @ApiProperty({ description: 'A refresh of this project is in flight' })
+  running!: boolean;
+  @ApiProperty({ description: 'Series handled so far (FX + assets)' })
+  done!: number;
+  @ApiProperty() total!: number;
+  @ApiProperty({ type: String, nullable: true }) current!: string | null;
+}

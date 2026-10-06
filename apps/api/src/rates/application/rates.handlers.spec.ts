@@ -18,6 +18,8 @@ import {
   DeleteManualRateHandler,
   GetRatesHandler,
   GetRatesQuery,
+  GetRefreshStatusHandler,
+  GetRefreshStatusQuery,
   ImportKurslisteCommand,
   ImportKurslisteHandler,
   type RatesView,
@@ -26,6 +28,7 @@ import {
   SetManualRateCommand,
   SetManualRateHandler,
 } from './rates.handlers';
+import { RefreshProgress } from './refresh-progress';
 
 async function setup(online: 'true' | 'false' = 'true') {
   const t = await calculationSetup();
@@ -43,6 +46,7 @@ async function setup(online: 'true' | 'false' = 'true') {
   const usd = new FakeUsdSource({ DOT: '5', POL: '0.2' });
   const chf = new FakeChfSource();
   const fx = new FakeFxSource();
+  const progress = new RefreshProgress();
   return {
     ...t,
     settingsRepo,
@@ -60,7 +64,10 @@ async function setup(online: 'true' | 'false' = 'true') {
       chf,
       fx,
       config,
+      progress,
     ),
+    refreshStatus: new GetRefreshStatusHandler(t.projects, progress),
+    progress,
     setManual: new SetManualRateHandler(t.projects, t.rates),
     deleteManual: new DeleteManualRateHandler(t.projects, t.rates),
     kursliste: new ImportKurslisteHandler(t.projects, t.rates),
@@ -132,6 +139,31 @@ describe('rates (F7.4)', () => {
       'cached',
       'cached',
     ]);
+  });
+
+  it('reports its progress while it runs (for the activity indicator), and is idle after', async () => {
+    const t = await setup();
+    const seen: string[] = [];
+    const original = t.fx.dailyChf.bind(t.fx);
+    t.fx.dailyChf = async (base, from, to) => {
+      const status = await t.refreshStatus.execute(
+        new GetRefreshStatusQuery('anna', t.project.id),
+      );
+      seen.push(`${status.done}/${status.total}:${status.current}`);
+      return original(base, from, to);
+    };
+    await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, false),
+    );
+    expect(seen).toEqual(['0/5:USD', '1/5:EUR']);
+    expect(
+      await t.refreshStatus.execute(
+        new GetRefreshStatusQuery('anna', t.project.id),
+      ),
+    ).toEqual({ running: false, done: 0, total: 0, current: null });
+    await expect(
+      t.refreshStatus.execute(new GetRefreshStatusQuery('bruno', t.project.id)),
+    ).rejects.toThrow();
   });
 
   it('is refused when rate lookups are off (F11.3)', async () => {
