@@ -227,7 +227,8 @@ export class CalculationInputService {
     return { previous: undefined, ref: null };
   }
 
-  private async recordsOf(
+  /** The standard records of one project file (read again from its bytes); `undefined` without a mapping. */
+  async recordsOf(
     file: ProjectFile,
     mappings: ReadonlyMap<string, ImportMapping>,
   ): Promise<

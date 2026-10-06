@@ -28,6 +28,11 @@ import {
   SPAM_REASONS,
   WALLET_ERROR_CODES,
 } from '../api/wallets.types';
+import {
+  CARRYOVER_KINDS,
+  HOLDING_STATUSES,
+  KPI_KINDS,
+} from '../api/dashboard.types';
 import { FINGERPRINT_VERDICTS } from '../api/api.types';
 
 /**
@@ -83,6 +88,9 @@ const DYNAMIC_KEYS = [
   ].map((kind) => `bookings.kind.${kind}`),
   ...['ai', 'manual', 'copied'].map((origin) => `mappings.origin.${origin}`),
   ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
+  ...KPI_KINDS.map((kind) => `dashboard.kpi.${kind}`),
+  ...HOLDING_STATUSES.map((status) => `dashboard.holdings.status.${status}`),
+  ...CARRYOVER_KINDS.map((kind) => `projects.carryover.kind.${kind}`),
   ...POSITION_STATUSES.map((status) => `result.status.${status}`),
   ...QUANTITY_SOURCES.map((source) => `result.quantitySource.${source}`),
   ...PRICE_ORIGINS.map((origin) => `result.priceOrigin.${origin}`),
@@ -208,7 +216,7 @@ function referencedKeys(): Set<string> {
         !SPEC_ONLY.test(key) &&
         !DATE_FORMAT.test(key) &&
         !key.startsWith('projects.status.') &&
-        !/\.(ts|html|css|json|js)$/.test(key)
+        !/\.(ts|html|css|json|js|zip)$/.test(key)
       ) {
         keys.add(key);
       }

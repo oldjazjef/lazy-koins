@@ -1,0 +1,240 @@
+import { HttpClient, httpResource } from '@angular/common/http';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import Decimal from 'decimal.js';
+import { firstValueFrom } from 'rxjs';
+import { apiUrl } from '../../../../core/api/api-url';
+import type {
+  DashboardHolding,
+  DashboardRecords,
+  DashboardRefreshSummary,
+  DashboardView,
+  KpiKind,
+} from '../../../../core/api/dashboard.types';
+import { NotificationService } from '../../../../core/notifications/notification.service';
+import {
+  type Period,
+  type PeriodPreset,
+  periodOf,
+  yearToDate,
+} from '../../dashboard-period';
+
+export type HoldingSort = 'asset' | 'quantity' | 'price' | 'value';
+
+/** Compares decimal strings without `Number()` (null = no value, sorted last). */
+function compareDecimal(a: string | null, b: string | null): number {
+  if (a === null || b === null) return a === b ? 0 : a === null ? 1 : -1;
+  return new Decimal(a).comparedTo(new Decimal(b));
+}
+
+/**
+ * The dashboard over all my projects (F11.4–F11.9): the period (default 01.01. → today), the
+ * view from `GET /api/dashboard`, the KPI drill-down (F7.5) and "Kurse aktualisieren", which
+ * fetches the missing series one asset at a time so the page can show progress. The API does
+ * every calculation; figures stay decimal strings.
+ */
+@Injectable()
+export class DashboardPageService {
+  private readonly http = inject(HttpClient);
+  private readonly notifications = inject(NotificationService);
+  /** Injectable for tests. */
+  today = (): Date => new Date();
+
+  readonly preset = signal<PeriodPreset>({ key: 'ytd' });
+  readonly period = signal<Period>(yearToDate(this.today()));
+  /** Only this project (the compact card); undefined = all projects. */
+  readonly projectId = signal<string | undefined>(undefined);
+
+  readonly view = httpResource<DashboardView>(() => {
+    const { from, to } = this.period();
+    if (!from || !to || from > to) return undefined;
+    const project = this.projectId();
+    const params: Record<string, string> = { from, to };
+    if (project) params['project'] = project;
+    return { url: apiUrl('/dashboard'), params };
+  });
+
+  readonly isEmpty = computed(
+    () => this.view.hasValue() && this.view.value().projects.length === 0,
+  );
+
+  /** The tax years of my projects, newest first — quick picks (F11.4). */
+  readonly taxYears = computed(() =>
+    this.view.hasValue()
+      ? [...new Set(this.view.value().projects.map((p) => p.taxYear))].sort(
+          (a, b) => b - a,
+        )
+      : [],
+  );
+
+  setPreset(preset: PeriodPreset): void {
+    this.preset.set(preset);
+    const period = periodOf(preset, this.today());
+    if (period) this.period.set(period);
+  }
+
+  setCustom(period: Period): void {
+    this.preset.set({ key: 'custom' });
+    this.period.set(period);
+  }
+
+  // --- Holdings table (F11.8) ---
+
+  readonly search = signal('');
+  readonly sort = signal<{ column: HoldingSort; descending: boolean }>({
+    column: 'value',
+    descending: true,
+  });
+  readonly expanded = signal<ReadonlySet<string>>(new Set());
+
+  readonly holdings = computed<readonly DashboardHolding[]>(() => {
+    if (!this.view.hasValue()) return [];
+    const query = this.search().trim().toUpperCase();
+    const { column, descending } = this.sort();
+    const rows = this.view
+      .value()
+      .holdings.filter(
+        (h) =>
+          query === '' ||
+          h.asset.toUpperCase().includes(query) ||
+          h.accounts.some((a) => a.platform.toUpperCase().includes(query)),
+      );
+    const valueOf = (h: DashboardHolding) =>
+      column === 'quantity'
+        ? h.quantity
+        : column === 'price'
+          ? h.priceChf
+          : h.valueChf;
+    const sorted = [...rows].sort((a, b) => {
+      // Rows without a value stay at the end in both directions.
+      if (column !== 'asset') {
+        const missingA = valueOf(a) === null;
+        const missingB = valueOf(b) === null;
+        if (missingA !== missingB) return missingA ? 1 : -1;
+      }
+      const order =
+        column === 'asset'
+          ? a.asset.localeCompare(b.asset)
+          : column === 'quantity'
+            ? compareDecimal(a.quantity, b.quantity)
+            : column === 'price'
+              ? compareDecimal(a.priceChf, b.priceChf)
+              : compareDecimal(a.valueChf, b.valueChf);
+      return descending ? -order : order;
+    });
+    return sorted;
+  });
+
+  sortBy(column: HoldingSort): void {
+    this.sort.update((current) =>
+      current.column === column
+        ? { column, descending: !current.descending }
+        : { column, descending: column !== 'asset' },
+    );
+  }
+
+  toggle(asset: string): void {
+    this.expanded.update((set) => {
+      const next = new Set(set);
+      if (next.has(asset)) next.delete(asset);
+      else next.add(asset);
+      return next;
+    });
+  }
+
+  // --- KPI drill-down (F11.6 → F7.5) ---
+
+  readonly recordsOf = signal<{ kind: KpiKind; title: string } | null>(null);
+  readonly records = signal<DashboardRecords | null>(null);
+
+  async showRecords(kind: KpiKind, title: string): Promise<void> {
+    const { from, to } = this.period();
+    const project = this.projectId();
+    this.records.set(null);
+    this.recordsOf.set({ kind, title });
+    try {
+      this.records.set(
+        await firstValueFrom(
+          this.http.get<DashboardRecords>(apiUrl('/dashboard/records'), {
+            params: project
+              ? { from, to, kpi: kind, project }
+              : ({ from, to, kpi: kind } as Record<string, string>),
+          }),
+        ),
+      );
+    } catch {
+      this.recordsOf.set(null);
+      this.notifications.error('dashboard.recordsFailed');
+    }
+  }
+
+  closeRecords(): void {
+    this.recordsOf.set(null);
+    this.records.set(null);
+  }
+
+  // --- "Kurse aktualisieren" (F11.4, F11.3) ---
+
+  /** Progress of a running refresh; null when idle. */
+  readonly refreshing = signal<{
+    readonly done: number;
+    readonly total: number;
+    readonly asset: string | null;
+  } | null>(null);
+  readonly lastRefresh = signal<DashboardRefreshSummary['assets'] | null>(null);
+
+  /** The assets the shown period lacks prices for. */
+  readonly missingAssets = computed(() =>
+    this.view.hasValue() ? this.view.value().missingPrices : [],
+  );
+
+  /**
+   * FX first, then each asset without a price on its own request (progress, rate limits — the
+   * sources are serialised in the API anyway); finally the view reloads.
+   */
+  async refreshRates(): Promise<void> {
+    if (this.refreshing()) return;
+    const { from, to } = this.period();
+    const assets = [...this.missingAssets()];
+    const results: DashboardRefreshSummary['assets'][number][] = [];
+    this.refreshing.set({ done: 0, total: assets.length + 1, asset: null });
+    try {
+      await this.refreshCall(from, to, []);
+      for (const [index, asset] of assets.entries()) {
+        this.refreshing.set({
+          done: index + 1,
+          total: assets.length + 1,
+          asset,
+        });
+        const summary = await this.refreshCall(from, to, [asset]);
+        results.push(...summary.assets);
+      }
+      this.lastRefresh.set(results);
+      const fetched = results.filter((r) => r.status === 'fetched').length;
+      this.notifications.info('dashboard.rates.done', {
+        fetched,
+        missing: results.length - fetched,
+      });
+    } catch (error) {
+      const status = (error as { status?: number }).status;
+      this.notifications.error(
+        status === 409 ? 'dashboard.rates.offline' : 'dashboard.rates.failed',
+      );
+    } finally {
+      this.refreshing.set(null);
+      this.view.reload();
+    }
+  }
+
+  private refreshCall(
+    from: string,
+    to: string,
+    assets: string[],
+  ): Promise<DashboardRefreshSummary> {
+    return firstValueFrom(
+      this.http.post<DashboardRefreshSummary>(
+        apiUrl('/dashboard/rates/refresh'),
+        { from, to, assets },
+      ),
+    );
+  }
+}

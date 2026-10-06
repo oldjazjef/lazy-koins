@@ -14,6 +14,13 @@ const routes: Routes = [
       ),
   },
   {
+    path: ':id/follow-up',
+    loadComponent: () =>
+      import('./pages/follow-up-page/follow-up-page').then(
+        (m) => m.FollowUpPage,
+      ),
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./pages/project-detail-page/project-detail-page').then(

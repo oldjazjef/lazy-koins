@@ -4,6 +4,8 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideTranslateService } from '@ngx-translate/core';
 import type { Project } from '../../../../core/api/api.types';
 import { ProjectsPageService } from './projects-page.service';
 
@@ -29,7 +31,12 @@ const settle = async () => {
 describe('ProjectsPageService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        provideTranslateService(),
+      ],
     });
   });
 

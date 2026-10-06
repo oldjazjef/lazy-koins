@@ -12,6 +12,9 @@ import { AiModule } from '../ai/ai.module';
 import { AuthModule } from '../auth/auth.module';
 import { validateEnv } from '../config/env';
 import { CalculationModule } from '../calculation/calculation.module';
+import { CarryoverModule } from '../carryover/carryover.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
+import { PackagesModule } from '../packages/packages.module';
 import { ExportsModule } from '../exports/exports.module';
 import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
@@ -53,6 +56,9 @@ import { AppController } from './app.controller';
     ExportsModule,
     AiModule,
     WalletsModule,
+    DashboardModule,
+    CarryoverModule,
+    PackagesModule,
   ],
   controllers: [AppController],
   providers: [

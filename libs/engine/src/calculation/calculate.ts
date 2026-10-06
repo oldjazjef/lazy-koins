@@ -52,6 +52,7 @@ import {
   type PriceColumns,
   type RecordSummary,
 } from './types';
+import { bookingSummary, holdingSummary } from './records';
 
 /**
  * The calculation (F7): a pure, deterministic function of the project's standard records,
@@ -702,43 +703,11 @@ export function calculate(input: CalculationInput): CalculationResult {
   for (const rid of [...referenced].sort(compareText)) {
     const booking = bookingById.get(rid);
     if (booking) {
-      records[rid] = {
-        id: rid,
-        type: 'booking',
-        sourceFileId: booking.sourceFileId,
-        row: booking.row,
-        platform: booking.platform,
-        accountId: booking.accountId,
-        asset: booking.asset,
-        quantity: str(booking.quantity),
-        at: booking.timestamp,
-        kind: booking.kind,
-        fee: opt(booking.fee),
-        feeAsset: booking.fee ? (booking.feeAsset ?? booking.asset) : null,
-        rawType: booking.rawType,
-        raw: booking.raw ?? null,
-      };
+      records[rid] = bookingSummary(booking);
       continue;
     }
     const holding = holdingById.get(rid);
-    if (holding) {
-      records[rid] = {
-        id: rid,
-        type: 'holding',
-        sourceFileId: holding.sourceFileId,
-        row: holding.row,
-        platform: holding.platform,
-        accountId: holding.accountId,
-        asset: holding.asset,
-        quantity: str(holding.quantity),
-        at: holding.asOf,
-        kind: null,
-        fee: null,
-        feeAsset: null,
-        rawType: holding.evidence ?? null,
-        raw: holding.raw ?? null,
-      };
-    }
+    if (holding) records[rid] = holdingSummary(holding);
   }
 
   const usdChf = table.fx('USD', yearEnd);
@@ -779,7 +748,7 @@ export function calculate(input: CalculationInput): CalculationResult {
 }
 
 /** One income booking, valued at arrival (FACHREGELN, Ertrag). */
-function incomeLine(
+export function incomeLine(
   booking: Booking,
   table: RateTable,
   rules: CountryRules,
@@ -936,7 +905,7 @@ function earnGapsOf(
  * end after it; the closest in time wins, each deposit pairs once. Fiat is left out — it comes
  * from and goes to a bank.
  */
-function matchTransfers(
+export function matchTransfers(
   bookings: readonly Booking[],
   rules: CountryRules,
 ): {

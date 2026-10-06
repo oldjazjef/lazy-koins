@@ -52,6 +52,7 @@ async function setup(initial: Project | 'missing') {
   } else {
     request.flush(initial);
   }
+  http.expectOne('/api/projects/p1/carryovers').flush([]);
   await settle();
   return { service, http };
 }
@@ -70,6 +71,35 @@ describe('ProjectDetailPageService', () => {
     expect(service.project.value()?.name).toBe('Steuern 2025');
     expect(service.isClosed()).toBe(false);
     expect(service.notFound()).toBe(false);
+  });
+
+  it('ticks off an open item carried over from the previous year (F4.4a)', async () => {
+    const { service, http } = await setup(project());
+    const carried = {
+      id: 'co1',
+      projectId: 'p1',
+      sourceProjectId: 'p0',
+      sourceProjectName: 'Steuern 2024',
+      kind: 'open_item' as const,
+      ref: null,
+      label: 'balanceDiffers',
+      data: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+      done: false,
+      note: '',
+    };
+    const done = service.setCarriedDone(carried, true);
+    await settle();
+    const patch = http.expectOne('/api/projects/p1/open-items');
+    expect(patch.request.body).toEqual({ key: 'carried:co1', done: true });
+    patch.flush({});
+    await done;
+    await settle();
+    http
+      .expectOne('/api/projects/p1/carryovers')
+      .flush([{ ...carried, done: true }]);
+    await settle();
+    expect(service.carryovers.value()?.[0]?.done).toBe(true);
   });
 
   it("shows someone else's (or a missing) project as not found", async () => {

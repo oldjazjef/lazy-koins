@@ -1,6 +1,7 @@
 import {
   lucideFileJson,
   lucideFolderOpen,
+  lucideLayoutDashboard,
   lucideSettings,
   lucideUserRound,
   lucideWallet,
@@ -14,6 +15,11 @@ export interface NavItem {
 
 /** The main navigation in the header, in order. Icon names must be registered in `NAV_ICONS`. */
 export const NAV_ITEMS: readonly NavItem[] = [
+  {
+    path: '/app/dashboard',
+    labelKey: 'nav.dashboard',
+    icon: 'lucideLayoutDashboard',
+  },
   {
     path: '/app/projects',
     labelKey: 'nav.projects',
@@ -48,6 +54,7 @@ export const USER_MENU_ITEMS: readonly NavItem[] = [
 export const NAV_ICONS = {
   lucideFileJson,
   lucideFolderOpen,
+  lucideLayoutDashboard,
   lucideSettings,
   lucideUserRound,
   lucideWallet,

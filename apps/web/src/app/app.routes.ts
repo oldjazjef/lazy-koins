@@ -15,7 +15,11 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./core/layout/app-shell').then((m) => m.AppShell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'projects' },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+        path: 'dashboard',
+        loadChildren: () => import('./features/dashboard/dashboard.routes'),
+      },
       {
         path: 'projects',
         loadChildren: () => import('./features/projects/projects.routes'),

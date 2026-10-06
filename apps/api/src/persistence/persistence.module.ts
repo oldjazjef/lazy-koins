@@ -17,7 +17,17 @@ import {
   ChainSettingsRepositoryPort,
   WalletRepositoryPort,
 } from '../wallets/ports/wallet.repository.port';
+import {
+  CarryoverRepositoryPort,
+  ProjectBundleRepositoryPort,
+} from '../carryover/ports/carryover.repository.port';
+import { UserRateRepositoryPort } from '../dashboard/ports/user-rate.repository.port';
 import { PrismaService } from './prisma/prisma.service';
+import {
+  CarryoverPrismaRepository,
+  ProjectBundlePrismaRepository,
+  UserRatePrismaRepository,
+} from './prisma/repositories/carryover.prisma.repository';
 import {
   CalculationSnapshotPrismaRepository,
   CorrectionPrismaRepository,
@@ -87,6 +97,12 @@ import {
       provide: ChainSettingsRepositoryPort,
       useClass: ChainSettingsPrismaRepository,
     },
+    { provide: CarryoverRepositoryPort, useClass: CarryoverPrismaRepository },
+    {
+      provide: ProjectBundleRepositoryPort,
+      useClass: ProjectBundlePrismaRepository,
+    },
+    { provide: UserRateRepositoryPort, useClass: UserRatePrismaRepository },
   ],
   exports: [
     UserRepositoryPort,
@@ -103,6 +119,9 @@ import {
     AiSettingsRepositoryPort,
     WalletRepositoryPort,
     ChainSettingsRepositoryPort,
+    CarryoverRepositoryPort,
+    ProjectBundleRepositoryPort,
+    UserRateRepositoryPort,
   ],
 })
 export class PersistenceModule {}
