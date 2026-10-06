@@ -1,0 +1,7 @@
+{
+  "componentsPath": "libs/ui",
+  "buildable": false,
+  "generateAs": "library",
+  "importAlias": "@lazykoins/ui",
+  "style": "vega"
+}
