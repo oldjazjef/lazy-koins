@@ -544,7 +544,21 @@
       "rates": "Kurse",
       "wallets": "Wallets",
       "ai": "AI-Plugin",
-      "storage": "Speicherort"
+      "storage": "Speicherort",
+      "system": "System"
+    },
+    "system": {
+      "title": "System",
+      "subtitle": "Welche Version läuft und wo der Quellcode liegt.",
+      "version": "Version",
+      "commit": "Commit",
+      "builtAt": "Erstellt am",
+      "runtime": "Betriebsart",
+      "runtimeWeb": "Web-App",
+      "runtimeDesktop": "Desktop-App",
+      "repository": "Quellcode",
+      "support": "Unterstützen",
+      "supportLink": "Buy me a coffee"
     },
     "rates": {
       "title": "Kursabfragen",
