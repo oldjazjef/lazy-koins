@@ -187,7 +187,9 @@ describe('project package (F10.8)', () => {
       expect.objectContaining({ done: true, note: 'erledigt' }),
     ]);
     expect(
-      (await t.exports.listByProject(imported.projectId)).map((e) => e.kind).sort(),
+      (await t.exports.listByProject(imported.projectId))
+        .map((e) => e.kind)
+        .sort(),
     ).toEqual(['internal_report_pdf', 'simple_pdf']);
     const again = await t.calculate.execute(
       new CalculateProjectCommand('bob', imported.projectId),
