@@ -34,6 +34,25 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F4.2** Projektliste mit Status, Vermögen und Ertrag je Projekt.
 - **F4.3** Neues Projekt anlegen; Land, Kanton und Wallets werden aus dem neusten Projekt vorgeschlagen.
 - **F4.4** Aus älteren Projekten übernehmen: Dateien, Wallets und Korrekturen auswählen, gruppiert nach Plattform/Wallet. Eine übernommene Datei wird nicht doppelt gespeichert.
+- **F4.4a Folgeprojekt erstellen**: In einem Projekt per Knopf „Folgeprojekt erstellen“ ein
+  Projekt für das nächste Steuerjahr anlegen (Name, Jahr = Vorjahr + 1, Land und Kanton
+  vorbelegt und änderbar). Ein Dialog zeigt, was übernommen werden kann, als **Checkboxen**
+  (gruppiert, mit „alle/keine“ je Gruppe und einer Zusammenfassung, was übernommen wird):
+  - **Dateien** je Plattform/Wallet einzeln wählbar, mit Hinweis auf ihren Zeitraum –
+    vorausgewählt sind Dateien, deren Zeitraum ins neue Jahr reicht (z. B. ein Ledger bis heute);
+    sie werden verknüpft, nicht kopiert (F4.4, F5.7).
+  - **Wallets** (Adressen, Bezeichnung, Netzwerke) – vorausgewählt.
+  - **Korrekturen**, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im
+    neuen Jahr vorkommen; manuelle Positionen ohne Stichtag) – einzeln wählbar, nicht
+    vorausgewählt; jahresgebundene Korrekturen (Kurs-Overrides per 31.12.) werden nicht angeboten.
+  - **Offene Punkte**, die noch nicht erledigt sind – als offene Punkte im neuen Projekt.
+  - **Notizen** des Projekts.
+
+  Immer automatisch: Endbestand per 31.12. des Vorjahres als Vergleichswert für die Prüfung
+  „Anfangsbestand = Endbestand Vorjahr“ (F8.1) und den Vorjahresvergleich (F8.3). Mappings
+  gelten ohnehin für alle Projekte (F11.0). Das Vorjahresprojekt bleibt unverändert; im neuen
+  Projekt ist sichtbar, was woher übernommen wurde.
+
 - **F4.5** Abgeschlossene Projekte sind schreibgeschützt; Entsperren mit Bestätigung.
 - **F4.6** Projekt umbenennen, archivieren, löschen (mit Bestätigung).
 
