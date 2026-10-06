@@ -368,6 +368,14 @@ export const FETCH_STATUSES = [
 ] as const;
 export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
+/** `GET …/rates/refresh/status` — polled while "Kurse aktualisieren" runs. */
+export interface RefreshStatus {
+  running: boolean;
+  done: number;
+  total: number;
+  current: string | null;
+}
+
 export interface RefreshSummary {
   fx: number;
   assets: {

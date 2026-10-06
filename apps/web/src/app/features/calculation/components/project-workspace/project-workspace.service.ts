@@ -1,7 +1,9 @@
 import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, DOCUMENT, inject, Injectable, signal } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
+import type { ActivityProgress } from '../../../../core/activity/activity.service';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
 import type {
@@ -14,6 +16,7 @@ import type {
   OpenItem,
   ProjectExport,
   RatesView,
+  RefreshStatus,
   RefreshSummary,
   ResultView,
   StoredRate,
@@ -21,9 +24,13 @@ import type {
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
 
+/** How often a running rate refresh is asked for its progress. */
+const REFRESH_POLL_MS = 1000;
+
 /** The tabs of a project's workspace, in order. */
 export const WORKSPACE_TABS = [
   'files',
+  'hints',
   'rates',
   'result',
   'checks',
@@ -57,6 +64,7 @@ export class ProjectWorkspaceService {
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
+  private readonly translate = inject(TranslateService);
 
   readonly projectId = signal<string | undefined>(undefined);
   readonly tab = signal<WorkspaceTab>('files');
@@ -68,7 +76,7 @@ export class ProjectWorkspaceService {
 
   readonly result = httpResource<ResultView>(() => this.url('/result'));
   readonly checks = httpResource<ChecksView>(() =>
-    this.tab() === 'checks' || this.tab() === 'result'
+    this.tab() === 'checks' || this.tab() === 'result' || this.tab() === 'hints'
       ? this.url('/checks')
       : undefined,
   );
@@ -228,7 +236,8 @@ export class ProjectWorkspaceService {
           kind,
         }),
       ),
-    messages: { success: 'exports.created', error: 'exports.createFailed' },
+    // Success is toasted by createExport (with the download as its action).
+    messages: { error: 'exports.createFailed' },
   });
 
   /** F7.6: recalculate, then every view shows the new snapshot. */
@@ -236,21 +245,64 @@ export class ProjectWorkspaceService {
     const view = await this.actions.run(
       this.calculateAction,
       this.requireId(),
-      { key: 'project-workspace' },
+      { key: 'project-workspace', activity: { label: 'activity.calculate' } },
     );
     this.result.set(view);
     this.reloadDerived();
   }
 
+  /** "Kurse aktualisieren (12/40)": the API reports its progress while the request runs. */
+  readonly refreshProgress = signal<ActivityProgress | null>(null);
+
   async refreshRates(force = false): Promise<void> {
-    const summary = await this.actions.run(
-      this.refreshAction,
-      { id: this.requireId(), force },
-      { key: 'project-workspace' },
-    );
-    this.lastRefresh.set(summary);
+    const id = this.requireId();
+    const stop = this.pollRefreshStatus(id);
+    try {
+      const summary = await this.actions.run(
+        this.refreshAction,
+        { id, force },
+        {
+          key: 'project-workspace',
+          activity: { label: 'activity.rates', progress: this.refreshProgress },
+        },
+      );
+      this.lastRefresh.set(summary);
+    } finally {
+      stop();
+    }
     this.rates.reload();
     this.result.reload();
+  }
+
+  /** Polls `…/rates/refresh/status` only while the refresh runs; one request at a time. */
+  private pollRefreshStatus(id: string): () => void {
+    this.refreshProgress.set(null);
+    let inFlight = false;
+    let stopped = false;
+    const timer = setInterval(() => {
+      if (inFlight) return;
+      inFlight = true;
+      firstValueFrom(
+        this.http.get<RefreshStatus>(
+          apiUrl(`/projects/${id}/rates/refresh/status`),
+        ),
+      )
+        .then((status) => {
+          if (!stopped && status.running) {
+            this.refreshProgress.set({
+              done: status.done,
+              total: status.total,
+            });
+          }
+        })
+        .catch(() => undefined)
+        .finally(() => (inFlight = false));
+    }, REFRESH_POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+      this.refreshProgress.set(null);
+    };
   }
 
   async setManualRate(rate: ManualRateRequest): Promise<void> {
@@ -277,7 +329,7 @@ export class ProjectWorkspaceService {
     const result = await this.actions.run(
       this.kurslisteAction,
       { id: this.requireId(), file },
-      { key: 'project-workspace' },
+      { key: 'project-workspace', activity: { label: 'activity.estv' } },
     );
     this.notifications.info('rates.estvImported', {
       count: result.imported,
@@ -317,12 +369,23 @@ export class ProjectWorkspaceService {
     this.checks.reload();
   }
 
+  /** F10: the toast offers the download right away (the user may have left the tab meanwhile). */
   async createExport(kind: ExportKind): Promise<void> {
-    await this.actions.run(
+    const created = await this.actions.run(
       this.exportAction,
       { id: this.requireId(), kind },
-      { key: 'project-workspace' },
+      {
+        key: 'project-workspace',
+        activity: {
+          label: 'activity.export',
+          params: { kind: this.translate.instant(`exports.kind.${kind}`) },
+        },
+      },
     );
+    this.notifications.success('exports.created', {
+      labelKey: 'exports.download',
+      onClick: () => void this.download(created),
+    });
     this.exports.reload();
     this.result.reload();
   }

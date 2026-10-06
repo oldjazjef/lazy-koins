@@ -34,6 +34,10 @@ import {
   UpdateHintStateHandler,
 } from './queries/project-hints.query';
 import {
+  FileRowErrorsHandler,
+  FileRowErrorsQuery,
+} from './queries/row-errors.query';
+import {
   ChangeProjectFileCommand,
   ChangeProjectFileHandler,
 } from './commands/change-project-file.command';
@@ -142,6 +146,7 @@ async function setup() {
     projectMappings: new ListProjectMappingsHandler(projects, files, mappings),
     hints: new ListProjectHintsHandler(projects, files, hintStates),
     updateHint: new UpdateHintStateHandler(projects, hintStates),
+    rowErrors: new FileRowErrorsHandler(projects, files, mappings, analysis),
   };
 }
 
@@ -445,6 +450,23 @@ describe('overview, preview, removal (F5.5–F5.8)', () => {
     await expect(
       t.hints.execute(new ListProjectHintsQuery('bruno', t.p1.id)),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('lists the row errors of a file with its own reader, none for an unread one', async () => {
+    const t = await setup();
+    const standard = await t.upload(t.p1.id, 'b.csv', fixture(STANDARD));
+    const unread = await t.upload(t.p1.id, 'ledgers.csv', fixture(KRAKEN));
+    const errors = await t.rowErrors.execute(
+      new FileRowErrorsQuery('anna', t.p1.id, standard.id, 1),
+    );
+    expect(errors.total).toBe(2);
+    expect(errors.errors).toHaveLength(1);
+    expect(errors.errors[0]).toMatchObject({ row: expect.any(Number) });
+    expect(
+      await t.rowErrors.execute(
+        new FileRowErrorsQuery('anna', t.p1.id, unread.id, 50),
+      ),
+    ).toEqual({ total: 0, errors: [] });
   });
 
   it('refuses to change a hint of a closed project', async () => {

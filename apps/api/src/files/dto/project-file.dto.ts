@@ -326,6 +326,11 @@ export class RowErrorDto {
   @ApiPropertyOptional() sheet?: string;
 }
 
+export class RowErrorsResponseDto {
+  @ApiProperty() total!: number;
+  @ApiProperty({ type: [RowErrorDto] }) errors!: RowErrorDto[];
+}
+
 export class ImportNoteDto {
   @ApiProperty() code!: string;
   @ApiPropertyOptional() row?: number;

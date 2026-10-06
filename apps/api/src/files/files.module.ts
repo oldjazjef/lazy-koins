@@ -26,6 +26,7 @@ import {
   ListProjectHintsHandler,
   UpdateHintStateHandler,
 } from './application/queries/project-hints.query';
+import { FileRowErrorsHandler } from './application/queries/row-errors.query';
 import { FilesService } from './files.service';
 import { HintsController } from './hints.controller';
 import { StandardFormatController } from './standard-format.controller';
@@ -54,6 +55,7 @@ import { StandardFormatController } from './standard-format.controller';
     PreviewMappingHandler,
     ListProjectHintsHandler,
     UpdateHintStateHandler,
+    FileRowErrorsHandler,
   ],
   exports: [
     FilesService,

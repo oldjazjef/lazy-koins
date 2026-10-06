@@ -216,7 +216,6 @@ export class RefreshRatesHandler implements ICommandHandler<
         'Rate lookups on the internet are switched off (settings)',
       );
     }
-    const { from, to } = fetchWindow(project.taxYear);
     const assembled = await this.inputs.build(project);
     const assets = assetsNeedingPrices(
       calculate(assembled.input),

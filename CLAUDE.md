@@ -14,8 +14,8 @@ two as a package (F1.3).
 > storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine), the Angular web app (`apps/web`: login, project
-> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Kurse · Ergebnis ·
-> Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main navigation;
+> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
+> Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
 > **mapping spec** and its applier, F5.8 coverage hints, the **calculation** with rates, checks,
@@ -238,6 +238,25 @@ is `evidence_only`. Same bytes in another project of the owner: stored once, ori
 `project_file` row — bookings are not persisted as rows yet. F5.8 hints are computed from that
 coverage (`coverage/missing-files.ts`), no platform knowledge.
 
+**Hinweise (F5.8)** — `GET /api/projects/:id/hints` (`files/application/queries/project-hints.query.ts`)
+= the engine's `missingFileHints` (kinds `noYearData` "Fehlende Datei", `startsLate`, `endsEarly`,
+`noYearEndBalance`) + file hints (`unrecognisedFile` = needs a mapping, `rowErrors`), each with a
+**stable key** (`<kind>:<platform>|<account>`, `noYearEndBalance:<platform>` for the whole
+platform, `<kind>:<project file id>`), a severity (info/warning/error) and its status.
+`PATCH …/hints` `{ key, status: open|done|ignored, note }` stores a dismissal in
+`project_hint_state` (no row = open; 409 on a closed project) — it survives recalculation and new
+uploads. Engine rules: a **statement** is a balance from a file without bookings for that account
+(a ledger's running balance is not one); statements at 31.12. under accounts the ledger does not
+use are **platform-wide** and cover every sub-account; no statement at all = **one** hint per
+platform; an account whose ledger ends before 31.12. with every asset at 0 (`net` per asset is
+stored in the coverage since this change — older rows lack it and count as "unknown") is `info`
+and needs no statement. `GET …/files/:id/row-errors` lists the rows the file's own reader failed
+on (row/code/column, no cell values). Web: tab **Hinweise** (`files/components/project-hints`,
+badge = open count; the files area only shows "N Hinweise → anzeigen"); `ProjectFilesService`,
+`MappingEditorState` and `AiAssistState` are provided by the **workspace** (shared with the hints
+tab; `<lk-ai-assist>` lives there too). Checks link to the hints of a platform and back; file
+issues are never open items.
+
 Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
@@ -347,7 +366,9 @@ Closed projects: 409 for calculate, corrections, ticks, rate changes; exports st
 final statement) and use the last snapshot. `rates/`: `POST …/rates/refresh` (ECB via
 Frankfurter, Binance `<SYM>USDT`/`BUSD` daily closes, CoinGecko CHF with the user's key as
 fallback; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
-unless `force`), `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
+unless `force`; `GET …/rates/refresh/status` = progress of the refresh in flight, in memory —
+`RefreshProgress`; `RATES_DEV_DELAY_MS` slows each series down, development only),
+`PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
 when the user switched rate lookups off or `RATES_ONLINE=false`. `exports/`: `POST …/exports`
 recalculates first when stale; detailed Excel = the FACHREGELN sheets with formulas (named cells
 `USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
@@ -391,6 +412,9 @@ prisma/schema.prisma` must still report **no difference**.
   latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
   (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
   the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
+- **Hints** (migration `20261008090000_project_hint_state`): `project_hint_state` (PK
+  `(project_id, hint_key)`, cascade with the project; CHECKs: status `done|ignored`, key 1–600
+  chars, note ≤ 500); `hints.persistence.integration.spec.ts`.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -451,6 +475,16 @@ are provided by the component (`providers: [...]`), list/form services are root.
   `<hlm-dialog-footer>` that is a **direct child** of `<hlm-dialog-content>`, never inside the
   scrolling body. The same goes for any other overlay (sheet, popover with actions).
 - Desktop first: the shell is a header with the navigation (`core/layout/app-shell`), no tab bar.
+- **Every action that can take more than ~1 s goes through the `ActivityService`** (user rule,
+  F11.20): `core/activity/activity.service.ts` (root, signals) shows it in the app-wide
+  indicator (`lk-activity-indicator` in `app.html`, bottom right, above dialogs and toasts —
+  the toaster moves up while it shows; `role="status"`, spinner `aria-hidden`, still with reduced
+  motion). For an action: `actions.run(action, payload, { activity: { label, params?, progress? } })`
+  — the runner's own toast ends it. Otherwise `activity.track(labelKey, promise | observable |
+() => promise, { params, progress, success, error })`, where `success` may return a toast with
+  an action ("Herunterladen", "Anzeigen") or `null`. Labels are i18n keys under `activity.*`.
+  Server work that outlives a quick answer reports progress through a status endpoint polled
+  only while the request runs (rate refresh: 1 s); everything else tracks the request itself.
 
 ## UI, styling, i18n
 

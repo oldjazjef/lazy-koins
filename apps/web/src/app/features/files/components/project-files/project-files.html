@@ -97,27 +97,29 @@
       </button>
     </div>
 
-    @if (service.overview.hasValue()) { @let overview =
-    service.overview.value(); @if (overview.missing.length > 0) {
-    <div class="lk-panel flex flex-col gap-2 p-4" role="note">
-      <h3 class="font-medium">{{ 'files.missing.title' | translate }}</h3>
-      <ul class="flex flex-col gap-2 text-sm">
-        @for (hint of overview.missing; track hint.platform + hint.accountId +
-        hint.kind) {
-        <li>
-          <span class="font-medium"
-            >{{ hint.platform }} · {{ hint.accountId }}</span
-          >
-          {{ 'files.missing.kind.' + hint.kind | translate: { date: (hint.date |
-          date: 'dd.MM.yyyy'), year: overview.taxYear } }}
-          <span class="text-muted-foreground block"
-            >{{ hint.hintKey | translate }}</span
-          >
-        </li>
-        }
-      </ul>
-    </div>
-    } @if (overview.groups.length === 0) {
+    @if (service.openHints() > 0) {
+    <!-- F5.8: the details live in the Hinweise tab -->
+    <button
+      type="button"
+      class="lk-panel hover:bg-muted flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors"
+      (click)="showHints.emit()"
+    >
+      <ng-icon
+        name="lucideLightbulb"
+        size="16"
+        class="text-primary"
+        aria-hidden="true"
+      />
+      <span class="flex-1">
+        {{ 'hints.summary' | translate: { count: service.openHints() } }}
+      </span>
+      <span class="text-primary font-medium"
+        >{{ 'hints.show' | translate }}</span
+      >
+      <ng-icon name="lucideChevronRight" size="16" aria-hidden="true" />
+    </button>
+    } @if (service.overview.hasValue()) { @let overview =
+    service.overview.value(); @if (overview.groups.length === 0) {
     <lk-empty-state [message]="'files.empty' | translate" />
     } @else { @for (group of overview.groups; track group.platform) {
     <div class="flex flex-col gap-2">
@@ -291,8 +293,6 @@
 </section>
 
 <lk-project-mappings [closed]="closed()" />
-
-<lk-ai-assist />
 
 <!-- Preview (F5.6) -->
 <hlm-dialog

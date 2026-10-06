@@ -210,6 +210,7 @@ export class MappingDetailPageService {
     try {
       const result = await this.actions.run(this.reapplyAction, id, {
         key: 'mapping-detail',
+        activity: { label: 'activity.reapply' },
       });
       this.notifications.info(
         result.skippedClosed > 0

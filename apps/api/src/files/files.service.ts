@@ -30,6 +30,10 @@ import {
   type ProjectHints,
   UpdateHintStateCommand,
 } from './application/queries/project-hints.query';
+import {
+  type FileRowErrors,
+  FileRowErrorsQuery,
+} from './application/queries/row-errors.query';
 import type { ProjectFile, StoredFileContent } from './domain/project-file';
 import type { HintState, HintStatus } from './domain/project-hint';
 
@@ -115,6 +119,17 @@ export class FilesService {
 
   reapplyMapping(userId: string, mappingId: string): Promise<ReapplyResult> {
     return this.commands.execute(new ReapplyMappingCommand(userId, mappingId));
+  }
+
+  rowErrors(
+    userId: string,
+    projectId: string,
+    fileId: string,
+    limit: number,
+  ): Promise<FileRowErrors> {
+    return this.queries.execute(
+      new FileRowErrorsQuery(userId, projectId, fileId, limit),
+    );
   }
 
   hints(userId: string, projectId: string): Promise<ProjectHints> {

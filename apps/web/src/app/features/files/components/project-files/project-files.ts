@@ -9,7 +9,9 @@ import {
   inject,
   input,
   type OnDestroy,
+  output,
   signal,
+  untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -17,8 +19,10 @@ import { DomSanitizer, type SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
+  lucideChevronRight,
   lucideDownload,
   lucideEye,
+  lucideLightbulb,
   lucideLink2,
   lucideScanText,
   lucideSparkles,
@@ -40,7 +44,7 @@ import type {
   ProjectFileStatus,
 } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
-import { AiAssist, AiAssistState } from '../ai-assist';
+import { AiAssistState } from '../ai-assist';
 import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
@@ -67,7 +71,6 @@ type Dialog =
     NgIcon,
     TranslatePipe,
     EmptyState,
-    AiAssist,
     MappingPreviewView,
     ProjectMappings,
     ...HlmBadgeImports,
@@ -78,11 +81,12 @@ type Dialog =
     ...HlmSkeletonImports,
     ...HlmTableImports,
   ],
+  // ProjectFilesService, MappingEditorState and AiAssistState come from the workspace, which
+  // shares them with the Hinweise tab (F5.8: its actions open these dialogs).
   providers: [
-    ProjectFilesService,
-    MappingEditorState,
-    AiAssistState,
     provideIcons({
+      lucideLightbulb,
+      lucideChevronRight,
       lucideDownload,
       lucideEye,
       lucideLink2,
@@ -106,6 +110,8 @@ export class ProjectFiles implements OnDestroy {
   readonly projectId = input.required<string>();
   /** F4.5: no uploads, removals or assignments while closed. */
   readonly closed = input(false);
+  /** "7 Hinweise → anzeigen": the workspace switches to the Hinweise tab. */
+  readonly showHints = output<void>();
 
   protected readonly dragging = signal(false);
   protected readonly dialog = signal<Dialog | null>(null);
@@ -129,6 +135,17 @@ export class ProjectFiles implements OnDestroy {
 
   constructor() {
     effect(() => this.service.projectId.set(this.projectId()));
+    // "Mapping zuordnen" from a hint: open the assignment once the file is listed.
+    effect(() => {
+      const fileId = this.service.pendingAssign();
+      if (!fileId) return;
+      const file = this.service.files().find((f) => f.id === fileId);
+      if (!file) return;
+      untracked(() => {
+        this.service.pendingAssign.set(null);
+        this.openAssign(file);
+      });
+    });
     // The rows arrive after the route did its own (anchor-less) scrolling: scroll once they exist.
     afterRenderEffect(() => {
       const id = this.highlighted();

@@ -12,8 +12,15 @@ export interface NotificationAction {
 export class NotificationService {
   private readonly translate = inject(TranslateService);
 
-  success(key: string, action?: NotificationAction): void {
-    toast.success(this.translate.instant(key), this.toastAction(action));
+  success(
+    key: string,
+    action?: NotificationAction,
+    params?: Readonly<Record<string, unknown>>,
+  ): void {
+    toast.success(
+      this.translate.instant(key, params),
+      this.toastAction(action),
+    );
   }
 
   /**

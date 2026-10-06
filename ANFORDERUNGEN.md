@@ -73,6 +73,26 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
 - **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
 - **F5.8** Fehlende Dateien anzeigen, z. B. „Kraken-Kontoauszug Dezember fehlt“ oder „Binance-Historie endet am 30.06.“, mit Anleitung, wo der Export zu finden ist.
+  - **Hinweise** als eigener Bereich im Projekt (Reiter mit Anzahl offener Hinweise; im
+    Dateibereich nur eine kurze Zusammenfassung „7 Hinweise → anzeigen“): Tabelle mit **Typ**
+    (Abzeichen mit Dringlichkeit Info/Warnung/Fehler: „Fehlende Datei“, „Lücke am Anfang“,
+    „Lücke am Ende“, „Kein Bestand per 31.12.“, „Nicht erkannte Datei“, „Datei mit
+    Zeilenfehlern“), Plattform/Konto, kurzer Beschreibung, Datum, **Status** (offen / erledigt /
+    ignoriert) und **Aktion**; sortierbar, filterbar nach Typ und Status, nach Plattform
+    gruppiert (einklappbar); die ausführliche Anleitung in einer aufklappbaren Zeile.
+  - **Lösungen je Typ**: Datei hochladen (für die Plattform), Kontoauszug mit AI auslesen (wenn
+    ein PDF der Plattform vorhanden ist), Bestand manuell erfassen (Korrektur, vorbelegt mit
+    Plattform/Konto/31.12.), Vorlage herunterladen, Mapping zuordnen bzw. mit AI erstellen,
+    Zeilenfehler ansehen; „Als in Ordnung markieren“ (mit Notiz, z. B. „Konto nach 09.02. nicht
+    mehr genutzt“), „Ignorieren“ und „Wieder öffnen“. Der Status wird je Projekt gespeichert und
+    bleibt nach einer Neuberechnung und neuen Dateien erhalten (stabiler Schlüssel je Hinweis).
+  - **Keine unnötigen Hinweise**: ein Kontoauszug per 31.12. für die ganze Plattform (z. B. ein
+    Kraken-Auszug über Spot- und Earn-Unterkonten) gilt für alle ihre Konten; gibt es gar keinen,
+    erscheint **ein** Hinweis je Plattform statt einer je Konto. Enden die Buchungen eines Kontos
+    vor dem 31.12. und ist sein Saldo danach 0, ist das nur eine Information (es kann nichts
+    fehlen) und es braucht keinen Auszug per 31.12. — der Hinweis erklärt das.
+  - Mit den Prüfungen (F8.1/F8.2) verknüpft, nicht doppelt: Dateiprobleme stehen nur bei den
+    Hinweisen; offene Punkte verlinken auf die Hinweise ihrer Plattform und umgekehrt.
 
 ## 5a. Standardformat, Mappings und AI-Umwandlung
 
@@ -133,7 +153,10 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 ## 8. Prüfungen
 
 - **F8.1** Prüf-Übersicht mit Ampel je Prüfung, mindestens: Börsensaldo laut Ledger = Saldo laut Kontoauszug · fehlende Earn-Erträge (Binance) ausgewiesen · Auszahlungen ohne Gegenbuchung · Zuflüsse ohne Gegenbuchung (möglicher Ertrag) · Anfangsbestand = Endbestand des Vorjahres · Positionen ohne Kurs · Wallets auf allen Netzwerken geprüft.
-- **F8.2** Offene Punkte mit geschätzter Auswirkung in CHF, abhakbar, mit Notiz.
+- **F8.2** Offene Punkte mit geschätzter Auswirkung in CHF, abhakbar, mit Notiz. Fehlende oder
+  fehlerhafte Dateien sind keine offenen Punkte, sondern Hinweise (F5.8): die Prüfungen zeigen
+  die Zahl offener Hinweise mit Link, ein offener Punkt verlinkt auf die Hinweise seiner
+  Plattform, ein Hinweis auf die offenen Punkte seines Kontos.
 - **F8.3** Vergleich mit dem Vorjahresprojekt (Vermögen, Ertrag, neue/weggefallene Positionen).
 
 ## 9. Korrekturen
@@ -271,6 +294,18 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
 - **F11.9** Werte stammen aus denselben Daten und Kursen wie die Steuerberechnung (keine zweite
   Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
   Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
+
+## 11b. Bedienung
+
+- **F11.20 Aktivitätsanzeige**: Alles, was im Hintergrund läuft und länger als etwa eine Sekunde
+  dauern kann (Kurse aktualisieren, ESTV-Kursliste, AI-Mapping und AI-Auszug, Uploads,
+  Neuberechnung, Auszüge PDF/Excel, Mapping erneut anwenden), erscheint unten rechts in einer
+  kleinen Leiste mit Spinner und Bezeichnung („Kurse werden aktualisiert (12/40) …“), wenn
+  möglich mit Fortschritt; laufen mehrere, „3 Aufgaben laufen“ mit aufklappbarer Liste. Sie
+  blockiert nichts, bleibt beim Wechsel der Seite sichtbar, liegt über Dialogen und Meldungen,
+  und wird am Ende zur Erfolgs- oder Fehlermeldung (wo sinnvoll mit Link, z. B. „Herunterladen“
+  oder „Anzeigen“). Barrierefrei (Statusmeldung für Screenreader, Spinner ohne Bewegung bei
+  „Bewegung reduzieren“), hell und dunkel.
 
 ## 12. Abnahme
 
