@@ -13,6 +13,7 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectFiles } from '../../../files/components/project-files';
+import { ProjectWallets } from '../../../wallets/components/project-wallets';
 import { ProjectChecks } from '../project-checks/project-checks';
 import { ProjectCorrections } from '../project-corrections/project-corrections';
 import { ProjectExports } from '../project-exports/project-exports';
@@ -36,6 +37,7 @@ import {
     TranslatePipe,
     QuantityPipe,
     ProjectFiles,
+    ProjectWallets,
     ProjectRates,
     ProjectResult,
     ProjectChecks,

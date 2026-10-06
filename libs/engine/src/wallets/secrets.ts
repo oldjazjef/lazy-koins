@@ -43,8 +43,10 @@ function seedPhraseIn(text: string): boolean {
 
 const EXTENDED_PRIVATE = /\b[xyztuv]prv[1-9A-HJ-NP-Za-km-z]{100,112}\b/;
 const HEX_64 = /(?:^|[^0-9a-fA-F])(?:0x)?[0-9a-fA-F]{64}(?![0-9a-fA-F])/;
-const WIF = /(?:^|[^1-9A-HJ-NP-Za-km-z])([5][1-9A-HJ-NP-Za-km-z]{50}|[KLc][1-9A-HJ-NP-Za-km-z]{51}|9[1-9A-HJ-NP-Za-km-z]{50})(?![1-9A-HJ-NP-Za-km-z])/;
-const BASE58_RUN = /[1-9A-HJ-NP-Za-km-z]{80,90}/g;
+const WIF =
+  /(?:^|[^1-9A-HJ-NP-Za-km-z])([5][1-9A-HJ-NP-Za-km-z]{50}|[KLc][1-9A-HJ-NP-Za-km-z]{51}|9[1-9A-HJ-NP-Za-km-z]{50})(?![1-9A-HJ-NP-Za-km-z])/;
+const BASE58_RUN =
+  /(?<![0-9A-Za-z])[1-9A-HJ-NP-Za-km-z]{85,90}(?![0-9A-Za-z])/g;
 const BYTE_ARRAY = /\[\s*(\d{1,3}\s*,\s*){63}\d{1,3}\s*\]/;
 
 function solanaSecretIn(text: string): boolean {

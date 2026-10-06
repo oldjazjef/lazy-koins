@@ -115,10 +115,7 @@ async function setup() {
   };
 }
 
-const walletFiles = (
-  t: Awaited<ReturnType<typeof setup>>,
-  walletId: string,
-) =>
+const walletFiles = (t: Awaited<ReturnType<typeof setup>>, walletId: string) =>
   [...t.files.entries.values()].filter(
     (e) => e.projectId === t.project.id && e.origin === walletOrigin(walletId),
   );
@@ -273,7 +270,9 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
       ['polygon', 'ok', null],
       ['base', 'ok', null],
     ]);
-    expect(fetched.perNetwork.find((n) => n.network === 'polygon')?.spamTokens).toBe(1);
+    expect(
+      fetched.perNetwork.find((n) => n.network === 'polygon')?.spamTokens,
+    ).toBe(1);
     const [file] = walletFiles(t, wallet.id);
     expect(file?.displayName).toBe('Ledger.wallet-buchungen.csv');
     expect(file?.analysis.status).toBe('standard');
@@ -284,13 +283,16 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     const result = view.result;
     if (!result) throw new Error('no result');
     const eth = result.positions.find(
-      (p) => p.platform === 'Ledger' && p.accountId === 'ethereum' && p.asset === 'ETH',
+      (p) =>
+        p.platform === 'Ledger' &&
+        p.accountId === 'ethereum' &&
+        p.asset === 'ETH',
     );
     // 1.2 − 0.3 − 0.000525 − 0.0011 − 0.0004 (failed tx: gas only)
     expect(eth?.quantity).toBe('0.897975');
-    expect(
-      result.positions.find((p) => p.asset === 'SPAM:USDT')?.status,
-    ).toBe('spam');
+    expect(result.positions.find((p) => p.asset === 'SPAM:USDT')?.status).toBe(
+      'spam',
+    );
     const check = result.checks.find((c) => c.kind === 'walletNetworks');
     expect(check?.light).toBe('yellow');
     expect(
@@ -383,10 +385,11 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
         evidenceFileId: pdf.id,
       }),
     );
-    expect(walletFiles(t, wallet.id).map((f) => f.displayName).sort()).toEqual([
-      'Yoroi.wallet-bestaende.csv',
-      'Yoroi.wallet-buchungen.csv',
-    ]);
+    expect(
+      walletFiles(t, wallet.id)
+        .map((f) => f.displayName)
+        .sort(),
+    ).toEqual(['Yoroi.wallet-bestaende.csv', 'Yoroi.wallet-buchungen.csv']);
     const overview = await t.list.execute(
       new ListProjectWalletsQuery('anna', t.project.id),
     );
@@ -407,7 +410,9 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     });
     // Staking rewards of the year are income (F6.3 Cardano: income only).
     expect(
-      view.result?.income.filter((l) => l.platform === 'Yoroi').map((l) => l.date),
+      view.result?.income
+        .filter((l) => l.platform === 'Yoroi')
+        .map((l) => l.date),
     ).toEqual(['2025-02-27', '2025-06-06']);
     expect(
       view.result?.checks.find((c) => c.kind === 'walletNetworks')?.light,
@@ -423,7 +428,11 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
   it('a closed project blocks deleting its wallet (F4.5); otherwise the derived files go too', async () => {
     const t = await setup();
     const wallet = await t.create.execute(
-      new CreateWalletCommand('anna', { label: 'Ledger', address: EVM, networks: ['ethereum'] }),
+      new CreateWalletCommand('anna', {
+        label: 'Ledger',
+        address: EVM,
+        networks: ['ethereum'],
+      }),
     );
     await t.add.execute(
       new AddProjectWalletCommand('anna', t.project.id, wallet.id),

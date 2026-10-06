@@ -87,7 +87,8 @@ export class SubscanAdapter extends ChainDataPort {
     const count = Number(asText(account['count_extrinsic']) ?? 'NaN');
     const balance = asText(account['balance']) ?? '0';
     return {
-      used: (Number.isFinite(count) && count > 0) || !/^0(\.0*)?$/.test(balance),
+      used:
+        (Number.isFinite(count) && count > 0) || !/^0(\.0*)?$/.test(balance),
       txCount: Number.isFinite(count) ? count : null,
     };
   }

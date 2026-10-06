@@ -51,7 +51,9 @@ export class WalletDerivedFiles {
     );
     const overrides = await this.wallets.listOverrides(wallet.id);
     const rows = data
-      .sort((a, b) => (a.network < b.network ? -1 : a.network > b.network ? 1 : 0))
+      .sort((a, b) =>
+        a.network < b.network ? -1 : a.network > b.network ? 1 : 0,
+      )
       .flatMap((d) =>
         walletBookingRows(d.movements, {
           platform: wallet.label,
@@ -159,7 +161,11 @@ export class WalletDerivedFiles {
     const origin = walletOrigin(wallet.id);
     for (const projectId of await this.wallets.listProjectIds(wallet.id)) {
       const project = await this.projects.findById(projectId);
-      if (!project || project.ownerId !== userId || project.status === 'closed') {
+      if (
+        !project ||
+        project.ownerId !== userId ||
+        project.status === 'closed'
+      ) {
         continue;
       }
       for (const file of await this.files.listByProject(projectId)) {

@@ -187,9 +187,7 @@ export function checkWalletInput(input: {
       }
       if (!networks.includes(network)) networks.push(network);
     }
-    networks.sort(
-      (a, b) => possible.indexOf(a) - possible.indexOf(b),
-    );
+    networks.sort((a, b) => possible.indexOf(a) - possible.indexOf(b));
   }
   return { ok: true, addressKind, networks };
 }

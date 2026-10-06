@@ -1,0 +1,109 @@
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'wallets.fields.network' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.used' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.coverage' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.fetch' | translate }}</th>
+        <th hlmTh class="text-right">
+          {{ 'wallets.fields.movements' | translate }}
+        </th>
+        <th hlmTh>{{ 'wallets.fields.today' | translate }}</th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (net of wallet().perNetwork; track net.network) {
+      <tr hlmTr [class.text-muted-foreground]="!net.selected">
+        <td hlmTd class="whitespace-nowrap">
+          <span class="font-medium"
+            >{{ 'wallets.network.' + net.network | translate }}</span
+          >
+          @if (!net.selected) {
+          <span class="block text-xs"
+            >{{ 'wallets.notSelected' | translate }}</span
+          >
+          }
+        </td>
+        <td hlmTd>
+          @if (net.used === true) {
+          <span hlmBadge variant="secondary"
+            >{{ 'wallets.used.yes' | translate }}</span
+          >
+          @if (net.txCount !== null) {
+          <span class="text-muted-foreground block text-xs"
+            >{{ 'wallets.txCount' | translate: { count: net.txCount } }}</span
+          >
+          } } @else if (net.used === false) {
+          <span hlmBadge variant="outline"
+            >{{ 'wallets.used.no' | translate }}</span
+          >
+          } @else if (net.checkError) {
+          <span class="text-destructive block max-w-56 text-xs whitespace-normal"
+            >{{ 'wallets.errors.' + net.checkError | translate }}</span
+          >
+          } @else {
+          <span class="text-muted-foreground text-sm"
+            >{{ 'wallets.used.unknown' | translate }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="text-sm whitespace-normal">
+          {{ 'wallets.coverage.' + net.coverage | translate }}
+        </td>
+        <td hlmTd class="text-sm whitespace-normal">
+          @if (net.status === 'ok') {
+          <span
+            >{{ 'wallets.fetchStatus.ok' | translate: { date: (net.fetchedAt |
+            date: 'dd.MM.yyyy HH:mm') } }}</span
+          >
+          } @else if (net.status === 'error') {
+          <span class="text-destructive block max-w-64 text-xs"
+            >{{ 'wallets.errors.' + (net.errorCode ?? 'failed') | translate
+            }}</span
+          >
+          @if (net.errorDetail) {
+          <span class="text-muted-foreground block text-xs break-all"
+            >{{ net.errorDetail }}</span
+          >
+          } } @else {
+          <span class="text-muted-foreground"
+            >{{ 'wallets.fetchStatus.none' | translate }}</span
+          >
+          } @if (net.info.truncated) {
+          <span class="text-destructive block text-xs"
+            >{{ 'wallets.truncated' | translate }}</span
+          >
+          } @if (net.info.addressesScanned) {
+          <span class="text-muted-foreground block text-xs"
+            >{{ 'wallets.addressesScanned' | translate: { scanned:
+            net.info.addressesScanned, used: net.info.addressesUsed ?? 0 }
+            }}</span
+          >
+          } @for (note of net.info.notes ?? []; track note) {
+          <span class="text-muted-foreground block text-xs"
+            >{{ 'wallets.notes.' + note | translate }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="text-right tabular-nums">
+          {{ net.movements }} @if (net.spamTokens > 0) {
+          <span class="text-muted-foreground block text-xs"
+            >{{ 'wallets.spamHidden' | translate: { count: net.spamTokens }
+            }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="text-sm tabular-nums">
+          @for (balance of net.info.currentBalances ?? []; track balance.asset)
+          {
+          <span class="block"
+            >{{ balance.quantity | lkQuantity: 18 }} {{ balance.asset }}</span
+          >
+          }
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>

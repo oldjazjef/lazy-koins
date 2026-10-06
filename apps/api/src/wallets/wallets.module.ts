@@ -61,7 +61,9 @@ import { WalletsService } from './wallets.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) =>
         new ChainRuntime(
-          new SecretBox(config.get('SETTINGS_ENCRYPTION_KEY', { infer: true }) ?? ''),
+          new SecretBox(
+            config.get('SETTINGS_ENCRYPTION_KEY', { infer: true }) ?? '',
+          ),
           config.get('RATES_ONLINE', { infer: true }) !== 'false',
           aiPrivateUrlsAllowed({
             AI_ALLOW_PRIVATE_URLS: config.get('AI_ALLOW_PRIVATE_URLS', {

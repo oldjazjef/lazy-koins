@@ -51,7 +51,10 @@ export abstract class WalletRepositoryPort {
   abstract listWalletIds(projectId: string): Promise<string[]>;
   abstract addToProject(projectId: string, walletId: string): Promise<void>;
   /** Removes the link and the project's manual balances of that wallet. */
-  abstract removeFromProject(projectId: string, walletId: string): Promise<void>;
+  abstract removeFromProject(
+    projectId: string,
+    walletId: string,
+  ): Promise<void>;
 
   abstract listBalances(
     projectId: string,

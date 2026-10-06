@@ -3,11 +3,7 @@ import {
   networksForAddress,
   type WalletState,
 } from '@lazykoins/engine';
-import type {
-  Wallet,
-  WalletManualBalance,
-  WalletNetworkData,
-} from './wallet';
+import type { Wallet, WalletManualBalance, WalletNetworkData } from './wallet';
 
 /**
  * The calculation's view of a project's wallets (F6.4 → F8.1 "Wallets auf allen Netzwerken

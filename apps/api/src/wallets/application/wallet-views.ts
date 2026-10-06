@@ -8,11 +8,7 @@ import {
 } from '@lazykoins/engine';
 import type { ProjectStatus } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
-import type {
-  FetchInfo,
-  Wallet,
-  WalletNetworkData,
-} from '../domain/wallet';
+import type { FetchInfo, Wallet, WalletNetworkData } from '../domain/wallet';
 import { WalletRepositoryPort } from '../ports/wallet.repository.port';
 
 export interface NetworkFetchView {
@@ -122,7 +118,9 @@ function networkView(
   data: WalletNetworkData | undefined,
   notSpam: ReadonlySet<string>,
 ): NetworkFetchView {
-  const result = wallet.networkCheck?.results.find((r) => r.network === network);
+  const result = wallet.networkCheck?.results.find(
+    (r) => r.network === network,
+  );
   const info = networkInfo(network);
   return {
     network,

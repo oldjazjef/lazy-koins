@@ -24,10 +24,7 @@ import {
   type Wallet,
   type WalletInputProblem,
 } from '../domain/wallet';
-import {
-  ChainDataError,
-  ChainDataSourcesPort,
-} from '../ports/chain-data.port';
+import { ChainDataError, ChainDataSourcesPort } from '../ports/chain-data.port';
 import { WalletRepositoryPort } from '../ports/wallet.repository.port';
 import { ChainGate, walletConflict } from './chain-gate';
 import { loadOwnWallet } from './wallet-access';
@@ -270,7 +267,10 @@ export class CheckNetworksHandler implements ICommandHandler<
     private readonly views: WalletViews,
   ) {}
 
-  async execute({ userId, walletId }: CheckNetworksCommand): Promise<WalletView> {
+  async execute({
+    userId,
+    walletId,
+  }: CheckNetworksCommand): Promise<WalletView> {
     const wallet = await loadOwnWallet(this.wallets, userId, walletId);
     await this.gate.assertOnline(userId);
     const connection = await this.gate.connection(userId);
@@ -413,7 +413,9 @@ export class ListWalletTokensHandler implements IQueryHandler<
         d.movements,
         networkInfo(d.network).nativeAsset,
         new Set(
-          overrides.filter((o) => o.network === d.network).map((o) => o.tokenKey),
+          overrides
+            .filter((o) => o.network === d.network)
+            .map((o) => o.tokenKey),
         ),
       ).filter((t) => t.tokenKey !== 'native'),
     }));

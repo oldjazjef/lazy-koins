@@ -169,6 +169,11 @@ export const OPEN_ITEM_REASONS = [
   'oneOffWithoutPrice',
   'unclassifiedBookings',
   'walletNetworksNotAvailable',
+  'walletNetworksUnchecked',
+  'walletNetworkNotSelected',
+  'walletNetworkNotFetched',
+  'walletManualBalanceMissing',
+  'walletFetchFailed',
 ] as const;
 export type OpenItemReason = (typeof OPEN_ITEM_REASONS)[number];
 

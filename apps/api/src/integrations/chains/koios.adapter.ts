@@ -62,7 +62,8 @@ export class KoiosAdapter extends ChainDataPort {
     connection: ChainConnection,
     address: string,
   ): Promise<{ stake: string | null; addressUsed: boolean }> {
-    if (address.startsWith('stake1')) return { stake: address, addressUsed: false };
+    if (address.startsWith('stake1'))
+      return { stake: address, addressUsed: false };
     const [info] = (
       await this.post(connection, '/address_info', { _addresses: [address] })
     ).map(asRecord);
@@ -80,7 +81,9 @@ export class KoiosAdapter extends ChainDataPort {
     stake: string,
   ): Promise<Record<string, unknown> | undefined> {
     const [info] = (
-      await this.post(connection, '/account_info', { _stake_addresses: [stake] })
+      await this.post(connection, '/account_info', {
+        _stake_addresses: [stake],
+      })
     ).map(asRecord);
     return info;
   }

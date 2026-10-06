@@ -128,7 +128,8 @@ export function tokenVerdicts(
         reasons.push('zeroValue');
       }
       const incoming = transfers.filter(
-        (m) => !m.quantity.startsWith('-') && !parseDecimal(m.quantity).isZero(),
+        (m) =>
+          !m.quantity.startsWith('-') && !parseDecimal(m.quantity).isZero(),
       );
       if (
         incoming.some(
@@ -271,7 +272,9 @@ export function walletBookingRows(
 }
 
 /** The derived "Buchungen" CSV (header + rows) — the bytes a wallet fetch stores. */
-export function walletBookingsCsv(rows: readonly (readonly string[])[]): string {
+export function walletBookingsCsv(
+  rows: readonly (readonly string[])[],
+): string {
   return toCsv([columnNames(BOOKING_COLUMNS), ...rows]);
 }
 
@@ -320,7 +323,8 @@ export function unitsToDecimal(raw: string, decimals: number): string {
   }
   const negative = text.startsWith('-');
   const digits = (negative ? text.slice(1) : text).replace(/^0+/, '') || '0';
-  if (decimals === 0) return parseDecimal(`${negative ? '-' : ''}${digits}`).toString();
+  if (decimals === 0)
+    return parseDecimal(`${negative ? '-' : ''}${digits}`).toString();
   const padded = digits.padStart(decimals + 1, '0');
   const whole = padded.slice(0, padded.length - decimals);
   const fraction = padded.slice(padded.length - decimals);

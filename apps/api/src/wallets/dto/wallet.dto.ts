@@ -88,7 +88,9 @@ export class TokenOverrideDto {
   @MaxLength(200)
   tokenKey!: string;
 
-  @ApiProperty({ description: 'true = "kein Spam" (F6.6), false = back to the heuristics' })
+  @ApiProperty({
+    description: 'true = "kein Spam" (F6.6), false = back to the heuristics',
+  })
   @IsBoolean()
   notSpam!: boolean;
 }
@@ -116,7 +118,10 @@ export class ManualBalanceDto {
   @MaxLength(60)
   quantity!: string;
 
-  @ApiPropertyOptional({ example: '2025-12-31', description: 'Default: the project year end' })
+  @ApiPropertyOptional({
+    example: '2025-12-31',
+    description: 'Default: the project year end',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(10)
@@ -135,25 +140,36 @@ export class ManualBalanceDto {
 }
 
 class ChainSettingsFields {
-  @ApiPropertyOptional({ nullable: true, description: 'Etherscan API V2 key (all EVM chains)' })
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Etherscan API V2 key (all EVM chains)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   etherscanKey?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Helius API key (Solana)' })
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Helius API key (Solana)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   heliusKey?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Subscan API key (Polkadot)' })
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Subscan API key (Polkadot)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
   subscanKey?: string | null;
 
-  @ApiPropertyOptional({ description: 'Any Solana JSON-RPC URL; empty = Helius/public' })
+  @ApiPropertyOptional({
+    description: 'Any Solana JSON-RPC URL; empty = Helius/public',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(300)

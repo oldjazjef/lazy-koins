@@ -72,7 +72,11 @@ export class SolanaRpcAdapter extends ChainDataPort {
       );
       const code = Number(asText(error['code']));
       throw new ChainDataError(
-        code === -32602 ? 'invalidAddress' : code === 429 ? 'rateLimited' : 'providerError',
+        code === -32602
+          ? 'invalidAddress'
+          : code === 429
+            ? 'rateLimited'
+            : 'providerError',
         message,
       );
     }
@@ -97,7 +101,8 @@ export class SolanaRpcAdapter extends ChainDataPort {
         ]),
       ).map(asRecord);
       out.push(...batch);
-      if (batch.length < SIGNATURE_PAGE) return { signatures: out, truncated: false };
+      if (batch.length < SIGNATURE_PAGE)
+        return { signatures: out, truncated: false };
       before = asText(batch[batch.length - 1]?.['signature']) ?? undefined;
       if (!before) break;
     }

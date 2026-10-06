@@ -1,0 +1,128 @@
+<lk-page-header
+  [title]="'wallets.title' | translate"
+  [subtitle]="'wallets.list.subtitle' | translate"
+>
+  <a hlmBtn routerLink="new">
+    <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
+    {{ 'wallets.list.new' | translate }}
+  </a>
+</lk-page-header>
+
+@if (service.wallets.isLoading() && !service.wallets.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.wallets.error()) {
+<lk-empty-state [message]="'wallets.list.loadFailed' | translate">
+  <button hlmBtn variant="outline" type="button" (click)="service.refresh()">
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.isEmpty()) {
+<lk-empty-state [message]="'wallets.list.empty' | translate">
+  <a hlmBtn routerLink="new">{{ 'wallets.list.new' | translate }}</a>
+</lk-empty-state>
+} @else {
+<p class="text-muted-foreground mb-4 max-w-3xl text-sm">
+  {{ 'wallets.list.privacy' | translate }}
+</p>
+<div class="mb-4 flex max-w-md flex-col gap-2">
+  <label hlmLabel for="wallets-search"
+    >{{ 'wallets.list.search' | translate }}</label
+  >
+  <input
+    hlmInput
+    id="wallets-search"
+    type="search"
+    [ngModel]="service.search()"
+    (ngModelChange)="service.search.set($event)"
+  />
+</div>
+@if (service.visible().length === 0) {
+<lk-empty-state [message]="'wallets.list.noMatch' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'wallets.fields.label' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.address' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.networks' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.usedOn' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.fetchedAt' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.projects' | translate }}</th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (wallet of service.visible(); track wallet.id) {
+      <tr hlmTr class="cursor-pointer" (click)="open(wallet.id)">
+        <td hlmTd>
+          <a
+            class="font-medium hover:underline"
+            [routerLink]="wallet.id"
+            (click)="$event.stopPropagation()"
+            >{{ wallet.label }}</a
+          >
+        </td>
+        <td hlmTd class="max-w-64">
+          <span
+            class="block truncate font-mono text-xs"
+            [title]="wallet.address"
+            >{{ wallet.address }}</span
+          >
+        </td>
+        <td hlmTd class="text-sm whitespace-normal">
+          @for (network of wallet.networks; track network) {
+          <span hlmBadge variant="outline" class="mr-1 mb-1"
+            >{{ 'wallets.network.' + network | translate }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="text-sm whitespace-normal">
+          @if (wallet.checkedAt === null) {
+          <span class="text-muted-foreground"
+            >{{ 'wallets.list.notChecked' | translate }}</span
+          >
+          } @else { @for (network of used(wallet); track network) {
+          <span class="mr-1"
+            >{{ 'wallets.network.' + network | translate }}</span
+          >
+          } @empty {
+          <span class="text-muted-foreground"
+            >{{ 'wallets.list.nowhere' | translate }}</span
+          >
+          } }
+        </td>
+        <td hlmTd class="text-sm tabular-nums">
+          @if (fetchedAt(wallet); as at) { {{ at | date: 'dd.MM.yyyy HH:mm' }} }
+          @else {
+          <span class="text-muted-foreground"
+            >{{ 'wallets.fetchStatus.none' | translate }}</span
+          >
+          } @if (failed(wallet) > 0) {
+          <span class="text-destructive block text-xs"
+            >{{ 'wallets.list.failed' | translate: { count: failed(wallet) }
+            }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="text-sm whitespace-normal">
+          @for (project of wallet.projects; track project.id) {
+          <a
+            class="mr-2 hover:underline"
+            [routerLink]="['/app/projects', project.id]"
+            (click)="$event.stopPropagation()"
+            >{{ project.name }}</a
+          >
+          } @empty {
+          <span class="text-muted-foreground">–</span>
+          }
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+} }

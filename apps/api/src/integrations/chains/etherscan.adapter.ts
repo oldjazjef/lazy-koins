@@ -331,13 +331,21 @@ export class EtherscanAdapter extends ChainDataPort {
 /** Etherscan's error texts → codes (the text stays as detail, redacted). */
 function etherscanError(text: string, key: string): ChainDataError {
   const detail = redact(text, [key]) || null;
-  if (/invalid api key|missing\/invalid api key|api key.*(invalid|missing)/i.test(text)) {
+  if (
+    /invalid api key|missing\/invalid api key|api key.*(invalid|missing)/i.test(
+      text,
+    )
+  ) {
     return new ChainDataError('invalidKey', detail);
   }
   if (/rate limit|max calls/i.test(text)) {
     return new ChainDataError('rateLimited', detail);
   }
-  if (/not supported for this chain|upgrade your api plan|free api access/i.test(text)) {
+  if (
+    /not supported for this chain|upgrade your api plan|free api access/i.test(
+      text,
+    )
+  ) {
     return new ChainDataError('chainNotOnPlan', detail);
   }
   if (/invalid address|invalid.*format/i.test(text)) {

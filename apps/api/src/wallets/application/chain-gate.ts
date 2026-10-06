@@ -12,10 +12,7 @@ import {
   defaultChainSettings,
   DEFAULT_URLS,
 } from '../domain/chain-settings';
-import {
-  type ChainConnection,
-  ChainDataError,
-} from '../ports/chain-data.port';
+import { type ChainConnection, ChainDataError } from '../ports/chain-data.port';
 import { ChainSettingsRepositoryPort } from '../ports/wallet.repository.port';
 
 /** Process-wide options for the chain lookups (bound in `WalletsModule`). */
@@ -30,7 +27,10 @@ export class ChainRuntime {
 }
 
 /** Stable codes of the wallet slice's 409/422 answers; the app translates `wallets.errors.<code>`. */
-export function walletConflict(code: string, message: string): ConflictException {
+export function walletConflict(
+  code: string,
+  message: string,
+): ConflictException {
   return new ConflictException({
     statusCode: 409,
     error: 'Conflict',
@@ -88,11 +88,17 @@ export class ChainGate {
   /** F11.3: no lookup when the user (or the operator) switched the internet off. */
   async assertOnline(userId: string): Promise<void> {
     if (!this.runtime.online) {
-      throw walletConflict('offline', 'Online lookups are switched off (RATES_ONLINE=false)');
+      throw walletConflict(
+        'offline',
+        'Online lookups are switched off (RATES_ONLINE=false)',
+      );
     }
     const resolved = await this.reader.resolve(userId);
     if (!resolved.onlineRates) {
-      throw walletConflict('offline', 'Online lookups are switched off in the settings');
+      throw walletConflict(
+        'offline',
+        'Online lookups are switched off in the settings',
+      );
     }
   }
 
@@ -110,7 +116,11 @@ export class ChainGate {
     const etherscanKey = pick(draft.etherscanKey, resolved.keys.etherscan);
     const heliusKey = pick(draft.heliusKey, open(stored.sealedHeliusKey));
     const subscanKey = pick(draft.subscanKey, open(stored.sealedSubscanKey));
-    const url = (typed: string | undefined, saved: string, fallback: string) => {
+    const url = (
+      typed: string | undefined,
+      saved: string,
+      fallback: string,
+    ) => {
       const value = (typed ?? saved).trim();
       if (value === '') return fallback;
       this.assertUrl(value);
@@ -133,7 +143,11 @@ export class ChainGate {
       etherscanKey,
       subscanKey,
       solanaRpcUrl,
-      esploraUrl: url(draft.esploraUrl, stored.esploraUrl, DEFAULT_URLS.esplora),
+      esploraUrl: url(
+        draft.esploraUrl,
+        stored.esploraUrl,
+        DEFAULT_URLS.esplora,
+      ),
       koiosUrl: url(draft.koiosUrl, stored.koiosUrl, DEFAULT_URLS.koios),
       cosmosLcdUrl: url(
         draft.cosmosLcdUrl,
@@ -157,7 +171,10 @@ export class ChainGate {
 export function toHttpError(error: unknown): unknown {
   if (!(error instanceof ChainDataError)) return error;
   if (error.code === 'notConfigured') {
-    return walletConflict('notConfigured', 'The key for this network is missing');
+    return walletConflict(
+      'notConfigured',
+      'The key for this network is missing',
+    );
   }
   return new BadGatewayException({
     statusCode: 502,

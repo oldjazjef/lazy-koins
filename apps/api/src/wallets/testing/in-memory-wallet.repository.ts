@@ -26,8 +26,11 @@ import {
 export class InMemoryWalletRepository extends WalletRepositoryPort {
   readonly wallets = new Map<string, Wallet>();
   readonly data = new Map<string, WalletNetworkData>();
-  readonly overrides: { walletId: string; network: NetworkId; tokenKey: string }[] =
-    [];
+  readonly overrides: {
+    walletId: string;
+    network: NetworkId;
+    tokenKey: string;
+  }[] = [];
   readonly links: { projectId: string; walletId: string }[] = [];
   readonly balances = new Map<string, WalletManualBalance>();
   private seq = 0;
@@ -47,7 +50,9 @@ export class InMemoryWalletRepository extends WalletRepositoryPort {
   async listByOwner(ownerId: string): Promise<Wallet[]> {
     return [...this.wallets.values()]
       .filter((w) => w.ownerId === ownerId)
-      .sort((a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id));
+      .sort(
+        (a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id),
+      );
   }
 
   async findById(id: string): Promise<Wallet | undefined> {
@@ -57,7 +62,9 @@ export class InMemoryWalletRepository extends WalletRepositoryPort {
   async findByIds(ids: readonly string[]): Promise<Wallet[]> {
     return (await Promise.all(ids.map((id) => this.findById(id))))
       .filter((w): w is Wallet => w !== undefined)
-      .sort((a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id));
+      .sort(
+        (a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id),
+      );
   }
 
   async create(input: NewWallet): Promise<Wallet> {
@@ -142,7 +149,8 @@ export class InMemoryWalletRepository extends WalletRepositoryPort {
         o.network === network &&
         o.tokenKey === tokenKey,
     );
-    if (notSpam && index < 0) this.overrides.push({ walletId, network, tokenKey });
+    if (notSpam && index < 0)
+      this.overrides.push({ walletId, network, tokenKey });
     if (!notSpam && index >= 0) this.overrides.splice(index, 1);
   }
 

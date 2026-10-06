@@ -24,7 +24,10 @@ import { NETWORKS, type NetworkId } from '@lazykoins/engine';
 import type { AuthenticatedUser } from '../auth/authenticated-user';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
-import type { ChainServiceTest, ChainSettingsView } from './application/chain-settings.handlers';
+import type {
+  ChainServiceTest,
+  ChainSettingsView,
+} from './application/chain-settings.handlers';
 import type { ProjectWalletsOverview } from './application/project-wallets.handlers';
 import type { WalletView } from './application/wallet-views';
 import {
@@ -58,7 +61,9 @@ export class WalletsController {
   constructor(private readonly wallets: WalletsService) {}
 
   @Get('networks')
-  @ApiOperation({ summary: 'The supported networks and what each delivers (F6.3)' })
+  @ApiOperation({
+    summary: 'The supported networks and what each delivers (F6.3)',
+  })
   networks(): typeof NETWORKS {
     return NETWORKS;
   }
@@ -158,7 +163,9 @@ export class WalletsController {
   }
 
   @Put(':id/tokens')
-  @ApiOperation({ summary: '"Kein Spam" for a token, or back to the heuristics (F6.6)' })
+  @ApiOperation({
+    summary: '"Kein Spam" for a token, or back to the heuristics (F6.6)',
+  })
   setToken(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -182,7 +189,8 @@ export class ProjectWalletsController {
 
   @Get()
   @ApiOperation({
-    summary: "The project's wallets: fetch status per network, manual balances, derived files",
+    summary:
+      "The project's wallets: fetch status per network, manual balances, derived files",
   })
   list(
     @CurrentUser() user: AuthenticatedUser,
@@ -205,7 +213,10 @@ export class ProjectWalletsController {
 
   @Delete(':walletId')
   @HttpCode(204)
-  @ApiOperation({ summary: 'Remove a wallet (its derived files and manual balances) from the project' })
+  @ApiOperation({
+    summary:
+      'Remove a wallet (its derived files and manual balances) from the project',
+  })
   remove(
     @CurrentUser() user: AuthenticatedUser,
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -216,7 +227,8 @@ export class ProjectWalletsController {
 
   @Post(':walletId/balances')
   @ApiOperation({
-    summary: 'Manual balance with a receipt (F6.5) — becomes a holding of the derived file',
+    summary:
+      'Manual balance with a receipt (F6.5) — becomes a holding of the derived file',
   })
   addBalance(
     @CurrentUser() user: AuthenticatedUser,
@@ -260,9 +272,12 @@ export class WalletSettingsController {
 
   @Put()
   @ApiOperation({
-    summary: 'Save keys (sealed, AES-256-GCM) and URLs; a key "" or null removes it',
+    summary:
+      'Save keys (sealed, AES-256-GCM) and URLs; a key "" or null removes it',
   })
-  @ApiUnprocessableEntityResponse({ description: 'A URL the API must not call (`code`)' })
+  @ApiUnprocessableEntityResponse({
+    description: 'A URL the API must not call (`code`)',
+  })
   save(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: SaveChainSettingsDto,
@@ -278,7 +293,8 @@ export class WalletSettingsController {
       '"Testen" (F6.7): one request without user data, with the form\'s unsaved values over the saved ones',
   })
   @ApiBadGatewayResponse({
-    description: 'The service answered with an error: `code`, `detail`, `status`',
+    description:
+      'The service answered with an error: `code`, `detail`, `status`',
   })
   test(
     @CurrentUser() user: AuthenticatedUser,

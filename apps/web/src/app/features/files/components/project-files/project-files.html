@@ -184,8 +184,9 @@
                   | translate) } }} } @else if (file.origin === 'derived') { {{
                   'files.origin.derived' | translate: { name:
                   file.derivedFromName ?? ('files.origin.unknownFile' |
-                  translate) } }} } @else { {{ 'files.origin.uploaded' |
-                  translate }} }</span
+                  translate) } }} } @else if (file.origin === 'wallet') { {{
+                  'files.origin.wallet' | translate }} } @else { {{
+                  'files.origin.uploaded' | translate }} }</span
                 >
               </td>
               <td hlmTd class="max-w-0">

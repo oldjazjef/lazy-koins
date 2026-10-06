@@ -25,6 +25,7 @@ import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
 /** The tabs of a project's workspace, in order. */
 export const WORKSPACE_TABS = [
   'files',
+  'wallets',
   'rates',
   'result',
   'checks',

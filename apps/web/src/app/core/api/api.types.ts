@@ -118,7 +118,9 @@ export interface ProjectFile {
   holdingCount: number;
   errorCount: number;
   /** derived = a standard-format file the AI converted from a PDF of the project. */
-  origin: 'uploaded' | 'from_project' | 'derived';
+  origin: 'uploaded' | 'from_project' | 'derived' | 'wallet';
+  /** wallet = the records a wallet fetch derived (F6.3). */
+  originWalletId?: string | null;
   originProjectId: string | null;
   originProjectName: string | null;
   /** The PDF a derived file was converted from (same project). */

@@ -117,7 +117,9 @@ describe('wallet adapter', () => {
         },
       ],
     });
-    expect((await wallets.findById(wallet.id))?.networkCheck?.results).toHaveLength(1);
+    expect(
+      (await wallets.findById(wallet.id))?.networkCheck?.results,
+    ).toHaveLength(1);
 
     await wallets.addToProject(project.id, wallet.id);
     await wallets.addToProject(project.id, wallet.id);
@@ -149,7 +151,11 @@ describe('wallet adapter', () => {
       fetchedAt: '2026-10-08T10:00:00.000Z',
     };
     await wallets.saveData(data);
-    await wallets.saveData({ ...data, status: 'error', errorCode: 'rateLimited' });
+    await wallets.saveData({
+      ...data,
+      status: 'error',
+      errorCode: 'rateLimited',
+    });
     const [stored] = await wallets.listData([wallet.id]);
     expect(stored).toMatchObject({ status: 'error', errorCode: 'rateLimited' });
     expect(stored?.movements[0]?.quantity).toBe('0.123456789012345678');
@@ -256,7 +262,9 @@ describe('chain_settings', () => {
       sealedHeliusKey: 'enc:v1:a:b:c',
       esploraUrl: 'https://esplora.example/api',
     });
-    const saved = await chainSettings.save(user.id, { koiosUrl: 'https://k.example' });
+    const saved = await chainSettings.save(user.id, {
+      koiosUrl: 'https://k.example',
+    });
     expect(saved).toMatchObject({
       sealedHeliusKey: 'enc:v1:a:b:c',
       esploraUrl: 'https://esplora.example/api',

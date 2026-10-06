@@ -164,8 +164,7 @@ export class FakeChainAdapter extends ChainDataPort {
     _connection: ChainConnection,
     network: NetworkId,
   ): Promise<NetworkActivity> {
-    const used =
-      this.movements(network).length > 0 || this.family === 'cosmos';
+    const used = this.movements(network).length > 0 || this.family === 'cosmos';
     return {
       used,
       txCount: used ? this.movements(network).length : 0,
@@ -181,8 +180,7 @@ export class FakeChainAdapter extends ChainDataPort {
     return {
       movements: this.movements(network),
       info: {
-        currentBalances:
-          asset && quantity ? [{ asset, quantity }] : undefined,
+        currentBalances: asset && quantity ? [{ asset, quantity }] : undefined,
         notes:
           this.family === 'cardano' || this.family === 'polkadot'
             ? ['balanceManual', 'fake']

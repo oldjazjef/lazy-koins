@@ -59,7 +59,9 @@ export class ChainDataError extends Error {
     readonly detail: string | null = null,
     readonly status: number | null = null,
   ) {
-    super(`chain lookup failed: ${code}${status === null ? '' : ` (HTTP ${status})`}`);
+    super(
+      `chain lookup failed: ${code}${status === null ? '' : ` (HTTP ${status})`}`,
+    );
     this.name = 'ChainDataError';
   }
 }
@@ -85,7 +87,10 @@ export abstract class ChainDataPort {
    * F6.7 "Testen": one request without user data that proves URL and key work; resolves with a
    * short description of what answered (e.g. the latest block).
    */
-  abstract test(connection: ChainConnection, network: NetworkId): Promise<string>;
+  abstract test(
+    connection: ChainConnection,
+    network: NetworkId,
+  ): Promise<string>;
 }
 
 /** The adapter per family (bound in `IntegrationsModule`; fakes with `LK_CHAINS_FAKE=1`). */

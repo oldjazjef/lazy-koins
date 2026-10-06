@@ -35,7 +35,9 @@ describe('Bitcoin xpub derivation (BIP84 test vectors)', () => {
   });
 
   it('refuses anything but an extended public key', () => {
-    expect(() => parseExtendedKey('bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu')).toThrow();
+    expect(() =>
+      parseExtendedKey('bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu'),
+    ).toThrow();
     expect(() => parseExtendedKey(`zpub${'1'.repeat(107)}`)).toThrow();
   });
 });

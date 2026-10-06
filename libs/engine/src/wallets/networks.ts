@@ -152,8 +152,7 @@ const BASE58 = /^[1-9A-HJ-NP-Za-km-z]+$/;
 /** Decodes base58 (Bitcoin alphabet) into bytes; `undefined` when a character is not base58. */
 export function base58Decode(text: string): Uint8Array | undefined {
   if (!BASE58.test(text)) return undefined;
-  const alphabet =
-    '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
   let value = 0n;
   for (const char of text) value = value * 58n + BigInt(alphabet.indexOf(char));
   const bytes: number[] = [];

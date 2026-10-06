@@ -68,7 +68,10 @@ export class EsploraAdapter extends ChainDataPort {
   private async usedAddresses(
     connection: ChainConnection,
     address: string,
-  ): Promise<{ used: { address: string; txCount: number }[]; scanned: number }> {
+  ): Promise<{
+    used: { address: string; txCount: number }[];
+    scanned: number;
+  }> {
     if (!extendedKind(address)) {
       const count = await this.txCount(connection, address);
       return {
@@ -162,11 +165,13 @@ export class EsploraAdapter extends ChainDataPort {
       for (const input of asArray(tx['vin']).map(asRecord)) {
         const prevout = asRecord(input['prevout']);
         const from = asText(prevout['scriptpubkey_address']);
-        if (from && own.has(from)) spent += BigInt(asText(prevout['value']) ?? '0');
+        if (from && own.has(from))
+          spent += BigInt(asText(prevout['value']) ?? '0');
       }
       for (const output of asArray(tx['vout']).map(asRecord)) {
         const to = asText(output['scriptpubkey_address']);
-        if (to && own.has(to)) received += BigInt(asText(output['value']) ?? '0');
+        if (to && own.has(to))
+          received += BigInt(asText(output['value']) ?? '0');
       }
       const fee = BigInt(asText(tx['fee']) ?? '0');
       const paid = spent > 0n;

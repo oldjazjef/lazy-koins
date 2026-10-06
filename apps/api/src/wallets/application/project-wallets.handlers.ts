@@ -19,10 +19,7 @@ import { assertOpen } from '../../files/application/file-access';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { loadOwnProject } from '../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
-import {
-  originWalletId,
-  type WalletManualBalance,
-} from '../domain/wallet';
+import { originWalletId, type WalletManualBalance } from '../domain/wallet';
 import { WalletRepositoryPort } from '../ports/wallet.repository.port';
 import { loadOwnWallet } from './wallet-access';
 import { WalletDerivedFiles } from './wallet-derived-files';
@@ -36,7 +33,10 @@ export interface ProjectWalletView {
   readonly wallet: WalletView;
   readonly balances: readonly ManualBalanceView[];
   /** The derived files in the project (F6.3). */
-  readonly files: readonly { readonly id: string; readonly displayName: string }[];
+  readonly files: readonly {
+    readonly id: string;
+    readonly displayName: string;
+  }[];
 }
 
 export interface ProjectWalletsOverview {

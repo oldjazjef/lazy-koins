@@ -12,10 +12,7 @@ import {
   UpdateSettingsCommand,
 } from '../../settings/application/settings.handlers';
 import { keyHint } from '../../settings/domain/user-settings';
-import {
-  type ChainService,
-  DEFAULT_URLS,
-} from '../domain/chain-settings';
+import { type ChainService, DEFAULT_URLS } from '../domain/chain-settings';
 import { ChainDataSourcesPort } from '../ports/chain-data.port';
 import { ChainSettingsRepositoryPort } from '../ports/wallet.repository.port';
 import { ChainGate, type ChainSettingsDraft } from './chain-gate';
@@ -205,9 +202,7 @@ export class TestChainServiceHandler implements ICommandHandler<
     const target = SERVICE_TARGET[service];
     const started = Date.now();
     const detail = await this.gate.call(() =>
-      this.sources
-        .forFamily(target.family)
-        .test(connection, target.network),
+      this.sources.forFamily(target.family).test(connection, target.network),
     );
     return { ok: true, service, detail, millis: Date.now() - started };
   }
