@@ -77,7 +77,6 @@ export function summaryItems(view: SetupView): SummaryItem[] {
             <ng-icon
               [name]="item.ok ? 'lucideCircleCheck' : 'lucideCircleAlert'"
               size="18"
-              color="currentColor"
             />
           </span>
           <div class="flex min-w-0 flex-1 flex-col">

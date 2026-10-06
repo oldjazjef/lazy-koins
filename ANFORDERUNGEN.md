@@ -229,7 +229,11 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   Solange gesperrt, beantwortet auch die lokale API keine Datenanfragen. PIN ändern im Profil
   (alter PIN nötig); PIN vergessen: Desktop – Zurücksetzen nur mit Bestätigung, dass
   verschlüsselte Schlüssel (AI, Mailer, Kurse) neu eingegeben werden müssen; Web – über den
-  Login (E-Mail) neu setzen.
+  Login (E-Mail) neu setzen. Präzisiert (07.10.2026): automatische Sperre nach 1–240 Minuten
+  ohne Aktivität (Vorgabe 15), auf dem Desktop auch beim Sperren des Bildschirms und im
+  Ruhezustand; Wartezeit nach Fehlversuchen 0, 1, 2, 5, 10, 30 s … bis 15 min; im Web nach
+  10 Fehlversuchen neue Anmeldung nötig; ein zweiter Tab, solange die App offen und entsperrt
+  ist, fragt nicht erneut.
 - **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
   des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
   steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
