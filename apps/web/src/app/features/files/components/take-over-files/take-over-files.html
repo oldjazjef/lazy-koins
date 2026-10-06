@@ -20,7 +20,7 @@
       source.projectId) {
       <section class="flex flex-col gap-2">
         <div class="flex flex-wrap items-center gap-2">
-          <h4 class="min-w-0 flex-1 truncate font-medium" [title]="source.name">
+          <h4 class="min-w-0 flex-1 font-medium" [lkTruncate]="source.name">
             {{ source.name }}
             <span class="text-muted-foreground text-sm"
               >· {{ source.taxYear }}</span
@@ -62,7 +62,7 @@
               [checked]="file.inTarget || service.selected().has(file.projectFileId)"
               (change)="service.toggle(file.projectFileId)"
             />
-            <span class="min-w-0 flex-1 truncate" [title]="file.displayName"
+            <span class="min-w-0 flex-1" [lkTruncate]="file.displayName"
               >{{ file.displayName }}</span
             >
             <span class="text-muted-foreground shrink-0 text-xs tabular-nums">

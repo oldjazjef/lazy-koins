@@ -261,6 +261,49 @@ describe('AiAssistState', () => {
     await sent;
     expect(notifications.error).toHaveBeenCalledWith('ai.errors.invalidKey');
     expect(state.step()).toBe('consent');
+    expect(state.error()).toMatchObject({
+      key: 'ai.errors.invalidKey',
+      hintKey: 'ai.hints.key',
+    });
+  });
+
+  it('keeps the provider details of a failure and puts the one-liner into the toast', async () => {
+    const { state, http, notifications } = await setup();
+    state.file.set(file());
+    state.request.set({
+      payload: {},
+      provider: 'openai_compatible',
+      baseUrl: 'https://api.example.com/v1',
+      model: 'gpt-x',
+      consentGiven: true,
+    });
+    const sent = state.send();
+    http.expectOne(`${BASE}/mapping`).flush(
+      {
+        statusCode: 502,
+        code: 'modelNotFound',
+        status: 404,
+        providerMessage: 'The model gpt-x does not exist',
+        providerCode: 'model_not_found',
+        url: 'https://api.example.com/v1/chat/completions',
+        model: 'gpt-x',
+        detail: 'modelNotFound: HTTP 404 · …',
+      },
+      { status: 502, statusText: 'Bad Gateway' },
+    );
+    await sent;
+    expect(notifications.error).toHaveBeenCalledWith(
+      'ai.errors.modelNotFound',
+      'modelNotFound: HTTP 404 · …',
+    );
+    expect(state.error()).toMatchObject({
+      status: 404,
+      providerMessage: 'The model gpt-x does not exist',
+      providerCode: 'model_not_found',
+      url: 'https://api.example.com/v1/chat/completions',
+      model: 'gpt-x',
+      hintKey: 'ai.hints.model',
+    });
   });
 
   it('reads a PDF statement and stores only the kept balances, as printed', async () => {

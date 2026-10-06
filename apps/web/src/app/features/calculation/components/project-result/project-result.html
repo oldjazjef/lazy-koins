@@ -58,7 +58,12 @@
   <lk-empty-state [message]="'result.noPositions' | translate" />
   } @else {
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-28" />
+        <col class="w-44" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'result.fields.platform' | translate }}</th>
@@ -77,20 +82,24 @@
           class="cursor-pointer"
           (click)="togglePlatform(platform.platform)"
         >
-          <td hlmTd class="font-medium">
-            <button
-              type="button"
-              class="hover:underline"
-              [attr.aria-expanded]="openPlatform() === platform.platform"
-            >
-              {{ platform.platform }}
-            </button>
-            @if (platform.missingPrices > 0) {
-            <span hlmBadge variant="outline" class="ml-2"
-              >{{ 'result.missingShort' | translate: { count:
-              platform.missingPrices } }}</span
-            >
-            }
+          <td hlmTd class="max-w-0 font-medium">
+            <div class="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                class="min-w-0 hover:underline"
+                [attr.aria-expanded]="openPlatform() === platform.platform"
+              >
+                <span [lkTruncate]="platform.platform"
+                  >{{ platform.platform }}</span
+                >
+              </button>
+              @if (platform.missingPrices > 0) {
+              <span hlmBadge variant="outline" class="shrink-0"
+                >{{ 'result.missingShort' | translate: { count:
+                platform.missingPrices } }}</span
+              >
+              }
+            </div>
           </td>
           <td hlmTd class="text-right tabular-nums">
             {{ platform.positions }}
@@ -107,51 +116,75 @@
         </tr>
         @if (openPlatform() === platform.platform) {
         <tr hlmTr>
-          <td hlmTd colspan="3" class="bg-muted/40">
-            <table hlmTable>
+          <td hlmTd colspan="3" class="bg-muted/40 max-w-0">
+            <table hlmTable class="table-fixed">
+              <colgroup>
+                <col />
+                <col class="w-44" />
+                <col class="hidden w-32 lg:table-column" />
+                <col class="w-36" />
+                <col class="hidden w-44 xl:table-column" />
+                <col class="w-14" />
+              </colgroup>
               <thead hlmTHead>
                 <tr hlmTr>
                   <th hlmTh>{{ 'result.fields.asset' | translate }}</th>
-                  <th hlmTh>{{ 'result.fields.account' | translate }}</th>
                   <th hlmTh class="text-right">
                     {{ 'result.fields.quantity' | translate }}
                   </th>
-                  <th hlmTh class="text-right">
+                  <th hlmTh class="hidden text-right lg:table-cell">
                     {{ 'result.fields.priceChf' | translate }}
                   </th>
                   <th hlmTh class="text-right">
                     {{ 'result.fields.valueChf' | translate }}
                   </th>
-                  <th hlmTh>{{ 'result.fields.source' | translate }}</th>
-                  <th hlmTh class="text-right">
+                  <th hlmTh class="hidden xl:table-cell">
+                    {{ 'result.fields.source' | translate }}
+                  </th>
+                  <th hlmTh class="lk-sticky-actions bg-transparent text-right">
                     <span class="sr-only"
-                      >{{ 'result.fields.actions' | translate }}</span
+                      >{{ 'common.actions' | translate }}</span
                     >
                   </th>
                 </tr>
               </thead>
               <tbody hlmTBody>
-                @for (position of positionsOf(platform); track position.id) {
+                @for (position of positionsPager.visible(); track position.id) {
                 <tr
                   hlmTr
                   [class.text-muted-foreground]="position.status === 'spam'"
                 >
-                  <td hlmTd class="font-medium">
-                    {{ position.asset }} @if (position.status !== 'ok') {
+                  <td hlmTd class="max-w-0">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="font-medium" [lkTruncate]="position.asset"
+                        >{{ position.asset }}</span
+                      >
+                      @if (position.status !== 'ok') {
+                      <span
+                        hlmBadge
+                        class="shrink-0"
+                        [variant]="position.status === 'spam' ? 'outline' : 'destructive'"
+                        >{{ 'result.status.' + position.status | translate
+                        }}</span
+                      >
+                      }
+                    </div>
                     <span
-                      hlmBadge
-                      [variant]="position.status === 'spam' ? 'outline' : 'destructive'"
-                      >{{ 'result.status.' + position.status | translate
-                      }}</span
+                      class="text-muted-foreground text-xs"
+                      [lkTruncate]="position.accountId"
+                      >{{ position.accountId }}</span
                     >
-                    }
                   </td>
-                  <td hlmTd>{{ position.accountId }}</td>
-                  <td hlmTd class="text-right tabular-nums">
-                    {{ position.quantity | lkQuantity: 18 }}
+                  <td hlmTd class="max-w-0 text-right tabular-nums">
+                    @let quantity = position.quantity | lkQuantity: 18;
+                    <span [lkTruncate]="quantity">{{ quantity }}</span>
                   </td>
-                  <td hlmTd class="text-right tabular-nums">
-                    {{ position.priceChf | lkQuantity: 6 }}
+                  <td
+                    hlmTd
+                    class="hidden max-w-0 text-right tabular-nums lg:table-cell"
+                  >
+                    @let price = position.priceChf | lkQuantity: 6;
+                    <span [lkTruncate]="price">{{ price }}</span>
                   </td>
                   <td hlmTd class="text-right tabular-nums">
                     <button
@@ -162,38 +195,24 @@
                       {{ position.valueChf | lkChf }}
                     </button>
                   </td>
-                  <td hlmTd class="text-muted-foreground text-xs">
-                    {{ 'result.quantitySource.' + position.quantitySource |
-                    translate }} @if (position.priceOrigin) { · {{
-                    'result.priceOrigin.' + position.priceOrigin | translate }}
-                    }
+                  <td
+                    hlmTd
+                    class="text-muted-foreground hidden max-w-0 text-xs xl:table-cell"
+                  >
+                    @let source = sourceOf(position);
+                    <span [lkTruncate]="source">{{ source }}</span>
                   </td>
-                  <td hlmTd class="text-right whitespace-nowrap">
-                    @if (!closed()) {
-                    <button
-                      hlmBtn
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      (click)="overridePrice(position)"
-                    >
-                      {{ 'result.actions.overridePrice' | translate }}
-                    </button>
-                    <button
-                      hlmBtn
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      (click)="setHolding(position)"
-                    >
-                      {{ 'result.actions.setQuantity' | translate }}
-                    </button>
-                    }
+                  <td hlmTd class="lk-sticky-actions bg-transparent text-right">
+                    <lk-row-actions
+                      [actions]="positionActions()"
+                      (selected)="positionAction($event, position)"
+                    />
                   </td>
                 </tr>
                 }
               </tbody>
             </table>
+            <lk-paginator [pager]="positionsPager" />
           </td>
         </tr>
         } }
@@ -213,7 +232,12 @@
 <section class="mb-8 flex flex-col gap-2">
   <h3 class="font-medium">{{ 'result.incomeTitle' | translate }}</h3>
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-28" />
+        <col class="w-44" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'result.fields.category' | translate }}</th>
@@ -232,20 +256,23 @@
           class="cursor-pointer"
           (click)="toggleCategory(category.category)"
         >
-          <td hlmTd class="font-medium">
-            <button
-              type="button"
-              class="hover:underline"
-              [attr.aria-expanded]="openCategory() === category.category"
-            >
-              {{ 'result.category.' + category.category | translate }}
-            </button>
-            @if (category.missingPrices > 0) {
-            <span hlmBadge variant="outline" class="ml-2"
-              >{{ 'result.missingShort' | translate: { count:
-              category.missingPrices } }}</span
-            >
-            }
+          <td hlmTd class="max-w-0 font-medium">
+            <div class="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                class="min-w-0 hover:underline"
+                [attr.aria-expanded]="openCategory() === category.category"
+              >
+                @let label = 'result.category.' + category.category | translate;
+                <span [lkTruncate]="label">{{ label }}</span>
+              </button>
+              @if (category.missingPrices > 0) {
+              <span hlmBadge variant="outline" class="shrink-0"
+                >{{ 'result.missingShort' | translate: { count:
+                category.missingPrices } }}</span
+              >
+              }
+            </div>
           </td>
           <td hlmTd class="text-right tabular-nums">{{ category.lines }}</td>
           <td hlmTd class="text-right tabular-nums">
@@ -261,8 +288,17 @@
         @if (openCategory() === category.category && category.category !==
         'earn_gap') {
         <tr hlmTr>
-          <td hlmTd colspan="3" class="bg-muted/40">
-            <table hlmTable>
+          <td hlmTd colspan="3" class="bg-muted/40 max-w-0">
+            <table hlmTable class="table-fixed">
+              <colgroup>
+                <col class="w-28" />
+                <col />
+                <col class="w-24" />
+                <col class="w-44" />
+                <col class="w-36" />
+                <col class="hidden w-32 lg:table-column" />
+                <col class="w-14" />
+              </colgroup>
               <thead hlmTHead>
                 <tr hlmTr>
                   <th hlmTh>{{ 'result.fields.date' | translate }}</th>
@@ -274,33 +310,40 @@
                   <th hlmTh class="text-right">
                     {{ 'result.fields.valueChf' | translate }}
                   </th>
-                  <th hlmTh class="text-right">
+                  <th hlmTh class="hidden text-right lg:table-cell">
                     {{ 'result.fields.grossChf' | translate }}
                   </th>
-                  <th hlmTh class="text-right">
+                  <th hlmTh class="lk-sticky-actions bg-transparent text-right">
                     <span class="sr-only"
-                      >{{ 'result.fields.actions' | translate }}</span
+                      >{{ 'common.actions' | translate }}</span
                     >
                   </th>
                 </tr>
               </thead>
               <tbody hlmTBody>
-                @for (line of linesOf(category); track line.id) {
+                @for (line of linesPager.visible(); track line.id) {
                 <tr hlmTr>
-                  <td hlmTd class="tabular-nums">
+                  <td hlmTd class="align-top tabular-nums">
                     {{ line.date | date: 'dd.MM.yyyy' }}
                   </td>
-                  <td hlmTd>
-                    {{ line.platform }}
-                    <span class="text-muted-foreground block text-xs"
+                  <td hlmTd class="max-w-0">
+                    <span [lkTruncate]="line.platform"
+                      >{{ line.platform }}</span
+                    >
+                    <span
+                      class="text-muted-foreground text-xs"
+                      [lkTruncate]="line.rawType"
                       >{{ line.rawType }}</span
                     >
                   </td>
-                  <td hlmTd>{{ line.asset }}</td>
-                  <td hlmTd class="text-right tabular-nums">
-                    {{ line.quantityNet | lkQuantity: 18 }}
+                  <td hlmTd class="max-w-0 align-top">
+                    <span [lkTruncate]="line.asset">{{ line.asset }}</span>
                   </td>
-                  <td hlmTd class="text-right tabular-nums">
+                  <td hlmTd class="max-w-0 text-right align-top tabular-nums">
+                    @let net = line.quantityNet | lkQuantity: 18;
+                    <span [lkTruncate]="net">{{ net }}</span>
+                  </td>
+                  <td hlmTd class="text-right align-top tabular-nums">
                     @if (line.status === 'ok') {
                     <button
                       type="button"
@@ -317,36 +360,24 @@
                   </td>
                   <td
                     hlmTd
-                    class="text-muted-foreground text-right tabular-nums"
+                    class="text-muted-foreground hidden text-right align-top tabular-nums lg:table-cell"
                   >
                     {{ line.grossValueChf | lkChf }}
                   </td>
-                  <td hlmTd class="text-right whitespace-nowrap">
-                    @if (!closed()) {
-                    <button
-                      hlmBtn
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      (click)="reclassify(line)"
-                    >
-                      {{ 'result.actions.reclassify' | translate }}
-                    </button>
-                    <button
-                      hlmBtn
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      (click)="overrideIncomePrice(line)"
-                    >
-                      {{ 'result.actions.overridePrice' | translate }}
-                    </button>
-                    }
+                  <td
+                    hlmTd
+                    class="lk-sticky-actions bg-transparent text-right align-top"
+                  >
+                    <lk-row-actions
+                      [actions]="lineActions()"
+                      (selected)="lineAction($event, line)"
+                    />
                   </td>
                 </tr>
                 }
               </tbody>
             </table>
+            <lk-paginator [pager]="linesPager" />
           </td>
         </tr>
         } }
@@ -368,18 +399,27 @@
     {{ 'result.earnGapHint' | translate }}
   </p>
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-24" />
+        <col class="hidden w-32 xl:table-column" />
+        <col class="w-32" />
+        <col class="hidden w-32 xl:table-column" />
+        <col class="w-32" />
+        <col class="w-36" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'result.fields.platform' | translate }}</th>
           <th hlmTh>{{ 'result.fields.asset' | translate }}</th>
-          <th hlmTh class="text-right">
+          <th hlmTh class="hidden text-right xl:table-cell">
             {{ 'result.fields.start' | translate }}
           </th>
           <th hlmTh class="text-right">
             {{ 'result.fields.end' | translate }}
           </th>
-          <th hlmTh class="text-right">
+          <th hlmTh class="hidden text-right xl:table-cell">
             {{ 'result.fields.booked' | translate }}
           </th>
           <th hlmTh class="text-right">
@@ -391,21 +431,40 @@
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (gap of result.earnGaps; track gap.id) {
+        @for (gap of gapsPager.visible(); track gap.id) {
         <tr hlmTr>
-          <td hlmTd>{{ gap.platform }} · {{ gap.accountId }}</td>
-          <td hlmTd>{{ gap.asset }}</td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ gap.startQuantity | lkQuantity }}
+          <td hlmTd class="max-w-0">
+            <span [lkTruncate]="gap.platform">{{ gap.platform }}</span>
+            <span
+              class="text-muted-foreground text-xs"
+              [lkTruncate]="gap.accountId"
+              >{{ gap.accountId }}</span
+            >
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ gap.endQuantity | lkQuantity }}
+          <td hlmTd class="max-w-0">
+            <span [lkTruncate]="gap.asset">{{ gap.asset }}</span>
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ gap.bookedQuantity | lkQuantity }}
+          <td
+            hlmTd
+            class="hidden max-w-0 text-right tabular-nums xl:table-cell"
+          >
+            @let start = gap.startQuantity | lkQuantity;
+            <span [lkTruncate]="start">{{ start }}</span>
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ gap.gapQuantity | lkQuantity }}
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @let end = gap.endQuantity | lkQuantity;
+            <span [lkTruncate]="end">{{ end }}</span>
+          </td>
+          <td
+            hlmTd
+            class="hidden max-w-0 text-right tabular-nums xl:table-cell"
+          >
+            @let booked = gap.bookedQuantity | lkQuantity;
+            <span [lkTruncate]="booked">{{ booked }}</span>
+          </td>
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @let gapQuantity = gap.gapQuantity | lkQuantity;
+            <span [lkTruncate]="gapQuantity">{{ gapQuantity }}</span>
           </td>
           <td hlmTd class="text-right tabular-nums">
             <button
@@ -422,12 +481,21 @@
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="gapsPager" />
 </section>
 } @if (result.oneOffEvents.length > 0) {
 <section class="mb-8 flex flex-col gap-2">
   <h3 class="font-medium">{{ 'result.oneOffTitle' | translate }}</h3>
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col class="w-28" />
+        <col class="w-36" />
+        <col />
+        <col class="w-24" />
+        <col class="w-40" />
+        <col class="w-36" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'result.fields.date' | translate }}</th>
@@ -443,25 +511,34 @@
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (event of result.oneOffEvents; track event.id) {
+        @for (event of eventsPager.visible(); track event.id) {
         <tr hlmTr>
           <td hlmTd class="tabular-nums">
             {{ event.timestamp | date: 'dd.MM.yyyy' : 'UTC' }}
           </td>
-          <td hlmTd>{{ 'bookings.kind.' + event.kind | translate }}</td>
-          <td hlmTd>{{ event.platform }}</td>
-          <td hlmTd>{{ event.asset }}</td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ event.quantity | lkQuantity }}
+          <td hlmTd class="max-w-0">
+            @let kind = 'bookings.kind.' + event.kind | translate;
+            <span [lkTruncate]="kind">{{ kind }}</span>
           </td>
-          <td hlmTd class="text-right tabular-nums">
+          <td hlmTd class="max-w-0">
+            <span [lkTruncate]="event.platform">{{ event.platform }}</span>
+          </td>
+          <td hlmTd class="max-w-0">
+            <span [lkTruncate]="event.asset">{{ event.asset }}</span>
+          </td>
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @let quantity = event.quantity | lkQuantity;
+            <span [lkTruncate]="quantity">{{ quantity }}</span>
+          </td>
+          <td hlmTd class="max-w-0 text-right tabular-nums">
             <button
               type="button"
-              class="hover:underline"
+              class="max-w-full hover:underline"
               (click)="records(event.id, event.platform + ' · ' + event.asset)"
             >
-              {{ event.valueChf === null ? ('result.estvMissing' | translate) :
-              (event.valueChf | lkChf) }}
+              @let value = event.valueChf === null ? ('result.estvMissing' |
+              translate) : (event.valueChf | lkChf);
+              <span [lkTruncate]="value">{{ value }}</span>
             </button>
           </td>
         </tr>
@@ -469,6 +546,7 @@
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="eventsPager" />
 </section>
 } } @else {
 <lk-empty-state [message]="'result.notCalculated' | translate" />

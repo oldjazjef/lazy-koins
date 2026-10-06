@@ -12,7 +12,18 @@
     "retry": "Erneut versuchen",
     "save": "Speichern",
     "close": "Schliessen",
-    "chf": "CHF"
+    "chf": "CHF",
+    "actions": "Aktionen",
+    "pagination": {
+      "label": "Seiten",
+      "range": "Zeile {{from}}–{{to}} von {{total}}",
+      "pageSize": "Pro Seite",
+      "page": "Seite {{page}} von {{count}}",
+      "first": "Erste Seite",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "last": "Letzte Seite"
+    }
   },
   "countries": {
     "CH": "Schweiz"
@@ -507,6 +518,32 @@
       "badResponse": "Die Antwort des Anbieters war unbrauchbar.",
       "providerError": "Der Anbieter meldet einen Fehler.",
       "modelNotFound": "Das Modell oder die Adresse gibt es beim Anbieter nicht."
+    },
+    "details": {
+      "show": "Details anzeigen",
+      "summary": "Fehler",
+      "status": "HTTP-Status des Anbieters",
+      "providerMessage": "Meldung des Anbieters",
+      "providerType": "Fehlertyp / -code",
+      "url": "Adresse",
+      "model": "Modell",
+      "code": "Fehlercode",
+      "cause": "Ursache",
+      "detail": "Details",
+      "hint": "Tipp",
+      "copy": "Details kopieren",
+      "copied": "Kopiert"
+    },
+    "hints": {
+      "key": "Prüfe den API-Schlüssel: richtig kopiert, noch gültig und für diesen Anbieter?",
+      "model": "Prüfe den Modellnamen und die Adresse (bei OpenAI-kompatiblen Anbietern bis und mit /v1).",
+      "rateLimit": "Limit erreicht oder kein Guthaben mehr – prüfe dein Konto beim Anbieter oder versuche es später.",
+      "refused": "Niemand antwortet unter dieser Adresse – läuft der lokale Server (Ollama, LM Studio) und stimmt der Port?",
+      "notFound": "Der Rechnername ist unbekannt – prüfe die Adresse auf Tippfehler.",
+      "tls": "Das Zertifikat des Servers ist ungültig – prüfe die Adresse (https vs. http).",
+      "timeout": "Der Anbieter hat nicht rechtzeitig geantwortet – ein lokales Modell lädt beim ersten Mal lange; versuche es nochmals.",
+      "address": "Prüfe die Adresse: eine öffentliche http(s)-Adresse ohne Benutzer, Query oder Fragment.",
+      "unreachable": "Die lazy-koins-API ist nicht erreichbar – läuft der Server?"
     }
   },
   "settings": {

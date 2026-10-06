@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   input,
   output,
 } from '@angular/core';
@@ -13,6 +14,8 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import type { FigureRecord } from '../../../core/api/calculation.types';
 import { QuantityPipe } from '../../format/number-format';
+import { paginate, Paginator } from '../paginator';
+import { Truncate } from '../truncate';
 
 /** A record with, on the dashboard, the project it was read from. */
 export type RecordRow = FigureRecord & { readonly projectId?: string | null };
@@ -29,6 +32,8 @@ export type RecordRow = FigureRecord & { readonly projectId?: string | null };
     RouterLink,
     TranslatePipe,
     QuantityPipe,
+    Paginator,
+    Truncate,
     ...HlmButtonImports,
     ...HlmDialogImports,
     ...HlmSkeletonImports,
@@ -44,6 +49,12 @@ export class RecordsDialog {
     readonly records: readonly RecordRow[];
   } | null>(null);
   readonly closed = output<void>();
+
+  /** 10 per page (the table system), back to page 1 for another figure. */
+  protected readonly pager = paginate(
+    computed(() => this.data()?.records ?? []),
+    { storageKey: 'records', resetOn: () => this.title() },
+  );
 
   protected state(): 'open' | 'closed' {
     return this.title() !== null ? 'open' : 'closed';

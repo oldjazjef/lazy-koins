@@ -98,7 +98,7 @@
             [checked]="service.isSelected('files', file.projectFileId)"
             (change)="toggle('files', file.projectFileId)"
           />
-          <span class="min-w-0 flex-1 truncate" [title]="file.displayName"
+          <span class="min-w-0 flex-1" [lkTruncate]="file.displayName"
             >{{ file.displayName }}</span
           >
           <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
@@ -169,7 +169,7 @@
           [checked]="service.isSelected('corrections', correction.id)"
           (change)="toggle('corrections', correction.id)"
         />
-        <span class="min-w-0 flex-1 truncate" [title]="correction.reason"
+        <span class="min-w-0 flex-1" [lkTruncate]="correction.reason"
           >{{ describe(correction) }}</span
         >
         <span class="text-muted-foreground min-w-0 shrink truncate text-xs"

@@ -220,16 +220,18 @@ export class GenerateMappingHandler implements ICommandHandler<
   }
 
   private complete(connection: AiConnection, messages: readonly AiMessage[]) {
-    return this.gate.call(() =>
-      this.ai.complete(connection, {
-        system: MAPPING_SYSTEM_PROMPT,
-        messages,
-        output: {
-          name: 'mapping_spec',
-          description: 'A lazy-koins mapping spec v1 for the sampled export.',
-          schema: mappingJsonSchema(),
-        },
-      }),
+    return this.gate.call(
+      () =>
+        this.ai.complete(connection, {
+          system: MAPPING_SYSTEM_PROMPT,
+          messages,
+          output: {
+            name: 'mapping_spec',
+            description: 'A lazy-koins mapping spec v1 for the sampled export.',
+            schema: mappingJsonSchema(),
+          },
+        }),
+      connection,
     );
   }
 

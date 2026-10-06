@@ -298,9 +298,7 @@
                     size="14"
                     aria-hidden="true"
                   />
-                  <span class="truncate" [title]="holding.asset"
-                    >{{ holding.asset }}</span
-                  >
+                  <span [lkTruncate]="holding.asset">{{ holding.asset }}</span>
                 </button>
               </td>
               <td hlmTd class="truncate text-right tabular-nums">
@@ -335,8 +333,7 @@
             <tr hlmTr class="bg-muted/40">
               <td hlmTd class="min-w-0 pl-8 text-sm">
                 <span
-                  class="block truncate"
-                  [title]="account.platform + ' · ' + account.accountId"
+                  [lkTruncate]="account.platform + ' · ' + account.accountId"
                   >{{ account.platform }} · {{ account.accountId }}</span
                 >
               </td>

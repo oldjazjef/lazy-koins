@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucidePlus, lucideUpload } from '@ng-icons/lucide';
@@ -9,6 +14,8 @@ import { HlmTableImports } from '@lazykoins/ui/table';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe } from '../../../../shared/format/number-format';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 import { ProjectStatusBadge } from '../../components/project-status-badge';
 import { ProjectsPageService } from './projects-page.service';
 
@@ -22,6 +29,8 @@ import { ProjectsPageService } from './projects-page.service';
     EmptyState,
     ChfPipe,
     ProjectStatusBadge,
+    Paginator,
+    Truncate,
     ...HlmButtonImports,
     ...HlmSkeletonImports,
     ...HlmTableImports,
@@ -34,6 +43,12 @@ export class ProjectsPage {
   protected readonly service = inject(ProjectsPageService);
   private readonly router = inject(Router);
   protected readonly skeletonRows = [1, 2, 3];
+  protected readonly pager = paginate(
+    computed(() =>
+      this.service.projects.hasValue() ? this.service.projects.value() : [],
+    ),
+    { storageKey: 'projects' },
+  );
 
   constructor() {
     this.service.refresh();

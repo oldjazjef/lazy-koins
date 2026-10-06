@@ -8,6 +8,7 @@ import {
   input,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { Truncate } from '../../../../shared/components/truncate';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -52,6 +53,7 @@ const FollowUpSchema = z.object({
 @Component({
   selector: 'lk-follow-up-page',
   imports: [
+    Truncate,
     DatePipe,
     ReactiveFormsModule,
     TranslatePipe,

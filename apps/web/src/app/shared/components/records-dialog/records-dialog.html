@@ -13,44 +13,51 @@
       </p>
       <div hlmTableContainer class="lk-panel">
         <table hlmTable class="table-fixed">
+          <colgroup>
+            <col />
+            <col class="w-16" />
+            <col class="w-32" />
+            <col class="w-32" />
+            <col class="w-40" />
+            <col class="w-40" />
+            <col class="hidden w-36 xl:table-column" />
+          </colgroup>
           <thead hlmTHead>
             <tr hlmTr>
-              <th hlmTh class="w-1/4">{{ 'records.file' | translate }}</th>
-              <th hlmTh class="w-16 text-right">
-                {{ 'records.row' | translate }}
-              </th>
+              <th hlmTh>{{ 'records.file' | translate }}</th>
+              <th hlmTh class="text-right">{{ 'records.row' | translate }}</th>
               <th hlmTh>{{ 'records.at' | translate }}</th>
               <th hlmTh>{{ 'records.kind' | translate }}</th>
               <th hlmTh>{{ 'records.asset' | translate }}</th>
               <th hlmTh class="text-right">
                 {{ 'records.quantity' | translate }}
               </th>
-              <th hlmTh class="text-right">{{ 'records.fee' | translate }}</th>
+              <th hlmTh class="hidden text-right xl:table-cell">
+                {{ 'records.fee' | translate }}
+              </th>
             </tr>
           </thead>
           <tbody hlmTBody>
-            @for (record of loaded.records; track record.id) {
+            @for (record of pager.visible(); track record.id) {
             <tr hlmTr>
-              <td hlmTd class="min-w-0">
+              <td hlmTd class="max-w-0 align-top">
                 @if (record.correctionId) {
                 <span class="text-muted-foreground"
                   >{{ 'records.correction' | translate }}</span
                 >
-                } @else if (record.projectId && record.projectFileId) {
+                } @else { @let fileName = record.fileName ??
+                ('records.unknownFile' | translate); @if (record.projectId &&
+                record.projectFileId) {
                 <a
-                  class="block truncate hover:underline"
+                  class="hover:underline"
                   [routerLink]="['/app/projects', record.projectId]"
                   [fragment]="'file-' + record.projectFileId"
-                  [title]="record.fileName ?? ''"
-                  >{{ record.fileName ?? ('records.unknownFile' | translate)
-                  }}</a
+                  [lkTruncate]="fileName"
+                  >{{ fileName }}</a
                 >
                 } @else {
-                <span class="block truncate" [title]="record.fileName ?? ''"
-                  >{{ record.fileName ?? ('records.unknownFile' | translate)
-                  }}</span
-                >
-                }
+                <span [lkTruncate]="fileName">{{ fileName }}</span>
+                } }
                 <details class="text-muted-foreground text-xs">
                   <summary class="cursor-pointer">
                     {{ 'records.raw' | translate }}
@@ -63,41 +70,50 @@
                   </dl>
                 </details>
               </td>
-              <td hlmTd class="text-right tabular-nums">{{ record.row }}</td>
-              <td hlmTd class="whitespace-nowrap tabular-nums">
+              <td hlmTd class="text-right align-top tabular-nums">
+                {{ record.row }}
+              </td>
+              <td hlmTd class="align-top tabular-nums">
                 {{ record.type === 'holding' ? (record.at | date: 'dd.MM.yyyy')
                 : (record.at | date: 'dd.MM.yyyy HH:mm' : 'UTC') }}
               </td>
-              <td hlmTd class="min-w-0">
-                <span class="block truncate"
-                  >{{ record.kind ? ('bookings.kind.' + record.kind | translate)
-                  : ('records.holding' | translate) }}</span
-                >
+              <td hlmTd class="max-w-0 align-top">
+                @let kind = record.kind ? ('bookings.kind.' + record.kind |
+                translate) : ('records.holding' | translate);
+                <span [lkTruncate]="kind">{{ kind }}</span>
                 <span
-                  class="text-muted-foreground block truncate text-xs"
-                  [title]="record.rawType ?? ''"
+                  class="text-muted-foreground text-xs"
+                  [lkTruncate]="record.rawType ?? ''"
                   >{{ record.rawType }}</span
                 >
               </td>
-              <td hlmTd class="min-w-0">
+              <td hlmTd class="max-w-0 align-top">
+                <span [lkTruncate]="record.asset">{{ record.asset }}</span>
                 <span
-                  class="block truncate"
-                  [title]="record.platform + ' · ' + record.asset"
-                  >{{ record.platform }} · {{ record.asset }}</span
+                  class="text-muted-foreground text-xs"
+                  [lkTruncate]="record.platform"
+                  >{{ record.platform }}</span
                 >
               </td>
-              <td hlmTd class="text-right tabular-nums">
-                {{ record.quantity | lkQuantity: 18 }}
+              <td hlmTd class="max-w-0 text-right align-top tabular-nums">
+                @let quantity = record.quantity | lkQuantity: 18;
+                <span [lkTruncate]="quantity">{{ quantity }}</span>
               </td>
-              <td hlmTd class="text-right tabular-nums">
-                {{ record.fee ? (record.fee | lkQuantity: 18) : '' }} {{
-                record.fee ? record.feeAsset : '' }}
+              <td
+                hlmTd
+                class="hidden max-w-0 text-right align-top tabular-nums xl:table-cell"
+              >
+                @if (record.fee) { @let fee = (record.fee | lkQuantity: 18) + '
+                ' + (record.feeAsset ?? '');
+                <span [lkTruncate]="fee">{{ fee }}</span>
+                }
               </td>
             </tr>
             }
           </tbody>
         </table>
       </div>
+      <lk-paginator [pager]="pager" />
       } @else {
       <hlm-skeleton class="h-48 w-full" />
       }

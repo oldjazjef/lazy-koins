@@ -12,6 +12,7 @@ import {
   lucideChevronRight,
   lucideRefreshCw,
 } from '@ng-icons/lucide';
+import { Truncate } from '../../../../shared/components/truncate';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -51,6 +52,7 @@ import {
 @Component({
   selector: 'lk-dashboard-page',
   imports: [
+    Truncate,
     DatePipe,
     RouterLink,
     NgIcon,
