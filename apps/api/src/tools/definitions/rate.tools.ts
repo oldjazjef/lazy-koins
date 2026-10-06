@@ -50,6 +50,7 @@ export function rateTools(s: ToolServices): AnyTool[] {
       }),
       output: z.object({
         online: z.boolean().nullable(),
+        currency: z.string().nullable(),
         taxYear: z.number().nullable(),
         series: z.array(
           z.object({
@@ -91,6 +92,7 @@ export function rateTools(s: ToolServices): AnyTool[] {
           const list = capped(sorted, input.limit);
           return {
             online: null,
+            currency: null,
             taxYear: null,
             series: [],
             rates: list.items.map(rateOf),
@@ -103,6 +105,7 @@ export function rateTools(s: ToolServices): AnyTool[] {
         const manual = capped(view.manual, input.limit);
         return {
           online: view.online,
+          currency: view.currency,
           taxYear: view.taxYear,
           series: view.series.map((series) => ({
             kind: series.kind,

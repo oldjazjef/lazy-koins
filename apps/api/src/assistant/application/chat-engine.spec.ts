@@ -14,6 +14,9 @@ import {
   AiProviderError,
   type AiToolCall,
 } from '../../integrations/ai/ai-completion.port';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
+import { InMemoryNotificationRepository } from '../../notifications/testing/in-memory-notification.repository';
 import { toolSetup } from '../../tools/testing/tool-fixture';
 import { SAFETY_RULES } from '../domain/assistant-prompt';
 import {
@@ -83,7 +86,12 @@ async function chatSetup() {
     apiKeyHint: null,
     consentAt: null,
   });
-  const gate = new AiGate(aiSettings, new AiRuntime(new SecretBox(''), false));
+  const notificationRows = new InMemoryNotificationRepository();
+  const gate = new AiGate(
+    aiSettings,
+    new AiRuntime(new SecretBox(''), false),
+    new NotificationService(notificationRows),
+  );
   const ai = new ScriptedAi();
   const chats = new InMemoryChatRepository();
   const assistant = new InMemoryAssistantSettingsRepository();
@@ -105,7 +113,17 @@ async function chatSetup() {
       },
       consent: true,
     });
-  return { ...t, aiSettings, gate, ai, chats, assistant, engine, ask };
+  return {
+    ...t,
+    aiSettings,
+    gate,
+    ai,
+    chats,
+    assistant,
+    engine,
+    ask,
+    notificationRows,
+  };
 }
 
 describe('ChatEngine (F11.14)', () => {
@@ -422,7 +440,7 @@ describe('ChatEngine (F11.14)', () => {
   });
 
   it('stores nothing when the provider fails (502 with details) — the question can be sent again', async () => {
-    const { engine, ai, chats } = await chatSetup();
+    const { engine, ai, chats, notificationRows } = await chatSetup();
     ai.then(
       new AiProviderError('rateLimited', {
         status: 429,
@@ -437,6 +455,10 @@ describe('ChatEngine (F11.14)', () => {
       expect.objectContaining({ code: 'rateLimited', status: 429 }),
     );
     expect(await chats.listConversations('anna')).toEqual([]);
+    // F11.12: like every AI call, a failing chat call raises the notification.
+    expect(notificationRows.topic(Topics.aiCallFailed(), 'anna')).toMatchObject(
+      { kind: 'error' },
+    );
   });
 
   it('keeps conversations per user: someone else’s is not found; delete removes the messages', async () => {

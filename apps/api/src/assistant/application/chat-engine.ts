@@ -165,6 +165,8 @@ export class ChatEngine {
             timeoutMs: CHAT_TIMEOUT_MS,
           }),
         connection,
+        // F11.12: a failing chat call notifies like every other AI call (code + status only).
+        { userId },
       );
       model = turn.model;
       usage = addUsage(usage, turn.usage);

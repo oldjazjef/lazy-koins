@@ -13,11 +13,13 @@ const exportOut = z.object({
   size: z.number(),
   wealthChf: z.string(),
   incomeChf: z.string(),
+  /** F4.1a: the project's tax currency (the `…Chf` names are historical). */
+  currency: z.string(),
   createdAt: z.string(),
   link,
 });
 
-function exportOf(meta: ProjectExportMeta) {
+function exportOf(meta: ProjectExportMeta, currency: string) {
   return {
     id: meta.id,
     kind: meta.kind,
@@ -25,6 +27,7 @@ function exportOf(meta: ProjectExportMeta) {
     size: meta.size,
     wealthChf: meta.wealthChf,
     incomeChf: meta.incomeChf,
+    currency,
     createdAt: meta.createdAt,
     link: projectLink(meta.projectId, 'exports'),
   };
@@ -32,6 +35,8 @@ function exportOf(meta: ProjectExportMeta) {
 
 /** Statements and the internal report (F10), the Treuhänder mail (F10.6, F10.6a). */
 export function exportTools(s: ToolServices): AnyTool[] {
+  const currencyOf = async (userId: string, project: string) =>
+    (await s.projects.get(userId, project)).taxCurrency ?? 'CHF';
   return [
     defineTool({
       name: 'list_exports',
@@ -44,7 +49,8 @@ export function exportTools(s: ToolServices): AnyTool[] {
       output: z.object({ exports: z.array(exportOut) }),
       async run(ctx, input) {
         const list = await s.exports.list(ctx.userId, input.projectId);
-        return { exports: list.map(exportOf) };
+        const currency = await currencyOf(ctx.userId, input.projectId);
+        return { exports: list.map((meta) => exportOf(meta, currency)) };
       },
     }),
     defineTool({
@@ -59,6 +65,7 @@ export function exportTools(s: ToolServices): AnyTool[] {
       async run(ctx, input) {
         return exportOf(
           await s.exports.create(ctx.userId, input.projectId, input.kind),
+          await currencyOf(ctx.userId, input.projectId),
         );
       },
       async preview(ctx, input) {

@@ -98,6 +98,8 @@ describe('tool registry (F11.14, F11.16)', () => {
     ).output;
     expect(output.projects.map((p) => p.id)).toEqual([project.id]);
     expect(output.projects[0]?.link).toBe(`/app/projects/${project.id}`);
+    // F4.1a: amounts carry the project's tax currency.
+    expect(output.projects[0]).toMatchObject({ currency: 'CHF' });
     expect(audit.rows).toEqual([
       expect.objectContaining({
         userId: 'anna',
@@ -238,6 +240,9 @@ describe('tool registry (F11.14, F11.16)', () => {
       asset: 'dot',
     });
     expect(positions.ok).toBe(true);
+    expect(positions.ok && positions.output).toMatchObject({
+      currency: 'CHF',
+    });
     const position = (
       positions as {
         output: {

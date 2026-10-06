@@ -17,6 +17,13 @@ import {
   type ToolServices,
 } from './common';
 
+/** F4.1a: the tax currency every amount is in (the `…Chf` field names are historical). */
+const currency = z.string();
+
+function currencyOf(view: ResultView): string {
+  return view.result?.currency ?? 'CHF';
+}
+
 const snapshotOut = z
   .object({ calculatedAt: z.string(), stale: z.boolean() })
   .nullable();
@@ -92,6 +99,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
     userId: string,
     project: string,
     asset: string,
+    unit: string,
   ): Promise<string | null> {
     const view = await s.calculation.result(userId, project);
     const position = view.result?.positions.find(
@@ -99,7 +107,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
     );
     if (!position) return null;
     return position.priceChf
-      ? `${position.priceChf} CHF (${position.priceSource ?? position.priceOrigin ?? '–'})`
+      ? `${position.priceChf} ${unit} (${position.priceSource ?? position.priceOrigin ?? '–'})`
       : 'kein Kurs';
   }
 
@@ -111,19 +119,23 @@ export function calculationTools(s: ToolServices): AnyTool[] {
   ): Promise<ToolPreview> {
     const reasonLine = { label: 'Begründung', before: null, after: why };
     switch (data.type) {
-      case 'price_override':
+      case 'price_override': {
+        // F4.1a: an override is a price in the project's tax currency.
+        const unit =
+          (await s.projects.get(userId, project)).taxCurrency ?? 'CHF';
         return {
           summary: `Kurs von ${data.asset} am ${data.date} überschreiben`,
           changes: [
             {
-              label: `Kurs ${data.asset} (CHF)`,
-              before: await priceBefore(userId, project, data.asset),
-              after: `${data.priceChf} CHF (Override)`,
+              label: `Kurs ${data.asset} (${unit})`,
+              before: await priceBefore(userId, project, data.asset, unit),
+              after: `${data.priceChf} ${unit} (Override)`,
             },
             reasonLine,
           ],
           projectId: project,
         };
+      }
       case 'reclassify':
         return {
           summary: `Buchung ${data.bookingId} umklassieren`,
@@ -177,12 +189,14 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         positions: z.number(),
         missingPrices: z.number(),
         openItems: z.number(),
+        currency,
         link,
       }),
       async run(ctx, input) {
         const view = await s.calculation.calculate(ctx.userId, input.projectId);
         const totals = view.result?.totals;
         return {
+          currency: currencyOf(view),
           wealthChf: totals?.wealthChf ?? '0',
           incomeChf: totals?.incomeChf ?? '0',
           positions: totals?.positions ?? 0,
@@ -196,12 +210,13 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'get_result',
       title: 'Ergebnis',
       description:
-        'The latest result of a project: wealth at 31.12. and income in CHF, totals per platform and income category, counts of missing prices and open items, the USD/CHF and EUR/CHF used, and whether it is stale (data changed since). Use list_positions / list_income for details.',
+        'The latest result of a project: wealth at 31.12. and income in the tax currency (`currency`), totals per platform and income category, counts of missing prices and open items, the USD and EUR rates in that currency, and whether it is stale (data changed since). Use list_positions / list_income for details.',
       area: 'results',
       effect: 'readOnly',
       input: z.object({ projectId }),
       output: z.object({
         snapshot: snapshotOut,
+        currency,
         taxYear: z.number().nullable(),
         wealthChf: z.string().nullable(),
         incomeChf: z.string().nullable(),
@@ -233,6 +248,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         const result = view.result;
         return {
           snapshot: snapshotOf(view),
+          currency: currencyOf(view),
           taxYear: result?.taxYear ?? null,
           wealthChf: result?.totals.wealthChf ?? null,
           incomeChf: result?.totals.incomeChf ?? null,
@@ -261,7 +277,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'list_positions',
       title: 'Positionen per 31.12.',
       description:
-        'Positions at 31.12. of the latest result, filtered by asset / platform / status (ok | missingPrice | spam | negative): quantity, CHF price used with its origin and source, value. Each has a figureId for get_figure_records and a link.',
+        'Positions at 31.12. of the latest result, filtered by asset / platform / status (ok | missingPrice | spam | negative): quantity, price in the tax currency used with its origin and source, value. Each has a figureId for get_figure_records and a link.',
       area: 'results',
       effect: 'readOnly',
       input: z.object({
@@ -273,6 +289,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       }),
       output: z.object({
         snapshot: snapshotOut,
+        currency,
         total: z.number(),
         truncated: z.boolean(),
         positions: z.array(positionOut),
@@ -290,6 +307,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         const list = capped(rows, input.limit);
         return {
           snapshot: snapshotOf(view),
+          currency: currencyOf(view),
           total: list.total,
           truncated: list.truncated,
           positions: list.items.map((p) => ({
@@ -314,7 +332,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'list_income',
       title: 'Erträge',
       description:
-        'Income lines of the latest result (staking, lending, airdrops …), filtered by asset / category / status: date, net quantity, CHF value and price source. Each has a figureId and a link.',
+        'Income lines of the latest result (staking, lending, airdrops …), filtered by asset / category / status: date, net quantity, value in the tax currency and price source. Each has a figureId and a link.',
       area: 'results',
       effect: 'readOnly',
       input: z.object({
@@ -326,6 +344,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       }),
       output: z.object({
         snapshot: snapshotOut,
+        currency,
         total: z.number(),
         truncated: z.boolean(),
         income: z.array(incomeOut),
@@ -342,6 +361,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         const list = capped(rows, input.limit);
         return {
           snapshot: snapshotOf(view),
+          currency: currencyOf(view),
           total: list.total,
           truncated: list.truncated,
           income: list.items.map((l) => ({
@@ -432,12 +452,13 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'get_checks',
       title: 'Prüfungen',
       description:
-        'F8: the checks with their traffic light (green | yellow | red | grey) and the open items (key, reason, platform/asset/date, params, CHF impact, done + note). Reasons like positionWithoutPrice explain a missing price.',
+        'F8: the checks with their traffic light (green | yellow | red | grey) and the open items (key, reason, platform/asset/date, params, impact in the tax currency, done + note). Reasons like positionWithoutPrice explain a missing price.',
       area: 'checks',
       effect: 'readOnly',
       input: z.object({ projectId, limit: limit(30, 200) }),
       output: z.object({
         calculated: z.boolean(),
+        currency,
         checks: z.array(
           z.object({
             kind: z.string(),
@@ -470,6 +491,9 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         const list = capped(view.items, input.limit);
         return {
           calculated: view.snapshot !== null,
+          currency:
+            (await s.projects.get(ctx.userId, input.projectId)).taxCurrency ??
+            'CHF',
           checks: view.checks.map((c) => ({ ...c })),
           total: list.total,
           items: list.items.map((item) => ({
@@ -570,7 +594,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'set_price_override',
       title: 'Kurs überschreiben',
       description:
-        'F9.1: overrides the CHF price of an asset on a day (a position at 31.12. → the date 31.12. of the tax year; an income day → that day). Stored as a correction with a reason; recalculate afterwards.',
+        'F9.1: overrides the price of an asset in the project tax currency (see `currency` of get_project) on a day (a position at 31.12. → the date 31.12. of the tax year; an income day → that day). Stored as a correction with a reason; recalculate afterwards.',
       area: 'corrections',
       effect: 'write',
       input: z.object({

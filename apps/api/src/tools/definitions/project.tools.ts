@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TAX_CURRENCIES } from '@lazykoins/engine';
 import {
   CH_CANTONS,
   MAX_TAX_YEAR,
@@ -15,6 +16,8 @@ const projectOut = z.object({
   canton: z.string(),
   status: z.enum(PROJECT_STATUSES),
   notes: z.string(),
+  /** F4.1a: every amount of the project is in this currency (the `…Chf` names are historical). */
+  currency: z.string(),
   link,
 });
 
@@ -31,6 +34,7 @@ function asOut(project: {
   canton: string;
   status: (typeof PROJECT_STATUSES)[number];
   notes: string;
+  taxCurrency?: string;
 }) {
   return {
     id: project.id,
@@ -39,6 +43,7 @@ function asOut(project: {
     canton: project.canton,
     status: project.status,
     notes: project.notes,
+    currency: project.taxCurrency ?? 'CHF',
     link: projectLink(project.id),
   };
 }
@@ -50,7 +55,7 @@ export function projectTools(s: ToolServices): AnyTool[] {
       name: 'list_projects',
       title: 'Projekte auflisten',
       description:
-        'Lists all tax-year projects of the user (newest first) with status and the latest calculated wealth (Vermögen) and income (Ertrag) in CHF.',
+        "Lists all tax-year projects of the user (newest first) with status and the latest calculated wealth (Vermögen) and income (Ertrag) in the project's tax currency (field `currency`; the `…Chf` field names are historical).",
       area: 'projects',
       effect: 'readOnly',
       input: z.object({}),
@@ -91,6 +96,10 @@ export function projectTools(s: ToolServices): AnyTool[] {
         name: z.string().trim().min(1).max(120),
         taxYear: z.number().int().min(MIN_TAX_YEAR).max(MAX_TAX_YEAR),
         canton: z.enum(CH_CANTONS),
+        taxCurrency: z
+          .enum(TAX_CURRENCIES)
+          .optional()
+          .describe('F4.1a: the tax currency; absent = CHF.'),
         notes: z.string().max(2000).default(''),
       }),
       output: projectOut,
@@ -101,6 +110,7 @@ export function projectTools(s: ToolServices): AnyTool[] {
             taxYear: input.taxYear,
             country: 'CH',
             canton: input.canton,
+            ...(input.taxCurrency ? { taxCurrency: input.taxCurrency } : {}),
             notes: input.notes,
           }),
         );
@@ -129,6 +139,10 @@ export function projectTools(s: ToolServices): AnyTool[] {
         notes: z.string().max(2000).optional(),
         canton: z.enum(CH_CANTONS).optional(),
         status: z.enum(PROJECT_STATUSES).optional(),
+        taxCurrency: z
+          .enum(TAX_CURRENCIES)
+          .optional()
+          .describe('F4.1a: changing it makes the calculation stale.'),
       }),
       output: projectOut,
       async run(ctx, { projectId: id, ...changes }) {
@@ -142,6 +156,7 @@ export function projectTools(s: ToolServices): AnyTool[] {
             ['Notizen', before.notes, changes.notes],
             ['Kanton', before.canton, changes.canton],
             ['Status', before.status, changes.status],
+            ['Steuerwährung', before.taxCurrency, changes.taxCurrency],
           ] as const
         )
           .filter(([, , after]) => after !== undefined)
