@@ -19,7 +19,8 @@ export type StoredRateEntry = RateEntry & { readonly note?: string | null };
 export interface RateKey {
   readonly kind: RateKind;
   readonly asset: string;
-  readonly currency: 'CHF' | 'USD';
+  /** USD or a tax currency (F4.1a). */
+  readonly currency: string;
   readonly date: string;
   readonly source: RateSource;
 }

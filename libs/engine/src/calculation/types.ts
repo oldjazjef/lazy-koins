@@ -292,10 +292,17 @@ export interface Comparison {
   }[];
 }
 
+/**
+ * Every amount of the result (`…Chf` fields) is in the project's **tax currency** `currency`
+ * (F4.1a; CHF by default). The field names predate F4.1a and stay for the stored snapshots and
+ * the API types; `usdChf` / `eurChf` are USD/T and EUR/T.
+ */
 export interface CalculationResult {
   readonly engineVersion: number;
   readonly taxYear: number;
   readonly country: string;
+  /** ISO 4217 code of the tax currency (F4.1a). Snapshots of engine version ≤ 3 lack it = CHF. */
+  readonly currency: string;
   readonly yearEnd: string;
   readonly totals: {
     readonly wealthChf: string;
@@ -304,7 +311,7 @@ export interface CalculationResult {
     readonly missingPrices: number;
     readonly openItems: number;
   };
-  /** The USD/CHF and EUR/CHF used at 31.12. (the Excel's parameters). */
+  /** The USD/T and EUR/T used at 31.12. (the Excel's parameters; T = `currency`). */
   readonly parameters: {
     readonly usdChf: string | null;
     readonly eurChf: string | null;
@@ -325,5 +332,8 @@ export interface CalculationResult {
   readonly records: Readonly<Record<string, RecordSummary>>;
 }
 
-/** Bumped when the same input would give a different result (snapshots record it). */
-export const ENGINE_VERSION = 3;
+/**
+ * Bumped when the same input would give a different result (snapshots record it). 4 = the tax
+ * currency per project (F4.1a: `currency`, valuation in T with FX cross rates).
+ */
+export const ENGINE_VERSION = 4;

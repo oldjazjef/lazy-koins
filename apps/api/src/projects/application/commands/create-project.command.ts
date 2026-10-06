@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
+import { defaultTaxCurrency } from '@lazykoins/engine';
 import {
   type CreateProjectInput,
   isCanton,
@@ -30,6 +31,8 @@ export class CreateProjectHandler implements ICommandHandler<
     }
     return this.projects.create(ownerId, {
       ...input,
+      // F4.1a: the country's default unless the user chose another currency.
+      taxCurrency: input.taxCurrency ?? defaultTaxCurrency(input.country),
       name: input.name.trim(),
       notes: input.notes.trim(),
     });

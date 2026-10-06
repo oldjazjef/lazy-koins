@@ -113,7 +113,21 @@ describe('projects', () => {
     const newer = await projects.create(anna.id, INPUT);
     await projects.create(bruno.id, INPUT);
 
-    expect(newer).toMatchObject({ status: 'in_progress', ownerId: anna.id });
+    expect(newer).toMatchObject({
+      status: 'in_progress',
+      ownerId: anna.id,
+      taxCurrency: 'CHF',
+    });
+    const eur = await projects.create(anna.id, {
+      ...INPUT,
+      taxYear: 2023,
+      taxCurrency: 'EUR',
+    });
+    expect(eur.taxCurrency).toBe('EUR');
+    expect(
+      (await projects.update(eur.id, { taxCurrency: 'GBP' }))?.taxCurrency,
+    ).toBe('GBP');
+    await projects.delete(eur.id);
     expect((await projects.findByOwner(anna.id)).map((p) => p.id)).toEqual([
       newer.id,
       older.id,
@@ -166,6 +180,10 @@ describe('projects', () => {
       { canton: 'zh' },
       { tax_year: 1999 },
       { name: '   ' },
+      // F4.1a (migration 20261008170000_tax_currency): ISO 4217, upper case.
+      { tax_currency: 'eur' },
+      { tax_currency: 'EURO' },
+      { tax_currency: 'E1R' },
     ]) {
       await expect(insertRaw(owner.id, bad)).rejects.toThrow(
         /CHECK constraint failed/,

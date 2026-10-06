@@ -116,6 +116,7 @@ export function calculate(input: CalculationInput): CalculationResult {
     input.bookings,
     input.holdings,
     input.corrections,
+    rules.homeCurrency,
   );
   const bookings = [...corrected.bookings].sort(
     (a, b) => compareText(a.timestamp, b.timestamp) || compareText(a.id, b.id),
@@ -125,7 +126,10 @@ export function calculate(input: CalculationInput): CalculationResult {
   );
   const bookingById = new Map(bookings.map((b) => [b.id, b] as const));
   const holdingById = new Map(holdings.map((h) => [h.id, h] as const));
-  const table = new RateTable([...input.rates, ...corrected.rates]);
+  const table = new RateTable(
+    [...input.rates, ...corrected.rates],
+    rules.homeCurrency,
+  );
   const inYear = (b: Booking) =>
     b.timestamp >= yearStartTs && b.timestamp < cutoffTs;
   const quoteAt = (asset: string, date: string) =>
@@ -775,6 +779,7 @@ export function calculate(input: CalculationInput): CalculationResult {
     engineVersion: ENGINE_VERSION,
     taxYear,
     country: rules.country,
+    currency: rules.homeCurrency,
     yearEnd,
     totals: {
       wealthChf: str(wealth),
@@ -850,9 +855,14 @@ export function incomeLine(
   if (spamPattern.test(booking.asset)) {
     return { ...base, ...none, status: 'spam' };
   }
-  const override = table.lookup('price', booking.asset, 'CHF', date, 0, [
-    'manual',
-  ]);
+  const override = table.lookup(
+    'price',
+    booking.asset,
+    rules.homeCurrency,
+    date,
+    0,
+    ['manual'],
+  );
   if (!override && booking.valueUsd !== undefined) {
     const fx = table.fx('USD', date);
     if (!fx) return { ...base, ...none, status: 'missingPrice' };

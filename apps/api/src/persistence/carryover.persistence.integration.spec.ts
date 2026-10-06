@@ -223,6 +223,16 @@ describe('carry-over persistence', () => {
         user.id,
       ),
     ).rejects.toThrow(/CHECK constraint failed/);
+    // F4.1a: rates in a tax currency (EUR), but only ISO 4217 codes.
+    expect(
+      await userRates.upsertMany(user.id, [{ ...entry, currency: 'EUR' }]),
+    ).toBe(1);
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO user_rate (id, user_id, kind, asset, currency, date, value, source) VALUES ('ur2', ?, 'price', 'X', 'eur', '2025-01-01', '1', 'binance')`,
+        user.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
     const project = await projects.create(user.id, {
       name: 'P',
       taxYear: 2025,

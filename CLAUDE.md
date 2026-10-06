@@ -617,14 +617,16 @@ result — amounts as decimal strings, every figure with the `recordIds` behind 
     the ledger does not use — one Kraken statement for spot + earn; `platformWideStatements` in
     `balances.ts`, the same rule as the F5.8 hints) **replaces** the ledger positions of all the
     platform's accounts (no double count), and ledger = statement is then checked on the summed
-    ledger per asset (`ledgerVsStatement:<platform>|*|<asset>`). ENGINE_VERSION 3 (2 = this rule, 3 = the wallet check).
+    ledger per asset (`ledgerVsStatement:<platform>|*|<asset>`). ENGINE_VERSION 4 (2 = this rule, 3 = the wallet check,
+    4 = the tax currency, see Tax currency).
     Manual holdings (corrections) replace their asset. |q| < 1e-7 dropped;
     spam (name matches `claim`, or a `spam` booking) and negative positions stay listed but are not
     in the total.
-- **Price priority** (`rates/rate-table.ts` `unitPriceChf`): CHF = 1 → override (`manual` rate,
-  F9.1/F7.4) → ESTV (same day) → the record's CHF price → the record's USD price × USD/CHF →
-  stablecoins/USD = 1 USD × USD/CHF, EUR via EUR/CHF → stored CHF price → stored USD price ×
-  USD/CHF; prices at most 14 days before, else at most 14 days after; FX forward-filled.
+- **Price priority** (`rates/rate-table.ts` `unitPriceChf`, in the tax currency T, CHF by default):
+  T = 1 → override in T (`manual` rate, F9.1/F7.4) → ESTV (same day; **only T = CHF**) → the
+  record's CHF price (only T = CHF) → the record's USD price × USD/T → stablecoins/USD = 1 USD ×
+  USD/T, other fiat via its rate in T → stored price in T → stored USD price × USD/T; prices at
+  most 14 days before, else at most 14 days after; FX forward-filled, cross rates (see Tax currency).
 - **Income** (F7.2) of the year at arrival (UTC day), **net** after a fee in the same asset, gross
   as info. A booking with its own USD value (`valueUsd`/`feeValueUsd`, mapping fields — Kraken
   `amountusd`/`feeusd`) is valued `(valueUsd − feeValueUsd) × USD/CHF of the day`.
@@ -672,6 +674,49 @@ scans every cell/HTML of the statements for forbidden words. Web (Exporte tab): 
 the internal report in separate cards, the list grouped „Auszüge für die Steuerbehörde“ /
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
+
+## Tax currency (F4.1, F4.1a)
+
+Every project has a **tax currency** `project.tax_currency` (ISO 4217, CHECK 3 upper-case letters;
+migration `20261008170000_tax_currency`, which also widens the `currency` CHECK of `project_rate`
+and `user_rate` from CHF/USD to any code). Default from the country rules
+(`CountryRules.defaultTaxCurrency`, CH → CHF); the API accepts `TAX_CURRENCIES` (engine: the ECB
+currencies Frankfurter serves). Existing projects and **older packages** are CHF.
+
+- **Engine**: `withTaxCurrency(rules, T)` = the country's rules with `homeCurrency = T` (T counts
+  as fiat); the CH rules for CHF are returned unchanged, so a CHF project computes exactly as before.
+  `new RateTable(entries, T)`: `fx(base, date)` = base in T — the stored pair, else the inverse
+  pair, else a **cross rate** through USD, EUR or CHF (GBP in EUR = GBP/USD × USD/EUR); `fxDays`
+  for the yearly average. Price overrides (`price_override.priceChf`) are in T
+  (`applyCorrections(…, T)`). `CalculationResult.currency` / `DashboardResult.currency` name T;
+  **the `…Chf` field names stay** (stored snapshots, API types) and hold amounts in T —
+  `parameters.usdChf/eurChf` are USD/T and EUR/T. Snapshots of engine ≤ 3 are read as CHF
+  (`calculation.prisma.repository.ts`).
+- **API**: `projectRules(project)` (`calculation-input.service.ts`) everywhere a calculation runs;
+  the currency is part of the input hash → changing it makes the snapshot **stale**; the previous
+  year only counts with the same currency. Create/PATCH take `taxCurrency` (closed = 409 as
+  always). Rates: `fxBasesFor(T)` = USD and EUR (minus T) via `FxRateSourcePort.daily(base, T)`
+  (Frankfurter `?from=USD&to=EUR`), CoinGecko `FiatPriceSourcePort.dailyFiat` with
+  `vs_currency = T`, Binance stays USD; a series counts as cached only in USD or T. ESTV
+  (`estvApplies`) only for CHF: no apply, `GET …/rates` has `currency` and `estv.applicable`;
+  overrides in T or USD (fx only in T, else 400).
+- **Exports**: labels from T ("Wert EUR", "Steuerwert EUR", "USD/EUR per 31.12."), named cells
+  `fxCellName(base, T)` = `USDEUR`/`EUREUR` (CHF: `USDCHF`/`EURCHF`) — formulas unchanged in
+  structure; `priceSourceText(…, T)`; the method text without ESTV for T ≠ CHF; the data export's
+  info columns `exportExtraColumns(T)`. The exports use the **snapshot's** currency.
+- **Mail**: `{{vermoegen}}`/`{{ertrag}}` include the currency ("EUR 12'345.65"); a template saved
+  before wrote "CHF {{vermoegen}}" — the renderer drops that literal "CHF " (`LEGACY_CURRENCY`).
+- **Dashboard**: never sums across currencies. `?currency=` picks the projects in one tax currency
+  (default: the newest project's); the answer has `currency` + `currencies`; the page shows a
+  currency select with a note when there are several. The project card uses its project's
+  currency; "Kurse aktualisieren" fetches in the shown currency.
+- **Packages** carry `project.taxCurrency` (zod default CHF for older ones); follow-up projects
+  keep the source's currency.
+- **Web**: `formatChf(value, currency?)` / `lkChf: currency` prefix the code ("EUR 1’234.56");
+  table headers take `{{currency}}` (`result.fields.valueChf`, …). The workspace gets
+  `[taxCurrency]`; `ProjectWorkspaceService.currency()` = the latest result's currency, else the
+  project's. Create form + project detail: select (country default, CHF/EUR/USD/GBP, then the
+  rest); changing it on the detail page asks first (`projects.detail.currency*`).
 
 ## Dashboard, carry-over, packages, data export (F4.4, F10.7–F10.9, F11.4–F11.9)
 
@@ -899,6 +944,10 @@ prisma/schema.prisma` must still report **no difference**.
   latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
   (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
   the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
+- **Tax currency** (migration `20261008170000_tax_currency`): `project.tax_currency` (`ADD COLUMN`,
+  default `'CHF'`, CHECK 3 upper-case letters); `project_rate` and `user_rate` **redefined** only
+  to widen their `currency` CHECK to any 3-letter upper-case code — every other CHECK and index
+  copied. `persistence`/`calculation`/`carryover` integration specs test them.
 - **Hints** (migration `20261008120000_project_hint_state`): `project_hint_state` (PK
   `(project_id, hint_key)`, cascade with the project; CHECKs: status `done|ignored`, key 1–600
   chars, note ≤ 500); `hints.persistence.integration.spec.ts`.

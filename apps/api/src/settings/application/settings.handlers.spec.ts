@@ -13,7 +13,7 @@ import {
   UpdateSettingsCommand,
   UpdateSettingsHandler,
 } from './settings.handlers';
-import { FakeChfSource } from '../../rates/testing/in-memory-project-rate.repository';
+import { FakeFiatSource } from '../../rates/testing/in-memory-project-rate.repository';
 
 const KEY = 'a-test-key-that-is-long-enough-for-aes-256-gcm';
 
@@ -104,7 +104,7 @@ describe('settings (F11, F6.7)', () => {
 describe('CoinGecko key test (F6.7, F11.0s "Testen")', () => {
   function testSetup(ratesOnline = 'true') {
     const t = setup();
-    const chf = new FakeChfSource();
+    const chf = new FakeFiatSource();
     const config = {
       get: (key: string) => (key === 'RATES_ONLINE' ? ratesOnline : undefined),
     } as unknown as ConfigService<Env, true>;

@@ -51,6 +51,22 @@
         </div>
 
         <div class="flex flex-col gap-2">
+          <label hlmLabel for="detail-currency"
+            >{{ 'projects.fields.taxCurrency' | translate }}</label
+          >
+          <select hlmInput id="detail-currency" formControlName="taxCurrency">
+            @for (code of currencies().common; track code) {
+            <option [value]="code">{{ code }}</option>
+            }
+            <optgroup [label]="'projects.form.taxCurrencyOthers' | translate">
+              @for (code of currencies().others; track code) {
+              <option [value]="code">{{ code }}</option>
+              }
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="flex flex-col gap-2">
           <label hlmLabel for="detail-notes"
             >{{ 'projects.fields.notes' | translate }}</label
           >
@@ -110,6 +126,8 @@
         <dd>{{ 'countries.' + project.country | translate }}</dd>
         <dt>{{ 'projects.fields.canton' | translate }}</dt>
         <dd>{{ project.canton }}</dd>
+        <dt>{{ 'projects.fields.taxCurrency' | translate }}</dt>
+        <dd>{{ project.taxCurrency }}</dd>
         <dt>{{ 'projects.fields.createdAt' | translate }}</dt>
         <dd>{{ project.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
         <dt>{{ 'projects.fields.updatedAt' | translate }}</dt>
@@ -179,6 +197,7 @@
   [projectId]="project.id"
   [closed]="service.isClosed()"
   [taxYear]="project.taxYear"
+  [taxCurrency]="project.taxCurrency"
   [initialTab]="tab()"
 />
 
@@ -186,12 +205,11 @@
   <hlm-dialog-content *hlmDialogPortal>
     <hlm-dialog-header>
       <h3 hlmDialogTitle>
-        {{ (confirm() === 'reopen' ? 'projects.detail.reopenTitle' :
-        'projects.detail.deleteTitle' ) | translate }}
+        {{ 'projects.detail.' + confirm() + 'Title' | translate }}
       </h3>
       <p hlmDialogDescription>
-        {{ (confirm() === 'reopen' ? 'projects.detail.reopenBody' :
-        'projects.detail.deleteBody' ) | translate }}
+        {{ 'projects.detail.' + confirm() + 'Body' | translate: { currency:
+        pendingCurrency(), previous: project.taxCurrency } }}
       </p>
     </hlm-dialog-header>
     <div class="lk-dialog-body"></div>
@@ -205,8 +223,8 @@
         [variant]="confirm() === 'delete' ? 'destructive' : 'default'"
         (click)="confirmed()"
       >
-        {{ (confirm() === 'reopen' ? 'projects.detail.reopen' :
-        'projects.detail.delete' ) | translate }}
+        {{ (confirm() === 'currency' ? 'projects.detail.currencyConfirm' :
+        'projects.detail.' + confirm()) | translate }}
       </button>
     </hlm-dialog-footer>
   </hlm-dialog-content>

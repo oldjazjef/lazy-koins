@@ -32,6 +32,17 @@ describe('mail template renderer (F11.10)', () => {
     );
   });
 
+  it('drops the "CHF" a template from before F4.1a wrote before the amounts', () => {
+    const rendered = renderTemplate(
+      'Vermögen: CHF {{vermoegen}}, Ertrag: CHF {{ ertrag }}, CHF {{name}}',
+      values({ vermoegen: "EUR 1'000.00", ertrag: 'EUR 5.00' }),
+      'body',
+    );
+    expect(rendered.text).toBe(
+      "Vermögen: EUR 1'000.00, Ertrag: EUR 5.00, CHF Anna Muster",
+    );
+  });
+
   it('leaves unknown placeholders as typed and reports them once', () => {
     const rendered = renderTemplate(
       'Hallo {{vorname}} {{name}} {{vorname}} {{ x.y }}',

@@ -85,7 +85,7 @@ import {
   InMemoryEstvRepository,
 } from '../../rates/testing/in-memory-estv';
 import {
-  FakeChfSource,
+  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../../rates/testing/in-memory-project-rate.repository';
@@ -360,7 +360,7 @@ describe('notification triggers (F11.12)', () => {
       sealedKeys: { coingecko: secrets.box.seal('cg-key') },
     });
     const usd = new FakeUsdSource({ DOT: '5' });
-    const chf = new FakeChfSource();
+    const chf = new FakeFiatSource();
     const store = new InMemoryEstvRepository();
     const refresh = new RefreshRatesHandler(
       t.projects,

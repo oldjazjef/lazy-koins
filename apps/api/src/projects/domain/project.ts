@@ -53,6 +53,8 @@ export interface Project {
   readonly country: Country;
   /** Two-letter canton code (`ZH`); which ones are valid depends on the country. */
   readonly canton: string;
+  /** F4.1a: ISO 4217 code every amount is valued in (CHF, EUR, …). */
+  readonly taxCurrency: string;
   readonly status: ProjectStatus;
   readonly notes: string;
   readonly createdAt: string;
@@ -64,6 +66,8 @@ export interface CreateProjectInput {
   readonly taxYear: number;
   readonly country: Country;
   readonly canton: string;
+  /** F4.1a; absent = the country's default (CH → CHF). */
+  readonly taxCurrency?: string;
   readonly notes: string;
 }
 
@@ -73,6 +77,8 @@ export interface UpdateProjectInput {
   readonly notes?: string;
   readonly status?: ProjectStatus;
   readonly canton?: string;
+  /** F4.1a: a change makes the latest calculation stale (it is part of the input hash). */
+  readonly taxCurrency?: string;
 }
 
 /**

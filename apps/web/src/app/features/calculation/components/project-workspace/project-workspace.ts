@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  untracked,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { RecordsDialog } from '../../../../shared/components/records-dialog';
@@ -66,6 +67,8 @@ export class ProjectWorkspace {
   readonly projectId = input.required<string>();
   readonly closed = input(false);
   readonly taxYear = input.required<number>();
+  /** F4.1a: the project's tax currency. */
+  readonly taxCurrency = input('CHF');
   /** A tab to show, e.g. from a notification's link (`?tab=hints`); unknown values are ignored. */
   readonly initialTab = input<string | undefined>();
 
@@ -92,6 +95,13 @@ export class ProjectWorkspace {
       const id = this.projectId();
       this.service.projectId.set(id);
       this.files.projectId.set(id);
+    });
+    // A changed tax currency makes the result stale (F4.1a): show it.
+    effect(() => {
+      const currency = this.taxCurrency();
+      if (untracked(() => this.service.projectCurrency()) === currency) return;
+      this.service.projectCurrency.set(currency);
+      untracked(() => this.service.result.reload());
     });
     effect(() => {
       const tab = this.initialTab();

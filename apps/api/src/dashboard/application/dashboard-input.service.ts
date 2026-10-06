@@ -12,6 +12,7 @@ import {
   type Holding,
   type ProjectCorrection,
   type RateEntry,
+  withTaxCurrency,
 } from '@lazykoins/engine';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CorrectionRepositoryPort } from '../../calculation/ports/calculation.repository.port';
@@ -34,6 +35,13 @@ export interface DashboardFileRef {
 
 /** What the dashboard is computed from — metadata only, no file read yet. */
 export interface DashboardSources {
+  /**
+   * F4.1a: the tax currency shown — the dashboard values one currency at a time and includes the
+   * projects in it (per-currency totals; amounts in different currencies are never added up).
+   */
+  readonly currency: string;
+  /** Every tax currency among the user's projects (the newest project's first). */
+  readonly currencies: readonly string[];
   readonly projects: readonly Project[];
   /** One entry per stored file (rule 1: the newest project's entry). */
   readonly files: readonly ProjectFile[];
@@ -61,8 +69,14 @@ function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/** The distinct tax currencies of the projects (newest tax year first), in that order. */
+export function currenciesOf(projects: readonly Project[]): string[] {
+  return [...new Set(projects.map((p) => p.taxCurrency))];
+}
+
 /**
- * Assembles the dashboard's input across ALL projects of a user (F11.4): one deduplicated record
+ * Assembles the dashboard's input across ALL projects of a user (F11.4) in one tax currency
+ * (F4.1a): one deduplicated record
  * set (a stored file in several projects is read once — from the project with the newest tax
  * year), every project's corrections and stored rates (the engine keeps those that belong to the
  * date's year, `dashboardCorrections` / `dashboardRates`), plus the user's rate cache.
@@ -79,14 +93,32 @@ export class DashboardInputService {
     private readonly inputs: CalculationInputService,
   ) {}
 
-  /** `projectId`: only that project (the compact card on a project, F11.4); 404 if not mine. */
-  async sources(userId: string, projectId?: string): Promise<DashboardSources> {
+  /**
+   * `projectId`: only that project (the compact card on a project, F11.4); 404 if not mine.
+   * `currency`: the projects in that tax currency (F4.1a); absent or unknown = the newest
+   * project's currency.
+   */
+  async sources(
+    userId: string,
+    projectId?: string,
+    currency?: string,
+  ): Promise<DashboardSources> {
     const owned = await this.projects.findByOwner(userId);
-    const projects = projectId
-      ? owned.filter((p) => p.id === projectId)
-      : owned;
-    if (projectId && projects.length === 0) {
-      throw new NotFoundException('No such project');
+    const currencies = currenciesOf(owned);
+    let projects: Project[];
+    let selected: string;
+    if (projectId) {
+      projects = owned.filter((p) => p.id === projectId);
+      if (projects.length === 0) {
+        throw new NotFoundException('No such project');
+      }
+      selected = (projects[0] as Project).taxCurrency;
+    } else {
+      selected =
+        currency && currencies.includes(currency)
+          ? currency
+          : (currencies[0] ?? 'CHF');
+      projects = owned.filter((p) => p.taxCurrency === selected);
     }
     const bySha = new Map<string, { file: ProjectFile; year: number }>();
     const corrections: ProjectCorrection[] = [];
@@ -137,6 +169,8 @@ export class DashboardInputService {
       }
     }
     return {
+      currency: selected,
+      currencies,
       projects,
       files,
       mappings,
@@ -152,7 +186,13 @@ export class DashboardInputService {
       engineVersion: ENGINE_VERSION,
       from,
       to,
-      projects: sources.projects.map((p) => [p.id, p.taxYear, p.country]),
+      currency: sources.currency,
+      projects: sources.projects.map((p) => [
+        p.id,
+        p.taxYear,
+        p.country,
+        p.taxCurrency,
+      ]),
       files: sources.files.map((f) => [
         f.sha256,
         f.status,
@@ -189,8 +229,10 @@ export class DashboardInputService {
   /** Reads the files (once each) and applies the dashboard rules for corrections and rates. */
   async records(sources: DashboardSources): Promise<DashboardRecords> {
     const newest = sources.projects[0];
-    const rules =
-      (newest ? countryRules(newest.country) : undefined) ?? chRules;
+    const rules = withTaxCurrency(
+      (newest ? countryRules(newest.country) : undefined) ?? chRules,
+      sources.currency,
+    );
     const bookings: Booking[] = [];
     const holdings: Holding[] = [];
     const fileRefs = new Map<string, DashboardFileRef>();

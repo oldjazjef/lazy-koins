@@ -30,6 +30,8 @@ export interface AllocationPart {
 export class AllocationBar {
   readonly parts = input.required<readonly AllocationPart[]>();
   readonly label = input.required<string>();
+  /** F4.1a: the currency of the values. */
+  readonly currency = input('CHF');
 
   protected readonly slices = computed(() => {
     let x = 0;

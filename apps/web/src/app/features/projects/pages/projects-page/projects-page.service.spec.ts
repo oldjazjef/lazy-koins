@@ -15,6 +15,7 @@ const project = (id: string, taxYear: number): Project => ({
   taxYear,
   country: 'CH',
   canton: 'ZH',
+  taxCurrency: 'CHF',
   status: 'in_progress',
   notes: '',
   createdAt: '2026-01-01T00:00:00.000Z',

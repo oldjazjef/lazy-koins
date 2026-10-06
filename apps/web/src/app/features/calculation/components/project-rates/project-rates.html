@@ -12,7 +12,7 @@
   >
   }
   <span class="flex-1"></span>
-  @if (!closed()) {
+  @if (!closed()) { @if (view.estv.applicable) {
   <button
     hlmBtn
     variant="outline"
@@ -30,6 +30,7 @@
     accept=".xml,.csv,.txt,text/csv,application/xml,text/xml"
     (change)="picked($event)"
   />
+  }
   <button
     hlmBtn
     variant="outline"
@@ -51,6 +52,7 @@
 </div>
 <p class="text-muted-foreground mb-4 text-sm">{{ 'rates.hint' | translate }}</p>
 
+@if (view.estv.applicable) {
 <section
   class="lk-panel mb-6 flex flex-wrap items-start gap-3 p-4 text-sm"
   aria-labelledby="estv-project-title"
@@ -112,8 +114,11 @@
   </div>
   }
 </section>
-
-@if (service.lastRefresh(); as summary) {
+} @else {
+<p class="lk-panel text-muted-foreground mb-6 p-4 text-sm" role="note">
+  {{ 'rates.estvNotApplicable' | translate: { currency: view.currency } }}
+</p>
+} @if (service.lastRefresh(); as summary) {
 <div class="lk-panel mb-6 p-4 text-sm" aria-live="polite">
   <p class="font-medium">
     {{ 'rates.summary' | translate: { fx: summary.fx } }}
@@ -135,7 +140,9 @@
 <section hlmCard class="mb-6">
   <div hlmCardHeader>
     <h3 hlmCardTitle>{{ 'rates.overrideTitle' | translate }}</h3>
-    <p hlmCardDescription>{{ 'rates.overrideHint' | translate }}</p>
+    <p hlmCardDescription>
+      {{ 'rates.overrideHint' | translate: { currency: view.currency } }}
+    </p>
   </div>
   <div hlmCardContent>
     <form
@@ -163,8 +170,9 @@
           >{{ 'rates.fields.currency' | translate }}</label
         >
         <select hlmInput id="rate-currency" formControlName="currency">
-          <option value="CHF">{{ 'rates.currency.CHF' | translate }}</option>
-          <option value="USD">{{ 'rates.currency.USD' | translate }}</option>
+          @for (code of currencies(); track code) {
+          <option [value]="code">{{ code }}</option>
+          }
         </select>
       </div>
       <div class="flex flex-col gap-1">

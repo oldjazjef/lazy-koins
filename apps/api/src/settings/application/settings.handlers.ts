@@ -25,7 +25,7 @@ import {
 import { UserSettingsRepositoryPort } from '../ports/user-settings.repository.port';
 import { SecretBox } from '../../common/crypto/secret-box';
 import {
-  ChfPriceSourcePort,
+  FiatPriceSourcePort,
   type KeyCheckResult,
 } from '../../rates/ports/rate-source.port';
 
@@ -151,7 +151,7 @@ export class TestCoingeckoKeyHandler implements ICommandHandler<
 > {
   constructor(
     private readonly reader: SettingsReader,
-    private readonly chf: ChfPriceSourcePort,
+    private readonly chf: FiatPriceSourcePort,
     private readonly config: ConfigService<Env, true>,
   ) {}
 

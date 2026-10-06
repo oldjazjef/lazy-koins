@@ -9,6 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { TAX_CURRENCIES } from '@lazykoins/engine';
 import {
   COUNTRIES,
   type Country,
@@ -47,6 +48,16 @@ export class CreateProjectDto {
   @Matches(CANTON, { message: 'canton must be a two-letter code like ZH' })
   canton!: string;
 
+  @ApiPropertyOptional({
+    enum: TAX_CURRENCIES,
+    example: 'CHF',
+    description:
+      'F4.1a: the currency every amount is valued in; absent = the country default (CH → CHF)',
+  })
+  @IsOptional()
+  @IsIn(TAX_CURRENCIES)
+  taxCurrency?: string;
+
   @ApiPropertyOptional({ maxLength: NOTES_MAX })
   @IsOptional()
   @IsString()
@@ -83,6 +94,15 @@ export class UpdateProjectDto {
   @IsString()
   @Matches(CANTON, { message: 'canton must be a two-letter code like ZH' })
   canton?: string;
+
+  @ApiPropertyOptional({
+    enum: TAX_CURRENCIES,
+    description:
+      'F4.1a: a change makes the latest calculation stale; refresh the rates and recalculate',
+  })
+  @IsOptional()
+  @IsIn(TAX_CURRENCIES)
+  taxCurrency?: string;
 }
 
 export class ProjectResponseDto {
@@ -91,6 +111,11 @@ export class ProjectResponseDto {
   @ApiProperty() taxYear!: number;
   @ApiProperty({ enum: COUNTRIES }) country!: Country;
   @ApiProperty() canton!: string;
+  @ApiProperty({
+    example: 'CHF',
+    description: 'F4.1a: ISO 4217 code every amount of the project is in',
+  })
+  taxCurrency!: string;
   @ApiProperty({ enum: PROJECT_STATUSES }) status!: ProjectStatus;
   @ApiProperty() notes!: string;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
@@ -107,7 +132,7 @@ export class ProjectListItemDto extends ProjectResponseDto {
   @ApiProperty({
     nullable: true,
     description:
-      'Steuerwert per 31.12. of the latest calculation (decimal string)',
+      'Steuerwert per 31.12. of the latest calculation (decimal string, in `taxCurrency`)',
   })
   wealthChf!: string | null;
 

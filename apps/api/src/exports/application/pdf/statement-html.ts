@@ -74,8 +74,8 @@ function header(data: ExportData, variant: string): string {
     <p class="meta">${e(`${data.ownerName} · Steuerjahr ${data.taxYear} · Kanton ${data.canton} · erstellt am ${swissDate(data.createdAt)} · berechnet am ${swissDate(data.calculatedAt)}`)}</p>
     <p class="note">${e(data.rules.labels.noTaxAdvice)}</p>
     <div class="figures">
-      <div class="figure"><div class="label">${e(`${data.rules.labels.wealthTitle}${data.taxYear}`)}</div><div class="value">CHF ${e(chf(data.result.totals.wealthChf))}</div></div>
-      <div class="figure"><div class="label">${e(`${data.rules.labels.incomeTitle} ${data.taxYear}`)}</div><div class="value">CHF ${e(chf(data.result.totals.incomeChf))}</div></div>
+      <div class="figure"><div class="label">${e(`${data.rules.labels.wealthTitle}${data.taxYear}`)}</div><div class="value">${e(data.rules.homeCurrency)} ${e(chf(data.result.totals.wealthChf))}</div></div>
+      <div class="figure"><div class="label">${e(`${data.rules.labels.incomeTitle} ${data.taxYear}`)}</div><div class="value">${e(data.rules.homeCurrency)} ${e(chf(data.result.totals.incomeChf))}</div></div>
     </div>`;
 }
 
@@ -90,7 +90,7 @@ function securitiesList(data: ExportData): string {
     .join('');
   return `
     <h2>${e(data.rules.labels.securitiesList)}</h2>
-    <table><thead><tr><th>Plattform / Wallet</th><th>Hauptpositionen</th><th class="num">Kleinpositionen</th><th class="num">Steuerwert CHF</th></tr></thead>
+    <table><thead><tr><th>Plattform / Wallet</th><th>Hauptpositionen</th><th class="num">Kleinpositionen</th><th class="num">Steuerwert ${e(data.rules.homeCurrency)}</th></tr></thead>
     <tbody>${rows}<tr class="total"><td colspan="3">Total</td><td class="num">${e(chf(data.result.totals.wealthChf))}</td></tr></tbody></table>${unpricedNote(data)}`;
 }
 
@@ -110,7 +110,7 @@ function incomeTable(data: ExportData): string {
   }).join('');
   return `
     <h2>${e(`${data.rules.labels.incomeTitle} ${data.taxYear}`)}</h2>
-    <table><thead><tr><th>Kategorie</th><th class="num">Buchungen</th><th class="num">Ertrag CHF</th></tr></thead>
+    <table><thead><tr><th>Kategorie</th><th class="num">Buchungen</th><th class="num">Ertrag ${e(data.rules.homeCurrency)}</th></tr></thead>
     <tbody>${rows}<tr class="total"><td colspan="2">Total</td><td class="num">${e(chf(data.result.totals.incomeChf))}</td></tr></tbody></table>`;
 }
 
@@ -132,10 +132,11 @@ export function simpleStatementHtml(data: ExportData): string {
 /** F10.2: every section of the detailed workbook as tables. */
 export function detailedStatementHtml(data: ExportData): string {
   const { result } = data;
+  const T = data.rules.homeCurrency;
   const positions = result.positions
     .map(
       (p) =>
-        `<tr><td>${e(p.platform)}</td><td>${e(p.accountId)}</td><td>${e(p.asset)}</td><td class="num">${e(quantity(p.quantity))}</td><td class="num">${e(p.priceChf === null ? '–' : quantity(p.priceChf))}</td><td class="num">${e(chf(p.valueChf))}</td><td>${e(STATUS_LABELS[p.status])}</td><td class="small">${e(QUANTITY_SOURCE_LABELS[p.quantitySource])}<br>${e(priceSourceText(p.priceOrigin, p.priceSource, p.priceDate))}</td></tr>`,
+        `<tr><td>${e(p.platform)}</td><td>${e(p.accountId)}</td><td>${e(p.asset)}</td><td class="num">${e(quantity(p.quantity))}</td><td class="num">${e(p.priceChf === null ? '–' : quantity(p.priceChf))}</td><td class="num">${e(chf(p.valueChf))}</td><td>${e(STATUS_LABELS[p.status])}</td><td class="small">${e(QUANTITY_SOURCE_LABELS[p.quantitySource])}<br>${e(priceSourceText(p.priceOrigin, p.priceSource, p.priceDate, T))}</td></tr>`,
     )
     .join('');
   const income = result.income
@@ -157,20 +158,20 @@ export function detailedStatementHtml(data: ExportData): string {
         `<tr><td>${e(swissDate(ev.timestamp))}</td><td>${e(oneOffLabel(ev.kind))}</td><td>${e(ev.platform)}</td><td>${e(ev.asset)}</td><td class="num">${e(quantity(ev.quantity))}</td><td class="num">${e(chf(ev.valueChf))}</td></tr>`,
     )
     .join('');
-  const params = `<p>USD/CHF per 31.12.: <b>${e(result.parameters.usdChf ?? '–')}</b> (${e(result.parameters.usdChfSource ?? '–')}) · EUR/CHF per 31.12.: <b>${e(result.parameters.eurChf ?? '–')}</b> (${e(result.parameters.eurChfSource ?? '–')})</p>`;
+  const params = `<p>USD/${e(T)} per 31.12.: <b>${e(result.parameters.usdChf ?? '–')}</b> (${e(result.parameters.usdChfSource ?? '–')}) · EUR/${e(T)} per 31.12.: <b>${e(result.parameters.eurChf ?? '–')}</b> (${e(result.parameters.eurChfSource ?? '–')})</p>`;
   return page(
     `Steuerauszug ${data.taxYear} (ausführlich)`,
     header(data, 'ausführlich') +
       securitiesList(data) +
       incomeTable(data) +
       `<h2>Parameter</h2>${params}` +
-      `<h2>Bestand per 31.12.${data.taxYear}</h2><table><thead><tr><th>Plattform</th><th>Konto</th><th>Asset</th><th class="num">Menge</th><th class="num">Kurs CHF</th><th class="num">Wert CHF</th><th>Status</th><th>Quelle</th></tr></thead><tbody>${positions}</tbody></table>${footnotes(result.positions.map((p) => statusNote(data.rules, p.status)))}` +
-      `<h2>Ertrag Detail</h2><table><thead><tr><th>Datum</th><th>Plattform</th><th>Kategorie</th><th>Asset</th><th class="num">Menge netto</th><th class="num">Wert CHF</th><th class="num">Brutto</th><th>Art</th></tr></thead><tbody>${income}</tbody></table>${footnotes(result.income.filter((l) => l.status === 'missingPrice').map(() => `– = ${data.rules.labels.noPriceNote}`))}` +
+      `<h2>Bestand per 31.12.${data.taxYear}</h2><table><thead><tr><th>Plattform</th><th>Konto</th><th>Asset</th><th class="num">Menge</th><th class="num">Kurs ${e(T)}</th><th class="num">Wert ${e(T)}</th><th>Status</th><th>Quelle</th></tr></thead><tbody>${positions}</tbody></table>${footnotes(result.positions.map((p) => statusNote(data.rules, p.status)))}` +
+      `<h2>Ertrag Detail</h2><table><thead><tr><th>Datum</th><th>Plattform</th><th>Kategorie</th><th>Asset</th><th class="num">Menge netto</th><th class="num">Wert ${e(T)}</th><th class="num">Brutto</th><th>Art</th></tr></thead><tbody>${income}</tbody></table>${footnotes(result.income.filter((l) => l.status === 'missingPrice').map(() => `– = ${data.rules.labels.noPriceNote}`))}` +
       (gaps
-        ? `<h2>Earn-Lücke (Differenzmethode)</h2><p class="small">Lücke = (Bestand Ende − Bestand Anfang) − Σ Historie (ohne interne Umbuchungen); nur positive Lücken sind Ertrag, bewertet zum Jahresmittel.</p><table><thead><tr><th>Plattform</th><th>Asset</th><th class="num">Anfang</th><th class="num">Ende</th><th class="num">Σ Historie</th><th class="num">Lücke</th><th class="num">Wert CHF</th><th>Status</th></tr></thead><tbody>${gaps}</tbody></table>${footnotes(result.earnGaps.filter((g) => g.status === 'missingPrice').map(() => statusNote(data.rules, 'missingPrice')))}`
+        ? `<h2>Earn-Lücke (Differenzmethode)</h2><p class="small">Lücke = (Bestand Ende − Bestand Anfang) − Σ Historie (ohne interne Umbuchungen); nur positive Lücken sind Ertrag, bewertet zum Jahresmittel.</p><table><thead><tr><th>Plattform</th><th>Asset</th><th class="num">Anfang</th><th class="num">Ende</th><th class="num">Σ Historie</th><th class="num">Lücke</th><th class="num">Wert ${e(T)}</th><th>Status</th></tr></thead><tbody>${gaps}</tbody></table>${footnotes(result.earnGaps.filter((g) => g.status === 'missingPrice').map(() => statusNote(data.rules, 'missingPrice')))}`
         : '') +
       (events
-        ? `<h2>Einmalereignisse</h2><table><thead><tr><th>Datum</th><th>Ereignis</th><th>Plattform</th><th>Asset</th><th class="num">Menge</th><th class="num">Wert CHF</th></tr></thead><tbody>${events}</tbody></table>${footnotes(result.oneOffEvents.filter((ev) => ev.valueChf === null).map(() => `– = ${data.rules.labels.noPriceNote}`))}`
+        ? `<h2>Einmalereignisse</h2><table><thead><tr><th>Datum</th><th>Ereignis</th><th>Plattform</th><th>Asset</th><th class="num">Menge</th><th class="num">Wert ${e(T)}</th></tr></thead><tbody>${events}</tbody></table>${footnotes(result.oneOffEvents.filter((ev) => ev.valueChf === null).map(() => `– = ${data.rules.labels.noPriceNote}`))}`
         : '') +
       `<h2>Methodik</h2>${methodLines(data)
         .slice(2)

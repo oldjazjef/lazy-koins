@@ -85,6 +85,9 @@ model Project {
   country   Country       @default(CH)
   /// Two-letter canton code; which codes exist is checked by the API against the country.
   canton    String
+  /// F4.1a: ISO 4217 code every amount is valued in (CHF, EUR, …); the default comes from the
+  /// country (CH → CHF). CHECK (3 upper-case letters) in the migration.
+  taxCurrency String      @default("CHF") @map("tax_currency")
   status    ProjectStatus @default(in_progress)
   notes     String        @default("")
   createdAt DateTime      @default(now()) @map("created_at")
@@ -235,7 +238,7 @@ model ProjectRate {
   /// price | fx. CHECK in the migration.
   kind      String
   asset     String
-  /// CHF | USD. CHECK in the migration.
+  /// USD or a tax currency (CHF, EUR, …; F4.1a): 3 upper-case letters. CHECK in the migration.
   currency  String
   /// ISO date.
   date      String
@@ -573,7 +576,7 @@ model UserRate {
   /// price | fx. CHECK in the migration.
   kind      String
   asset     String
-  /// CHF | USD. CHECK in the migration.
+  /// USD or a tax currency (CHF, EUR, …; F4.1a): 3 upper-case letters. CHECK in the migration.
   currency  String
   /// ISO date.
   date      String

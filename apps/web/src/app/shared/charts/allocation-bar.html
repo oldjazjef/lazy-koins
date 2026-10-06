@@ -18,7 +18,7 @@
       <title>
         {{ slice.part.asset ?? ('charts.others' | translate: { count:
         slice.part.assets }) }}: {{ slice.part.sharePct }} % · {{
-        slice.part.valueChf | lkChf }}
+        slice.part.valueChf | lkChf: currency() }}
       </title>
     </rect>
     }
@@ -48,7 +48,7 @@
         <tr>
           <th>{{ 'charts.asset' | translate }}</th>
           <th>{{ 'charts.share' | translate }}</th>
-          <th>{{ 'charts.valueChf' | translate }}</th>
+          <th>{{ 'charts.valueChf' | translate: { currency: currency() } }}</th>
         </tr>
       </thead>
       <tbody>

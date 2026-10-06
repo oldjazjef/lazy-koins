@@ -3,9 +3,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -36,7 +38,8 @@ const ManualRateSchema = z.object({
     .string()
     .trim()
     .regex(/^[A-Za-z0-9.]{1,40}$/, 'rates.errors.asset'),
-  currency: z.enum(['CHF', 'USD']),
+  /** The project's tax currency or USD (F4.1a). */
+  currency: z.string().regex(/^[A-Z]{3}$/),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'rates.errors.date'),
   value: z
     .string()
@@ -86,6 +89,14 @@ export class ProjectRates {
     this.service.rates.hasValue() ? this.service.rates.value() : undefined,
   );
 
+  /** F4.1a: overrides are in the tax currency (prices also in USD). */
+  protected readonly currency = computed(
+    () => this.view()?.currency ?? this.service.projectCurrency(),
+  );
+  protected readonly currencies = computed(() => [
+    ...new Set([this.currency(), 'USD']),
+  ]);
+
   protected readonly series = computed(() => {
     const term = this.filter().trim().toUpperCase();
     return (this.view()?.series ?? []).filter(
@@ -124,10 +135,19 @@ export class ProjectRates {
   protected readonly form = inject(FormBuilder).nonNullable.group({
     kind: ['price' as 'price' | 'fx'],
     asset: [''],
-    currency: ['CHF' as 'CHF' | 'USD'],
+    currency: ['CHF'],
     date: [''],
     value: [''],
   });
+
+  constructor() {
+    // The override form starts in the project's tax currency.
+    effect(() => {
+      const currency = this.currency();
+      const control = untracked(() => this.form.controls.currency);
+      if (control.pristine) control.setValue(currency);
+    });
+  }
 
   protected refresh(force: boolean): void {
     void this.service.refreshRates(force).catch(() => undefined);
@@ -137,7 +157,7 @@ export class ProjectRates {
     this.form.reset({
       kind: series.kind,
       asset: series.asset,
-      currency: series.kind === 'fx' ? 'CHF' : series.currency,
+      currency: series.kind === 'fx' ? this.currency() : series.currency,
       date: `${this.taxYear()}-12-31`,
       value: series.yearEnd?.value ?? '',
     });
@@ -156,7 +176,7 @@ export class ProjectRates {
     this.error.set(null);
     void this.service
       .setManualRate(parsed.data)
-      .then(() => this.form.reset())
+      .then(() => this.form.reset({ currency: this.currency() }))
       .catch(() => undefined);
   }
 

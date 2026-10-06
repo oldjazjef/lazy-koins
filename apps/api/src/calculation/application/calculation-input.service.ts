@@ -6,12 +6,14 @@ import {
   type CalculationInput,
   type Correction,
   countryRules,
+  type CountryRules,
   ENGINE_VERSION,
   type Holding,
   parseStandardFile,
   type PreviousYear,
   type RateEntry,
   type WalletState,
+  withTaxCurrency,
 } from '@lazykoins/engine';
 import { walletStates } from '../../wallets/domain/wallet-states';
 import { WalletRepositoryPort } from '../../wallets/ports/wallet.repository.port';
@@ -87,8 +89,7 @@ export class CalculationInputService {
   }
 
   async build(project: Project): Promise<AssembledInput> {
-    const rules = countryRules(project.country);
-    if (!rules) throw new Error(`No country rules for ${project.country}`);
+    const rules = projectRules(project);
     const sources = await this.sources(project);
     const bookings: Booking[] = [];
     const holdings: Holding[] = [];
@@ -193,14 +194,19 @@ export class CalculationInputService {
     );
   }
 
-  /** The owner's project of the year before (same country), via its latest snapshot. */
+  /**
+   * The owner's project of the year before (same country and tax currency — its values are
+   * compared), via its latest snapshot.
+   */
   private async previousYear(
     project: Project,
   ): Promise<{ previous: PreviousYear | undefined; ref: string | null }> {
     const candidates = (await this.projects.findByOwner(project.ownerId))
       .filter(
         (p) =>
-          p.taxYear === project.taxYear - 1 && p.country === project.country,
+          p.taxYear === project.taxYear - 1 &&
+          p.country === project.country &&
+          p.taxCurrency === project.taxCurrency,
       )
       .sort((a, b) => compareText(b.updatedAt, a.updatedAt));
     for (const candidate of candidates) {
@@ -248,11 +254,25 @@ export class CalculationInputService {
   }
 }
 
+/**
+ * The country's rules valued in the project's tax currency (F4.1a) — what every calculation,
+ * export and dashboard of the project runs on.
+ */
+export function projectRules(
+  project: Pick<Project, 'country' | 'taxCurrency'>,
+): CountryRules {
+  const rules = countryRules(project.country);
+  if (!rules) throw new Error(`No country rules for ${project.country}`);
+  return withTaxCurrency(rules, project.taxCurrency);
+}
+
 function hashOf(project: Project, sources: Sources): string {
   const canonical = {
     engineVersion: ENGINE_VERSION,
     taxYear: project.taxYear,
     country: project.country,
+    // F4.1a: another tax currency values everything anew.
+    currency: project.taxCurrency,
     files: sources.files.map((f) => [
       f.sha256,
       f.status,
