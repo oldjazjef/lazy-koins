@@ -1,0 +1,58 @@
+<div class="flex min-h-dvh flex-col">
+  <header class="bg-card border-b">
+    <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
+      <a routerLink="/app" class="lk-brand">{{ 'app.name' | translate }}</a>
+
+      <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
+        <ul class="flex items-center gap-1">
+          @for (item of items; track item.path) {
+          <li>
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="lk-nav-active"
+              ariaCurrentWhenActive="page"
+              class="lk-nav-link"
+            >
+              <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+              <span>{{ item.labelKey | translate }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </nav>
+
+      @if (auth.email(); as email) {
+      <span class="text-muted-foreground hidden text-sm md:inline"
+        >{{ email }}</span
+      >
+      }
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        type="button"
+        (click)="theme.toggle()"
+        [attr.aria-label]="'nav.toggleTheme' | translate"
+      >
+        <ng-icon
+          [name]="theme.current() === 'dark' ? 'lucideSun' : 'lucideMoon'"
+          size="18"
+        />
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        (click)="signOut()"
+      >
+        <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
+        {{ 'nav.signOut' | translate }}
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+    <router-outlet />
+  </main>
+</div>

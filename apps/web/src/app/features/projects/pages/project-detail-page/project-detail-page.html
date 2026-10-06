@@ -1,0 +1,166 @@
+@if (service.project.hasValue()) { @let project = service.project.value();
+<lk-page-header
+  [title]="project.name"
+  [subtitle]="'projects.detail.subtitle' | translate: { year: project.taxYear }"
+  [back]="true"
+>
+  <lk-project-status-badge [status]="project.status" />
+</lk-page-header>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section hlmCard class="lg:col-span-2">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'projects.detail.editTitle' | translate }}</h2>
+      @if (service.isClosed()) {
+      <p hlmCardDescription>{{ 'projects.detail.closedHint' | translate }}</p>
+      }
+    </div>
+    <div hlmCardContent>
+      <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="save()">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="detail-name"
+            >{{ 'projects.fields.name' | translate }}</label
+          >
+          <input hlmInput id="detail-name" type="text" formControlName="name" />
+          @if ( form.controls.name.touched &&
+          form.controls.name.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="detail-status"
+            >{{ 'projects.fields.status' | translate }}</label
+          >
+          <select hlmInput id="detail-status" formControlName="status">
+            @for (status of statuses; track status) {
+            <option [value]="status">
+              {{ 'projects.status.' + status | translate }}
+            </option>
+            }
+          </select>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="detail-notes"
+            >{{ 'projects.fields.notes' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="detail-notes"
+            rows="5"
+            formControlName="notes"
+          ></textarea>
+          @if (form.controls.notes.errors?.['zod']; as error) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+
+        <div class="flex flex-wrap justify-end gap-2">
+          @if (service.isClosed()) {
+          <button
+            hlmBtn
+            type="button"
+            [disabled]="service.isBusy()"
+            (click)="confirm.set('reopen')"
+          >
+            {{ 'projects.detail.reopen' | translate }}
+          </button>
+          } @else {
+          <button
+            hlmBtn
+            variant="destructive"
+            type="button"
+            [disabled]="service.isBusy()"
+            (click)="confirm.set('delete')"
+          >
+            {{ 'projects.detail.delete' | translate }}
+          </button>
+          <button
+            hlmBtn
+            type="submit"
+            [disabled]="service.isBusy() || form.pristine"
+          >
+            {{ 'common.save' | translate }}
+          </button>
+          }
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'projects.detail.factsTitle' | translate }}</h2>
+    </div>
+    <div hlmCardContent>
+      <dl class="lk-facts">
+        <dt>{{ 'projects.fields.taxYear' | translate }}</dt>
+        <dd class="tabular-nums">{{ project.taxYear }}</dd>
+        <dt>{{ 'projects.fields.country' | translate }}</dt>
+        <dd>{{ 'countries.' + project.country | translate }}</dd>
+        <dt>{{ 'projects.fields.canton' | translate }}</dt>
+        <dd>{{ project.canton }}</dd>
+        <dt>{{ 'projects.fields.createdAt' | translate }}</dt>
+        <dd>{{ project.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dt>{{ 'projects.fields.updatedAt' | translate }}</dt>
+        <dd>{{ project.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+      </dl>
+      <p class="text-muted-foreground mt-6 text-sm">
+        {{ 'projects.detail.comingSoon' | translate }}
+      </p>
+    </div>
+  </section>
+</div>
+
+<hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ (confirm() === 'reopen' ? 'projects.detail.reopenTitle' :
+        'projects.detail.deleteTitle' ) | translate }}
+      </h3>
+      <p hlmDialogDescription>
+        {{ (confirm() === 'reopen' ? 'projects.detail.reopenBody' :
+        'projects.detail.deleteBody' ) | translate }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [variant]="confirm() === 'delete' ? 'destructive' : 'default'"
+        (click)="confirmed()"
+      >
+        {{ (confirm() === 'reopen' ? 'projects.detail.reopen' :
+        'projects.detail.delete' ) | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+} @else if (service.notFound()) {
+<lk-empty-state [message]="'projects.detail.notFound' | translate">
+  <a hlmBtn variant="outline" routerLink="/app/projects"
+    >{{ 'projects.detail.backToList' | translate }}</a
+  >
+</lk-empty-state>
+} @else if (service.project.error()) {
+<lk-empty-state [message]="'projects.detail.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.project.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<div class="flex flex-col gap-4">
+  <hlm-skeleton class="h-9 w-1/3" />
+  <hlm-skeleton class="h-64 w-full" />
+</div>
+}

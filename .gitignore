@@ -1,11 +1,20 @@
 # Real tax data (exports + golden.json) – never commit
 private/
 
-# Claude Code
-.claude/worktrees
-.claude/settings.local.json
+# compiled output
+dist
+tmp
+out-tsc
 
-# Secrets – credentials belong in GitHub Actions secrets or local .env files
+# Prisma Client, generated from apps/api/prisma/schema.prisma by `pnpm db:generate`. Prisma 7 emits
+# TypeScript source into the project; still build output, regenerated on demand.
+apps/api/src/generated
+
+# dependencies
+node_modules
+
+# Secrets – credentials belong in GitHub Actions secrets or local .env files.
+# `.env.example` files document the shape.
 .env
 .env.*
 !.env.example
@@ -16,7 +25,40 @@ private/
 *service-account*.json
 firebase-adminsdk*.json
 
-# SQLite databases
+# IDEs and editors
+/.idea
+.project
+.classpath
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# misc
+/coverage
+npm-debug.log
+yarn-error.log
+.DS_Store
+Thumbs.db
+
+.nx/cache
+.nx/workspace-data
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
+.angular
+
+# Claude Code
+.claude/worktrees
+.claude/settings.local.json
+
+vitest.config.*.timestamp*
+.screenshots/
+tmp-*.mjs
+.pnpm-store
+
+# SQLite databases (dev: .data/lazykoins.db, integration suite: tmp/, generate fallback: tmp/)
 .data/
 *.db
 *.db-journal

@@ -1,0 +1,21 @@
+# Kept small on purpose: the build stage copies the whole workspace, because Nx needs the project
+# graph and a partial copy fails with "Cannot find configuration for task".
+**/node_modules
+**/.git
+
+# Build output and caches. Copying these in would not just bloat the context — a host-built dist/
+# would be overwritten by the container's own build anyway, and .nx carries absolute host paths.
+dist
+.nx
+.pnpm-store
+.angular
+tmp
+.tmp
+
+# Never belongs in an image: real tax data, secrets, local databases.
+private
+**/.env
+**/.env.*
+!**/.env.example
+.screenshots
+.data

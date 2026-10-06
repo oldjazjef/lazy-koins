@@ -1,0 +1,52 @@
+# This is an integrated Nx workspace: every dependency lives in the root manifest and
+# apps carry no package.json of their own. `apps/*` is listed for the day one of them
+# needs to become a real package; today it matches nothing, which is fine.
+#
+# `libs/*/*` is deliberately NOT listed. The spartan generator names those libs after
+# their import path (`@lazykoins/ui/button`), and a scoped npm name may contain only a
+# single `/`, so pnpm rejects them as workspace packages. Nx resolves them through
+# tsconfig.base.json path mappings instead (libs/engine too).
+packages:
+  - 'apps/*'
+
+# pnpm 10+ refuses to run dependency install scripts unless they are allowlisted here, and
+# every `true` entry ships a native binary or a postinstall step the toolchain needs. Leaving
+# one out fails later, at build or watch time, not at install time.
+#   esbuild            Angular's bundler (@angular/build)
+#   @swc/core          @swc-node/register, used by Nx to execute TS config files
+#   @parcel/watcher    Nx file watching
+#   lmdb, msgpackr-extract  Nx task cache
+#   nx                 own postinstall
+#   less               pulled in by @angular/build's stylesheet pipeline
+#   unrs-resolver      native module resolver behind eslint-plugin-import
+#   prisma, @prisma/engines  the CLI's schema-engine binary, needed by `migrate`
+#   better-sqlite3     the SQLite driver behind Prisma's adapter; fetches (or builds) its
+#                      native binary — without it the API dies at the first query
+#
+# The `false` entries are deliberate: `@nestjs/core` only prints a sponsorship notice,
+# `@scarf/scarf` phones home with install analytics, `protobufjs` (via firebase-admin) only
+# checks its own version, and `@firebase/util` writes an auto-init config for Firebase
+# Hosting, which this project does not use (the app passes its config explicitly).
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  better-sqlite3: true
+  '@swc/core': true
+  esbuild: true
+  less: true
+  lmdb: true
+  msgpackr-extract: true
+  nx: true
+  prisma: true
+  unrs-resolver: true
+  '@nestjs/core': false
+  '@scarf/scarf': false
+  '@firebase/util': false
+  protobufjs: false
+
+# Nx is pinned to one exact version (see CLAUDE.md), but @spartan-ng/cli depends on `@nx/devkit`
+# with a caret range and would otherwise pull the newest one — whose generators refuse to run
+# against an older `nx` ("does not export the ignore checkers"). Keep these in step with `nx`.
+overrides:
+  '@nx/devkit': 23.1.1
+  nx: 23.1.1

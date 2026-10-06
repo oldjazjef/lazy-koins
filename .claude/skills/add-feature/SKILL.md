@@ -33,8 +33,9 @@ description: Add a routed feature or page to apps/web following this repo's conv
    `undefined`). Selector prefix `lk-`. No calculation in the app: figures come from the API
    (which runs `libs/engine`).
 
-5. **Numbers**: amounts arrive as decimal strings — format them with the shared formatters
-   (de-CH, F11.2), never through `Number()`. Every figure that F7.5 covers is clickable down to its
+5. **Numbers**: amounts arrive as decimal strings — format them with shared formatters
+   (de-CH, F11.2; create `shared/format/` with the first amount, on top of decimal.js), never
+   through `Number()`. Every figure that F7.5 covers is clickable down to its
    bookings.
 
 6. **Forms**: typed reactive forms + `zodValidator(Schema)`; Zod messages are i18n keys rendered

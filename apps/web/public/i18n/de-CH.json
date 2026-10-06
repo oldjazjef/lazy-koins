@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "lazy-koins"
+  },
+  "actions": {
+    "undo": "Rückgängig"
+  },
+  "common": {
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "retry": "Erneut versuchen",
+    "save": "Speichern"
+  },
+  "countries": {
+    "CH": "Schweiz"
+  },
+  "nav": {
+    "label": "Hauptnavigation",
+    "projects": "Projekte",
+    "signOut": "Abmelden",
+    "toggleTheme": "Hell/Dunkel umschalten"
+  },
+  "login": {
+    "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "signIn": "Anmelden",
+    "register": "Konto erstellen",
+    "forgotPassword": "Passwort vergessen?",
+    "or": "oder",
+    "withGoogle": "Mit Google anmelden",
+    "emailInvalid": "Bitte eine gültige E-Mail-Adresse eingeben.",
+    "passwordTooShort": "Das Passwort braucht mindestens 6 Zeichen.",
+    "failed": "Anmeldung fehlgeschlagen",
+    "registerFailed": "Konto konnte nicht erstellt werden",
+    "resetSent": "Wir haben dir einen Link zum Zurücksetzen geschickt.",
+    "resetFailed": "Link zum Zurücksetzen konnte nicht gesendet werden",
+    "dev": {
+      "hint": "Entwicklungsmodus: Anmeldung mit einer beliebigen E-Mail-Adresse, ohne Passwort.",
+      "submit": "Weiter"
+    }
+  },
+  "projects": {
+    "status": {
+      "in_progress": "In Arbeit",
+      "reviewed": "Geprüft",
+      "closed": "Abgeschlossen"
+    },
+    "fields": {
+      "name": "Name",
+      "taxYear": "Steuerjahr",
+      "country": "Land",
+      "canton": "Kanton",
+      "status": "Status",
+      "notes": "Notizen",
+      "createdAt": "Erstellt",
+      "updatedAt": "Zuletzt geändert"
+    },
+    "list": {
+      "title": "Projekte",
+      "subtitle": "Ein Projekt pro Steuerjahr.",
+      "new": "Neues Projekt",
+      "empty": "Noch kein Projekt. Lege eines für dein Steuerjahr an.",
+      "loadFailed": "Projekte konnten nicht geladen werden."
+    },
+    "form": {
+      "title": "Neues Projekt",
+      "namePlaceholder": "z. B. Steuern 2025",
+      "cantonPlaceholder": "Kanton wählen",
+      "submit": "Projekt anlegen",
+      "created": "Projekt angelegt",
+      "createFailed": "Projekt konnte nicht angelegt werden",
+      "nameRequired": "Bitte einen Namen eingeben.",
+      "nameTooLong": "Der Name ist zu lang (höchstens 120 Zeichen).",
+      "taxYearInvalid": "Bitte ein Steuerjahr zwischen 2009 und 2100 eingeben.",
+      "cantonRequired": "Bitte einen Kanton wählen.",
+      "notesTooLong": "Die Notizen sind zu lang (höchstens 5000 Zeichen)."
+    },
+    "detail": {
+      "title": "Projekt",
+      "subtitle": "Steuerjahr {{year}}",
+      "editTitle": "Angaben",
+      "factsTitle": "Übersicht",
+      "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",
+      "comingSoon": "Dateien, Buchungen, Prüfungen und Auszüge folgen hier.",
+      "saved": "Gespeichert",
+      "saveFailed": "Änderung konnte nicht gespeichert werden",
+      "reopen": "Wieder öffnen",
+      "reopened": "Projekt wieder geöffnet",
+      "reopenTitle": "Projekt wieder öffnen?",
+      "reopenBody": "Das Projekt ist abgeschlossen. Wieder geöffnet lässt es sich ändern — Auszüge, die du schon weitergegeben hast, stimmen danach womöglich nicht mehr.",
+      "delete": "Löschen",
+      "deleted": "Projekt gelöscht",
+      "deleteFailed": "Projekt konnte nicht gelöscht werden",
+      "deleteTitle": "Projekt löschen?",
+      "deleteBody": "Das Projekt wird mit allen Angaben gelöscht. Das lässt sich nicht rückgängig machen.",
+      "notFound": "Dieses Projekt gibt es nicht (mehr).",
+      "loadFailed": "Projekt konnte nicht geladen werden.",
+      "backToList": "Zu den Projekten"
+    }
+  }
+}
