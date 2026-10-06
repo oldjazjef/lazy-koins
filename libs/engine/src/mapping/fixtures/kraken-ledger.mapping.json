@@ -1,0 +1,131 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Kraken Ledger",
+  "platform": "kraken",
+  "description": "Synthetic test mapping for the Kraken ledger CSV (all three public layouts). Times are UTC.",
+  "match": {
+    "headers": [
+      "txid",
+      "refid",
+      "time",
+      "type",
+      "subtype",
+      "aclass",
+      "asset",
+      "amount",
+      "fee",
+      "balance"
+    ]
+  },
+  "filters": [
+    {
+      "column": "txid",
+      "empty": true
+    }
+  ],
+  "assets": {
+    "rewrites": [
+      {
+        "pattern": "\\.(S|M|F|B|P|HOLD)$",
+        "replace": ""
+      }
+    ],
+    "aliases": {
+      "XXBT": "BTC",
+      "XBT": "BTC",
+      "XETH": "ETH",
+      "ETH2": "ETH",
+      "ZCHF": "CHF",
+      "ZEUR": "EUR",
+      "ZUSD": "USD"
+    }
+  },
+  "bookings": {
+    "timestamp": {
+      "column": "time",
+      "format": "ymd",
+      "timeZone": "UTC"
+    },
+    "account": {
+      "column": "wallet",
+      "value": "spot / main"
+    },
+    "asset": {
+      "column": "asset"
+    },
+    "quantity": {
+      "mode": "signed",
+      "column": "amount"
+    },
+    "fee": {
+      "column": "fee",
+      "assetColumn": "feecurrency"
+    },
+    "kind": {
+      "columns": ["type", "subtype"],
+      "rules": [
+        {
+          "equals": ["trade", "*"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["spend", "*"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["receive", "*"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["deposit", "*"],
+          "kind": "deposit"
+        },
+        {
+          "equals": ["withdrawal", "*"],
+          "kind": "withdrawal"
+        },
+        {
+          "equals": ["staking", "*"],
+          "kind": "income_staking"
+        },
+        {
+          "equals": ["earn", "reward"],
+          "kind": "income_interest"
+        },
+        {
+          "equals": ["earn", "airdrop"],
+          "kind": "income_airdrop"
+        },
+        {
+          "equals": ["earn", "*"],
+          "kind": "transfer"
+        },
+        {
+          "equals": ["transfer", "*"],
+          "kind": "transfer"
+        }
+      ],
+      "default": "unknown"
+    },
+    "group": {
+      "column": "refid"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": {
+      "column": "asset"
+    },
+    "quantity": {
+      "column": "balance"
+    },
+    "account": {
+      "column": "wallet",
+      "value": "spot / main"
+    },
+    "evidence": {
+      "value": "Saldo laut Ledger"
+    }
+  }
+}

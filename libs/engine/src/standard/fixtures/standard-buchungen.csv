@@ -1,0 +1,7 @@
+Zeitpunkt,Plattform,Konto,Art,Asset,Menge,Gebühr,Gebühr-Asset,Preis CHF,Preis USD,Referenz,Notiz
+2025-01-01T00:00:00+01:00,ledger-nano,main,deposit,BTC,0.50000000,,,,,,Anfangsbestand (synthetisch)
+2025-03-01T14:30:00+01:00,ledger-nano,main,withdrawal,BTC,-0.1,0.0001,,,,,an Kraken
+2025-05-02T00:00:00Z,ledger-nano,main,income_staking,DOT,0.123456789012345678,,,4.20,,,
+2025-06-01T00:00:00,ledger-nano,main,deposit,ETH,1,,,,,,ohne Zeitzone (Fehler)
+2025-06-02T00:00:00Z,ledger-nano,main,gift,ETH,1,,,,,,unbekannte Art (Fehler)
+2025-12-31T23:59:59+01:00,ledger-nano,main,spam,SCAM,1000,,,,,,

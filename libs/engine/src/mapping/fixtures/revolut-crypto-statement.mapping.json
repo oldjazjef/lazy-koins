@@ -1,0 +1,74 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Revolut Krypto-Kontoauszug",
+  "platform": "revolut",
+  "description": "Synthetic test mapping: Revolut crypto statement; local times assumed Europe/Zurich; holdings = buys - sells.",
+  "match": {
+    "headers": ["Symbol", "Type", "Quantity", "Price", "Value", "Fees", "Date"]
+  },
+  "numbers": {
+    "decimal": ".",
+    "thousands": [","],
+    "stripText": true
+  },
+  "bookings": {
+    "timestamp": {
+      "column": "Date",
+      "format": "named",
+      "timeZone": "Europe/Zurich"
+    },
+    "account": {
+      "value": "crypto"
+    },
+    "asset": {
+      "column": "Symbol"
+    },
+    "quantity": {
+      "mode": "side",
+      "column": "Quantity",
+      "sideColumn": "Type",
+      "outValues": ["Sell", "Send", "Stake"]
+    },
+    "kind": {
+      "columns": ["Type"],
+      "rules": [
+        {
+          "equals": ["Buy"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["Sell"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["Send"],
+          "kind": "withdrawal"
+        },
+        {
+          "equals": ["Receive"],
+          "kind": "deposit"
+        },
+        {
+          "equals": ["Staking reward"],
+          "kind": "income_staking"
+        },
+        {
+          "equals": ["Learn reward"],
+          "kind": "income_airdrop"
+        },
+        {
+          "equals": ["Stake"],
+          "kind": "transfer"
+        },
+        {
+          "equals": ["Unstake"],
+          "kind": "transfer"
+        }
+      ]
+    },
+    "priceChf": {
+      "column": "Price"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Binance Transaktionshistorie (XLSX)",
+  "platform": "binance",
+  "description": "Synthetic test mapping: Binance XLSX with a preamble; times in the zone named in the file name (_UTC_2_ = UTC+2).",
+  "match": {
+    "headers": [
+      "User ID",
+      "Time",
+      "Account",
+      "Operation",
+      "Coin",
+      "Change",
+      "Remark"
+    ]
+  },
+  "bookings": {
+    "timestamp": {
+      "column": "Time",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "timeZoneFromFileName": "_UTC_?([+-]?\\d{1,2})(?:_|\\.|$)"
+    },
+    "account": {
+      "column": "Account"
+    },
+    "asset": {
+      "column": "Coin"
+    },
+    "quantity": {
+      "mode": "signed",
+      "column": "Change"
+    },
+    "kind": {
+      "columns": ["Operation"],
+      "rules": [
+        {
+          "equals": ["Buy"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["Sell"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["Transaction Related"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["Fee"],
+          "kind": "fee"
+        },
+        {
+          "equals": ["Transaction Fee"],
+          "kind": "fee"
+        },
+        {
+          "equals": ["Deposit"],
+          "kind": "deposit"
+        },
+        {
+          "equals": ["Withdraw"],
+          "kind": "withdrawal"
+        },
+        {
+          "equals": ["Simple Earn Flexible Interest"],
+          "kind": "income_interest"
+        },
+        {
+          "equals": ["BNB Vault Rewards"],
+          "kind": "income_interest"
+        },
+        {
+          "equals": ["Simple Earn Locked Rewards"],
+          "kind": "income_staking"
+        },
+        {
+          "pattern": "^launchpool",
+          "kind": "income_launchpool"
+        },
+        {
+          "pattern": "airdrop|^distribution$",
+          "kind": "income_airdrop"
+        },
+        {
+          "pattern": "subscription|redemption|^transfer",
+          "kind": "transfer"
+        }
+      ],
+      "default": "unknown"
+    },
+    "note": {
+      "column": "Remark"
+    }
+  }
+}
