@@ -349,6 +349,8 @@ export interface StoredRate {
   date: string;
   value: string;
   source: RateSource;
+  /** The label of an automatic ESTV value: `ESTV-Kursliste 2025, Stand 02.10.2026` (F7.4a). */
+  note: string | null;
   fetchedAt: string;
 }
 
@@ -358,6 +360,65 @@ export interface RatesView {
   online: boolean;
   series: RateSeries[];
   manual: StoredRate[];
+  /** F7.4a: the stored Kursliste of the tax year and the version in use. */
+  estv: {
+    autoEnabled: boolean;
+    available: string | null;
+    cryptoCount: number;
+    applied: string | null;
+    outdated: boolean;
+  };
+}
+
+/** F7.4a: what applying the stored Kursliste to a project did. */
+export interface EstvApplySummary {
+  year: number;
+  label: string | null;
+  matched: { asset: string; symbol: string; name: string; value: string }[];
+  ambiguous: {
+    asset: string;
+    candidates: { symbol: string; name: string; valorNumber: string | null }[];
+  }[];
+  fx: string[];
+}
+
+export const ESTV_PHASES = ['metadata', 'download', 'parse', 'store'] as const;
+export type EstvPhase = (typeof ESTV_PHASES)[number];
+
+/** `GET /rates/estv` — the deployment's Kursliste (F7.4a). */
+export interface EstvStatus {
+  autoEnabled: boolean;
+  online: boolean;
+  running: {
+    years: number[];
+    year: number;
+    startedAt: string;
+    progress: {
+      phase: EstvPhase;
+      bytes: number;
+      totalBytes: number | null;
+      entries: number;
+    };
+  } | null;
+  lastCheckAt: string | null;
+  years: {
+    year: number;
+    version: {
+      exportType: string;
+      exportDate: string;
+      schemaVersion: string;
+      downloadedAt: string;
+      entryCount: number;
+      cryptoCount: number;
+      fxCount: number;
+      label: string;
+    } | null;
+    check: {
+      checkedAt: string;
+      outcome: 'updated' | 'current' | 'failed';
+      error: string | null;
+    } | null;
+  }[];
 }
 
 export const FETCH_STATUSES = [
@@ -370,6 +431,7 @@ export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
 export interface RefreshSummary {
   fx: number;
+  estv: EstvApplySummary;
   assets: {
     asset: string;
     status: FetchStatus;

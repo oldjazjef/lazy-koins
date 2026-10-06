@@ -8,6 +8,7 @@ import { WORKSPACE_TABS } from '../../features/calculation/components/project-wo
 import {
   CHECK_KINDS,
   CORRECTION_TYPES,
+  ESTV_PHASES,
   EXPORT_KINDS,
   FETCH_STATUSES,
   INCOME_CATEGORIES,
@@ -85,6 +86,10 @@ const DYNAMIC_KEYS = [
     (source) => `rates.source.${source}`,
   ),
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
+  ...ESTV_PHASES.map((phase) => `estv.phase.${phase}`),
+  ...['updated', 'current', 'failed'].map(
+    (outcome) => `estv.outcome.${outcome}`,
+  ),
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
   ...['name', 'platform', 'updated', 'files'].map(

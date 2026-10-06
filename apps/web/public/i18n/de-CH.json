@@ -530,8 +530,8 @@
       "subtitle": "Kurse aus dem Internet, CoinGecko-Schlüssel, ESTV-Kursliste",
       "hint": "Ausgeschaltet holt lazy-koins keine Kurse aus dem Internet; gespeicherte und manuell erfasste Kurse gelten weiter.",
       "coingeckoHint": "Für Assets ohne Binance-Kurs (CoinGecko Demo-Schlüssel). Wird verschlüsselt gespeichert.",
-      "estvTitle": "ESTV-Kursliste",
-      "estvHint": "Die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
+      "estvTitle": "ESTV-Kursliste manuell importieren",
+      "estvHint": "Ersatz, wenn der automatische Bezug nicht geht: die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
       "project": "Projekt"
     },
     "wallets": {
@@ -892,6 +892,52 @@
     "errors": {
       "tooLong": "Der Text ist zu lang.",
       "email": "Bitte eine gültige E-Mail-Adresse eingeben."
+    }
+  },
+  "estv": {
+    "title": "ESTV-Kursliste automatisch",
+    "hint": "lazy-koins bezieht die offizielle Kursliste (ICTax) einmal je Steuerjahr und Stand für alle und prüft täglich, ob die ESTV einen neueren Stand veröffentlicht hat. Daraus gelten die Jahresendkurse der Kryptowährungen und Devisen (USD, EUR) – vor allen anderen Quellen.",
+    "disabled": "Der automatische Bezug ist auf diesem Server ausgeschaltet. Der manuelle Import bleibt möglich.",
+    "offline": "Kursabfragen aus dem Internet sind ausgeschaltet – die Kursliste wird nicht bezogen.",
+    "none": "Noch keine Kursliste geladen.",
+    "notLoaded": "nicht geladen",
+    "downloadedAt": "geladen {{date}}",
+    "lastCheck": "Zuletzt geprüft: {{date}}",
+    "update": "ESTV-Kursliste aktualisieren",
+    "apply": "Neuen Stand übernehmen",
+    "running": "Kursliste {{year}} wird bezogen",
+    "updated": "Neuer Stand der ESTV-Kursliste geladen",
+    "current": "Die ESTV-Kursliste ist aktuell",
+    "checkFailed": "ESTV-Kursliste konnte nicht bezogen werden",
+    "updateFailed": "ESTV-Kursliste konnte nicht aktualisiert werden",
+    "applyFailed": "ESTV-Kursliste konnte nicht übernommen werden",
+    "applied": "{{count}} Kryptowährungen aus der {{label}} übernommen",
+    "noneForYear": "Für {{year}} ist noch keine ESTV-Kursliste geladen",
+    "loadFailed": "Der Stand der ESTV-Kursliste konnte nicht geladen werden.",
+    "projectTitle": "ESTV-Kursliste {{year}}",
+    "inUse": "Verwendet: {{label}}",
+    "notApplied": "Noch keine ESTV-Werte in diesem Projekt.",
+    "newer": "Verfügbar: {{label}}",
+    "projectOffline": "Automatischer Bezug aus (Einstellungen oder Server) – ein gespeicherter Stand kann trotzdem übernommen werden.",
+    "matched": "{{count}} Kryptowährungen und {{fx}} Devisenkurse aus der Kursliste",
+    "ambiguous": "{{asset}}: mehrere Einträge in der Kursliste ({{names}}) – kein ESTV-Wert übernommen, bitte den Kurs per 31.12. überschreiben.",
+    "fields": {
+      "year": "Steuerjahr",
+      "version": "Stand",
+      "crypto": "Kryptowährungen",
+      "fx": "Devisen",
+      "checked": "Letzte Prüfung"
+    },
+    "outcome": {
+      "updated": "neu geladen",
+      "current": "aktuell",
+      "failed": "Fehler"
+    },
+    "phase": {
+      "metadata": "Stand prüfen",
+      "download": "herunterladen",
+      "parse": "lesen",
+      "store": "speichern"
     }
   }
 }

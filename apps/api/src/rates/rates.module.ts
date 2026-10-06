@@ -9,22 +9,35 @@ import { RawBodyMiddleware } from '../common/http/raw-body.middleware';
 import { CalculationModule } from '../calculation/calculation.module';
 import { SettingsModule } from '../settings/settings.module';
 import {
+  ApplyEstvHandler,
+  GetEstvStatusHandler,
+  StartEstvUpdateHandler,
+} from './application/estv.handlers';
+import { EstvProjectRatesService } from './application/estv-project-rates.service';
+import {
+  EstvScheduler,
+  EstvSyncService,
+} from './application/estv-sync.service';
+import {
   DeleteManualRateHandler,
   GetRatesHandler,
   ImportKurslisteHandler,
   RefreshRatesHandler,
   SetManualRateHandler,
 } from './application/rates.handlers';
+import { EstvController } from './estv.controller';
 import { RatesController } from './rates.controller';
 import { RatesService } from './rates.service';
 
 /**
  * Rates of a project (F7.4): fetched on request through the rate-source ports (bound in
- * `IntegrationsModule`), stored per project, overridable; ESTV Kursliste import.
+ * `IntegrationsModule`), stored per project, overridable; ESTV Kursliste import. F7.4a: the
+ * deployment-wide ESTV Kursliste — downloaded on demand and checked daily (`EstvScheduler`),
+ * applied to projects before the other sources.
  */
 @Module({
   imports: [CqrsModule, CalculationModule, SettingsModule],
-  controllers: [RatesController],
+  controllers: [RatesController, EstvController],
   providers: [
     RatesService,
     GetRatesHandler,
@@ -32,6 +45,12 @@ import { RatesService } from './rates.service';
     SetManualRateHandler,
     DeleteManualRateHandler,
     ImportKurslisteHandler,
+    EstvSyncService,
+    EstvScheduler,
+    EstvProjectRatesService,
+    GetEstvStatusHandler,
+    StartEstvUpdateHandler,
+    ApplyEstvHandler,
   ],
 })
 export class RatesModule implements NestModule {

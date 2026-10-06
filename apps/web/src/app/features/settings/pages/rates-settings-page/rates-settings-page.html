@@ -59,6 +59,114 @@
     </section>
   </form>
 
+  <section hlmCard aria-labelledby="estv-auto-title">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle id="estv-auto-title">{{ 'estv.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'estv.hint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      @if (estv.status(); as status) { @if (!status.autoEnabled) {
+      <p class="text-muted-foreground text-sm" role="note">
+        {{ 'estv.disabled' | translate }}
+      </p>
+      } @else if (!status.online) {
+      <p class="text-muted-foreground text-sm" role="note">
+        {{ 'estv.offline' | translate }}
+      </p>
+      } @if (status.years.length === 0) {
+      <p class="text-muted-foreground text-sm">{{ 'estv.none' | translate }}</p>
+      } @else {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh>{{ 'estv.fields.year' | translate }}</th>
+              <th hlmTh>{{ 'estv.fields.version' | translate }}</th>
+              <th hlmTh class="text-right">
+                {{ 'estv.fields.crypto' | translate }}
+              </th>
+              <th hlmTh class="text-right">
+                {{ 'estv.fields.fx' | translate }}
+              </th>
+              <th hlmTh>{{ 'estv.fields.checked' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (row of status.years; track row.year) {
+            <tr hlmTr>
+              <td hlmTd class="font-medium tabular-nums">{{ row.year }}</td>
+              <td hlmTd>
+                @if (row.version; as version) {
+                <span class="block">{{ version.label }}</span>
+                <span class="text-muted-foreground block text-xs"
+                  >{{ version.exportType }} · {{ 'estv.downloadedAt' |
+                  translate: { date: (version.downloadedAt | date: 'dd.MM.yyyy
+                  HH:mm') } }}</span
+                >
+                } @else {
+                <span class="text-muted-foreground"
+                  >{{ 'estv.notLoaded' | translate }}</span
+                >
+                }
+              </td>
+              <td hlmTd class="text-right tabular-nums">
+                {{ row.version?.cryptoCount ?? '–' }}
+              </td>
+              <td hlmTd class="text-right tabular-nums">
+                {{ row.version?.fxCount ?? '–' }}
+              </td>
+              <td hlmTd class="text-xs">
+                @if (row.check; as check) {
+                <span class="block tabular-nums"
+                  >{{ check.checkedAt | date: 'dd.MM.yyyy HH:mm' }}</span
+                >
+                @if (check.outcome === 'failed') {
+                <span hlmBadge variant="destructive"
+                  >{{ 'estv.outcome.failed' | translate }}</span
+                >
+                <span class="text-destructive block">{{ check.error }}</span>
+                } @else {
+                <span hlmBadge variant="outline"
+                  >{{ 'estv.outcome.' + check.outcome | translate }}</span
+                >
+                } }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @if (estv.running(); as running) {
+      <p class="text-sm" aria-live="polite">
+        {{ 'estv.running' | translate: { year: running.year } }} · {{
+        'estv.phase.' + running.progress.phase | translate }} @if
+        (estv.percent() !== null) { {{ estv.percent() }} % }
+      </p>
+      }
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span class="text-muted-foreground text-xs">
+          @if (status.lastCheckAt) { {{ 'estv.lastCheck' | translate: { date:
+          (status.lastCheckAt | date: 'dd.MM.yyyy HH:mm') } }} }
+        </span>
+        <button
+          hlmBtn
+          type="button"
+          [disabled]="!status.autoEnabled || !status.online || estv.isBusy()"
+          (click)="updateEstv()"
+        >
+          {{ 'estv.update' | translate }}
+        </button>
+      </div>
+      } @else if (estv.loadFailed()) {
+      <p class="text-destructive text-sm">
+        {{ 'estv.loadFailed' | translate }}
+      </p>
+      } @else {
+      <hlm-skeleton class="h-24 w-full" />
+      }
+    </div>
+  </section>
+
   <section hlmCard>
     <div hlmCardHeader>
       <h2 hlmCardTitle>{{ 'settings.rates.estvTitle' | translate }}</h2>
