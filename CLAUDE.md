@@ -15,8 +15,8 @@ two as a package (F1.3).
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine), the Angular web app (`apps/web`: login, project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Kurse · Ergebnis ·
-> Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main menu; Profil
-> and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
+> Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main navigation;
+> Profil and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
 > **mapping spec** and its applier, F5.8 coverage hints, the **calculation** with rates, checks,
 > corrections and analyses over any date, the golden test) and the infrastructure
@@ -150,8 +150,8 @@ apps/web/                   # Angular app
     features/<feature>/     #   login, projects, mappings (F11.0: list + detail), profile, settings
                             #   (shell + rates/wallets/ai), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
-                            #   service is shared by them; ai-assist = the AI dialogs; mapping-editor
-                            #   = the editor body, also used by mappings)
+                            #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
+                            #   the editor body, also used by mappings)
     shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
