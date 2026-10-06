@@ -305,6 +305,50 @@ describe('import mappings', () => {
   });
 });
 
+describe('mapping usage counts (F11.0)', () => {
+  it('counts the files each mapping read, per project, in the database', async () => {
+    const owner = await newUser('usage');
+    const p1 = await newProject(owner.id, 'Steuern 2025');
+    const p2 = await newProject(owner.id, 'Steuern 2024');
+    const used = await mappings.create(owner.id, {
+      spec: SPEC,
+      origin: 'manual',
+    });
+    const unused = await mappings.create(owner.id, {
+      spec: { ...SPEC, name: 'Unused' },
+      origin: 'manual',
+    });
+    const mapped = { ...ANALYSIS, status: 'mapped' as const };
+    for (const [projectId, text] of [
+      [p1.id, 'u1'],
+      [p1.id, 'u2'],
+      [p2.id, 'u3'],
+    ] as const) {
+      const entry = await addNew(
+        owner.id,
+        projectId,
+        `${text} ${randomUUID()}`,
+      );
+      await files.updateAnalysis(entry.id, {
+        ...mapped,
+        importerId: `mapping:${used.id}`,
+        mappingId: used.id,
+      });
+    }
+    await addNew(owner.id, p2.id, `not mapped ${randomUUID()}`);
+
+    const counts = await files.countByMappings([used.id, unused.id]);
+    expect(counts).toEqual(
+      [
+        { mappingId: used.id, projectId: p1.id, files: 2 },
+        { mappingId: used.id, projectId: p2.id, files: 1 },
+      ].sort((a, b) => a.projectId.localeCompare(b.projectId)),
+    );
+    expect(await files.countByMappings([unused.id])).toEqual([]);
+    expect(await files.countByMappings([])).toEqual([]);
+  });
+});
+
 describe('CHECK constraints of the files migration', () => {
   it('refuses bad stored files, mappings and project files', async () => {
     const owner = await newUser('checks');

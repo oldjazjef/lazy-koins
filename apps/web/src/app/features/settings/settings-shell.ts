@@ -3,39 +3,38 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { desktopBridge } from '../../core/desktop/desktop-bridge';
 
-/**
- * Einstellungen with its sections (F11.0b). The section tabs only appear in the desktop app,
- * which has a second section (Speicherort, F3.1); the web app has AI alone.
- */
+/** The sections of Einstellungen (ANFORDERUNGEN §11), each a sub-route. */
+export const SETTINGS_SECTIONS = ['rates', 'wallets', 'ai'] as const;
+
+/** Desktop app only (F3.1): where the data lives. */
+export const DESKTOP_SETTINGS_SECTIONS = ['storage'] as const;
+
+/** Einstellungen: the section links above the section's page. */
 @Component({
   selector: 'lk-settings-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe],
   template: `
-    @if (desktop) {
-      <nav
-        [attr.aria-label]="'settings.sections' | translate"
-        class="flex gap-1 pb-4"
-      >
+    <nav
+      class="mb-6 flex flex-wrap gap-1 border-b"
+      [attr.aria-label]="'settings.sections.label' | translate"
+    >
+      @for (section of sections; track section) {
         <a
-          routerLink="ai"
-          routerLinkActive="lk-nav-active"
+          class="lk-tab"
+          [routerLink]="section"
+          routerLinkActive="lk-tab-active"
           ariaCurrentWhenActive="page"
-          class="lk-nav-link"
-          >{{ 'settings.ai.tab' | translate }}</a
+          >{{ 'settings.sections.' + section | translate }}</a
         >
-        <a
-          routerLink="storage"
-          routerLinkActive="lk-nav-active"
-          ariaCurrentWhenActive="page"
-          class="lk-nav-link"
-          >{{ 'settings.storage.tab' | translate }}</a
-        >
-      </nav>
-    }
+      }
+    </nav>
     <router-outlet />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsShell {
-  protected readonly desktop = desktopBridge() !== null;
+  protected readonly sections: readonly string[] =
+    desktopBridge() !== null
+      ? [...SETTINGS_SECTIONS, ...DESKTOP_SETTINGS_SECTIONS]
+      : SETTINGS_SECTIONS;
 }

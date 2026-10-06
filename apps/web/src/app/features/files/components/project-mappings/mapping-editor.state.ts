@@ -1,25 +1,28 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
-  Mapping,
   MappingPreview,
   ProjectFile,
   SpecIssue,
 } from '../../../../core/api/api.types';
+import {
+  type CheckFileOption,
+  parseSpecText,
+  skeleton,
+} from '../mapping-editor';
 import { ProjectFilesService } from '../project-files/project-files.service';
 
 /**
- * The minimal mapping editor (JSON text + schema validation by the API + preview against one of
- * the project's files). Shared by the files table ("Neues Mapping" for a file) and the mappings
- * list ("Bearbeiten"), so it lives next to the section's service.
+ * "Neues Mapping" for a file of the project without one: the editor (JSON + schema validation by
+ * the API + preview against one of the project's files), pre-filled from the file's header row;
+ * once saved, the file is read with it. Editing an existing mapping happens on the global
+ * mapping page (`/app/mappings/:id`, F11.0), not here.
  */
 @Injectable()
 export class MappingEditorState {
   private readonly files = inject(ProjectFilesService);
 
   readonly open = signal(false);
-  /** Editing this stored mapping; `null` for a new one. */
-  readonly mapping = signal<Mapping | null>(null);
-  /** A new mapping is assigned to this file once saved. */
+  /** The new mapping is assigned to this file once saved. */
   readonly targetFile = signal<ProjectFile | null>(null);
   readonly text = signal('');
   readonly checkFileId = signal('');
@@ -28,9 +31,11 @@ export class MappingEditorState {
   readonly invalidJson = signal(false);
   readonly preview = signal<MappingPreview | null>(null);
   readonly busy = signal(false);
-  /** After saving an edit: how many files could be re-read with it. */
-  readonly reapplyOffer = signal<{ mappingId: string; files: number } | null>(
-    null,
+
+  readonly checkFiles = computed<CheckFileOption[]>(() =>
+    this.files
+      .tableFiles()
+      .map((file) => ({ id: file.id, label: file.displayName })),
   );
 
   readonly checkFile = computed(() =>
@@ -62,19 +67,6 @@ export class MappingEditorState {
     this.open.set(true);
   }
 
-  openEdit(mapping: Mapping, files: readonly { id: string }[] = []): void {
-    this.reset();
-    this.mapping.set(mapping);
-    const usable = this.files.tableFiles();
-    this.checkFileId.set(
-      usable.find((file) => files.some((f) => f.id === file.id))?.id ??
-        usable[0]?.id ??
-        '',
-    );
-    this.text.set(JSON.stringify(mapping.spec, null, 2));
-    this.open.set(true);
-  }
-
   close(): void {
     this.open.set(false);
   }
@@ -101,26 +93,17 @@ export class MappingEditorState {
     if (spec === undefined) return;
     this.busy.set(true);
     try {
-      const existing = this.mapping();
-      const saved = await this.files.saveMapping(spec, {
-        mappingId: existing?.id,
-        origin: 'manual',
-      });
+      const saved = await this.files.saveMapping(spec, 'manual');
       if (!saved.ok) {
         this.issues.set(saved.issues);
         return;
       }
       this.open.set(false);
       const target = this.targetFile();
-      if (!existing && target) {
+      if (target) {
         await this.files.assign(target, {
           mode: 'mapping',
           mappingId: saved.mapping.id,
-        });
-      } else if (existing && saved.filesUsing > 0) {
-        this.reapplyOffer.set({
-          mappingId: saved.mapping.id,
-          files: saved.filesUsing,
         });
       }
     } catch {
@@ -130,56 +113,20 @@ export class MappingEditorState {
     }
   }
 
-  async reapply(): Promise<void> {
-    const offer = this.reapplyOffer();
-    this.reapplyOffer.set(null);
-    if (offer) await this.files.reapply(offer.mappingId).catch(() => undefined);
-  }
-
-  declineReapply(): void {
-    this.reapplyOffer.set(null);
-  }
-
   private parse(): unknown {
-    try {
-      const value: unknown = JSON.parse(this.text());
-      this.invalidJson.set(false);
-      return value;
-    } catch {
-      this.invalidJson.set(true);
+    const parsed = parseSpecText(this.text());
+    this.invalidJson.set(parsed === undefined);
+    if (parsed === undefined) {
       this.issues.set([]);
       this.preview.set(null);
-      return undefined;
     }
+    return parsed?.value;
   }
 
   private reset(): void {
-    this.mapping.set(null);
     this.targetFile.set(null);
     this.issues.set([]);
     this.invalidJson.set(false);
     this.preview.set(null);
-    this.reapplyOffer.set(null);
   }
-}
-
-/**
- * A starting point the user completes: the file's columns as the fingerprint, the parts to fill
- * left empty (the API's issues then say exactly what is missing).
- */
-export function skeleton(fileName: string, headers: readonly string[]) {
-  return {
-    format: 'lazy-koins-mapping',
-    version: 1,
-    name: fileName.replace(/\.[^.]+$/, '') || 'Neues Mapping',
-    platform: '',
-    match: { headers: [...headers] },
-    bookings: {
-      timestamp: { column: '', format: 'ymd', timeZone: 'UTC' },
-      account: { value: 'main' },
-      asset: { column: '' },
-      quantity: { mode: 'signed', column: '' },
-      kind: { columns: [''], rules: [], default: 'unknown' },
-    },
-  };
 }

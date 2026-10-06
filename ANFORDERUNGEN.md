@@ -34,8 +34,34 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F4.2** Projektliste mit Status, Vermögen und Ertrag je Projekt.
 - **F4.3** Neues Projekt anlegen; Land, Kanton und Wallets werden aus dem neusten Projekt vorgeschlagen.
 - **F4.4** Aus älteren Projekten übernehmen: Dateien, Wallets und Korrekturen auswählen, gruppiert nach Plattform/Wallet. Eine übernommene Datei wird nicht doppelt gespeichert.
+- **F4.4a Folgeprojekt erstellen**: In einem Projekt per Knopf „Folgeprojekt erstellen“ ein
+  Projekt für das nächste Steuerjahr anlegen (Name, Jahr = Vorjahr + 1, Land und Kanton
+  vorbelegt und änderbar). Ein Dialog zeigt, was übernommen werden kann, als **Checkboxen**
+  (gruppiert, mit „alle/keine“ je Gruppe und einer Zusammenfassung, was übernommen wird):
+  - **Dateien** je Plattform/Wallet einzeln wählbar, mit Hinweis auf ihren Zeitraum –
+    vorausgewählt sind Dateien, deren Zeitraum ins neue Jahr reicht (z. B. ein Ledger bis heute);
+    sie werden verknüpft, nicht kopiert (F4.4, F5.7).
+  - **Wallets** (Adressen, Bezeichnung, Netzwerke) – vorausgewählt.
+  - **Korrekturen**, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im
+    neuen Jahr vorkommen; manuelle Positionen ohne Stichtag) – einzeln wählbar, nicht
+    vorausgewählt; jahresgebundene Korrekturen (Kurs-Overrides per 31.12.) werden nicht angeboten.
+  - **Offene Punkte**, die noch nicht erledigt sind – als offene Punkte im neuen Projekt.
+  - **Notizen** des Projekts.
+
+  Immer automatisch: Endbestand per 31.12. des Vorjahres als Vergleichswert für die Prüfung
+  „Anfangsbestand = Endbestand Vorjahr“ (F8.1) und den Vorjahresvergleich (F8.3). Mappings
+  gelten ohnehin für alle Projekte (F11.0). Das Vorjahresprojekt bleibt unverändert; im neuen
+  Projekt ist sichtbar, was woher übernommen wurde.
+
 - **F4.5** Abgeschlossene Projekte sind schreibgeschützt; Entsperren mit Bestätigung.
 - **F4.6** Projekt umbenennen, archivieren, löschen (mit Bestätigung).
+- **F4.7 An Treuhänder gesendet**: Jedes Projekt zeigt, ob und wann die Unterlagen dem
+  Treuhänder zugestellt wurden (Datum, Empfänger, Weg, welche Auszüge). Gesetzt wird der Status
+  **automatisch** beim erfolgreichen Senden über „An Treuhänder senden“ (F10.6a) oder
+  **manuell** („als gesendet markieren“ mit Datum, Weg – z. B. Mail, Post, persönlich – und
+  Notiz; rückgängig machbar). Sichtbar als Abzeichen in der Projektliste und im Projekt; werden
+  danach Daten geändert oder neue Auszüge erstellt, erscheint der Hinweis „seit dem Versand
+  geändert“.
 
 ## 5. Dateien
 
@@ -93,6 +119,13 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F7.2** Ertrag des Jahres je Kategorie (Zinsen/Earn, Staking, Airdrop, Launchpool, Hardfork), bewertet zum Zuflusszeitpunkt in CHF.
 - **F7.3** Einmalereignisse (Hardforks, Airdrops, Verluste) separat ausweisen.
 - **F7.4** Kurse automatisch ermitteln mit Angabe der Quelle; Stichtags-Wechselkurse je Projekt einsehbar und überschreibbar (z. B. ESTV-Kursliste).
+- **F7.4a ESTV-Kursliste automatisch**: Die Kursliste (ICTax) des Steuerjahres wird online
+  bezogen (offizieller XML-Export, jeweils die neueste Fassung – die ESTV aktualisiert sie auch
+  nach dem 31.03. noch) und daraus die Jahresendkurse für Kryptowährungen und Devisen
+  übernommen; Quelle „ESTV-Kursliste <Jahr>, Stand <Datum>“. Einmal je Jahr und Stand
+  heruntergeladen und gespeichert (nicht pro Benutzer), danach regelmässig auf neue Stände
+  geprüft. Kryptowährungen ohne ESTV-Kurs fallen auf die übrigen Quellen zurück (F7.4).
+  Respektiert „Kursabfragen aus dem Internet“ (F11.3); der manuelle Import bleibt als Ersatz.
 - **F7.5** Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (Klick auf Betrag → zugrunde liegende Buchungen → Quelldatei und Zeile).
 - **F7.6** Neuberechnung jederzeit per Knopfdruck; gleiche Daten ergeben gleiches Ergebnis.
 - **F7.7** Landesregeln sind austauschbar; zunächst nur Schweiz wählbar.
@@ -118,6 +151,12 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F10.4** Kopfzeile mit Name, Steuerjahr, Kanton, Erstellungsdatum und Hinweis „keine Steuerberatung“.
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
 - **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
+- **F10.6a** Mail direkt aus der App senden: Im Projekt (Exporte) „An Treuhänder senden“ öffnet
+  einen Dialog mit Empfänger (aus dem Profil, änderbar), CC an mich, Betreff und Text aus der
+  Vorlage (F11.10, im Dialog noch bearbeitbar), auswählbaren Anhängen (erstellte Auszüge PDF/Excel)
+  und Vorschau. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
+  protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
+  eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
 
 ### Datenexport
 
@@ -138,6 +177,43 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Profil** und
 **Einstellungen** im Benutzermenü oben rechts.
 
+- **F11.0s Einrichtung beim ersten Aufruf**: Beim allerersten Start (Desktop) bzw. nach der
+  ersten Anmeldung (Web) führt ein Assistent als **Stepper** durch alles, was die App zum
+  Arbeiten braucht: Schrittleiste mit Nummer, Titel und Zustand je Schritt (offen / erledigt /
+  übersprungen / Fehler), „Zurück“/„Weiter“ fix unten (Dialog-Regel), „Später“ für optionale
+  Schritte, Zwischenstand wird gespeichert (Abbruch und Fortsetzen möglich). Jeder Schritt mit
+  kurzer Erklärung, wozu er dient, Link „Wo bekomme ich den Schlüssel?“ und – wo möglich –
+  einem **Test-Knopf**, der die Eingabe sofort prüft. Schlüssel werden verschlüsselt gespeichert
+  und nie wieder angezeigt (F11.0b). Jederzeit über Einstellungen wieder aufrufbar; danach
+  ist alles in Profil/Einstellungen einzeln änderbar.
+  1. **Profil** – Name, Wohnkanton, Sprache, Zahlen-/Datumsformat (F11.1, F11.2). Pflicht.
+  2. **Treuhänder** – Name und E-Mail (F11.1). Optional.
+  3. **AI-Plugin** – Anbieter, Modell, Schlüssel, Verbindung testen, Zustimmung (F5.13, F5.14).
+     Optional („ohne AI fortfahren“ – dann Mappings nur manuell).
+  4. **Kurse** – Internet-Kurse ein/aus (F11.3), CoinGecko-Schlüssel (testen), ESTV-Kursliste
+     automatisch beziehen (F7.4a). Optional, mit Hinweis auf fehlende Kurse ohne Schlüssel.
+  5. **Wallets & Netzwerke** – Etherscan-Schlüssel (alle EVM-Chains), Solana-Indexer (z. B.
+     Helius), weitere Netzwerk-Schlüssel nach Bedarf (F6.3, F6.7), je mit Test; optional,
+     erste Wallet-Adressen direkt erfassen.
+  6. **Mail** – Mailer (SMTP) mit Test-Mail und Vorlage übernehmen/anpassen (F11.10). Optional.
+  7. **Speicherort** (nur Desktop) – Datenordner wählen, auch Sync-Ordner (F3.1).
+  8. **PIN** – 4–8 Ziffern, zweimal eingeben (F11.0p). Desktop: Pflicht; Web: optional.
+  9. **Zusammenfassung** – was eingerichtet ist und was fehlt (mit Auswirkung, z. B. „ohne
+     CoinGecko-Schlüssel haben FLR/SGB keinen Kurs“), Knopf „App starten“ bzw. „Erstes
+     Projekt anlegen“.
+
+  Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App. Fehlt
+  später etwas, das eine Funktion braucht, verweist die App direkt auf den passenden Schritt.
+
+- **F11.0p PIN-Sperre**: Der PIN wird bei **jedem Öffnen** der App verlangt – Desktop: bei jedem
+  Start und nach dem Entsperren aus dem Ruhezustand/automatischer Sperre nach einstellbarer
+  Inaktivität; Web (falls gesetzt): beim Öffnen eines neuen Tabs/Fensters nach dem Schliessen
+  und nach Inaktivität, zusätzlich zum Login. Gespeichert wird nur ein langsamer Hash (z. B.
+  scrypt/Argon2 mit Salz), nie der PIN. Nach mehreren Fehlversuchen wachsende Wartezeit.
+  Solange gesperrt, beantwortet auch die lokale API keine Datenanfragen. PIN ändern im Profil
+  (alter PIN nötig); PIN vergessen: Desktop – Zurücksetzen nur mit Bestätigung, dass
+  verschlüsselte Schlüssel (AI, Mailer, Kurse) neu eingegeben werden müssen; Web – über den
+  Login (E-Mail) neu setzen.
 - **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
   des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
   steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
@@ -151,8 +227,16 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
 - **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert: **AI** (Anbieter, Modell,
   Schlüssel, Zustimmung, F5.13/F5.14), **Kurse** (Internet-Kurse ein/aus F11.3, CoinGecko-Schlüssel,
   ESTV-Kursliste), **Wallets/Netzwerke** (API-Schlüssel wie Etherscan, F6.7), **Speicherort**
-  (Desktop, F3.1) und **Cloud-Verbindungen** (Web, F3.2). Schlüssel werden nie wieder angezeigt
-  (nur die letzten Zeichen).
+  (Desktop, F3.1), **Cloud-Verbindungen** (Web, F3.2) und **Mail** (F11.10). Schlüssel und
+  Passwörter werden nie wieder angezeigt (nur die letzten Zeichen).
+- **F11.10 Mail** (Einstellungen): **Mailer** hinterlegen – SMTP (Server, Port, Verschlüsselung
+  TLS/STARTTLS, Benutzer, Passwort verschlüsselt gespeichert, Absendername und -adresse) mit
+  „Test-Mail an mich senden“. **Text-Vorlage** für die Treuhänder-Mail definieren: Betreff und
+  Text mit Platzhaltern (z. B. `{{name}}`, `{{treuhaender}}`, `{{steuerjahr}}`, `{{kanton}}`,
+  `{{vermoegen}}`, `{{ertrag}}`, `{{anhaenge}}`, `{{offene_punkte}}`, `{{datum}}`), Liste der
+  Platzhalter mit Erklärung, Live-Vorschau mit Beispielwerten, „auf Standard zurücksetzen“.
+  Eine Standardvorlage je Sprache (F11.2) ist vorhanden; die eigene Vorlage gilt für alle
+  Projekte.
 - Im Projekt bleiben nur projektbezogene Dinge (Dateien, die im Projekt genutzten Mappings mit
   Link auf die Mappings-Seite, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
   Exporte).

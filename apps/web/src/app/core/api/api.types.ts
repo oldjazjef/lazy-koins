@@ -242,6 +242,27 @@ export interface Mapping {
   updatedAt: string;
 }
 
+/** `GET /api/mappings` — every mapping of mine, with how many files use it (F11.0). */
+export interface MappingSummary extends Mapping {
+  filesUsing: number;
+  projectsUsing: number;
+}
+
+/** `GET /api/mappings/:id/usage` — "Wird genutzt in": projects + files read with it. */
+export interface MappingUsageProject {
+  id: string;
+  name: string;
+  taxYear: number;
+  status: ProjectStatus;
+  files: { id: string; displayName: string; status: ProjectFileStatus }[];
+}
+
+/** `POST /api/mappings/:id/reapply` */
+export interface ReapplyResult {
+  reapplied: number;
+  skippedClosed: number;
+}
+
 /** `GET /api/projects/:id/mappings` */
 export interface ProjectMapping {
   mapping: Mapping;
@@ -295,6 +316,14 @@ export interface AiUsage {
 }
 
 /** `POST /api/ai/settings/test` */
+/** Body of `POST /ai/settings/test`: the form's unsaved values; a typed key is never stored. */
+export interface TestAiConnectionRequest {
+  readonly provider: AiProvider;
+  readonly baseUrl: string;
+  readonly model: string;
+  readonly apiKey?: string;
+}
+
 export interface AiConnectionTest {
   ok: true;
   model: string;

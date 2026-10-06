@@ -51,6 +51,11 @@
   --chart-3: #b7791f;
   --chart-4: #7a5aa6;
   --chart-5: #8a96a8;
+  /* Traffic lights of the checks (F8.1). */
+  --light-green: #2f8f5b;
+  --light-yellow: #d9a514;
+  --light-red: #c0392b;
+  --light-grey: #a0a9b6;
 }
 
 :root.dark {
@@ -79,6 +84,10 @@
   --chart-3: #e0b25a;
   --chart-4: #b49be0;
   --chart-5: #8f9bad;
+  --light-green: #4fbf83;
+  --light-yellow: #e8bf4a;
+  --light-red: #f07167;
+  --light-grey: #6b7686;
 }
 
 @layer base {
@@ -95,6 +104,24 @@
   h2,
   h3 {
     @apply tracking-tight;
+  }
+
+  /*
+   * Native <select> dropdowns: hlmInput gives the select a transparent background and the light
+   * foreground in dark mode; the options inherit that text colour but get the OS's light-grey list
+   * background (Windows), so they were unreadable. Give the list explicit theme colours.
+   */
+  select option,
+  select optgroup {
+    @apply bg-popover text-popover-foreground;
+  }
+
+  select option:checked {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  select option:disabled {
+    @apply text-muted-foreground;
   }
 }
 
@@ -116,6 +143,53 @@
 
   hlm-dialog-content > hlm-dialog-footer {
     @apply bg-popover sticky -bottom-6 z-10 -mb-6 border-t pt-4 pb-6;
+  }
+
+  /* The user menu at the top right. */
+  .lk-menu {
+    @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex w-56 flex-col overflow-hidden rounded-md border py-1 shadow-md;
+  }
+
+  .lk-menu-item {
+    @apply hover:bg-muted flex w-full items-center gap-2 px-3 py-2 text-left text-sm;
+  }
+
+  /* Tabs of the project workspace. */
+  .lk-tab {
+    @apply text-muted-foreground hover:text-foreground -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium transition-colors;
+  }
+
+  .lk-tab-active {
+    @apply border-primary text-foreground;
+  }
+
+  /* Traffic light of a check (F8.1). */
+  .lk-light {
+    @apply inline-block size-3 shrink-0 rounded-full;
+  }
+
+  .lk-light-green {
+    background-color: var(--light-green);
+  }
+
+  .lk-light-yellow {
+    background-color: var(--light-yellow);
+  }
+
+  .lk-light-red {
+    background-color: var(--light-red);
+  }
+
+  .lk-light-grey {
+    background-color: var(--light-grey);
+  }
+
+  /*
+   * Tables: the actions column stays visible at the right edge even when a table scrolls
+   * sideways; it carries the row's background so scrolled cells pass beneath it.
+   */
+  .lk-sticky-actions {
+    @apply bg-card sticky right-0 z-10;
   }
 
   /* The word mark in the header and on the login card. */

@@ -139,6 +139,19 @@ export class Env {
    */
   @IsIn(['', 'true', 'false'])
   AI_ALLOW_PRIVATE_URLS = '';
+
+  // --- Rates, exports ---
+
+  /**
+   * Chromium for the PDF exports (F10). Empty = the browser `playwright-core` installs
+   * (`pnpm exec playwright-core install chromium`).
+   */
+  @IsString()
+  PDF_CHROMIUM_PATH = '';
+
+  /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
+  @IsIn(['true', 'false'])
+  RATES_ONLINE = 'true';
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */

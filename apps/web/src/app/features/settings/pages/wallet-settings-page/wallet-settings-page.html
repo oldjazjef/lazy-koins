@@ -1,0 +1,51 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'settings.wallets.subtitle' | translate"
+/>
+
+@if (service.settings.hasValue()) { @let settings = service.settings.value();
+<form class="max-w-3xl" [formGroup]="form" (ngSubmit)="submit()">
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'settings.wallets.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'settings.wallets.hint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      @if (!settings.keyStorageAvailable) {
+      <p class="text-destructive text-sm" role="note">
+        {{ 'settings.keysUnavailable' | translate }}
+      </p>
+      }
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="set-es"
+          >{{ 'settings.fields.etherscanKey' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="set-es"
+          type="password"
+          autocomplete="off"
+          formControlName="etherscanKey"
+          [placeholder]="settings.keys.etherscan ?? ('settings.noKey' | translate)"
+        />
+      </div>
+      <div class="flex flex-wrap justify-end gap-2">
+        @if (settings.keys.etherscan) {
+        <button hlmBtn variant="ghost" type="button" (click)="removeKey()">
+          {{ 'settings.removeKey' | translate }}
+        </button>
+        }
+        <button
+          hlmBtn
+          type="submit"
+          [disabled]="service.isSaving() || form.pristine"
+        >
+          {{ 'common.save' | translate }}
+        </button>
+      </div>
+    </div>
+  </section>
+</form>
+} @else {
+<hlm-skeleton class="h-48 w-full max-w-3xl" />
+}

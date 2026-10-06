@@ -33,6 +33,12 @@
         <th hlmTh>{{ 'projects.fields.taxYear' | translate }}</th>
         <th hlmTh>{{ 'projects.fields.canton' | translate }}</th>
         <th hlmTh>{{ 'projects.fields.status' | translate }}</th>
+        <th hlmTh class="text-right">
+          {{ 'projects.fields.wealth' | translate }}
+        </th>
+        <th hlmTh class="text-right">
+          {{ 'projects.fields.income' | translate }}
+        </th>
       </tr>
     </thead>
     <tbody hlmTBody>
@@ -50,6 +56,12 @@
         <td hlmTd>{{ project.canton }}</td>
         <td hlmTd>
           <lk-project-status-badge [status]="project.status" />
+        </td>
+        <td hlmTd class="text-right tabular-nums">
+          {{ project.wealthChf | lkChf }}
+        </td>
+        <td hlmTd class="text-right tabular-nums">
+          {{ project.incomeChf | lkChf }}
         </td>
       </tr>
       }

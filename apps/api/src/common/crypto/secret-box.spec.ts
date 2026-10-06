@@ -1,4 +1,4 @@
-import { SecretBox, secretHint } from './secret-box';
+import { SecretBox, secretHint } from '../../common/crypto/secret-box';
 
 describe('SecretBox (AES-256-GCM)', () => {
   const box = new SecretBox('a-long-random-settings-encryption-key');

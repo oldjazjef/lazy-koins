@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 # The gate lives in package.json (`ci:verify` / `ci:integration`), not here, so `pnpm check`
 # locally is literally the same command. Add a check to package.json, never to this file alone.

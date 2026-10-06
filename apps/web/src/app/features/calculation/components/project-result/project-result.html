@@ -1,0 +1,488 @@
+@if (result(); as view) {
+<div class="mb-4 flex flex-wrap items-center gap-3">
+  @if (view.snapshot; as snapshot) {
+  <p class="text-muted-foreground text-sm">
+    {{ 'result.calculatedAt' | translate: { date: (snapshot.createdAt | date:
+    'dd.MM.yyyy HH:mm') } }}
+  </p>
+  } @if (view.stale) {
+  <span hlmBadge variant="destructive">{{ 'result.stale' | translate }}</span>
+  }
+  <span class="flex-1"></span>
+  @if (!closed()) {
+  <button
+    hlmBtn
+    type="button"
+    [disabled]="service.isBusy()"
+    (click)="calculate()"
+  >
+    {{ 'result.calculate' | translate }}
+  </button>
+  }
+</div>
+
+@if (view.result; as result) {
+<div class="mb-6 grid gap-4 sm:grid-cols-2">
+  <section hlmCard>
+    <div hlmCardHeader>
+      <p hlmCardDescription>
+        {{ 'result.wealth' | translate: { year: result.taxYear } }}
+      </p>
+      <h2 hlmCardTitle class="text-2xl tabular-nums">
+        {{ 'common.chf' | translate }} {{ result.totals.wealthChf | lkChf }}
+      </h2>
+    </div>
+  </section>
+  <section hlmCard>
+    <div hlmCardHeader>
+      <p hlmCardDescription>
+        {{ 'result.income' | translate: { year: result.taxYear } }}
+      </p>
+      <h2 hlmCardTitle class="text-2xl tabular-nums">
+        {{ 'common.chf' | translate }} {{ result.totals.incomeChf | lkChf }}
+      </h2>
+    </div>
+  </section>
+</div>
+@if (result.totals.missingPrices > 0) {
+<p class="text-destructive mb-4 text-sm" role="note">
+  {{ 'result.missingPrices' | translate: { count: result.totals.missingPrices }
+  }}
+</p>
+}
+
+<!-- Vermögen je Plattform (F7.1) -->
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'result.wealthTitle' | translate }}</h3>
+  @if (result.platforms.length === 0) {
+  <lk-empty-state [message]="'result.noPositions' | translate" />
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'result.fields.platform' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.positions' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.valueChf' | translate }}
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (platform of result.platforms; track platform.id) {
+        <tr
+          hlmTr
+          class="cursor-pointer"
+          (click)="togglePlatform(platform.platform)"
+        >
+          <td hlmTd class="font-medium">
+            <button
+              type="button"
+              class="hover:underline"
+              [attr.aria-expanded]="openPlatform() === platform.platform"
+            >
+              {{ platform.platform }}
+            </button>
+            @if (platform.missingPrices > 0) {
+            <span hlmBadge variant="outline" class="ml-2"
+              >{{ 'result.missingShort' | translate: { count:
+              platform.missingPrices } }}</span
+            >
+            }
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ platform.positions }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            <button
+              type="button"
+              class="hover:underline"
+              (click)="$event.stopPropagation(); records(platform.id, platform.platform)"
+            >
+              {{ platform.valueChf | lkChf }}
+            </button>
+          </td>
+        </tr>
+        @if (openPlatform() === platform.platform) {
+        <tr hlmTr>
+          <td hlmTd colspan="3" class="bg-muted/40">
+            <table hlmTable>
+              <thead hlmTHead>
+                <tr hlmTr>
+                  <th hlmTh>{{ 'result.fields.asset' | translate }}</th>
+                  <th hlmTh>{{ 'result.fields.account' | translate }}</th>
+                  <th hlmTh class="text-right">
+                    {{ 'result.fields.quantity' | translate }}
+                  </th>
+                  <th hlmTh class="text-right">
+                    {{ 'result.fields.priceChf' | translate }}
+                  </th>
+                  <th hlmTh class="text-right">
+                    {{ 'result.fields.valueChf' | translate }}
+                  </th>
+                  <th hlmTh>{{ 'result.fields.source' | translate }}</th>
+                  <th hlmTh class="text-right">
+                    <span class="sr-only"
+                      >{{ 'result.fields.actions' | translate }}</span
+                    >
+                  </th>
+                </tr>
+              </thead>
+              <tbody hlmTBody>
+                @for (position of positionsOf(platform); track position.id) {
+                <tr
+                  hlmTr
+                  [class.text-muted-foreground]="position.status === 'spam'"
+                >
+                  <td hlmTd class="font-medium">
+                    {{ position.asset }} @if (position.status !== 'ok') {
+                    <span
+                      hlmBadge
+                      [variant]="position.status === 'spam' ? 'outline' : 'destructive'"
+                      >{{ 'result.status.' + position.status | translate
+                      }}</span
+                    >
+                    }
+                  </td>
+                  <td hlmTd>{{ position.accountId }}</td>
+                  <td hlmTd class="text-right tabular-nums">
+                    {{ position.quantity | lkQuantity: 18 }}
+                  </td>
+                  <td hlmTd class="text-right tabular-nums">
+                    {{ position.priceChf | lkQuantity: 6 }}
+                  </td>
+                  <td hlmTd class="text-right tabular-nums">
+                    <button
+                      type="button"
+                      class="hover:underline"
+                      (click)="records(position.id, positionTitle(position))"
+                    >
+                      {{ position.valueChf | lkChf }}
+                    </button>
+                  </td>
+                  <td hlmTd class="text-muted-foreground text-xs">
+                    {{ 'result.quantitySource.' + position.quantitySource |
+                    translate }} @if (position.priceOrigin) { · {{
+                    'result.priceOrigin.' + position.priceOrigin | translate }}
+                    }
+                  </td>
+                  <td hlmTd class="text-right whitespace-nowrap">
+                    @if (!closed()) {
+                    <button
+                      hlmBtn
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      (click)="overridePrice(position)"
+                    >
+                      {{ 'result.actions.overridePrice' | translate }}
+                    </button>
+                    <button
+                      hlmBtn
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      (click)="setHolding(position)"
+                    >
+                      {{ 'result.actions.setQuantity' | translate }}
+                    </button>
+                    }
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </td>
+        </tr>
+        } }
+        <tr hlmTr class="font-semibold">
+          <td hlmTd colspan="2">{{ 'result.total' | translate }}</td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ result.totals.wealthChf | lkChf }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  }
+</section>
+
+<!-- Ertrag je Kategorie (F7.2) -->
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'result.incomeTitle' | translate }}</h3>
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'result.fields.category' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.bookings' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.valueChf' | translate }}
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (category of result.categories; track category.id) {
+        <tr
+          hlmTr
+          class="cursor-pointer"
+          (click)="toggleCategory(category.category)"
+        >
+          <td hlmTd class="font-medium">
+            <button
+              type="button"
+              class="hover:underline"
+              [attr.aria-expanded]="openCategory() === category.category"
+            >
+              {{ 'result.category.' + category.category | translate }}
+            </button>
+            @if (category.missingPrices > 0) {
+            <span hlmBadge variant="outline" class="ml-2"
+              >{{ 'result.missingShort' | translate: { count:
+              category.missingPrices } }}</span
+            >
+            }
+          </td>
+          <td hlmTd class="text-right tabular-nums">{{ category.lines }}</td>
+          <td hlmTd class="text-right tabular-nums">
+            <button
+              type="button"
+              class="hover:underline"
+              (click)="$event.stopPropagation(); records(category.id, categoryTitle(category))"
+            >
+              {{ category.valueChf | lkChf }}
+            </button>
+          </td>
+        </tr>
+        @if (openCategory() === category.category && category.category !==
+        'earn_gap') {
+        <tr hlmTr>
+          <td hlmTd colspan="3" class="bg-muted/40">
+            <table hlmTable>
+              <thead hlmTHead>
+                <tr hlmTr>
+                  <th hlmTh>{{ 'result.fields.date' | translate }}</th>
+                  <th hlmTh>{{ 'result.fields.platform' | translate }}</th>
+                  <th hlmTh>{{ 'result.fields.asset' | translate }}</th>
+                  <th hlmTh class="text-right">
+                    {{ 'result.fields.netQuantity' | translate }}
+                  </th>
+                  <th hlmTh class="text-right">
+                    {{ 'result.fields.valueChf' | translate }}
+                  </th>
+                  <th hlmTh class="text-right">
+                    {{ 'result.fields.grossChf' | translate }}
+                  </th>
+                  <th hlmTh class="text-right">
+                    <span class="sr-only"
+                      >{{ 'result.fields.actions' | translate }}</span
+                    >
+                  </th>
+                </tr>
+              </thead>
+              <tbody hlmTBody>
+                @for (line of linesOf(category); track line.id) {
+                <tr hlmTr>
+                  <td hlmTd class="tabular-nums">
+                    {{ line.date | date: 'dd.MM.yyyy' }}
+                  </td>
+                  <td hlmTd>
+                    {{ line.platform }}
+                    <span class="text-muted-foreground block text-xs"
+                      >{{ line.rawType }}</span
+                    >
+                  </td>
+                  <td hlmTd>{{ line.asset }}</td>
+                  <td hlmTd class="text-right tabular-nums">
+                    {{ line.quantityNet | lkQuantity: 18 }}
+                  </td>
+                  <td hlmTd class="text-right tabular-nums">
+                    @if (line.status === 'ok') {
+                    <button
+                      type="button"
+                      class="hover:underline"
+                      (click)="records(line.id, line.platform + ' · ' + line.asset)"
+                    >
+                      {{ line.valueChf | lkChf }}
+                    </button>
+                    } @else {
+                    <span hlmBadge variant="destructive"
+                      >{{ 'result.status.missingPrice' | translate }}</span
+                    >
+                    }
+                  </td>
+                  <td
+                    hlmTd
+                    class="text-muted-foreground text-right tabular-nums"
+                  >
+                    {{ line.grossValueChf | lkChf }}
+                  </td>
+                  <td hlmTd class="text-right whitespace-nowrap">
+                    @if (!closed()) {
+                    <button
+                      hlmBtn
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      (click)="reclassify(line)"
+                    >
+                      {{ 'result.actions.reclassify' | translate }}
+                    </button>
+                    <button
+                      hlmBtn
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      (click)="overrideIncomePrice(line)"
+                    >
+                      {{ 'result.actions.overridePrice' | translate }}
+                    </button>
+                    }
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </td>
+        </tr>
+        } }
+        <tr hlmTr class="font-semibold">
+          <td hlmTd colspan="2">{{ 'result.total' | translate }}</td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ result.totals.incomeChf | lkChf }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@if (result.earnGaps.length > 0) {
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'result.earnGapTitle' | translate }}</h3>
+  <p class="text-muted-foreground text-sm">
+    {{ 'result.earnGapHint' | translate }}
+  </p>
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'result.fields.platform' | translate }}</th>
+          <th hlmTh>{{ 'result.fields.asset' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.start' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.end' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.booked' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.gap' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.valueChf' | translate }}
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (gap of result.earnGaps; track gap.id) {
+        <tr hlmTr>
+          <td hlmTd>{{ gap.platform }} · {{ gap.accountId }}</td>
+          <td hlmTd>{{ gap.asset }}</td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ gap.startQuantity | lkQuantity }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ gap.endQuantity | lkQuantity }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ gap.bookedQuantity | lkQuantity }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ gap.gapQuantity | lkQuantity }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            <button
+              type="button"
+              class="hover:underline"
+              (click)="records(gap.id, gap.platform + ' · ' + gap.asset)"
+            >
+              @if (gap.status === 'income') { {{ gap.valueChf | lkChf }} } @else
+              { {{ 'result.gapStatus.' + gap.status | translate }} }
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+} @if (result.oneOffEvents.length > 0) {
+<section class="mb-8 flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'result.oneOffTitle' | translate }}</h3>
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'result.fields.date' | translate }}</th>
+          <th hlmTh>{{ 'result.fields.event' | translate }}</th>
+          <th hlmTh>{{ 'result.fields.platform' | translate }}</th>
+          <th hlmTh>{{ 'result.fields.asset' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.quantity' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'result.fields.valueChf' | translate }}
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (event of result.oneOffEvents; track event.id) {
+        <tr hlmTr>
+          <td hlmTd class="tabular-nums">
+            {{ event.timestamp | date: 'dd.MM.yyyy' : 'UTC' }}
+          </td>
+          <td hlmTd>{{ 'bookings.kind.' + event.kind | translate }}</td>
+          <td hlmTd>{{ event.platform }}</td>
+          <td hlmTd>{{ event.asset }}</td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ event.quantity | lkQuantity }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            <button
+              type="button"
+              class="hover:underline"
+              (click)="records(event.id, event.platform + ' · ' + event.asset)"
+            >
+              {{ event.valueChf === null ? ('result.estvMissing' | translate) :
+              (event.valueChf | lkChf) }}
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+} } @else {
+<lk-empty-state [message]="'result.notCalculated' | translate" />
+} } @else if (service.result.error()) {
+<lk-empty-state [message]="'result.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.result.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<hlm-skeleton class="h-64 w-full" />
+}

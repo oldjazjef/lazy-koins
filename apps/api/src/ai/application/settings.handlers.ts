@@ -14,7 +14,7 @@ import {
 import { aiReady, type AiSettings } from '../domain/ai-settings';
 import { checkBaseUrl } from '../domain/base-url';
 import { AiSettingsRepositoryPort } from '../ports/ai-settings.repository.port';
-import { AiGate, AiRuntime } from './ai-gate';
+import { AiGate, AiRuntime, type AiConnectionDraft } from './ai-gate';
 
 /** The settings as the app sees them — never the key, only its hint. */
 export interface AiSettingsView {
@@ -151,7 +151,11 @@ export class SaveAiSettingsHandler implements ICommandHandler<
 }
 
 export class TestAiConnectionCommand {
-  constructor(readonly userId: string) {}
+  constructor(
+    readonly userId: string,
+    /** The form's unsaved values; absent = test the saved settings. */
+    readonly draft?: AiConnectionDraft,
+  ) {}
 }
 
 export interface AiConnectionTest {
@@ -162,7 +166,8 @@ export interface AiConnectionTest {
 }
 
 /**
- * Sends one tiny request **without user data** with the saved settings: proves the address,
+ * Sends one tiny request **without user data** with the saved settings, or the form's unsaved
+ * values overlaid on them: proves the address,
  * the key and structured output work. No consent needed (nothing of the user's is sent).
  */
 @CommandHandler(TestAiConnectionCommand)
@@ -177,9 +182,11 @@ export class TestAiConnectionHandler implements ICommandHandler<
 
   async execute({
     userId,
+    draft,
   }: TestAiConnectionCommand): Promise<AiConnectionTest> {
-    const connection = this.gate.connectionOf(
+    const connection = this.gate.connectionForTest(
       await this.gate.settingsOf(userId),
+      draft,
     );
     const started = Date.now();
     const answer = await this.gate.call(() =>

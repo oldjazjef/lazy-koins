@@ -24,11 +24,6 @@
         </ul>
       </nav>
 
-      @if (auth.hasAccount && auth.email(); as email) {
-      <span class="text-muted-foreground hidden text-sm md:inline"
-        >{{ email }}</span
-      >
-      }
       <button
         hlmBtn
         variant="ghost"
@@ -42,18 +37,50 @@
           size="18"
         />
       </button>
-      @if (auth.hasAccount) {
-      <button
-        hlmBtn
-        variant="outline"
-        size="sm"
-        type="button"
-        (click)="signOut()"
-      >
-        <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
-        {{ 'nav.signOut' | translate }}
-      </button>
-      }
+      <div class="relative" data-user-menu>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          [attr.aria-haspopup]="'menu'"
+          [attr.aria-expanded]="menuOpen()"
+          [attr.aria-label]="'nav.userMenu' | translate"
+          (click)="toggleMenu()"
+        >
+          <ng-icon name="lucideCircleUserRound" size="18" aria-hidden="true" />
+          @if (auth.hasAccount && auth.email(); as email) {
+          <span class="hidden max-w-48 truncate md:inline">{{ email }}</span>
+          }
+          <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
+        </button>
+        @if (menuOpen()) {
+        <div class="lk-menu" role="menu">
+          @for (item of userItems; track item.path) {
+          <a
+            role="menuitem"
+            class="lk-menu-item"
+            [routerLink]="item.path"
+            routerLinkActive="lk-nav-active"
+            (click)="menuOpen.set(false)"
+          >
+            <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+            {{ item.labelKey | translate }}
+          </a>
+          } @if (auth.hasAccount) {
+          <button
+            role="menuitem"
+            type="button"
+            class="lk-menu-item border-t"
+            (click)="signOut()"
+          >
+            <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
+            {{ 'nav.signOut' | translate }}
+          </button>
+          }
+        </div>
+        }
+      </div>
     </div>
   </header>
 

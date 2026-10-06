@@ -11,11 +11,15 @@ import { AccessTokenGuard } from '../auth/access-token.guard';
 import { AiModule } from '../ai/ai.module';
 import { AuthModule } from '../auth/auth.module';
 import { validateEnv } from '../config/env';
+import { CalculationModule } from '../calculation/calculation.module';
+import { ExportsModule } from '../exports/exports.module';
 import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { MappingsModule } from '../mappings/mappings.module';
 import { PersistenceModule } from '../persistence/persistence.module';
 import { ProjectsModule } from '../projects/projects.module';
+import { RatesModule } from '../rates/rates.module';
+import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
 import { AppController } from './app.controller';
 
@@ -42,6 +46,10 @@ import { AppController } from './app.controller';
     ProjectsModule,
     FilesModule,
     MappingsModule,
+    SettingsModule,
+    CalculationModule,
+    RatesModule,
+    ExportsModule,
     AiModule,
   ],
   controllers: [AppController],

@@ -1,0 +1,141 @@
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'exports.createTitle' | translate }}</h3>
+    <p hlmCardDescription>{{ 'exports.createHint' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-wrap gap-2">
+    @for (kind of kinds; track kind) {
+    <button
+      hlmBtn
+      [variant]="kind === 'simple_pdf' ? 'default' : 'outline'"
+      type="button"
+      [disabled]="service.isBusy()"
+      (click)="create(kind)"
+    >
+      {{ 'exports.kind.' + kind | translate }}
+    </button>
+    }
+    <span class="flex-1"></span>
+    <button hlmBtn variant="secondary" type="button" (click)="openDraft()">
+      {{ 'exports.mail.open' | translate }}
+    </button>
+  </div>
+</section>
+
+<section class="flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'exports.listTitle' | translate }}</h3>
+  @if (service.exports.hasValue()) { @if (service.exports.value().length === 0)
+  {
+  <lk-empty-state [message]="'exports.empty' | translate" />
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'exports.fields.createdAt' | translate }}</th>
+          <th hlmTh>{{ 'exports.fields.kind' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'exports.fields.wealth' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            {{ 'exports.fields.income' | translate }}
+          </th>
+          <th hlmTh class="text-right">
+            <span class="sr-only"
+              >{{ 'exports.fields.actions' | translate }}</span
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (item of service.exports.value(); track item.id) {
+        <tr hlmTr>
+          <td hlmTd class="tabular-nums whitespace-nowrap">
+            {{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+          </td>
+          <td hlmTd>
+            {{ 'exports.kind.' + item.kind | translate }}
+            <span class="text-muted-foreground block text-xs"
+              >{{ item.fileName }}</span
+            >
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ item.wealthChf | lkChf }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ item.incomeChf | lkChf }}
+          </td>
+          <td hlmTd class="text-right">
+            <button
+              hlmBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              (click)="service.download(item)"
+            >
+              {{ 'exports.download' | translate }}
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } } @else if (service.exports.error()) {
+  <lk-empty-state [message]="'exports.loadFailed' | translate" />
+  } @else {
+  <hlm-skeleton class="h-32 w-full" />
+  }
+</section>
+
+<!-- F10.6: mail draft, text to copy -->
+<hlm-dialog [state]="draftState()" (stateChanged)="draftChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
+    @if (draft(); as mail) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'exports.mail.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'exports.mail.hint' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="mail-to"
+          >{{ 'exports.mail.to' | translate }}</label
+        >
+        <input hlmInput id="mail-to" type="text" readonly [value]="mail.to" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="mail-subject"
+          >{{ 'exports.mail.subject' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="mail-subject"
+          type="text"
+          readonly
+          [value]="mail.subject"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="mail-body"
+          >{{ 'exports.mail.body' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="mail-body"
+          rows="16"
+          readonly
+          [value]="mail.body"
+        ></textarea>
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.close' | translate }}
+      </button>
+      <button hlmBtn type="button" (click)="copy(mail)">
+        {{ 'exports.mail.copy' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

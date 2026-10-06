@@ -5,6 +5,7 @@ import {
   type HttpResponse,
 } from '@angular/common/http';
 import { computed, DOCUMENT, inject, Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
@@ -18,7 +19,6 @@ import type {
   ProjectFiles,
   ProjectMapping,
   SpecIssue,
-  UpdatedMapping,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
@@ -52,6 +52,7 @@ export class ProjectFilesService {
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
 
   readonly projectId = signal<string | undefined>(undefined);
 
@@ -121,23 +122,6 @@ export class ProjectFilesService {
         ),
       ),
     messages: { success: 'files.assigned', error: 'files.assignFailed' },
-  });
-
-  private readonly reapplyAction = defineAction<
-    string,
-    { reapplied: number; skippedClosed: number }
-  >({
-    run: (mappingId) =>
-      firstValueFrom(
-        this.http.post<{ reapplied: number; skippedClosed: number }>(
-          apiUrl(`/mappings/${mappingId}/reapply`),
-          {},
-        ),
-      ),
-    messages: {
-      success: 'mappings.reapplied',
-      error: 'mappings.reapplyFailed',
-    },
   });
 
   private readonly busyStatus = this.actions.status<unknown>('project-files');
@@ -268,44 +252,26 @@ export class ProjectFilesService {
   }
 
   /**
-   * Saves a spec — new (`origin` manual or copied) or over an existing mapping. Invalid specs come
-   * back as issues; an edit reports how many files use the mapping so the caller can offer to
-   * re-apply it.
+   * Saves a new mapping (`manual` from the editor, `copied` from an uploaded `.json`) — it is
+   * mine, so every project can use it (F11.0); the toast links to its page. Invalid specs come
+   * back as issues. Editing an existing mapping happens on the mapping page.
    */
   async saveMapping(
     spec: unknown,
-    options: { mappingId?: string; origin?: 'manual' | 'copied' },
+    origin: 'manual' | 'copied',
   ): Promise<
-    | { ok: true; mapping: Mapping; filesUsing: number }
-    | { ok: false; issues: readonly SpecIssue[] }
+    { ok: true; mapping: Mapping } | { ok: false; issues: readonly SpecIssue[] }
   > {
     try {
-      if (options.mappingId) {
-        const updated = await firstValueFrom(
-          this.http.put<UpdatedMapping>(
-            apiUrl(`/mappings/${options.mappingId}`),
-            {
-              spec,
-            },
-          ),
-        );
-        this.notifications.success('mappings.saved');
-        this.reloadMappings();
-        return {
-          ok: true,
-          mapping: updated.mapping,
-          filesUsing: updated.filesUsing,
-        };
-      }
       const created = await firstValueFrom(
-        this.http.post<Mapping>(apiUrl('/mappings'), {
-          spec,
-          origin: options.origin ?? 'manual',
-        }),
+        this.http.post<Mapping>(apiUrl('/mappings'), { spec, origin }),
       );
-      this.notifications.success('mappings.saved');
+      this.notifications.success('mappings.saved', {
+        labelKey: 'mappings.openPage',
+        onClick: () => void this.router.navigate(['/app/mappings', created.id]),
+      });
       this.reloadMappings();
-      return { ok: true, mapping: created, filesUsing: 0 };
+      return { ok: true, mapping: created };
     } catch (error) {
       const issues = specIssues(error);
       if (issues) return { ok: false, issues };
@@ -323,7 +289,7 @@ export class ProjectFilesService {
       this.notifications.error('mappings.upload.notJson', file.name);
       return undefined;
     }
-    const saved = await this.saveMapping(spec, { origin: 'copied' });
+    const saved = await this.saveMapping(spec, 'copied');
     if (!saved.ok) {
       this.notifications.error(
         'mappings.upload.invalid',
@@ -334,13 +300,6 @@ export class ProjectFilesService {
       return undefined;
     }
     return saved.mapping;
-  }
-
-  async reapply(mappingId: string): Promise<void> {
-    await this.actions.run(this.reapplyAction, mappingId, {
-      key: 'project-files',
-    });
-    this.reload();
   }
 
   async downloadMapping(mapping: Mapping): Promise<void> {

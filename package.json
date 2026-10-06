@@ -34,7 +34,8 @@
     "db:studio": "nx run api:db:studio",
     "db:seed": "node scripts/dev/seed.mjs",
     "db:reset:test": "node scripts/dev/with-test-db.mjs --reset",
-    "private:inspect": "node scripts/private-inspect.mjs"
+    "private:inspect": "node scripts/private-inspect.mjs",
+    "private:load": "node scripts/dev/load-private.mjs"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "~2.6.0",
@@ -133,6 +134,7 @@
     "firebase": "^12.19.0",
     "firebase-admin": "^14.5.0",
     "helmet": "^8.3.0",
+    "playwright-core": "^1.63.0",
     "pdfjs-dist": "^6.4.299",
     "reflect-metadata": "^0.2.0",
     "rxjs": "~7.8.0",

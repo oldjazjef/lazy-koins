@@ -12,10 +12,8 @@ import type {
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom } from '../../../../shared/files/save-blob';
-import {
-  MappingEditorState,
-  skeleton,
-} from '../project-mappings/mapping-editor.state';
+import { skeleton } from '../mapping-editor';
+import { MappingEditorState } from '../project-mappings/mapping-editor.state';
 import {
   MAX_FILE_BYTES,
   ProjectFilesService,
@@ -358,29 +356,5 @@ describe('MappingEditorState', () => {
     await saving;
     await flushReloads(http);
     expect(editor.open()).toBe(false);
-  });
-
-  it('offers to re-apply an edited mapping to the files using it', async () => {
-    const { http } = await setup();
-    const editor = TestBed.inject(MappingEditorState);
-    editor.openEdit(mapping(), [{ id: 'f1' }]);
-    expect(editor.checkFileId()).toBe('f1');
-    const saving = editor.save();
-    const put = http.expectOne('/api/mappings/m1');
-    expect(put.request.method).toBe('PUT');
-    put.flush({ mapping: mapping(), filesUsing: 2 });
-    await saving;
-    await settle();
-    http.expectOne('/api/projects/p1/mappings').flush([]);
-    http.expectOne('/api/mappings').flush([mapping()]);
-    expect(editor.reapplyOffer()).toEqual({ mappingId: 'm1', files: 2 });
-
-    const reapplying = editor.reapply();
-    http
-      .expectOne('/api/mappings/m1/reapply')
-      .flush({ reapplied: 2, skippedClosed: 0 });
-    await reapplying;
-    await flushReloads(http);
-    expect(editor.reapplyOffer()).toBeNull();
   });
 });

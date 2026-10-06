@@ -18,6 +18,7 @@ import {
   PROJECT_STATUSES,
   type ProjectStatus,
 } from '../domain/project';
+import type { ProjectListEntry } from '../application/queries/list-my-projects.query';
 
 const CANTON = /^[A-Z]{2}$/;
 const NAME_MAX = 120;
@@ -97,5 +98,31 @@ export class ProjectResponseDto {
   static from(project: Project): ProjectResponseDto {
     const { ownerId: _ownerId, ...fields } = project;
     return fields;
+  }
+}
+
+/** A project in the list (F4.2): with the figures of its latest calculation. */
+export class ProjectListItemDto extends ProjectResponseDto {
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Steuerwert per 31.12. of the latest calculation (decimal string)',
+  })
+  wealthChf!: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Ertrag (decimal string)' })
+  incomeChf!: string | null;
+
+  @ApiProperty({ nullable: true, format: 'date-time' })
+  calculatedAt!: string | null;
+
+  static fromEntry(entry: ProjectListEntry): ProjectListItemDto {
+    const { figures, ...project } = entry;
+    return {
+      ...ProjectResponseDto.from(project),
+      wealthChf: figures?.wealthChf ?? null,
+      incomeChf: figures?.incomeChf ?? null,
+      calculatedAt: figures?.calculatedAt ?? null,
+    };
   }
 }
