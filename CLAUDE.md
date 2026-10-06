@@ -353,7 +353,12 @@ result — amounts as decimal strings, every figure with the `recordIds` behind 
   - `DOT.S`); otherwise the **ledger** Σ quantity − Σ fee (a fee in another asset reduces that
     asset) over every booking before 01.01. of the next year. Holdings from a file that also has
     bookings for that account are a ledger's **running balance** (mapping `lastPerAsset`): never
-    preferred, only checked. Manual holdings (corrections) replace their asset. |q| < 1e-7 dropped;
+    preferred, only checked. A **platform-wide statement** (31.12. balances only under accounts
+    the ledger does not use — one Kraken statement for spot + earn; `platformWideStatements` in
+    `balances.ts`, the same rule as the F5.8 hints) **replaces** the ledger positions of all the
+    platform's accounts (no double count), and ledger = statement is then checked on the summed
+    ledger per asset (`ledgerVsStatement:<platform>|*|<asset>`). ENGINE_VERSION 2.
+    Manual holdings (corrections) replace their asset. |q| < 1e-7 dropped;
     spam (name matches `claim`, or a `spam` booking) and negative positions stay listed but are not
     in the total.
 - **Price priority** (`rates/rate-table.ts` `unitPriceChf`): CHF = 1 → override (`manual` rate,

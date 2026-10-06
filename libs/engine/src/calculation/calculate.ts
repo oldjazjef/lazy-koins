@@ -29,6 +29,7 @@ import {
   feeOf,
   ledgerBalances,
   overlay,
+  platformWideStatements,
   positionsAt,
   statementBalances,
 } from './balances';
@@ -342,6 +343,64 @@ export function calculate(input: CalculationInput): CalculationResult {
         light: 'red',
         platform: any.platform,
         accountId: any.accountId,
+        asset,
+        date: yearEnd,
+        params: {
+          expected: str(expected),
+          actual: str(actual),
+          difference: str(difference),
+        },
+        impactChf: impactOf(asset, difference, yearEnd),
+        recordIds: [...(s?.ids ?? []), ...(l?.ids ?? [])],
+      });
+    }
+  }
+  // A platform-wide statement (accounts the ledger does not use) is checked against the sum of
+  // all the platform's ledger accounts, asset by asset — it replaced them in the positions.
+  for (const [platform, wide] of platformWideStatements(
+    ledgerEnd,
+    statementsEnd,
+  )) {
+    applicable.ledgerVsStatement = true;
+    const summed = (keys: readonly string[], from: Balances) => {
+      const out = new Map<string, { quantity: Decimal; ids: string[] }>();
+      for (const key of keys) {
+        for (const balance of from.get(key)?.values() ?? []) {
+          const entry = out.get(balance.asset) ?? { quantity: ZERO, ids: [] };
+          entry.quantity = entry.quantity.plus(balance.quantity);
+          entry.ids.push(...balance.ids);
+          out.set(balance.asset, entry);
+        }
+      }
+      return out;
+    };
+    const statement = summed(wide.statements, statementsEnd);
+    const ledger = summed(wide.ledgers, ledgerEnd);
+    const statementAccount =
+      wide.statements.length === 1
+        ? (statementsEnd
+            .get(wide.statements[0] ?? '')
+            ?.values()
+            .next().value?.accountId ?? null)
+        : null;
+    const assets = [...new Set([...statement.keys(), ...ledger.keys()])].sort(
+      compareText,
+    );
+    for (const asset of assets) {
+      const s = statement.get(asset);
+      const l = ledger.get(asset);
+      const expected = s?.quantity ?? ZERO;
+      const actual = l?.quantity ?? ZERO;
+      if (expected.eq(actual)) continue;
+      if (expected.abs().lt(dust) && actual.abs().lt(dust)) continue;
+      const difference = actual.minus(expected);
+      items.ledgerVsStatement.push({
+        key: `ledgerVsStatement:${platform}|*|${asset}`,
+        check: 'ledgerVsStatement',
+        reason: 'balanceDiffers',
+        light: 'red',
+        platform,
+        accountId: statementAccount,
         asset,
         date: yearEnd,
         params: {

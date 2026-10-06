@@ -9,6 +9,7 @@ import {
 import type { CalculationService } from '../../calculation/calculation.service';
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import type { Env } from '../../config/env';
+import { InMemoryHintStateRepository } from '../../files/testing/in-memory-hint-state.repository';
 import {
   SettingsReader,
   SettingsSecrets,
@@ -55,6 +56,7 @@ async function setup(pdfAvailable = true) {
   } as unknown as CalculationService;
   const exports = new InMemoryProjectExportRepository();
   const pdf = new FakePdfRenderer(pdfAvailable);
+  const hintStates = new InMemoryHintStateRepository();
   const data = new ExportDataService(
     t.snapshots,
     t.states,
@@ -63,9 +65,12 @@ async function setup(pdfAvailable = true) {
     t.files,
     t.inputs,
     calculation,
+    hintStates,
   );
   return {
     ...t,
+    data,
+    hintStates,
     exports,
     pdf,
     create: new CreateExportHandler(t.projects, exports, data, pdf),
@@ -344,6 +349,21 @@ describe('exports (F10)', () => {
       'internal_report_pdf',
       'internal_report_xlsx',
     ]);
+  });
+
+  it('leaves hints marked "in Ordnung" or ignored out of the internal report (F5.8)', async () => {
+    const t = await setup();
+    const snapshot = await t.data.currentSnapshot('anna', t.project);
+    const before = await t.data.build('anna', t.project, snapshot, 'x');
+    expect(before.hints.length).toBeGreaterThan(0);
+    const [first, ...rest] = before.hints;
+    if (!first) throw new Error('no hint');
+    await t.hintStates.save(t.project.id, first.key, {
+      status: 'done',
+      note: '',
+    });
+    const after = await t.data.build('anna', t.project, snapshot, 'x');
+    expect(after.hints.map((h) => h.key)).toEqual(rest.map((h) => h.key));
   });
 
   it('answers 503 for a PDF when no browser is available', async () => {

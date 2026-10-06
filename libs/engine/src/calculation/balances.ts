@@ -150,9 +150,59 @@ export interface RawPosition {
 }
 
 /**
+ * Platforms whose statement is **platform-wide**: it states balances only under accounts the
+ * ledger does not use (one Kraken statement for spot + earn sub-accounts). Such a statement
+ * replaces the ledger of every account of the platform — the same rule as the F5.8 hints.
+ * Returns platform → { statement account keys, ledger account keys }, sorted.
+ */
+export function platformWideStatements(
+  ledger: Balances,
+  statements: Balances,
+): Map<string, { statements: string[]; ledgers: string[] }> {
+  const platformOf = (account: Map<string, Balance>) =>
+    account.values().next().value?.platform;
+  const byPlatform = new Map<
+    string,
+    { statements: string[]; ledgers: string[] }
+  >();
+  const entry = (platform: string) => {
+    let found = byPlatform.get(platform);
+    if (!found) {
+      found = { statements: [], ledgers: [] };
+      byPlatform.set(platform, found);
+    }
+    return found;
+  };
+  for (const [key, account] of statements) {
+    const platform = platformOf(account);
+    if (platform !== undefined) entry(platform).statements.push(key);
+  }
+  for (const [key, account] of ledger) {
+    const platform = platformOf(account);
+    if (platform !== undefined) entry(platform).ledgers.push(key);
+  }
+  const out = new Map<string, { statements: string[]; ledgers: string[] }>();
+  for (const platform of [...byPlatform.keys()].sort(compareText)) {
+    const { statements: s, ledgers: l } = byPlatform.get(platform) as {
+      statements: string[];
+      ledgers: string[];
+    };
+    if (s.length === 0 || l.length === 0) continue;
+    if (s.some((key) => l.includes(key))) continue;
+    out.set(platform, {
+      statements: s.sort(compareText),
+      ledgers: l.sort(compareText),
+    });
+  }
+  return out;
+}
+
+/**
  * Positions at a date (F7.1): from the statement of an account when one exists for that date
- * (it takes precedence for the whole account), otherwise from the ledger; a manual holding
- * (F9.3) replaces its asset. |quantity| below the dust threshold is dropped.
+ * (it takes precedence for the whole account), otherwise from the ledger; a platform-wide
+ * statement (`platformWideStatements`) replaces the ledger of all the platform's accounts — no
+ * double count. A manual holding (F9.3) replaces its asset. |quantity| below the dust threshold
+ * is dropped.
  */
 export function positionsAt(
   ledger: Balances,
@@ -161,7 +211,16 @@ export function positionsAt(
   dust: Decimal,
 ): RawPosition[] {
   const out = new Map<string, RawPosition>();
-  const accounts = new Set([...ledger.keys(), ...statements.keys()]);
+  const replaced = new Set(
+    [...platformWideStatements(ledger, statements).values()].flatMap(
+      (p) => p.ledgers,
+    ),
+  );
+  const accounts = new Set(
+    [...ledger.keys(), ...statements.keys()].filter(
+      (key) => !replaced.has(key),
+    ),
+  );
   for (const key of accounts) {
     const statement = statements.get(key);
     const source: QuantitySource = statement ? 'statement' : 'ledger';

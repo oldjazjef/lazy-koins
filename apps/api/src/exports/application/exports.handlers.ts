@@ -19,6 +19,7 @@ import {
   CalculationSnapshotRepositoryPort,
   OpenItemStateRepositoryPort,
 } from '../../calculation/ports/calculation.repository.port';
+import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
@@ -61,6 +62,7 @@ export class ExportDataService {
     private readonly files: ProjectFileRepositoryPort,
     private readonly inputs: CalculationInputService,
     private readonly calculation: CalculationService,
+    private readonly hintStates: HintStateRepositoryPort,
   ) {}
 
   /**
@@ -101,6 +103,10 @@ export class ExportDataService {
     const coverage = (await this.files.listByProject(project.id))
       .filter((file) => file.status === 'standard' || file.status === 'mapped')
       .flatMap((file) => file.coverage);
+    // Hints marked "in Ordnung" or ignored (F5.8) are settled: not in the internal report.
+    const dismissed = new Set(
+      (await this.hintStates.listByProject(project.id)).map((s) => s.hintKey),
+    );
     return {
       projectName: project.name,
       taxYear: project.taxYear,
@@ -118,7 +124,9 @@ export class ExportDataService {
         done: states.get(item.key)?.done ?? false,
         note: states.get(item.key)?.note ?? '',
       })),
-      hints: missingFileHints(project.taxYear, coverage),
+      hints: missingFileHints(project.taxYear, coverage).filter(
+        (hint) => !dismissed.has(hint.key),
+      ),
     };
   }
 }

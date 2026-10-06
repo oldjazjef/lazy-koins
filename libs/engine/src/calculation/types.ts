@@ -291,4 +291,4 @@ export interface CalculationResult {
 }
 
 /** Bumped when the same input would give a different result (snapshots record it). */
-export const ENGINE_VERSION = 1;
+export const ENGINE_VERSION = 2;
