@@ -1,0 +1,86 @@
+{
+  "name": "api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/api/src",
+  "projectType": "application",
+  "lk-note-no-test-target": "Deliberate — see the Testing section in CLAUDE.md. Vitest fails inside Nx's run-commands spawn (Nx 23.1 ↔ Vitest 4, found in etx-working-time-manager), so a `test` target here would fail on every invocation. Tests run via `pnpm test` (root Vitest workspace) or `pnpm vitest run --project api`.",
+  "lk-note-no-prune-targets": "`generatePackageJson: true` in webpack.config.js already writes dist/apps/api/package.json plus a pruned lockfile, and scripts/build/complete-api-package-json.mjs adds what webpack cannot see. apps/api deliberately has no package.json of its own.",
+  "lk-note-db-deploy-vs-migrate": "db:deploy runs `prisma migrate deploy`: applies pending migrations, never prompts, never resets. It is what CI, container start and anything holding data run. db:migrate runs `prisma migrate dev`, which diffs schema.prisma against the history and writes a new migration (SQLite needs no shadow database URL; Prisma uses a temporary file). There is deliberately no db:push target. All db:* targets run from the repo root with --config: a relative DATABASE_URL (file:./.data/lazykoins.db) resolves against the working directory, and the app runs from the root too — see src/persistence/prisma/sqlite-url.ts.",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["db:generate"],
+      "options": {
+        "commands": [
+          "webpack-cli build",
+          "node ../../scripts/build/complete-api-package-json.mjs"
+        ],
+        "parallel": false,
+        "env": {
+          "NODE_ENV": "production"
+        },
+        "cwd": "apps/api"
+      },
+      "configurations": {
+        "development": {
+          "env": {
+            "NODE_ENV": "development"
+          }
+        }
+      }
+    },
+    "db:generate": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/prisma/schema.prisma",
+        "{projectRoot}/prisma.config.ts"
+      ],
+      "outputs": ["{projectRoot}/src/generated"],
+      "options": {
+        "command": "prisma generate --config apps/api/prisma.config.ts",
+        "cwd": "."
+      }
+    },
+    "db:deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate deploy --config apps/api/prisma.config.ts",
+        "cwd": "."
+      }
+    },
+    "db:migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate dev --config apps/api/prisma.config.ts",
+        "cwd": "."
+      }
+    },
+    "db:studio": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma studio --config apps/api/prisma.config.ts",
+        "cwd": "."
+      }
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "api:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "api:build:development"
+        },
+        "production": {
+          "buildTarget": "api:build:production"
+        }
+      }
+    }
+  },
+  "tags": []
+}

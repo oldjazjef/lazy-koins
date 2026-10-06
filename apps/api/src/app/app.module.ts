@@ -1,0 +1,48 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import {
+  AccountThrottlerGuard,
+  IpThrottlerGuard,
+  throttlerOptions,
+} from '../common/throttling/throttling';
+import { AccessTokenGuard } from '../auth/access-token.guard';
+import { AuthModule } from '../auth/auth.module';
+import { validateEnv } from '../config/env';
+import { IntegrationsModule } from '../integrations/integrations.module';
+import { PersistenceModule } from '../persistence/persistence.module';
+import { ProjectsModule } from '../projects/projects.module';
+import { UsersModule } from '../users/users.module';
+import { AppController } from './app.controller';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      validate: validateEnv,
+      // First match wins: a local override, then the developer's .env. Both git-ignored.
+      envFilePath: ['apps/api/.env.local', 'apps/api/.env', '.env'],
+    }),
+    // Per-IP hygiene plus a per-account budget for writes (common/throttling).
+    ThrottlerModule.forRootAsync({ useFactory: throttlerOptions }),
+    // Global: every repository port → its Prisma adapter.
+    PersistenceModule,
+    // Global: identity-token verifier → its adapter (chosen by AUTH_MODE).
+    IntegrationsModule,
+    AuthModule,
+    UsersModule,
+    ProjectsModule,
+  ],
+  controllers: [AppController],
+  providers: [
+    // Global guards run in registration order: the per-IP limit first (cheap, and it must also
+    // cover requests with bad tokens), then authentication, then the per-account limits (they key
+    // on the user the token named). All bound here so the order lives in one place.
+    { provide: APP_GUARD, useClass: IpThrottlerGuard },
+    { provide: APP_GUARD, useClass: AccessTokenGuard },
+    { provide: APP_GUARD, useClass: AccountThrottlerGuard },
+  ],
+})
+export class AppModule {}
