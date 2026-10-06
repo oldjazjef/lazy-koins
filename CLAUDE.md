@@ -297,6 +297,20 @@ request)` → parsed JSON + text + usage). `ProviderSwitchingAiCompletion` dispa
 keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement}/payload` returns
   exactly the data that will be sent; the app shows it before EVERY request; the first request
   needs `consent: true` and stores `consent_at` (revocable in the settings).
+- **Precise error details** (user rule: "genaue Fehlerinfos"): `AiProviderError(code, details)`
+  — `postJson` (`integrations/ai/ai-http.ts`) fills `status`, the provider's own
+  `providerMessage` / `providerType` / `providerCode` (OpenAI `error.{message,type,code}`,
+  Anthropic `error.{type,message}`, Ollama `error` string, an HTML page → its text), `url`
+  (scheme://host/path, never the query), `model`, and for transport failures the system `cause`
+  (`ECONNREFUSED`, `ENOTFOUND (host)`, TLS codes — undici hides them in `cause`, sometimes an
+  `AggregateError`) or `timeoutMs`. `AiGate.call(work, connection)` puts them into the 502 body
+  next to `code` plus a one-line `detail`, and logs that line at warn. **Everything passes
+  `redactSecrets`** (`integrations/ai/redact.ts`): every non-public header value of the request,
+  the connection's key again in the gate, `Bearer …`, `sk-…`, `x-api-key/api_key/token=…`, cut
+  to 500 characters. 409s from the gate carry a human `detail` (what is missing). Web:
+  `shared/ai/ai-error-details.ts` (`aiErrorInfo` + a hint per typical case) and
+  `lk-ai-error-panel` (summary, hint, details list, "Details kopieren"; `collapsible` in the AI
+  dialogs) — the settings test shows it under the buttons, the AI dialogs above their footer.
 - **SSRF guard**: the API itself calls the base URL, so private/loopback hosts are refused unless
   `AI_ALLOW_PRIVATE_URLS=true` — default: allowed with `AUTH_MODE=local|dev`, refused with
   `firebase`. Literal host check only (no DNS-rebinding protection).
@@ -643,9 +657,45 @@ are provided by the component (`providers: [...]`), list/form services are root.
 
 - spartan components are generated, never hand-written: `npx nx g @spartan-ng/cli:ui
 --name=<c> --no-interactive` (skill `add-ui-component`). `libs/ui/**` is vendored — don't edit
-  or format it. `ls libs/ui/` for what exists (badge, button, card, dialog, input, label,
-  separator, skeleton, sonner, table, textarea, utils). Selects are native `<select hlmInput>`,
-  as in surf-lend.
+  or format it. `ls libs/ui/` for what exists (badge, button, card, dialog, dropdown-menu,
+  input, label, separator, skeleton, sonner, table, textarea, tooltip, utils). Selects are
+  native `<select hlmInput>`, as in surf-lend.
+- **Tables** (user rule, 07.10.2026: "cutte zu lange Texte, fixiere den Interaktionsbereich",
+  Pagination überall, wo es gross werden kann). Every `hlmTable` follows one pattern — copy
+  `project-files.html` or `project-rates.html`:
+  - `<table hlmTable class="table-fixed">` with a `<colgroup>`: **one** flexible `<col />` (the
+    main column), compact fixed widths for the rest (`w-14` … `w-48`); columns that matter less
+    get `hidden md:table-column` / `lg:` / `xl:` on the `col` **and** `hidden md:table-cell` on
+    `th`/`td`. Secondary info is a second muted line (`text-muted-foreground text-xs`) under the
+    main cell. **No horizontal scrolling at ≥ 1024 px** (checked at 1024 and 1280).
+  - Long text: the cell gets `max-w-0` (a fixed-layout cell may then shrink below its text),
+    the text sits in `<span [lkTruncate]="text">{{ text }}</span>`
+    (`shared/components/truncate`): block, one line, "…", and the full text as a tooltip
+    **only when it is actually cut** (measured on hover). For a computed text use `@let`.
+    Badges/fixed bits next to a cut text: `flex min-w-0 items-center gap-2` + `shrink-0`.
+  - Actions: the last column (`<col class="w-14" />`) is `lk-sticky-actions text-right` on
+    `th` (with `<span class="sr-only">{{ 'common.actions' | translate }}</span>`) and `td`, and
+    holds **`<lk-row-actions [actions]="…" (selected)="…" />`** (`shared/components/row-actions`):
+    a list of `{ id, labelKey, icon (the lucide SVG import, no provideIcons), danger?,
+disabled?, hidden? }`. Exactly one visible action → a plain icon button with tooltip; more
+    → one vertical-dots button (`lucideEllipsisVertical`, aria-label "Aktionen") opening the
+    spartan dropdown menu (icon + label, destructive ones last after a separator, in the danger
+    colour; CDK menu = arrow keys, Escape, focus return). It stops click propagation, so it works
+    in clickable rows. Build the arrays once (a `computed`, or a `Map` per row id) — not a new
+    array per change detection. `hidden: closed()` for changes on a closed project (F4.5).
+  - Pagination: `pager = paginate(rows, { storageKey, resetOn })` (`shared/components/paginator`)
+    over the already filtered/sorted signal, render `pager.visible()` and
+    `<lk-paginator [pager]="pager" />` under the table. Default 10 rows, 10 / 25 / 50 / 100
+    selectable and remembered per `storageKey` (localStorage, try/catch), „Zeile 1–10 von 57",
+    first/previous/next/last; hidden while everything fits on 10 rows; back to page 1 when
+    `resetOn()` (search, filter, sort, opened group) changes; the page stays valid when rows
+    disappear; `pager.reveal(row => …)` shows the page holding a row (`#file-<id>`). Every table
+    that can grow is paged (projects, files per platform, mappings, usage, rates, positions,
+    income lines, Earn gaps, one-off events, records drill-down, open items, corrections,
+    exports, mapping preview, PDF review); small fixed summaries (platform/category totals) are
+    not. No endpoint pages server-side yet — the drill-down is capped by the API.
+  - The raw-data preview of a file keeps its own horizontal scroll inside the dialog (raw rows
+    are wide) but cuts each cell at `max-w-64` with `lkTruncate`.
 - Colours live **only** in `apps/web/src/styles.css` (light + `:root.dark`). Templates use
   semantic classes; `no-hardcoded-design-values` rejects hex, arbitrary px and inline styles.
 - The look: calm and neutral for reading figures — cool slate greys, an ink-blue primary, Inter,

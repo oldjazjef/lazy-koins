@@ -16,6 +16,8 @@ import type { OpenItem } from '../../../../core/api/calculation.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe, QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
  * Prüfungen (F8.1) with traffic lights, the open items (F8.2: tick off, note, estimated CHF
@@ -25,6 +27,8 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
   selector: 'lk-project-checks',
   imports: [
     TranslatePipe,
+    Paginator,
+    Truncate,
     ChfPipe,
     QuantityPipe,
     EmptyState,
@@ -44,6 +48,12 @@ export class ProjectChecks {
 
   protected readonly view = computed(() =>
     this.service.checks.hasValue() ? this.service.checks.value() : undefined,
+  );
+
+  /** Open items (F8.2), 10 per page. */
+  protected readonly itemsPager = paginate(
+    computed(() => this.view()?.items ?? []),
+    { storageKey: 'open-items' },
   );
 
   protected readonly openCount = computed(

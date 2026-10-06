@@ -25,7 +25,9 @@ import {
   type SentVia,
 } from '../../../../core/api/mail.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { SmtpError } from '../../../../shared/components/smtp-error';
+import { Truncate } from '../../../../shared/components/truncate';
 import { formatBytes } from '../../../../shared/mail/mail-error';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
 import {
@@ -58,6 +60,8 @@ function today(): string {
     RouterLink,
     TranslatePipe,
     SmtpError,
+    Paginator,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -77,6 +81,12 @@ export class SendToAdvisor {
   private readonly notifications = inject(NotificationService);
   protected readonly ways = SENT_VIA;
   protected readonly bytes = formatBytes;
+  protected readonly logPager = paginate(
+    computed(() =>
+      this.service.log.hasValue() ? this.service.log.value() : [],
+    ),
+    { storageKey: 'mail-log' },
+  );
 
   /** compose = edit the mail; confirm = the explicit last look before sending. */
   protected readonly step = signal<'compose' | 'confirm'>('compose');

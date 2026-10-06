@@ -12,6 +12,7 @@ import {
   plainSchema,
   postJson,
 } from './ai-http';
+import { safeUrl } from './redact';
 
 export const OPENAI_DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 export const OPENAI_DEFAULT_MODEL = 'gpt-4.1-mini';
@@ -111,13 +112,23 @@ export class OpenAiCompatibleAdapter extends AiCompletionPort {
       ).body as ChatResponse;
     }
 
+    const context = { url: safeUrl(url), model: body.model ?? model };
     const text = body.choices?.[0]?.message?.content;
     if (typeof text !== 'string' || text.trim() === '') {
-      throw new AiProviderError('badResponse', undefined, 'empty answer');
+      throw new AiProviderError('badResponse', {
+        ...context,
+        cause: 'the answer has no message content',
+      });
+    }
+    let json: unknown;
+    try {
+      json = extractJson(text);
+    } catch (error) {
+      throw error instanceof AiProviderError ? error.with(context) : error;
     }
     const usage = body.usage;
     return {
-      json: extractJson(text),
+      json,
       text,
       model: body.model ?? model,
       usage:

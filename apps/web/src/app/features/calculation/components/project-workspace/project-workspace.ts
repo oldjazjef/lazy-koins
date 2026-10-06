@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
@@ -23,6 +24,8 @@ import {
   WORKSPACE_TABS,
   type WorkspaceTab,
 } from './project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
  * The project detail's working area as tabs: Dateien (+ Mappings), Kurse, Ergebnis, Prüfungen,
@@ -34,6 +37,8 @@ import {
   imports: [
     DatePipe,
     TranslatePipe,
+    Paginator,
+    Truncate,
     QuantityPipe,
     ProjectFiles,
     ProjectRates,
@@ -57,6 +62,15 @@ export class ProjectWorkspace {
   readonly projectId = input.required<string>();
   readonly closed = input(false);
   readonly taxYear = input.required<number>();
+
+  /** F7.5 drill-down: the records behind a figure, 10 per page. */
+  protected readonly recordsPager = paginate(
+    computed(() => this.service.records()?.records ?? []),
+    {
+      storageKey: 'records',
+      resetOn: () => this.service.recordsOf()?.figureId,
+    },
+  );
 
   constructor() {
     effect(() => this.service.projectId.set(this.projectId()));

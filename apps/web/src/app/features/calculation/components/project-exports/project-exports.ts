@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { lucideDownload } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -26,6 +27,12 @@ import { NotificationService } from '../../../../core/notifications/notification
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
 import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
 
 /**
@@ -40,6 +47,9 @@ import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
   imports: [
     DatePipe,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     ChfPipe,
     EmptyState,
     SendToAdvisor,
@@ -68,17 +78,36 @@ export class ProjectExports {
       : [];
     return [
       {
-        key: 'statements',
+        key: 'statements' as const,
         items: all.filter((item) => !isInternalKind(item.kind)),
       },
       {
-        key: 'internal',
+        key: 'internal' as const,
         items: all.filter((item) => isInternalKind(item.kind)),
       },
     ].filter((group) => group.items.length > 0);
   });
 
   protected readonly draft = signal<MailDraft | null>(null);
+
+  /** Each group of stored exports (F10), newest first, 10 per page. */
+  protected readonly pagers = {
+    statements: paginate(
+      computed(
+        () => this.groups().find((g) => g.key === 'statements')?.items ?? [],
+      ),
+      { storageKey: 'exports' },
+    ),
+    internal: paginate(
+      computed(
+        () => this.groups().find((g) => g.key === 'internal')?.items ?? [],
+      ),
+      { storageKey: 'exports' },
+    ),
+  };
+  protected readonly actions: readonly RowAction[] = [
+    { id: 'download', labelKey: 'exports.download', icon: lucideDownload },
+  ];
 
   protected create(kind: ExportKind): void {
     void this.service.requestExport(kind).catch(() => undefined);

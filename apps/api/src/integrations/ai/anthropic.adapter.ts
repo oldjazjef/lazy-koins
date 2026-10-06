@@ -6,6 +6,7 @@ import {
   AiProviderError,
 } from './ai-completion.port';
 import { type FetchLike, joinUrl, plainSchema, postJson } from './ai-http';
+import { safeUrl } from './redact';
 
 export const ANTHROPIC_DEFAULT_BASE_URL = 'https://api.anthropic.com';
 export const ANTHROPIC_DEFAULT_MODEL = 'claude-sonnet-5-5';
@@ -72,7 +73,11 @@ export class AnthropicAdapter extends AiCompletionPort {
         block.type === 'tool_use' && block.name === request.output.name,
     );
     if (!call || call.input === undefined) {
-      throw new AiProviderError('badResponse', undefined, 'no tool call');
+      throw new AiProviderError('badResponse', {
+        url: safeUrl(url),
+        model: response.model ?? model,
+        cause: 'the model answered without the requested tool call',
+      });
     }
     const usage = response.usage;
     return {

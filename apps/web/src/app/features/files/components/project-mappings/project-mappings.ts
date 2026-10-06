@@ -2,10 +2,11 @@ import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideDownload,
@@ -13,6 +14,7 @@ import {
   lucideSparkles,
   lucideUpload,
 } from '@ng-icons/lucide';
+import type { ProjectMapping } from '../../../../core/api/api.types';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -23,6 +25,12 @@ import { AiAssistState } from '../ai-assist';
 import { MappingEditorForm } from '../mapping-editor';
 import { ProjectFilesService } from '../project-files/project-files.service';
 import { MappingEditorState } from './mapping-editor.state';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
 
 /**
  * The mappings this project's files are read with: name (linking to the global mapping page,
@@ -37,6 +45,9 @@ import { MappingEditorState } from './mapping-editor.state';
     RouterLink,
     NgIcon,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     MappingEditorForm,
     ...HlmBadgeImports,
     ...HlmButtonImports,
@@ -44,14 +55,7 @@ import { MappingEditorState } from './mapping-editor.state';
     ...HlmDialogImports,
     ...HlmTableImports,
   ],
-  providers: [
-    provideIcons({
-      lucideDownload,
-      lucideExternalLink,
-      lucideSparkles,
-      lucideUpload,
-    }),
-  ],
+  providers: [provideIcons({ lucideSparkles, lucideUpload })],
   templateUrl: './project-mappings.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -61,6 +65,36 @@ export class ProjectMappings {
   protected readonly ai = inject(AiAssistState);
 
   readonly closed = input(false);
+
+  private readonly router = inject(Router);
+  protected readonly pager = paginate(
+    computed(() =>
+      this.service.projectMappings.hasValue()
+        ? this.service.projectMappings.value()
+        : [],
+    ),
+    { storageKey: 'project-mappings' },
+  );
+  protected readonly actions: readonly RowAction<'open' | 'download'>[] = [
+    { id: 'open', labelKey: 'mappings.openPage', icon: lucideExternalLink },
+    {
+      id: 'download',
+      labelKey: 'mappings.actions.download',
+      icon: lucideDownload,
+    },
+  ];
+
+  protected act(action: 'open' | 'download', entry: ProjectMapping): void {
+    if (action === 'download') {
+      void this.service.downloadMapping(entry.mapping);
+    } else {
+      void this.router.navigate(['/app/mappings', entry.mapping.id]);
+    }
+  }
+
+  protected fileNames(entry: ProjectMapping): string {
+    return entry.files.map((file) => file.displayName).join(', ');
+  }
 
   protected picked(event: Event): void {
     const target = event.target as HTMLInputElement;

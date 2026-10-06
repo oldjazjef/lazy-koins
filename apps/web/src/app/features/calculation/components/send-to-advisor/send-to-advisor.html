@@ -68,33 +68,49 @@
     <div class="flex flex-col gap-2">
       <h4 class="text-sm font-medium">{{ 'mail.log.title' | translate }}</h4>
       <div hlmTableContainer class="lk-panel">
-        <table hlmTable>
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col class="w-36" />
+            <col />
+            <col class="hidden w-48 lg:table-column" />
+            <col class="w-32" />
+          </colgroup>
           <thead hlmTHead>
             <tr hlmTr>
               <th hlmTh>{{ 'mail.log.when' | translate }}</th>
-              <th hlmTh>{{ 'mail.log.to' | translate }}</th>
               <th hlmTh>{{ 'mail.log.subject' | translate }}</th>
-              <th hlmTh>{{ 'mail.log.attachments' | translate }}</th>
+              <th hlmTh class="hidden lg:table-cell">
+                {{ 'mail.log.attachments' | translate }}
+              </th>
               <th hlmTh>{{ 'mail.log.status' | translate }}</th>
             </tr>
           </thead>
           <tbody hlmTBody>
-            @for (entry of service.log.value(); track entry.id) {
+            @for (entry of logPager.visible(); track entry.id) {
             <tr hlmTr>
               <td hlmTd class="tabular-nums whitespace-nowrap">
                 {{ entry.createdAt | date: 'dd.MM.yyyy HH:mm' }}
               </td>
-              <td hlmTd>
-                {{ entry.to }} @if (entry.cc) {
-                <span class="text-muted-foreground block text-xs"
-                  >{{ 'mail.log.cc' | translate: { cc: entry.cc } }}</span
+              <td hlmTd class="max-w-0">
+                <span [lkTruncate]="entry.subject">{{ entry.subject }}</span>
+                @let recipients = entry.cc ? entry.to + ' · ' + ('mail.log.cc' |
+                translate: { cc: entry.cc }) : entry.to;
+                <span
+                  class="text-muted-foreground text-xs"
+                  [lkTruncate]="recipients"
+                  >{{ recipients }}</span
+                >
+                @if (entry.error) {
+                <span
+                  class="text-destructive text-xs"
+                  [lkTruncate]="entry.error"
+                  >{{ entry.error }}</span
                 >
                 }
               </td>
-              <td hlmTd>{{ entry.subject }}</td>
-              <td hlmTd class="text-xs">
+              <td hlmTd class="hidden max-w-0 text-xs lg:table-cell">
                 @for (file of entry.attachments; track file.exportId) {
-                <span class="block">{{ file.fileName }}</span>
+                <span [lkTruncate]="file.fileName">{{ file.fileName }}</span>
                 } @empty { – }
               </td>
               <td hlmTd>
@@ -106,9 +122,6 @@
                 <span hlmBadge variant="destructive"
                   >{{ 'mail.log.failed' | translate }}</span
                 >
-                <span class="text-muted-foreground mt-1 block text-xs break-all"
-                  >{{ entry.error }}</span
-                >
                 }
               </td>
             </tr>
@@ -116,6 +129,7 @@
           </tbody>
         </table>
       </div>
+      <lk-paginator [pager]="logPager" />
     </div>
     }
   </div>
