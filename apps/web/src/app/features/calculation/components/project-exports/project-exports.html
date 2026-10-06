@@ -120,36 +120,38 @@
       <h3 hlmDialogTitle>{{ 'exports.mail.title' | translate }}</h3>
       <p hlmDialogDescription>{{ 'exports.mail.hint' | translate }}</p>
     </hlm-dialog-header>
-    <div class="flex flex-col gap-3">
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="mail-to"
-          >{{ 'exports.mail.to' | translate }}</label
-        >
-        <input hlmInput id="mail-to" type="text" readonly [value]="mail.to" />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="mail-subject"
-          >{{ 'exports.mail.subject' | translate }}</label
-        >
-        <input
-          hlmInput
-          id="mail-subject"
-          type="text"
-          readonly
-          [value]="mail.subject"
-        />
-      </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="mail-body"
-          >{{ 'exports.mail.body' | translate }}</label
-        >
-        <textarea
-          hlmTextarea
-          id="mail-body"
-          rows="16"
-          readonly
-          [value]="mail.body"
-        ></textarea>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="mail-to"
+            >{{ 'exports.mail.to' | translate }}</label
+          >
+          <input hlmInput id="mail-to" type="text" readonly [value]="mail.to" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="mail-subject"
+            >{{ 'exports.mail.subject' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-subject"
+            type="text"
+            readonly
+            [value]="mail.subject"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="mail-body"
+            >{{ 'exports.mail.body' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="mail-body"
+            rows="16"
+            readonly
+            [value]="mail.body"
+          ></textarea>
+        </div>
       </div>
     </div>
     <hlm-dialog-footer>
@@ -175,9 +177,11 @@
         }}
       </p>
     </hlm-dialog-header>
-    <p class="text-muted-foreground text-sm">
-      {{ 'exports.confirm.hint' | translate }}
-    </p>
+    <div class="lk-dialog-body">
+      <p class="text-muted-foreground text-sm">
+        {{ 'exports.confirm.hint' | translate }}
+      </p>
+    </div>
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}

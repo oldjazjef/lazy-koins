@@ -1,9 +1,13 @@
 <div class="flex min-h-dvh flex-col">
   <header class="bg-card border-b">
     <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
-      <a routerLink="/app" class="lk-brand flex items-center gap-2">
-        <img [src]="logo" alt="" class="size-6" />
-        {{ 'app.name' | translate }}
+      <a
+        routerLink="/app"
+        class="lk-brand flex items-center"
+        [attr.aria-label]="'app.name' | translate"
+        [attr.title]="'app.name' | translate"
+      >
+        <img [src]="logo" alt="" class="size-7" />
       </a>
 
       <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
