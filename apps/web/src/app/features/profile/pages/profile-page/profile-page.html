@@ -104,3 +104,49 @@
 } @else {
 <hlm-skeleton class="h-96 w-full max-w-3xl" />
 }
+
+<!-- F10.9 = F2.3: all my data -->
+<section hlmCard class="mt-6 max-w-3xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'profile.data.title' | translate }}</h2>
+    <p hlmCardDescription>{{ 'profile.data.hint' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-3">
+    <div class="flex flex-wrap gap-2">
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="data.downloading()"
+        (click)="downloadAll()"
+      >
+        {{ 'profile.data.download' | translate }}
+      </button>
+      <input
+        #accountInput
+        type="file"
+        class="hidden"
+        accept=".zip,application/zip"
+        (change)="importAccount(accountInput)"
+      />
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="data.isImporting()"
+        (click)="accountInput.click()"
+      >
+        {{ 'profile.data.import' | translate }}
+      </button>
+    </div>
+    @if (data.lastImport(); as result) {
+    <p class="text-sm" role="status">
+      {{ 'profile.data.importSummary' | translate: { projects:
+      result.projects.length, created: result.mappingsCreated, reused:
+      result.mappingsReused } }}
+    </p>
+    }
+    <p class="text-muted-foreground text-xs">
+      {{ 'profile.data.limits' | translate }}
+    </p>
+  </div>
+</section>

@@ -5,6 +5,9 @@
   [back]="true"
 >
   <lk-project-status-badge [status]="project.status" />
+  <a hlmBtn variant="outline" routerLink="follow-up">
+    {{ 'projects.followUp.open' | translate }}
+  </a>
 </lk-page-header>
 
 <div class="grid gap-6 lg:grid-cols-3">
@@ -108,6 +111,61 @@
       </dl>
     </div>
   </section>
+</div>
+
+<div class="mt-6 grid gap-6 lg:grid-cols-3">
+  <lk-project-dashboard-card
+    class="lg:col-span-2"
+    [projectId]="project.id"
+    [taxYear]="project.taxYear"
+  />
+  @if (service.carryovers.hasValue() && service.carryovers.value().length > 0) {
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'projects.carryover.title' | translate }}</h2>
+    </div>
+    <div hlmCardContent>
+      <ul class="flex flex-col gap-2 text-sm">
+        @for (item of service.carryovers.value(); track item.id) {
+        <li class="flex min-w-0 items-start gap-2">
+          @if (item.kind === 'open_item') {
+          <input
+            type="checkbox"
+            class="mt-1"
+            [checked]="item.done"
+            [disabled]="service.isClosed()"
+            [attr.aria-label]="'projects.carryover.done' | translate"
+            (change)="setCarriedDone(item, !item.done)"
+          />
+          }
+          <div class="min-w-0 flex-1">
+            <p class="truncate" [title]="item.label">
+              <span class="text-muted-foreground"
+                >{{ 'projects.carryover.kind.' + item.kind | translate }}</span
+              >
+              @if (item.kind !== 'project' && item.kind !== 'notes') { · {{
+              item.kind === 'open_item' ? ('checks.reason.' + item.label |
+              translate: $any(item.data['item'])?.params ?? {}) : item.label }}
+              }
+            </p>
+            <p class="text-muted-foreground truncate text-xs">
+              @if (item.sourceProjectId) {
+              <a
+                class="hover:underline"
+                [routerLink]="['/app/projects', item.sourceProjectId]"
+                >{{ 'projects.carryover.from' | translate: { name:
+                item.sourceProjectName } }}</a
+              >
+              } @else { {{ 'projects.carryover.fromPackage' | translate: { name:
+              item.sourceProjectName } }} }
+            </p>
+          </div>
+        </li>
+        }
+      </ul>
+    </div>
+  </section>
+  }
 </div>
 
 <lk-project-workspace

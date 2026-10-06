@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -7,11 +6,7 @@ import {
   input,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { HlmButtonImports } from '@lazykoins/ui/button';
-import { HlmDialogImports } from '@lazykoins/ui/dialog';
-import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
-import { HlmTableImports } from '@lazykoins/ui/table';
-import { QuantityPipe } from '../../../../shared/format/number-format';
+import { RecordsDialog } from '../../../../shared/components/records-dialog';
 import { ProjectFiles } from '../../../files/components/project-files';
 import { ProjectChecks } from '../project-checks/project-checks';
 import { ProjectCorrections } from '../project-corrections/project-corrections';
@@ -32,19 +27,14 @@ import {
 @Component({
   selector: 'lk-project-workspace',
   imports: [
-    DatePipe,
     TranslatePipe,
-    QuantityPipe,
+    RecordsDialog,
     ProjectFiles,
     ProjectRates,
     ProjectResult,
     ProjectChecks,
     ProjectCorrections,
     ProjectExports,
-    ...HlmButtonImports,
-    ...HlmDialogImports,
-    ...HlmSkeletonImports,
-    ...HlmTableImports,
   ],
   providers: [ProjectWorkspaceService],
   templateUrl: './project-workspace.html',
@@ -64,17 +54,5 @@ export class ProjectWorkspace {
 
   protected select(tab: WorkspaceTab): void {
     this.service.tab.set(tab);
-  }
-
-  protected recordsState(): 'open' | 'closed' {
-    return this.service.recordsOf() ? 'open' : 'closed';
-  }
-
-  protected recordsChanged(state: 'open' | 'closed'): void {
-    if (state === 'closed') this.service.closeRecords();
-  }
-
-  protected rawEntries(raw: Record<string, string> | null): [string, string][] {
-    return raw ? Object.entries(raw) : [];
   }
 }

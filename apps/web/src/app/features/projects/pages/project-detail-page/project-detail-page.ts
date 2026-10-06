@@ -22,7 +22,9 @@ import {
   PROJECT_STATUSES,
   type ProjectStatus,
 } from '../../../../core/api/api.types';
+import type { Carryover } from '../../../../core/api/dashboard.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { ProjectDashboardCard } from '../../../dashboard/components/project-dashboard-card';
 import { ProjectWorkspace } from '../../../calculation/components/project-workspace/project-workspace';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
@@ -56,6 +58,7 @@ type Confirm = 'reopen' | 'delete';
     EmptyState,
     ProjectStatusBadge,
     ProjectWorkspace,
+    ProjectDashboardCard,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,
@@ -107,6 +110,10 @@ export class ProjectDetailPage {
     const parsed = ProjectEditSchema.safeParse(this.form.getRawValue());
     if (!parsed.success) return;
     void this.service.save(parsed.data).catch(() => undefined);
+  }
+
+  protected setCarriedDone(item: Carryover, done: boolean): void {
+    void this.service.setCarriedDone(item, done).catch(() => undefined);
   }
 
   protected dialogState(): 'open' | 'closed' {
