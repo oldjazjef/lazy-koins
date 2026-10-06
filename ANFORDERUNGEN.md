@@ -133,7 +133,24 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
   (ohne API-Schlüssel) – zum Herunterladen aller Daten eines Benutzers (= F2.3, Auskunft nach
   DSG/DSGVO) und zum Umzug in die Desktop-App.
 
-## 11. Einstellungen
+## 11. Profil und Einstellungen
+
+Alles Projektübergreifende lebt an zwei Orten, erreichbar über das Benutzermenü oben rechts:
+
+- **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
+  Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
+  Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.
+- **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert:
+  **Mappings** (alle Mappings des Benutzers, projektübergreifend: auflisten, ansehen,
+  bearbeiten, löschen, herunter-/hochladen, „wird genutzt in“ Projekt/Datei; ein in einem
+  Projekt erstelltes Mapping steht in allen Projekten zur Verfügung), **AI** (Anbieter, Modell,
+  Schlüssel, Zustimmung, F5.13/F5.14), **Kurse** (Internet-Kurse ein/aus F11.3, CoinGecko-Schlüssel,
+  ESTV-Kursliste), **Wallets/Netzwerke** (API-Schlüssel wie Etherscan, F6.7), **Speicherort**
+  (Desktop, F3.1) und **Cloud-Verbindungen** (Web, F3.2). Schlüssel werden nie wieder angezeigt
+  (nur die letzten Zeichen).
+- Im Projekt bleiben nur projektbezogene Dinge (Dateien, die im Projekt genutzten Mappings mit
+  Link in die Einstellungen, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
+  Exporte).
 
 - **F11.1** Persönliche Angaben für die Exporte (Name, Wohnkanton, Treuhänder).
 - **F11.2** Sprache, Zahlen- und Datumsformat. Die App ist vollständig übersetzbar; zunächst
