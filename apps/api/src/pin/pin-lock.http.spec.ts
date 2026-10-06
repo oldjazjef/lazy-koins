@@ -18,6 +18,8 @@ import { MailSettingsRepositoryPort } from '../mail/ports/mail.repository.port';
 import { InMemoryMailSettingsRepository } from '../mail/testing/mail-doubles';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { InMemoryUserSettingsRepository } from '../settings/testing/in-memory-user-settings.repository';
+import { ChainSettingsRepositoryPort } from '../wallets/ports/wallet.repository.port';
+import { InMemoryChainSettingsRepository } from '../wallets/testing/in-memory-wallet.repository';
 import { PinSessions, UNLOCK_HEADER } from './application/pin-sessions';
 import { PinLockGuard } from './pin-lock.guard';
 import { PinModule } from './pin.module';
@@ -66,6 +68,10 @@ function moduleFor(mode: 'local' | 'dev') {
         provide: MailSettingsRepositoryPort,
         useClass: InMemoryMailSettingsRepository,
       },
+      {
+        provide: ChainSettingsRepositoryPort,
+        useClass: InMemoryChainSettingsRepository,
+      },
     ],
     exports: [
       ConfigService,
@@ -73,6 +79,7 @@ function moduleFor(mode: 'local' | 'dev') {
       UserSettingsRepositoryPort,
       AiSettingsRepositoryPort,
       MailSettingsRepositoryPort,
+      ChainSettingsRepositoryPort,
     ],
   })
   class TestPortsModule {}

@@ -292,6 +292,10 @@ describe('PIN lock handlers (F11.0p)', () => {
       fromName: 'Anna',
       fromAddress: 'anna@example.org',
     });
+    await t.chains.save('anna', {
+      sealedHeliusKey: box.seal('helius-1'),
+      solanaRpcUrl: 'https://rpc.example.org',
+    });
 
     expect(
       await failure(t.forgot.execute(new ForgotPinCommand(anna, false))),
@@ -304,6 +308,11 @@ describe('PIN lock handlers (F11.0p)', () => {
       mail: true,
       coingecko: true,
       etherscan: true,
+      chains: true,
+    });
+    expect(await t.chains.find('anna')).toMatchObject({
+      sealedHeliusKey: null,
+      solanaRpcUrl: 'https://rpc.example.org',
     });
     expect(reset.status.hasPin).toBe(false);
     expect(t.pins.rows.has('anna')).toBe(false);

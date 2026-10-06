@@ -118,7 +118,9 @@ export interface ProjectFile {
   holdingCount: number;
   errorCount: number;
   /** derived = a standard-format file the AI converted from a PDF of the project. */
-  origin: 'uploaded' | 'from_project' | 'derived';
+  origin: 'uploaded' | 'from_project' | 'derived' | 'wallet';
+  /** wallet = the records a wallet fetch derived (F6.3). */
+  originWalletId?: string | null;
   originProjectId: string | null;
   originProjectName: string | null;
   /** The PDF a derived file was converted from (same project). */
@@ -128,18 +130,69 @@ export interface ProjectFile {
 }
 
 export const MISSING_FILE_KINDS = [
+  'noYearData',
   'startsLate',
   'endsEarly',
   'noYearEndBalance',
 ] as const;
 export type MissingFileKind = (typeof MISSING_FILE_KINDS)[number];
 
+export const HINT_SEVERITIES = ['error', 'warning', 'info'] as const;
+export type HintSeverity = (typeof HINT_SEVERITIES)[number];
+
 export interface MissingFileHint {
+  key: string;
   platform: string;
+  /** '' = the whole platform (see `accounts`). */
   accountId: string;
+  accounts: string[];
   kind: MissingFileKind;
+  severity: HintSeverity;
   date?: string;
+  zeroBalance?: boolean;
   hintKey: string;
+}
+
+/** F5.8 "Hinweise": coverage gaps plus file hints (no mapping, row errors). */
+export const HINT_KINDS = [
+  ...MISSING_FILE_KINDS,
+  'unrecognisedFile',
+  'rowErrors',
+] as const;
+export type HintKind = (typeof HINT_KINDS)[number];
+
+export const HINT_STATUSES = ['open', 'done', 'ignored'] as const;
+export type HintStatus = (typeof HINT_STATUSES)[number];
+
+export interface ProjectHint {
+  /** Stable — dismissals are stored under it and survive recalculation. */
+  key: string;
+  kind: HintKind;
+  severity: HintSeverity;
+  platform: string | null;
+  accountId: string;
+  accounts: string[];
+  date: string | null;
+  zeroBalance: boolean;
+  hintKey: string;
+  fileId: string | null;
+  fileName: string | null;
+  count: number | null;
+  status: HintStatus;
+  note: string;
+}
+
+/** `GET /api/projects/:id/hints` */
+export interface ProjectHints {
+  taxYear: number;
+  hints: ProjectHint[];
+  open: number;
+}
+
+/** `GET …/files/:fileId/row-errors` */
+export interface FileRowErrors {
+  total: number;
+  errors: RowError[];
 }
 
 /** `GET /api/projects/:id/files` */

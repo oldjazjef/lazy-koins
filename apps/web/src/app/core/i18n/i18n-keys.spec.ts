@@ -19,6 +19,16 @@ import {
   QUANTITY_SOURCES,
 } from '../api/calculation.types';
 import {
+  ADDRESS_KINDS,
+  CHAIN_SERVICES,
+  FETCH_NOTES,
+  NETWORK_COVERAGES,
+  NETWORK_IDS,
+  SECRET_KINDS,
+  SPAM_REASONS,
+  WALLET_ERROR_CODES,
+} from '../api/wallets.types';
+import {
   CHANGE_REASONS,
   MAIL_ERROR_CODES,
   MAIL_PLACEHOLDERS,
@@ -31,7 +41,13 @@ import {
   HOLDING_STATUSES,
   KPI_KINDS,
 } from '../api/dashboard.types';
-import { FINGERPRINT_VERDICTS } from '../api/api.types';
+import {
+  FINGERPRINT_VERDICTS,
+  HINT_KINDS,
+  HINT_SEVERITIES,
+  HINT_STATUSES,
+  MISSING_FILE_KINDS,
+} from '../api/api.types';
 import {
   KEY_CHECK_CODES,
   PIN_ERROR_CODES,
@@ -61,10 +77,19 @@ const DYNAMIC_KEYS = [
   ...['queued', 'uploading', 'done', 'failed'].map(
     (state) => `files.upload.state.${state}`,
   ),
-  ...['startsLate', 'endsEarly', 'noYearEndBalance'].flatMap((kind) => [
-    `files.missing.kind.${kind}`,
-    `files.missing.howTo.${kind}`,
+  ...MISSING_FILE_KINDS.map((kind) => `files.missing.howTo.${kind}`),
+  ...['noYearDataZero', 'endsEarlyZero'].map(
+    (kind) => `files.missing.howTo.${kind}`,
+  ),
+  ...HINT_KINDS.flatMap((kind) => [
+    `hints.kind.${kind}`,
+    `hints.short.${kind}`,
   ]),
+  ...['noYearDataZero', 'endsEarlyZero'].map((kind) => `hints.short.${kind}`),
+  ...['unrecognisedFile', 'rowErrors'].map((kind) => `hints.howTo.${kind}`),
+  ...HINT_SEVERITIES.map((severity) => `hints.severity.${severity}`),
+  ...HINT_STATUSES.map((status) => `hints.status.${status}`),
+  ...['mapping', 'statement'].map((mode) => `activity.ai.${mode}Ready`),
   ...[
     'required',
     'invalidNumber',
@@ -168,6 +193,26 @@ const DYNAMIC_KEYS = [
     'pageOutOfRange',
     'invalidRecord',
   ].map((issue) => `ai.statement.issues.${issue}`),
+  ...NETWORK_IDS.map((network) => `wallets.network.${network}`),
+  ...NETWORK_COVERAGES.map((coverage) => `wallets.coverage.${coverage}`),
+  ...ADDRESS_KINDS.map((kind) => `wallets.kind.${kind}`),
+  ...SECRET_KINDS.map((kind) => `wallets.secret.kind.${kind}`),
+  ...WALLET_ERROR_CODES.map((code) => `wallets.errors.${code}`),
+  ...FETCH_NOTES.map((note) => `wallets.notes.${note}`),
+  ...SPAM_REASONS.map((reason) => `wallets.spamReason.${reason}`),
+  ...CHAIN_SERVICES.flatMap((service) => [
+    `settings.wallets.services.${service}.title`,
+    `settings.wallets.services.${service}.hint`,
+  ]),
+  ...[
+    'etherscanKey',
+    'heliusKey',
+    'subscanKey',
+    'solanaRpcUrl',
+    'esploraUrl',
+    'koiosUrl',
+    'cosmosLcdUrl',
+  ].map((field) => `settings.wallets.fields.${field}`),
   ...['openai_compatible', 'anthropic'].map(
     (provider) => `settings.ai.providers.${provider}`,
   ),

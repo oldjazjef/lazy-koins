@@ -32,6 +32,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/mappings/mappings.routes'),
       },
       {
+        path: 'wallets',
+        loadChildren: () => import('./features/wallets/wallets.routes'),
+      },
+      {
         path: 'profile',
         loadChildren: () => import('./features/profile/profile.routes'),
       },

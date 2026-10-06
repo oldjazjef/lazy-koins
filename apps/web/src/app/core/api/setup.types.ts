@@ -77,7 +77,10 @@ export interface PinUnlocked {
 
 export interface PinReset {
   status: PinStatus;
-  erasedKeys: Record<'ai' | 'mail' | 'coingecko' | 'etherscan', boolean> | null;
+  erasedKeys: Record<
+    'ai' | 'mail' | 'coingecko' | 'etherscan' | 'chains',
+    boolean
+  > | null;
 }
 
 /** The error codes of the PIN endpoints (`pin.errors.<code>`). */

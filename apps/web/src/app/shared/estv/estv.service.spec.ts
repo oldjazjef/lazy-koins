@@ -5,6 +5,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ActivityService } from '../../core/activity/activity.service';
 import type { EstvStatus } from '../../core/api/calculation.types';
 import { NotificationService } from '../../core/notifications/notification.service';
 import { ESTV_POLL_MS, estvPercent, EstvService } from './estv.service';
@@ -87,6 +88,12 @@ describe('EstvService (F7.4a)', () => {
     await settle();
     expect(service.isBusy()).toBe(true);
     expect(service.percent()).toBe(25);
+    // The app-wide activity indicator shows the run, its year, phase and percentage.
+    const activity = TestBed.inject(ActivityService);
+    const [task] = activity.tasks();
+    expect(task?.label).toBe('activity.estvUpdate');
+    expect(task?.params()['year']).toBe(2025);
+    expect(task?.progress()).toEqual({ done: 25, total: 100, asPercent: true });
     await new Promise((resolve) => setTimeout(resolve, ESTV_POLL_MS + 50));
     http
       .expectOne('/api/rates/estv')
@@ -95,6 +102,7 @@ describe('EstvService (F7.4a)', () => {
     expect(final.running).toBeNull();
     expect(notifications.success).toHaveBeenCalledWith('estv.updated');
     expect(service.isBusy()).toBe(false);
+    expect(activity.count()).toBe(0);
   });
 
   it('shows the error of a failed check', async () => {

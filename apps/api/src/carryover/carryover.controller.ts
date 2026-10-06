@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiProperty,
+  ApiPropertyOptional,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -23,6 +24,7 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -64,6 +66,15 @@ export class CreateFollowUpDto {
   @ApiProperty({ description: 'Take the notes over' })
   @IsBoolean()
   notes!: boolean;
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Wallets of the project to link to the new one (F4.4a, F6)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(500)
+  @IsString({ each: true })
+  walletIds?: string[];
 }
 
 export class TakeOverFilesDto {

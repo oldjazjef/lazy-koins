@@ -34,6 +34,19 @@ Plattformen beschreiben, was diese Mappings ausdrücken müssen.
   Polygon, Arbitrum, Optimism, Base, BNB Chain); dort nur Spam gefunden → vermerken.
 - Netzwerke ohne freie historische Abfrage (z. B. BNB Chain): Saldo manuell mit Beleg, sonst
   offener Punkt.
+- EVM im Detail (Umsetzung): eine fehlgeschlagene Tx bewegt keinen Wert, ihr Gas ist aber bezahlt
+  → Gebühr-Buchung (nur Gas). Auf Optimism/Base ist die L1-Datengebühr nicht in
+  `gasUsed × gasPrice` enthalten (kleine Abweichung möglich, beim Abruf vermerkt). **Annahme**,
+  im Zweifel mit dem Saldo laut Explorer abgleichen.
+- Bitcoin: je Transaktion Σ Ausgänge an eigene Adressen − Σ Eingänge von eigenen Adressen; hat die
+  Wallet bezahlt, ist die Netzwerkgebühr ihre Gebühr. Bei xpub/ypub/zpub zählen alle abgeleiteten
+  Empfangs- und Wechselgeld-Adressen (Gap-Limit 20).
+- Cardano, Polkadot: Staking-Erträge werden abgerufen (Ertrag am Beginn der Epoche, in der sie
+  verfügbar wurden); Saldo per 31.12. manuell mit Beleg. Cosmos: alles manuell mit Beleg.
+- Spam (ausgeblendet, überschreibbar „kein Spam“): Name mit „Claim“, Webadresse o. Ä.; nur
+  Transfers mit Wert 0; Absender ähnelt einer eigenen Zieladresse (Adress-Vergiftung);
+  unverifizierte, nur erhaltene Token; kopiertes Kürzel bekannter Token. Spam-Token erscheinen als
+  `SPAM:<Kürzel>`, damit ein falscher „USDT“ die echte Position nicht berührt.
 
 ## Kurse
 

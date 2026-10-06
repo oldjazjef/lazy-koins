@@ -7,6 +7,7 @@ import {
   ListCarryoversHandler,
   TakeOverFilesHandler,
 } from './application/carryover.handlers';
+import { WalletsModule } from '../wallets/wallets.module';
 import { CarryoverController } from './carryover.controller';
 
 /**
@@ -15,7 +16,7 @@ import { CarryoverController } from './carryover.controller';
  * `ProjectBundleRepositoryPort` (one transaction).
  */
 @Module({
-  imports: [CqrsModule],
+  imports: [CqrsModule, WalletsModule],
   controllers: [CarryoverController],
   providers: [
     GetFollowUpOptionsHandler,

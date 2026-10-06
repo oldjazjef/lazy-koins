@@ -103,12 +103,6 @@
           </tbody>
         </table>
       </div>
-      } @if (estv.running(); as running) {
-      <p class="text-sm" aria-live="polite">
-        {{ 'estv.running' | translate: { year: running.year } }} · {{
-        'estv.phase.' + running.progress.phase | translate }} @if
-        (estv.percent() !== null) { {{ estv.percent() }} % }
-      </p>
       }
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span class="text-muted-foreground text-xs">

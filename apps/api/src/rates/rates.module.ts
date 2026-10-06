@@ -21,10 +21,12 @@ import {
 import {
   DeleteManualRateHandler,
   GetRatesHandler,
+  GetRefreshStatusHandler,
   ImportKurslisteHandler,
   RefreshRatesHandler,
   SetManualRateHandler,
 } from './application/rates.handlers';
+import { RefreshProgress } from './application/refresh-progress';
 import { EstvController } from './estv.controller';
 import { RatesController } from './rates.controller';
 import { RatesService } from './rates.service';
@@ -42,6 +44,8 @@ import { RatesService } from './rates.service';
     RatesService,
     GetRatesHandler,
     RefreshRatesHandler,
+    RefreshProgress,
+    GetRefreshStatusHandler,
     SetManualRateHandler,
     DeleteManualRateHandler,
     ImportKurslisteHandler,

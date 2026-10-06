@@ -17,8 +17,8 @@ two as a package (F1.3).
 > F7–F11 on top of the engine, **dashboard** = F11.4–F11.9, **carryover** = F4.4/F4.4a,
 > **packages** = F10.8/F10.9, data export F10.7), the Angular web app (`apps/web`: login, the
 > **Dashboard** (start page, first in the main navigation), project
-> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Kurse · Ergebnis ·
-> Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main navigation;
+> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
+> Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -27,9 +27,9 @@ two as a package (F1.3).
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
 > stored per user). **Desktop app** (`apps/desktop`, Electron, see Desktop) and the **release /
-> deploy pipeline** (`deploy/`, `.github/workflows/`) exist. **Not built yet:** bookings persisted
-> as rows, wallet lookups (F6) — wallets are no entity yet, so the follow-up project shows that group
-> disabled. Update this file whenever the code makes a section concrete or wrong.
+> deploy pipeline** (`deploy/`, `.github/workflows/`) exist, and **wallets** (F6, see Wallets).
+> **Not built yet:** bookings persisted as rows. Update this file whenever the code makes a section
+> concrete or wrong.
 
 ## Stack
 
@@ -279,6 +279,25 @@ is `evidence_only`. Same bytes in another project of the owner: stored once, ori
 `project_file` row — bookings are not persisted as rows yet. F5.8 hints are computed from that
 coverage (`coverage/missing-files.ts`), no platform knowledge.
 
+**Hinweise (F5.8)** — `GET /api/projects/:id/hints` (`files/application/queries/project-hints.query.ts`)
+= the engine's `missingFileHints` (kinds `noYearData` "Fehlende Datei", `startsLate`, `endsEarly`,
+`noYearEndBalance`) + file hints (`unrecognisedFile` = needs a mapping, `rowErrors`), each with a
+**stable key** (`<kind>:<platform>|<account>`, `noYearEndBalance:<platform>` for the whole
+platform, `<kind>:<project file id>`), a severity (info/warning/error) and its status.
+`PATCH …/hints` `{ key, status: open|done|ignored, note }` stores a dismissal in
+`project_hint_state` (no row = open; 409 on a closed project) — it survives recalculation and new
+uploads. Engine rules: a **statement** is a balance from a file without bookings for that account
+(a ledger's running balance is not one); statements at 31.12. under accounts the ledger does not
+use are **platform-wide** and cover every sub-account; no statement at all = **one** hint per
+platform; an account whose ledger ends before 31.12. with every asset at 0 (`net` per asset is
+stored in the coverage since this change — older rows lack it and count as "unknown") is `info`
+and needs no statement. `GET …/files/:id/row-errors` lists the rows the file's own reader failed
+on (row/code/column, no cell values). Web: tab **Hinweise** (`files/components/project-hints`,
+badge = open count; the files area only shows "N Hinweise → anzeigen"); `ProjectFilesService`,
+`MappingEditorState` and `AiAssistState` are provided by the **workspace** (shared with the hints
+tab; `<lk-ai-assist>` lives there too). Checks link to the hints of a platform and back; file
+issues are never open items.
+
 Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
@@ -456,8 +475,9 @@ Treuhänder mail without mailer, the project's Kurse tab and the dashboard when 
   button and their success toast (it would sit on "Weiter"); the page's "Weiter" calls
   `submit()` of the step on screen (`SetupStepComponent` token, `provideSetupStep`). The AI step
   can give the F5.14 consent up front (`giveConsent` on `PUT /api/ai/settings`; the payload is
-  still shown before every request). Wallets: only the Etherscan key until the wallets feature
-  brings its key tests.
+  still shown before every request). Wallets: the Etherscan and Helius keys with "Testen" through
+  `WalletSettingsPageService` (`/api/settings/wallets`, `…/test`); the other networks stay in
+  Einstellungen › Wallets & Netzwerke.
 
 **PIN** (API slice `pin/`, table `user_pin`): 4–8 digits, stored only as **scrypt**
 (`pin/domain/pin-hash.ts`: N = 2^15, r = 8, p = 1, 16-byte salt, 32-byte key, parameters inside the
@@ -466,8 +486,8 @@ hash `scrypt$15$8$1$<salt>$<hash>`, `needsRehash`), never logged. Wrong attempts
 a time (`PinPolicy.serial`). Web: after 10 failures `reloginRequired` until a sign-in **after** that
 moment (the identity's `authTime` = Firebase `auth_time`; the dev token carries it as
 `dev:<email>#<epoch ms>`). "PIN vergessen": desktop = `POST /api/pin/forgot {confirmClearKeys:
-true}` removes the PIN **and every sealed key** (AI key, mail password, CoinGecko, Etherscan —
-`SealedKeysEraser`); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
+true}` removes the PIN **and every sealed key** (AI key, mail password, CoinGecko, Etherscan,
+Helius, Subscan — `SealedKeysEraser`; a new sealed key elsewhere must be added there); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
 it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (default 15).
 
 - **Enforced in the API**: `PinLockGuard` (global, after `AccessTokenGuard`) answers **423
@@ -504,7 +524,12 @@ result — amounts as decimal strings, every figure with the `recordIds` behind 
   - `DOT.S`); otherwise the **ledger** Σ quantity − Σ fee (a fee in another asset reduces that
     asset) over every booking before 01.01. of the next year. Holdings from a file that also has
     bookings for that account are a ledger's **running balance** (mapping `lastPerAsset`): never
-    preferred, only checked. Manual holdings (corrections) replace their asset. |q| < 1e-7 dropped;
+    preferred, only checked. A **platform-wide statement** (31.12. balances only under accounts
+    the ledger does not use — one Kraken statement for spot + earn; `platformWideStatements` in
+    `balances.ts`, the same rule as the F5.8 hints) **replaces** the ledger positions of all the
+    platform's accounts (no double count), and ledger = statement is then checked on the summed
+    ledger per asset (`ledgerVsStatement:<platform>|*|<asset>`). ENGINE_VERSION 3 (2 = this rule, 3 = the wallet check).
+    Manual holdings (corrections) replace their asset. |q| < 1e-7 dropped;
     spam (name matches `claim`, or a `spam` booking) and negative positions stay listed but are not
     in the total.
 - **Price priority** (`rates/rate-table.ts` `unitPriceChf`): CHF = 1 → override (`manual` rate,
@@ -520,7 +545,7 @@ result — amounts as decimal strings, every figure with the `recordIds` behind 
 - **Checks** (F8.1) with lights + **open items** with a stable `key`, reason, params and CHF
   impact (F8.2): ledger = statement (exact) + running-balance consistency + negative balances,
   Earn gap, withdrawals ↔ deposits across own accounts (±2 %, −1 h … +7 d, fiat ignored), opening =
-  previous closing, missing prices, unclassified bookings, wallet networks (placeholder, yellow).
+  previous closing, missing prices, unclassified bookings, wallet networks (F6.4, see Wallets).
 - `analysis.ts`: `balancesAt`, `dailyBalances` (one sweep), `flowsBetween`, `dailyPricesChf` —
   the same rules for any date/range (for the dashboard).
 
@@ -534,7 +559,9 @@ Closed projects: 409 for calculate, corrections, ticks, rate changes; exports st
 final statement) and use the last snapshot. `rates/`: `POST …/rates/refresh` (ECB via
 Frankfurter, Binance `<SYM>USDT`/`BUSD` daily closes, CoinGecko CHF with the user's key as
 fallback; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
-unless `force`), `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
+unless `force`; `GET …/rates/refresh/status` = progress of the refresh in flight, in memory —
+`RefreshProgress`; `RATES_DEV_DELAY_MS` slows each series down, development only),
+`PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
 when the user switched rate lookups off or `RATES_ONLINE=false`. `exports/`: `POST …/exports`
 recalculates first when stale; detailed Excel = the FACHREGELN sheets with formulas (named cells
 `USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
@@ -600,7 +627,11 @@ tooltip + crosshair (mouse, arrow keys), a visually hidden table, colours from t
 their period reaches into the new year (linked, same stored file, origin `from_project:`),
 corrections offered only when they apply beyond the year (reclassify of a booking whose file
 reaches into the new year, manual bookings; never overrides or dated manual holdings), open items
-not done (latest snapshot + carried ones), notes; `GET|POST /projects/:id/take-over` (F4.4: files
+not done (latest snapshot + carried ones), notes, and the project's **wallets** (preselected;
+linked in the same transaction via `ProjectBundle.walletIds`, carry-over kind `wallet` — the
+wallets migration widens that CHECK; their derived files are made anew by `WalletDerivedFiles.sync`
+after the write, files with origin `wallet:` are never offered or linked; manual balances stay with
+their year); `GET|POST /projects/:id/take-over` (F4.4: files
 of other projects, already-linked ones skipped). Every item is recorded in `project_carryover`
 ("aus Projekt X", `GET …/carryovers`); a carried open item is ticked via `open_item_state` with
 the key `carried:<carryover id>`. A closed source project is fine (only read). Writes go through
@@ -673,10 +704,68 @@ divided by `denomination`) and `estv_check` (last check per year, outcome `updat
   match are removed. ESTV wins by the price priority (also USD/CHF at 31.12. over the ECB fixing);
   a new version changes values → the input hash → the snapshot is stale. `GET …/rates` has `estv`
   (`available`, `applied`, `outdated`). The note is not part of the input hash.
-* Web: `shared/estv/estv.service.ts` (status, start, poll every 1.5 s, toast per outcome — there is
-  no shared activity snackbar yet); Einstellungen › Kurse shows the status table and the button;
+* Web: `shared/estv/estv.service.ts` (status, start, poll every 1.5 s while it runs, shown in the
+  activity indicator with its phase/progress, toast per outcome); Einstellungen › Kurse shows the status table and the button;
   the project's Kurse tab the version in use, "Neuen Stand übernehmen", "ESTV-Kursliste
   aktualisieren" (download + apply) and ambiguous assets; the ESTV label replaces the source.
+
+## Wallets (F6.1–F6.7)
+
+A wallet = a **public** address (or a Bitcoin xpub/ypub/zpub) of one user with label, networks,
+notes (`wallet`); projects include wallets (`project_wallet`). Web: **Wallets** in the main
+navigation (`features/wallets`: list, `/app/wallets/new|:id` with form, network check, fetch, per
+network status `lk-network-status`, tokens with spam verdict), the project tab **Wallets**
+(`components/project-wallets`: include/remove, check, fetch, manual balances with a PDF receipt)
+and **Einstellungen › Wallets & Netzwerke** (keys + URLs, "Testen" per service on the form's
+unsaved values, the precise error: code, HTTP status, provider words).
+
+- **F6.2 secrets** (`libs/engine/src/wallets/secrets.ts`, `detectSecret`): BIP-39 runs of ≥ 12
+  English list words (bundled `@scure/bip39` word list), 64 hex (± `0x`), WIF, `x/y/z/t/u/vprv…`,
+  Solana base58-64-byte keys and 64-byte JSON arrays — in address, label and notes, before anything
+  else. 422 `{ code: 'secretRefused', kind }` — never the input, a word of it or its length; the web
+  clears the fields and explains. `POST /api/wallets/inspect` classifies without storing.
+- **Networks** (`libs/engine/src/wallets/networks.ts`): bitcoin; EVM ethereum (1), bsc (56),
+  polygon (137), arbitrum (42161), optimism (10), base (8453); solana; cardano, polkadot (coverage
+  `income`: rewards fetched, balance by hand); cosmos (`manual`). `classifyAddress` →
+  `networksForAddress` = what F6.4 checks.
+- **Adapters** (`integrations/chains/`, port `wallets/ports/chain-data.port.ts`
+  `ChainDataPort` per family, `ChainDataSourcesPort` bound in `IntegrationsModule`; `ChainSources.fake()`
+  with **`LK_CHAINS_FAKE=1`**, refused in production): `ChainHttpClient` = serial gate per provider,
+  5-min cache of successful answers (keyed per secret hash), JSON with numbers as source text,
+  errors → `ChainDataError(code, detail, status)` with keys **redacted**. Etherscan API V2
+  (`txlist`/`txlistinternal`/`tokentx` paged by start block, activity = probes + nonce; "not on
+  your plan" → `chainNotOnPlan`), Esplora (mempool.space default; xpub/ypub/zpub derived with
+  `@scure/bip32` + `@scure/base`, gap limit 20 on receive + change — BIP84 test vectors in the
+  spec), Solana JSON-RPC (Helius URL from the key, a custom URL or the public endpoint;
+  signatures + `getTransaction jsonParsed`, SOL by pre/post balances, SPL by owner), Koios
+  (rewards by spendable epoch), Subscan (rewards, `x-api-key`), Cosmos LCD (activity + balance).
+  Limits: Etherscan 50 pages × 1000 per list, Solana 3000 tx, Bitcoin 400 addresses — beyond
+  that the fetch says `truncated`.
+- **Gate** (`wallets/application/chain-gate.ts`): only explicit actions (check, fetch, test),
+  never in the calculation; F11.3 (the user's online switch and `RATES_ONLINE`) → 409 `offline`;
+  user URLs pass the AI SSRF check; keys opened only for the call. Settings: Etherscan key stays
+  in `user_settings` (saved through `UpdateSettingsCommand`), Helius/Subscan sealed in
+  `chain_settings` with Esplora/Koios/LCD/Solana-RPC URLs (`GET|PUT /api/settings/wallets`,
+  `POST …/test`).
+- **Derived files** (the pipeline stays unchanged): `wallet_network_data` keeps the last fetch per
+  network (normalised `ChainMovement[]`, decimal strings; a failed fetch keeps the old movements +
+  the error). `WalletDerivedFiles.sync` writes per project `<label>.wallet-buchungen.csv`
+  (`walletBookingRows`: Plattform = `walletPlatform(label, network)` = `<label> · <network>`, so a
+  manual balance of one network is never a platform-wide statement over another; Konto = network, Referenz = tx hash, row = movement
+  index; deposit/withdrawal/fee/income_staking/income_airdrop/spam, gas in Gebühr, failed tx →
+  `fee`) and `<label>.wallet-bestaende.csv` (F6.5 manual balances = statement holdings for that
+  wallet/network, Beleg = the PDF's name) with origin **`wallet:<walletId>`** (migration
+  `20261008140000_wallets` widens the `project_file.origin` CHECK). Same bytes → same file; new
+  bytes → added, the old one removed (F5.7). Closed projects are never touched; deleting a wallet
+  used by a closed project → 409 `usedByClosedProject`. Synced on fetch, add/remove, label/network
+  change, "kein Spam" and balance changes.
+- **F6.6 spam** (`tokenVerdicts`): scam names ("Claim", URLs), zero-value only, address poisoning
+  (look-alike of a recipient), unverified incoming-only, impersonated symbols; spam rows get asset
+  `SPAM:<sym>` and kind `spam`; "kein Spam" per token in `wallet_token_override`.
+- **F8.1 check** (`calculation/wallet-check.ts`): the input gets `wallets: WalletState[]`
+  (`wallets/domain/wallet-states.ts`, also part of the input hash); red = used but not selected, or
+  selected + used and neither fetched nor a manual balance; yellow = not checked on every network,
+  fetch failed, income-only network without manual balance; grey = no wallets. ENGINE_VERSION 3.
 
 ## Database (SQLite)
 
@@ -721,6 +810,9 @@ prisma/schema.prisma` must still report **no difference**.
   latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
   (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
   the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
+- **Hints** (migration `20261008120000_project_hint_state`): `project_hint_state` (PK
+  `(project_id, hint_key)`, cascade with the project; CHECKs: status `done|ignored`, key 1–600
+  chars, note ≤ 500); `hints.persistence.integration.spec.ts`.
 - **ESTV** (migration `20261008100000_estv_kursliste`): `project_rate.note` (nullable, `ADD
 COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`, counts),
   `estv_rate` (kind CHECK, positive plain decimal, cascade with its year), `estv_check` (outcome
@@ -895,6 +987,16 @@ are provided by the component (`providers: [...]`), list/form services are root.
   of `<hlm-dialog-content>`; a footer inside an `@if` is fine as long as it stays a direct child.
   Styled globally in `styles.css`. The same goes for any other overlay with actions.
 - Desktop first: the shell is a header with the navigation (`core/layout/app-shell`), no tab bar.
+- **Every action that can take more than ~1 s goes through the `ActivityService`** (user rule,
+  F11.20): `core/activity/activity.service.ts` (root, signals) shows it in the app-wide
+  indicator (`lk-activity-indicator` in `app.html`, bottom right, above dialogs and toasts —
+  the toaster moves up while it shows; `role="status"`, spinner `aria-hidden`, still with reduced
+  motion). For an action: `actions.run(action, payload, { activity: { label, params?, progress? } })`
+  — the runner's own toast ends it. Otherwise `activity.track(labelKey, promise | observable |
+() => promise, { params, progress, success, error })`, where `success` may return a toast with
+  an action ("Herunterladen", "Anzeigen") or `null`. Labels are i18n keys under `activity.*`.
+  Server work that outlives a quick answer reports progress through a status endpoint polled
+  only while the request runs (rate refresh: 1 s); everything else tracks the request itself.
 
 ## UI, styling, i18n
 

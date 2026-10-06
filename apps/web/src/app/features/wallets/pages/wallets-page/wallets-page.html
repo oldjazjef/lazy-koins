@@ -1,0 +1,138 @@
+<lk-page-header
+  [title]="'wallets.title' | translate"
+  [subtitle]="'wallets.list.subtitle' | translate"
+>
+  <a hlmBtn routerLink="new">
+    <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
+    {{ 'wallets.list.new' | translate }}
+  </a>
+</lk-page-header>
+
+@if (service.wallets.isLoading() && !service.wallets.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.wallets.error()) {
+<lk-empty-state [message]="'wallets.list.loadFailed' | translate">
+  <button hlmBtn variant="outline" type="button" (click)="service.refresh()">
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.isEmpty()) {
+<lk-empty-state [message]="'wallets.list.empty' | translate">
+  <a hlmBtn routerLink="new">{{ 'wallets.list.new' | translate }}</a>
+</lk-empty-state>
+} @else {
+<p class="text-muted-foreground mb-4 max-w-3xl text-sm">
+  {{ 'wallets.list.privacy' | translate }}
+</p>
+<div class="mb-4 flex max-w-md flex-col gap-2">
+  <label hlmLabel for="wallets-search"
+    >{{ 'wallets.list.search' | translate }}</label
+  >
+  <input
+    hlmInput
+    id="wallets-search"
+    type="search"
+    [ngModel]="service.search()"
+    (ngModelChange)="service.search.set($event)"
+  />
+</div>
+@if (service.visible().length === 0) {
+<lk-empty-state [message]="'wallets.list.noMatch' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-56" />
+      <col class="hidden w-40 md:table-column" />
+      <col class="hidden w-48 lg:table-column" />
+      <col class="w-14" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'wallets.fields.label' | translate }}</th>
+        <th hlmTh>{{ 'wallets.fields.usedOn' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'wallets.fields.fetchedAt' | translate }}
+        </th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'wallets.fields.projects' | translate }}
+        </th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (wallet of pager.visible(); track wallet.id) {
+      <tr hlmTr class="cursor-pointer" (click)="open(wallet.id)">
+        <td hlmTd class="max-w-0">
+          <a
+            class="font-medium hover:underline"
+            [routerLink]="wallet.id"
+            [lkTruncate]="wallet.label"
+            (click)="$event.stopPropagation()"
+            >{{ wallet.label }}</a
+          >
+          <span
+            class="text-muted-foreground font-mono text-xs"
+            [lkTruncate]="wallet.address"
+            >{{ wallet.address }}</span
+          >
+        </td>
+        <td hlmTd class="max-w-0 text-sm">
+          @if (wallet.checkedAt === null) {
+          <span class="text-muted-foreground"
+            >{{ 'wallets.list.notChecked' | translate }}</span
+          >
+          } @else {
+          <div class="flex min-w-0 flex-wrap gap-1">
+            @for (network of used(wallet); track network) {
+            <span hlmBadge variant="outline" class="shrink-0"
+              >{{ 'wallets.network.' + network | translate }}</span
+            >
+            } @empty {
+            <span class="text-muted-foreground"
+              >{{ 'wallets.list.nowhere' | translate }}</span
+            >
+            }
+          </div>
+          }
+        </td>
+        <td hlmTd class="hidden text-sm tabular-nums md:table-cell">
+          @if (fetchedAt(wallet); as at) { {{ at | date: 'dd.MM.yyyy HH:mm' }} }
+          @else {
+          <span class="text-muted-foreground"
+            >{{ 'wallets.fetchStatus.none' | translate }}</span
+          >
+          } @if (failed(wallet) > 0) {
+          <span class="text-destructive block text-xs"
+            >{{ 'wallets.list.failed' | translate: { count: failed(wallet) }
+            }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="hidden max-w-0 text-sm lg:table-cell">
+          @let projects = projectNames(wallet); @if (projects) {
+          <span [lkTruncate]="projects">{{ projects }}</span>
+          } @else {
+          <span class="text-muted-foreground">–</span>
+          }
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions()"
+            (selected)="act($event, wallet)"
+          />
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+} }

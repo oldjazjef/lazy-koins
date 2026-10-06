@@ -96,6 +96,15 @@ export class FileAnalysisService {
     );
   }
 
+  /** The standard format's full result (row errors of a standard file, F5.10). */
+  async applyStandard(file: ReadableFile): Promise<ImportResult | undefined> {
+    const source = await this.reader.read(file);
+    const standard = defaultImporterRegistry([])
+      .candidates(source)
+      .find((candidate) => candidate.importer.id === STANDARD_IMPORTER_ID);
+    return standard?.importer.parse(source);
+  }
+
   /** The engine's full result for a spec — previews (nothing is stored). */
   async apply(file: ReadableFile, spec: MappingSpec): Promise<ImportResult> {
     const source = await this.reader.read(file, csvOptionsOf(spec));

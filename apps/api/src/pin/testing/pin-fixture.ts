@@ -3,6 +3,7 @@ import { InMemoryAiSettingsRepository } from '../../ai/testing/in-memory-ai-sett
 import type { Env } from '../../config/env';
 import { InMemoryMailSettingsRepository } from '../../mail/testing/mail-doubles';
 import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
+import { InMemoryChainSettingsRepository } from '../../wallets/testing/in-memory-wallet.repository';
 import {
   PinClock,
   PinLockState,
@@ -57,19 +58,21 @@ export function pinSetup(mode: PinMode) {
   const settings = new InMemoryUserSettingsRepository();
   const ai = new InMemoryAiSettingsRepository();
   const mail = new InMemoryMailSettingsRepository();
+  const chains = new InMemoryChainSettingsRepository();
   const runtime = new PinRuntime(
     fakeConfig({ AUTH_MODE: mode === 'desktop' ? 'local' : 'dev' }),
   );
   const sessions = new PinSessions(clock);
   const state = new PinLockState(pins);
   const policy = new PinPolicy(pins, state, sessions, runtime, clock);
-  const eraser = new SealedKeysEraser(settings, ai, mail);
+  const eraser = new SealedKeysEraser(settings, ai, mail, chains);
   return {
     clock,
     pins,
     settings,
     ai,
     mail,
+    chains,
     runtime,
     sessions,
     state,

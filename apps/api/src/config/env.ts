@@ -163,6 +163,23 @@ export class Env {
   RATES_ONLINE = 'true';
 
   /**
+   * `1` = the wallet lookups (F6.3/F6.4) answer from synthetic fake chains, no network and no
+   * keys needed — for development and demos. Refused with NODE_ENV=production.
+   */
+  @IsIn(['', '0', '1'])
+  LK_CHAINS_FAKE = '';
+
+  /**
+   * Development only: waits this long before each series of "Kurse aktualisieren", so the
+   * progress in the app's activity indicator can be watched. Refused outside development/test.
+   */
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  RATES_DEV_DELAY_MS = 0;
+
+  /**
    * F7.4a: download the ESTV Kursliste (ICTax) automatically — on demand and once a day when a
    * newer version exists. `false` switches it off (the manual Kursliste import stays). Also off
    * with `RATES_ONLINE=false`.
@@ -228,6 +245,23 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   }
   if (env.AUTH_MODE !== 'local' && env.LOCAL_MODE === 'true') {
     messages.push('  LOCAL_MODE: `true` is only valid with AUTH_MODE=local');
+  }
+
+  if (env.LK_CHAINS_FAKE === '1' && env.NODE_ENV === NodeEnv.Production) {
+    messages.push(
+      '  LK_CHAINS_FAKE: fake chains answer with synthetic data — never in production',
+    );
+  }
+
+  // A deliberate slowdown has no place outside development.
+  if (
+    env.RATES_DEV_DELAY_MS > 0 &&
+    env.NODE_ENV !== NodeEnv.Development &&
+    env.NODE_ENV !== NodeEnv.Test
+  ) {
+    messages.push(
+      '  RATES_DEV_DELAY_MS: only with NODE_ENV=development or test',
+    );
   }
 
   if (messages.length > 0) {

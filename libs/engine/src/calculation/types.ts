@@ -23,6 +23,33 @@ export interface PreviousYear {
   }[];
 }
 
+/**
+ * F6.4 / F8.1 "Wallets auf allen Netzwerken geprüft": the state of one wallet of the project on
+ * one network, as the API knows it (activity check, fetch, manual balance). Only the check reads
+ * it — the wallet's records come in as ordinary (derived) files.
+ */
+export interface WalletNetworkState {
+  readonly network: string;
+  /** Selected for the wallet (its records are part of the project). */
+  readonly selected: boolean;
+  /** F6.4 activity: true = used, false = never used, null = not checked. */
+  readonly used: boolean | null;
+  /** What can be fetched there: `history`, `income` (balance by hand) or `manual`. */
+  readonly coverage: 'history' | 'income' | 'manual';
+  /** The last fetch: ok, failed, or never. */
+  readonly fetch: 'ok' | 'error' | 'none';
+  /** A manual balance with evidence exists for the project's 31.12. (F6.5). */
+  readonly manualBalance: boolean;
+}
+
+export interface WalletState {
+  readonly walletId: string;
+  readonly label: string;
+  /** F6.4 ran for every network the address can live on. */
+  readonly networksChecked: boolean;
+  readonly networks: readonly WalletNetworkState[];
+}
+
 export interface CalculationInput {
   readonly taxYear: number;
   readonly rules: CountryRules;
@@ -34,6 +61,8 @@ export interface CalculationInput {
   /** The project's stored prices and exchange rates (F7.4). */
   readonly rates: readonly RateEntry[];
   readonly previous?: PreviousYear;
+  /** The project's wallets (F6.4); absent or empty = the wallet check is not applicable. */
+  readonly wallets?: readonly WalletState[];
 }
 
 /** Where a figure came from — a record of a file (F7.5) or of a correction. */
@@ -206,7 +235,13 @@ export const OPEN_ITEM_REASONS = [
   'incomeWithoutPrice',
   'oneOffWithoutPrice',
   'unclassifiedBookings',
+  /** The placeholder of engine version 1 — kept so stored snapshots still read. */
   'walletNetworksNotAvailable',
+  'walletNetworksUnchecked',
+  'walletNetworkNotSelected',
+  'walletNetworkNotFetched',
+  'walletManualBalanceMissing',
+  'walletFetchFailed',
 ] as const;
 export type OpenItemReason = (typeof OPEN_ITEM_REASONS)[number];
 
@@ -291,4 +326,4 @@ export interface CalculationResult {
 }
 
 /** Bumped when the same input would give a different result (snapshots record it). */
-export const ENGINE_VERSION = 1;
+export const ENGINE_VERSION = 3;

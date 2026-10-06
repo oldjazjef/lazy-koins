@@ -4,47 +4,108 @@
 />
 
 @if (service.settings.hasValue()) { @let settings = service.settings.value();
-<form class="max-w-3xl" [formGroup]="form" (ngSubmit)="submit()">
+<form
+  class="flex max-w-3xl flex-col gap-4"
+  [formGroup]="form"
+  (ngSubmit)="submit()"
+>
+  <p class="text-muted-foreground text-sm">
+    {{ 'settings.wallets.hint' | translate }}
+  </p>
+  @if (!settings.keyStorageAvailable) {
+  <p class="text-destructive text-sm" role="note">
+    {{ 'settings.keysUnavailable' | translate }}
+  </p>
+  } @for (block of blocks; track block.service) {
   <section hlmCard>
     <div hlmCardHeader>
-      <h2 hlmCardTitle>{{ 'settings.wallets.title' | translate }}</h2>
-      <p hlmCardDescription>{{ 'settings.wallets.hint' | translate }}</p>
+      <h2 hlmCardTitle>
+        {{ 'settings.wallets.services.' + block.service + '.title' | translate
+        }}
+      </h2>
+      <p hlmCardDescription>
+        {{ 'settings.wallets.services.' + block.service + '.hint' | translate }}
+      </p>
     </div>
     <div hlmCardContent class="flex flex-col gap-4">
-      @if (!settings.keyStorageAvailable) {
-      <p class="text-destructive text-sm" role="note">
-        {{ 'settings.keysUnavailable' | translate }}
-      </p>
-      }
+      @if (block.key; as key) {
       <div class="flex flex-col gap-2">
-        <label hlmLabel for="set-es"
-          >{{ 'settings.fields.etherscanKey' | translate }}</label
+        <label hlmLabel [for]="'chain-' + key.field"
+          >{{ 'settings.wallets.fields.' + key.field | translate }}</label
         >
         <input
           hlmInput
-          id="set-es"
+          [id]="'chain-' + key.field"
           type="password"
           autocomplete="off"
-          formControlName="etherscanKey"
-          [placeholder]="settings.keys.etherscan ?? ('settings.noKey' | translate)"
+          [formControlName]="key.field"
+          [placeholder]="settings.keys[key.hint] ?? ('settings.noKey' | translate)"
         />
-      </div>
-      <div class="flex flex-wrap justify-end gap-2">
-        @if (settings.keys.etherscan) {
-        <button hlmBtn variant="ghost" type="button" (click)="removeKey()">
-          {{ 'settings.removeKey' | translate }}
-        </button>
+        @if (settings.keys[key.hint]) {
+        <div>
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            (click)="removeKey(key.field)"
+          >
+            {{ 'settings.removeKey' | translate }}
+          </button>
+        </div>
         }
+      </div>
+      } @if (block.url; as url) {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel [for]="'chain-' + url.field"
+          >{{ 'settings.wallets.fields.' + url.field | translate }}</label
+        >
+        <input
+          hlmInput
+          [id]="'chain-' + url.field"
+          type="url"
+          autocomplete="off"
+          [formControlName]="url.field"
+          [placeholder]="settings.defaults[url.fallback]"
+        />
+        <p class="text-muted-foreground text-xs">
+          {{ 'settings.wallets.urlHint' | translate }}
+        </p>
+      </div>
+      }
+      <div class="flex flex-wrap items-center gap-3">
         <button
           hlmBtn
-          type="submit"
-          [disabled]="service.isSaving() || form.pristine"
+          variant="outline"
+          size="sm"
+          type="button"
+          [disabled]="service.testing() !== null"
+          (click)="test(block.service)"
         >
-          {{ 'common.save' | translate }}
+          {{ (service.testing() === block.service ? 'settings.wallets.testing' :
+          'settings.wallets.test') | translate }}
         </button>
+        @if (service.results()[block.service]; as result) { @if (result.ok) {
+        <span class="text-sm" role="status"
+          >{{ 'settings.wallets.testOk' | translate: { detail: result.detail,
+          millis: result.millis } }}</span
+        >
+        } @else {
+        <span class="text-destructive text-sm" role="alert"
+          >{{ result.key | translate }} @if (result.detail) {
+          <span class="block text-xs break-all">{{ result.detail }}</span>
+          }</span
+        >
+        } }
       </div>
     </div>
   </section>
+  }
+  <div class="flex justify-end">
+    <button hlmBtn type="submit" [disabled]="service.saving() || form.pristine">
+      {{ 'common.save' | translate }}
+    </button>
+  </div>
 </form>
 } @else {
 <hlm-skeleton class="h-48 w-full max-w-3xl" />

@@ -252,6 +252,14 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
           if (carryover.key) carryoverIds.set(carryover.key, row.id);
         }
 
+        for (const walletId of bundle.walletIds ?? []) {
+          await tx.projectWallet.upsert({
+            where: { projectId_walletId: { projectId, walletId } },
+            create: { projectId, walletId },
+            update: {},
+          });
+        }
+
         for (const state of bundle.openItemStates) {
           const itemKey = state.carryoverKey
             ? `${CARRIED_PREFIX}${need(carryoverIds, state.carryoverKey, 'carry-over')}`

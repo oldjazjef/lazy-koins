@@ -27,6 +27,7 @@ export async function bundleSetup() {
     states: t.states,
     exports,
     carryovers,
+    wallets: t.wallets,
   });
   const analysis = new FileAnalysisService(new SourceFileReader(), mappings);
   return { ...t, mappings, exports, carryovers, bundles, analysis };

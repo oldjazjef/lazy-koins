@@ -232,7 +232,7 @@ describe('carry-over persistence', () => {
     });
     await expect(
       prisma.$executeRawUnsafe(
-        `INSERT INTO project_carryover (id, project_id, source_project_name, kind, data) VALUES ('pc1', ?, 'x', 'wallet', '{}')`,
+        `INSERT INTO project_carryover (id, project_id, source_project_name, kind, data) VALUES ('pc1', ?, 'x', 'mapping', '{}')`,
         project.id,
       ),
     ).rejects.toThrow(/CHECK constraint failed/);

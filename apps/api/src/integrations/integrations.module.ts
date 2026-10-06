@@ -8,8 +8,10 @@ import {
   FxRateSourcePort,
   UsdPriceSourcePort,
 } from '../rates/ports/rate-source.port';
+import { ChainDataSourcesPort } from '../wallets/ports/chain-data.port';
 import { EstvKurslisteSourcePort } from '../rates/ports/estv.port';
 import { AiCompletionPort } from './ai/ai-completion.port';
+import { ChainSources } from './chains/chain-sources';
 import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
 import { FirebaseIdentityTokenVerifier } from './firebase/firebase-identity-token.verifier';
@@ -81,6 +83,15 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
       provide: AiCompletionPort,
       useFactory: () => new ProviderSwitchingAiCompletion(),
     },
+    {
+      // F6.3/F6.4: one adapter per network family; synthetic chains with LK_CHAINS_FAKE=1.
+      provide: ChainDataSourcesPort,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) =>
+        config.get('LK_CHAINS_FAKE', { infer: true }) === '1'
+          ? ChainSources.fake()
+          : ChainSources.real(),
+    },
     { provide: MailTransportPort, useFactory: () => new NodemailerTransport() },
   ],
   exports: [
@@ -91,6 +102,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     FxRateSourcePort,
     EstvKurslisteSourcePort,
     PdfRendererPort,
+    ChainDataSourcesPort,
     MailTransportPort,
   ],
 })

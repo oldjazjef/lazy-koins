@@ -75,12 +75,6 @@
     <span class="text-muted-foreground text-xs"
       >{{ 'estv.projectOffline' | translate }}</span
     >
-    } @if (service.estv.running(); as running) {
-    <span aria-live="polite"
-      >{{ 'estv.running' | translate: { year: running.year } }} · {{
-      'estv.phase.' + running.progress.phase | translate }} @if
-      (service.estv.percent() !== null) { {{ service.estv.percent() }} % }</span
-    >
     } @if (service.lastEstv(); as last) { @if (last.label) {
     <span class="text-muted-foreground text-xs"
       >{{ 'estv.matched' | translate: { count: last.matched.length, fx:

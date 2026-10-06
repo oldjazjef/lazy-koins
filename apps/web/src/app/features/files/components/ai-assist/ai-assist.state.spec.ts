@@ -13,6 +13,7 @@ import type {
   ProjectFile,
   ProjectFiles,
 } from '../../../../core/api/api.types';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
 import { ProjectFilesService } from '../project-files/project-files.service';
@@ -141,7 +142,7 @@ async function flushReloads(http: HttpTestingController) {
 describe('AiAssistState', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
     } finally {
       TestBed.resetTestingModule();
     }
@@ -189,9 +190,17 @@ describe('AiAssistState', () => {
     const request = http.expectOne(`${BASE}/mapping`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ consent: true });
+    // The provider may take a while: the activity indicator shows it.
+    const activity = TestBed.inject(ActivityService);
+    expect(activity.tasks().map((t) => t.label)).toEqual([
+      'activity.ai.mapping',
+    ]);
     request.flush(candidate);
     await sent;
+    expect(activity.count()).toBe(0);
     expect(state.step()).toBe('mappingReview');
+    // The dialog was open: it shows the proposal, no toast needed.
+    expect(notifications.success).not.toHaveBeenCalled();
     expect(state.usage()).toEqual({ inputTokens: 10, outputTokens: 5 });
     expect(JSON.parse(state.specText())).toEqual(candidate.spec);
 
@@ -306,6 +315,34 @@ describe('AiAssistState', () => {
     });
   });
 
+  it('offers the proposal in a toast when the dialog was closed while the AI worked', async () => {
+    const { state, http, notifications } = await setup();
+    state.file.set(file());
+    state.request.set({
+      payload: {},
+      provider: 'openai_compatible',
+      baseUrl: '',
+      model: '',
+      consentGiven: true,
+    });
+    const sent = state.send();
+    state.close();
+    http.expectOne(`${BASE}/mapping`).flush(candidate);
+    await sent;
+    expect(state.step()).toBe('closed');
+    expect(notifications.success).toHaveBeenCalledWith(
+      'activity.ai.mappingReady',
+      expect.objectContaining({ labelKey: 'activity.show' }),
+      { name: 'export.csv' },
+    );
+    const [, action] = notifications.success.mock.calls[0] as [
+      string,
+      { onClick: () => void },
+    ];
+    action.onClick();
+    expect(state.step()).toBe('mappingReview');
+  });
+
   it('reads a PDF statement and stores only the kept balances, as printed', async () => {
     const pdf = file({ kind: 'pdf', status: 'evidence_only' });
     const { state, http, notifications } = await setup([pdf]);
@@ -411,3 +448,13 @@ describe('confirmed / aiErrorKey', () => {
     expect(aiErrorKey(new Error('x'))).toBe('ai.errors.failed');
   });
 });
+
+/** The hints (F5.8) reload with the files; their own behaviour is tested separately. */
+function verifyIgnoringHints(http: HttpTestingController): void {
+  for (const request of http.match('/api/projects/p1/hints')) {
+    if (!request.cancelled) {
+      request.flush({ taxYear: 2025, hints: [], open: 0 });
+    }
+  }
+  http.verify();
+}

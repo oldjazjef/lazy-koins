@@ -21,6 +21,8 @@ export const CARRYOVER_KINDS = [
   'correction',
   'open_item',
   'notes',
+  /** A wallet linked to the new project (F4.4a, F6). */
+  'wallet',
 ] as const;
 export type CarryoverKind = (typeof CARRYOVER_KINDS)[number];
 
@@ -101,6 +103,8 @@ export interface ProjectBundle {
     readonly incomeChf: string;
     readonly createdAt?: string;
   }[];
+  /** Wallets of the owner to include in the target project (F4.4a). */
+  readonly walletIds?: readonly string[];
   readonly carryovers: readonly {
     readonly key?: string;
     readonly sourceProjectId: string | null;

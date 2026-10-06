@@ -1,3 +1,4 @@
+import type { InMemoryWalletRepository } from '../../wallets/testing/in-memory-wallet.repository';
 import type { RateEntry } from '@lazykoins/engine';
 import type {
   InMemoryCorrectionRepository,
@@ -48,6 +49,7 @@ export class InMemoryProjectBundleRepository extends ProjectBundleRepositoryPort
       readonly states: InMemoryOpenItemStateRepository;
       readonly exports: InMemoryProjectExportRepository;
       readonly carryovers: InMemoryCarryoverRepository;
+      readonly wallets?: InMemoryWalletRepository;
     },
   ) {
     super();
@@ -153,6 +155,9 @@ export class InMemoryProjectBundleRepository extends ProjectBundleRepositoryPort
         createdAt: '2026-01-01T00:00:00.000Z',
       });
       if (c.key) carryoverIds.set(c.key, id);
+    }
+    for (const walletId of bundle.walletIds ?? []) {
+      await r.wallets?.addToProject(projectId, walletId);
     }
     for (const s of bundle.openItemStates) {
       const itemKey = s.carryoverKey

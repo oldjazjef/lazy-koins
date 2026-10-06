@@ -6,6 +6,7 @@ import {
 } from '../calculation/ports/calculation.repository.port';
 import { ProjectExportRepositoryPort } from '../exports/ports/project-export.repository.port';
 import { AiSettingsRepositoryPort } from '../ai/ports/ai-settings.repository.port';
+import { HintStateRepositoryPort } from '../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../mappings/ports/import-mapping.repository.port';
 import {
@@ -19,6 +20,10 @@ import { EstvKurslisteRepositoryPort } from '../rates/ports/estv.port';
 import { ProjectRateRepositoryPort } from '../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
+import {
+  ChainSettingsRepositoryPort,
+  WalletRepositoryPort,
+} from '../wallets/ports/wallet.repository.port';
 import {
   CarryoverRepositoryPort,
   ProjectBundleRepositoryPort,
@@ -40,6 +45,7 @@ import {
   OpenItemStatePrismaRepository,
 } from './prisma/repositories/calculation.prisma.repository';
 import { AiSettingsPrismaRepository } from './prisma/repositories/ai-settings.prisma.repository';
+import { HintStatePrismaRepository } from './prisma/repositories/hint-state.prisma.repository';
 import { ImportMappingPrismaRepository } from './prisma/repositories/import-mapping.prisma.repository';
 import {
   MailLogPrismaRepository,
@@ -54,6 +60,10 @@ import { ProjectRatePrismaRepository } from './prisma/repositories/project-rate.
 import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
 import { UserSettingsPrismaRepository } from './prisma/repositories/user-settings.prisma.repository';
 import { UserPrismaRepository } from './prisma/repositories/user.prisma.repository';
+import {
+  ChainSettingsPrismaRepository,
+  WalletPrismaRepository,
+} from './prisma/repositories/wallet.prisma.repository';
 
 /**
  * The only persistence layer, and the swap seam: every repository port is bound to its adapter
@@ -100,6 +110,12 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
       useClass: ProjectExportPrismaRepository,
     },
     { provide: AiSettingsRepositoryPort, useClass: AiSettingsPrismaRepository },
+    { provide: WalletRepositoryPort, useClass: WalletPrismaRepository },
+    {
+      provide: ChainSettingsRepositoryPort,
+      useClass: ChainSettingsPrismaRepository,
+    },
+    { provide: HintStateRepositoryPort, useClass: HintStatePrismaRepository },
     {
       provide: MailSettingsRepositoryPort,
       useClass: MailSettingsPrismaRepository,
@@ -138,6 +154,9 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
     OpenItemStateRepositoryPort,
     ProjectExportRepositoryPort,
     AiSettingsRepositoryPort,
+    WalletRepositoryPort,
+    ChainSettingsRepositoryPort,
+    HintStateRepositoryPort,
     MailSettingsRepositoryPort,
     MailTemplateRepositoryPort,
     MailLogRepositoryPort,

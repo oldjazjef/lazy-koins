@@ -5,6 +5,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import type { DashboardView } from '../../../../core/api/dashboard.types';
 import {
   lastTwelveMonths,
@@ -211,6 +212,10 @@ describe('DashboardPageService', () => {
       const request = http.expectOne('/api/dashboard/rates/refresh');
       expect(request.request.body.assets).toEqual(assets);
       expect(service.refreshing()).not.toBeNull();
+      // The app-wide activity indicator shows it, with the progress.
+      const [task] = TestBed.inject(ActivityService).tasks();
+      expect(task?.label).toBe('activity.rates');
+      expect(task?.progress()?.total).toBe(3);
       request.flush({
         fx: 0,
         assets: assets.map((asset) => ({
@@ -224,6 +229,7 @@ describe('DashboardPageService', () => {
     await done;
     await settle();
     expect(service.refreshing()).toBeNull();
+    expect(TestBed.inject(ActivityService).count()).toBe(0);
     expect(service.lastRefresh()?.map((r) => r.asset)).toEqual(['XYZ', 'ABC']);
     http
       .expectOne((r) => r.url === '/api/dashboard')

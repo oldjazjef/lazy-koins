@@ -37,6 +37,7 @@
     "settings": "Einstellungen",
     "profile": "Profil",
     "userMenu": "Benutzermenü",
+    "wallets": "Wallets",
     "dashboard": "Dashboard"
   },
   "login": {
@@ -130,7 +131,6 @@
       "noPlatform": "Ohne Plattform",
       "noFiles": "Dieses Projekt hat keine Dateien.",
       "wallets": "Wallets",
-      "walletsUnavailable": "Wallets (Adressen, Netzwerke) gibt es noch nicht als eigene Einträge – sobald es sie gibt, lassen sie sich hier übernehmen.",
       "corrections": "Korrekturen",
       "correctionsHint": "Nur solche, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im neuen Jahr vorkommen; manuelle Buchungen). Kurs-Overrides per 31.12. werden nicht angeboten.",
       "noCorrections": "Keine Korrektur gilt über das Jahr hinaus.",
@@ -142,11 +142,13 @@
       "notes": "Notizen übernehmen",
       "all": "Alle",
       "none": "Keine",
-      "summary": "Übernommen werden {{files}} Datei(en), {{corrections}} Korrektur(en) und {{openItems}} offene(r) Punkt(e).",
+      "summary": "Übernommen werden {{files}} Datei(en), {{wallets}} Wallet(s), {{corrections}} Korrektur(en) und {{openItems}} offene(r) Punkt(e).",
       "summaryNotes": "Dazu die Notizen.",
       "create": "Folgeprojekt erstellen",
       "created": "Folgeprojekt erstellt",
-      "createFailed": "Folgeprojekt konnte nicht erstellt werden"
+      "createFailed": "Folgeprojekt konnte nicht erstellt werden",
+      "walletsHint": "Die Wallets des Projekts werden mit dem neuen Projekt verknüpft (vorausgewählt); ihre abgerufenen Daten erscheinen dort als abgeleitete Dateien. Manuelle Saldi per 31.12. gehören zum Jahr und bleiben hier.",
+      "noWallets": "Dieses Projekt hat keine Wallets."
     },
     "import": {
       "button": "Projekt importieren",
@@ -163,7 +165,8 @@
         "file": "Datei",
         "correction": "Korrektur",
         "open_item": "Offener Punkt",
-        "notes": "Notizen"
+        "notes": "Notizen",
+        "wallet": "Wallet"
       }
     },
     "sent": {
@@ -259,17 +262,13 @@
       "holdingsCsv": "Bestände (CSV)"
     },
     "missing": {
-      "title": "Möglicherweise fehlende Dateien",
-      "summary": "{{count}} Hinweise zu möglicherweise fehlenden Dateien – anzeigen",
-      "kind": {
-        "startsLate": "Die Buchungen beginnen erst am {{date}} – der Anfang von {{year}} fehlt.",
-        "endsEarly": "Die Buchungen enden am {{date}} – bis 31.12.{{year}} fehlt etwas.",
-        "noYearEndBalance": "Kein Bestand per 31.12.{{year}} (Kontoauszug) vorhanden."
-      },
       "howTo": {
+        "noYearData": "Für dieses Konto gibt es im Steuerjahr keine einzige Buchung. Lade die Historie des ganzen Jahres hoch (Verlauf/History → Export). Wurde das Konto vorher aufgelöst, markiere den Hinweis als in Ordnung.",
+        "noYearDataZero": "Die Buchungen enden vor dem Steuerjahr, und danach war das Konto leer (Saldo 0) – es kann nichts fehlen. Nur zur Information.",
         "startsLate": "Lade bei der Plattform einen Export ab spätestens 01.01. herunter – meist unter Verlauf/History → Export – und lade ihn hier hoch. Begann das Konto erst später, ist alles in Ordnung.",
         "endsEarly": "Exportiere die Historie bis mindestens 31.12. (Verlauf/History → Export, Zeitraum anpassen). Gab es danach keine Bewegungen, ist alles in Ordnung.",
-        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements) und erfasse die Bestände im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft."
+        "endsEarlyZero": "Nach der letzten Buchung war der Saldo des Kontos 0 – danach kann nichts fehlen. Nur zur Information; markiere den Hinweis als in Ordnung, wenn das Konto nicht mehr genutzt wurde.",
+        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements), lies einen PDF-Auszug mit AI aus oder erfasse die Bestände manuell bzw. im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft. Ein Auszug für die ganze Plattform gilt für alle ihre Unterkonten."
       }
     },
     "group": {
@@ -295,7 +294,8 @@
       "uploaded": "neu",
       "unknownProject": "unbekannt",
       "derived": "aus «{{name}}» (AI)",
-      "unknownFile": "entfernter Datei"
+      "unknownFile": "entfernter Datei",
+      "wallet": "aus Wallet-Abruf"
     },
     "actions": {
       "preview": "Vorschau",
@@ -751,9 +751,48 @@
       "project": "Projekt"
     },
     "wallets": {
-      "title": "Wallet-Abfragen",
-      "subtitle": "Schlüssel für die Abfrage von Wallets",
-      "hint": "Etherscan API V2 – ein Schlüssel für alle EVM-Netzwerke. Die automatische Wallet-Abfrage folgt; der Schlüssel wird verschlüsselt gespeichert."
+      "title": "Wallets & Netzwerke",
+      "subtitle": "Schlüssel und Adressen für die Wallet-Abfragen",
+      "hint": "Schlüssel werden verschlüsselt gespeichert und nie wieder angezeigt (nur die letzten Zeichen). „Testen“ prüft die Werte im Formular – auch ungespeicherte – mit einer Anfrage ohne deine Daten.",
+      "urlHint": "Leer = öffentliche Standardadresse (Platzhalter). Lokale Adressen sind auf einem Server gesperrt.",
+      "test": "Testen",
+      "testing": "Teste …",
+      "testOk": "Verbindung ok: {{detail}} ({{millis}} ms)",
+      "fields": {
+        "etherscanKey": "Etherscan-API-Schlüssel (V2)",
+        "heliusKey": "Helius-API-Schlüssel",
+        "subscanKey": "Subscan-API-Schlüssel",
+        "solanaRpcUrl": "Eigene Solana-RPC-Adresse (optional)",
+        "esploraUrl": "Esplora-Adresse",
+        "koiosUrl": "Koios-Adresse",
+        "cosmosLcdUrl": "Cosmos-LCD-Adresse"
+      },
+      "services": {
+        "etherscan": {
+          "title": "EVM-Netzwerke (Etherscan)",
+          "hint": "Ein Schlüssel für Ethereum, BNB Chain, Polygon, Arbitrum, Optimism und Base. Der Gratis-Plan deckt nicht alle Chains ab – fehlende erfasst du manuell mit Beleg."
+        },
+        "solana": {
+          "title": "Solana",
+          "hint": "Helius-Schlüssel (empfohlen) oder eine eigene RPC-Adresse; ohne beides der öffentliche, stark begrenzte Endpunkt."
+        },
+        "esplora": {
+          "title": "Bitcoin (Esplora)",
+          "hint": "Adressen und xpub/ypub/zpub über mempool.space oder einen eigenen Esplora-Server. Kein Schlüssel nötig."
+        },
+        "koios": {
+          "title": "Cardano (Koios)",
+          "hint": "Staking-Erträge werden abgerufen; den Saldo per 31.12. erfasst du manuell mit Beleg. Kein Schlüssel nötig."
+        },
+        "subscan": {
+          "title": "Polkadot (Subscan)",
+          "hint": "Staking-Erträge mit einem Subscan-Schlüssel; den Saldo per 31.12. erfasst du manuell mit Beleg."
+        },
+        "cosmos": {
+          "title": "Cosmos (LCD)",
+          "hint": "Nur Netzwerk-Prüfung und aktueller Saldo – Saldo per 31.12. und Erträge erfasst du manuell mit Beleg."
+        }
+      }
     },
     "mail": {
       "title": "Mailer (SMTP)",
@@ -851,6 +890,8 @@
     "label": "Bereiche des Projekts",
     "tabs": {
       "files": "Dateien",
+      "hints": "Hinweise",
+      "wallets": "Wallets",
       "rates": "Kurse",
       "result": "Ergebnis",
       "checks": "Prüfungen",
@@ -1002,7 +1043,12 @@
       "incomeWithoutPrice": "{{count}} Ertragsbuchungen ohne Kurs",
       "oneOffWithoutPrice": "Einmalereignis ohne Kurs – ESTV-Kurs nachtragen",
       "unclassifiedBookings": "{{count}} Buchungen „{{rawType}}“ ohne Zuordnung – Mapping oder Korrektur",
-      "walletNetworksNotAvailable": "Die automatische Prüfung der Wallets auf allen Netzwerken ist noch nicht verfügbar – bitte manuell prüfen."
+      "walletNetworksNotAvailable": "Die automatische Prüfung der Wallets auf allen Netzwerken ist noch nicht verfügbar – bitte manuell prüfen.",
+      "walletNetworksUnchecked": "Netzwerke noch nicht (vollständig) geprüft – im Tab Wallets „Netzwerke prüfen“",
+      "walletNetworkNotSelected": "Auf diesem Netzwerk genutzt, aber für die Wallet nicht ausgewählt",
+      "walletNetworkNotFetched": "Noch nicht abgerufen – im Tab Wallets „Abrufen“",
+      "walletManualBalanceMissing": "Saldo per 31.12. fehlt – manuell mit Beleg erfassen",
+      "walletFetchFailed": "Abruf fehlgeschlagen – Schlüssel/Plan prüfen oder Saldo manuell mit Beleg erfassen"
     },
     "comparison": {
       "title": "Vergleich mit {{year}}",
@@ -1011,7 +1057,9 @@
       "new": "Neue Positionen",
       "removed": "Weggefallene Positionen",
       "hint": "Aus dem letzten berechneten Projekt des Vorjahres."
-    }
+    },
+    "hintsNote": "{{count}} offene Hinweise zu den Dateien (fehlende Zeiträume, Auszüge, nicht erkannte Dateien) – sie stehen nicht in dieser Liste.",
+    "platformHints": "{{count}} Hinweise zu {{platform}}"
   },
   "corrections": {
     "newTitle": "Neue Korrektur",
@@ -1245,6 +1293,328 @@
       "importFailed": "Das Konto-Paket konnte nicht importiert werden",
       "importSummary": "{{projects}} Projekt(e) importiert, {{created}} Mapping(s) neu, {{reused}} wiederverwendet.",
       "limits": "Pakete bis 200 MB (über den Web-Server bis 50 MB); Einstellungen werden nur übernommen, wenn dieses Konto noch keine hat."
+    }
+  },
+  "wallets": {
+    "title": "Wallets",
+    "created": "Wallet gespeichert.",
+    "saved": "Änderungen gespeichert.",
+    "deleted": "Wallet gelöscht.",
+    "checked": "Netzwerke geprüft.",
+    "fetched": "Abruf abgeschlossen – die Projekte mit dieser Wallet sind aktualisiert.",
+    "check": "Netzwerke prüfen",
+    "checking": "Prüfe …",
+    "fetch": "Abrufen",
+    "fetching": "Rufe ab …",
+    "notSelected": "nicht ausgewählt",
+    "txCount": "{{count}} Transaktionen",
+    "truncated": "Verlauf gekürzt – ältere Transaktionen fehlen",
+    "addressesScanned": "{{scanned}} Adressen geprüft, {{used}} genutzt",
+    "spamHidden": "{{count}} Spam-Token ausgeblendet",
+    "usedIn": "Genutzt in:",
+    "used": {
+      "yes": "genutzt",
+      "no": "nie genutzt",
+      "unknown": "nicht geprüft"
+    },
+    "fetchStatus": {
+      "ok": "abgerufen {{date}}",
+      "none": "nicht abgerufen"
+    },
+    "coverage": {
+      "history": "automatisch (ganzer Verlauf)",
+      "income": "Erträge automatisch, Saldo manuell",
+      "manual": "manuell mit Beleg"
+    },
+    "network": {
+      "bitcoin": "Bitcoin",
+      "ethereum": "Ethereum",
+      "bsc": "BNB Chain",
+      "polygon": "Polygon",
+      "arbitrum": "Arbitrum",
+      "optimism": "Optimism",
+      "base": "Base",
+      "solana": "Solana",
+      "cardano": "Cardano",
+      "polkadot": "Polkadot",
+      "cosmos": "Cosmos"
+    },
+    "kind": {
+      "evm": "EVM-Adresse (gleiche Adresse auf allen EVM-Netzwerken)",
+      "bitcoinAddress": "Bitcoin-Adresse",
+      "bitcoinXpub": "Bitcoin xpub/ypub/zpub (alle Adressen werden abgeleitet)",
+      "solana": "Solana-Adresse",
+      "cardano": "Cardano-Adresse",
+      "polkadot": "Polkadot-Adresse",
+      "cosmos": "Cosmos-Adresse"
+    },
+    "notes": {
+      "l1FeeNotIncluded": "L1-Datengebühren sind nicht enthalten (kleine Abweichung möglich).",
+      "balanceManual": "Saldo per 31.12. bitte manuell mit Beleg erfassen.",
+      "incomeManual": "Erträge bitte manuell erfassen.",
+      "fake": "Testdaten (LK_CHAINS_FAKE)."
+    },
+    "spamReason": {
+      "namePattern": "Name enthält „Claim“, eine Webadresse o. Ä.",
+      "zeroValue": "nur Transfers mit Wert 0",
+      "addressPoisoning": "Absender ähnelt einer deiner Zieladressen",
+      "unverifiedDust": "unverifiziert, nur erhalten",
+      "fakeSymbol": "kopiert das Kürzel eines bekannten Tokens"
+    },
+    "secret": {
+      "title": "Das sieht nach einer Seed-Phrase oder einem privaten Schlüssel aus.",
+      "text": "Erkannt: {{kind}}. Die Eingabe wurde nicht gespeichert und aus dem Formular entfernt. Gib nie geheime Schlüssel ein – lazy-koins braucht nur die öffentliche Adresse. Wenn du sie irgendwo eingegeben hast, betrachte sie als kompromittiert.",
+      "kind": {
+        "seedPhrase": "Seed-Phrase (BIP-39)",
+        "privateKeyHex": "privater Schlüssel (Hex)",
+        "privateKeyWif": "privater Schlüssel (WIF)",
+        "extendedPrivateKey": "erweiterter privater Schlüssel (xprv/zprv)",
+        "solanaSecretKey": "Solana-Secret-Key"
+      }
+    },
+    "errors": {
+      "failed": "Die Anfrage ist fehlgeschlagen.",
+      "unreachable": "Der Server ist nicht erreichbar.",
+      "closed": "Das Projekt ist abgeschlossen.",
+      "secretRefused": "Seed-Phrasen und private Schlüssel werden nicht angenommen.",
+      "unknownAddress": "Keine unterstützte öffentliche Adresse.",
+      "labelRequired": "Bitte eine Bezeichnung angeben.",
+      "networkNotForAddress": "Diese Adresse passt nicht zum Netzwerk.",
+      "usedByClosedProject": "Ein abgeschlossenes Projekt enthält diese Wallet – sie kann nicht gelöscht werden.",
+      "offline": "Abfragen aus dem Internet sind ausgeschaltet (Einstellungen › Kurse).",
+      "notConfigured": "Der Schlüssel für dieses Netzwerk fehlt (Einstellungen › Wallets & Netzwerke).",
+      "invalidKey": "Der Schlüssel wurde abgelehnt.",
+      "rateLimited": "Zu viele Anfragen – bitte später erneut versuchen.",
+      "chainNotOnPlan": "Nicht im Plan des Schlüssels – Saldo manuell mit Beleg erfassen.",
+      "network": "Der Dienst ist nicht erreichbar.",
+      "timeout": "Der Dienst hat nicht rechtzeitig geantwortet.",
+      "badResponse": "Unerwartete Antwort des Dienstes.",
+      "providerError": "Der Dienst meldet einen Fehler.",
+      "invalidAddress": "Der Dienst lehnt die Adresse ab.",
+      "unsupported": "Dieses Netzwerk wird nicht unterstützt.",
+      "privateUrl": "Lokale Adressen sind auf diesem Server nicht erlaubt.",
+      "invalidUrl": "Keine gültige Adresse (https://…, ohne Parameter).",
+      "evidenceNotPdf": "Der Beleg muss ein PDF des Projekts sein."
+    },
+    "fields": {
+      "label": "Bezeichnung",
+      "address": "Adresse",
+      "networks": "Netzwerke",
+      "notes": "Notizen",
+      "network": "Netzwerk",
+      "used": "Genutzt",
+      "coverage": "Abruf",
+      "fetch": "Letzter Abruf",
+      "movements": "Bewegungen",
+      "today": "Saldo heute",
+      "usedOn": "Genutzt auf",
+      "fetchedAt": "Abgerufen",
+      "projects": "Projekte"
+    },
+    "list": {
+      "subtitle": "Deine Wallet-Adressen – in Projekten auswählbar",
+      "new": "Wallet hinzufügen",
+      "empty": "Noch keine Wallets.",
+      "loadFailed": "Die Wallets konnten nicht geladen werden.",
+      "search": "Suchen",
+      "noMatch": "Keine Wallet passt zur Suche.",
+      "notChecked": "nicht geprüft",
+      "nowhere": "nirgends",
+      "failed": "{{count}} Netzwerke fehlgeschlagen",
+      "privacy": "Nur öffentliche Adressen. Abfragen gehen an öffentliche Dienste (Etherscan, mempool.space, …) und nur, wenn du „Netzwerke prüfen“ oder „Abrufen“ wählst."
+    },
+    "form": {
+      "newTitle": "Wallet hinzufügen",
+      "editTitle": "Wallet",
+      "subtitle": "Öffentliche Adresse, Netzwerke und Notizen",
+      "cardTitle": "Angaben",
+      "hint": "Nie eine Seed-Phrase oder einen privaten Schlüssel eingeben – sie werden erkannt und abgelehnt.",
+      "addressHint": "Öffentliche Adresse (0x…, bc1…, addr1…) oder bei Bitcoin xpub/ypub/zpub.",
+      "addressFixed": "Die Adresse ist fest – für eine andere Adresse eine neue Wallet anlegen.",
+      "networksHint": "Ausgewählte Netzwerke werden abgerufen; „Netzwerke prüfen“ zeigt, wo die Adresse genutzt wurde.",
+      "loadFailed": "Die Wallet konnte nicht geladen werden.",
+      "labelRequired": "Bitte eine Bezeichnung angeben.",
+      "labelTooLong": "Die Bezeichnung ist zu lang.",
+      "addressTooLong": "Die Adresse ist zu lang.",
+      "notesTooLong": "Die Notizen sind zu lang."
+    },
+    "networks": {
+      "title": "Netzwerke",
+      "hint": "„Netzwerke prüfen“ fragt jedes mögliche Netzwerk, ob die Adresse je genutzt wurde. „Abrufen“ holt den Verlauf der ausgewählten Netzwerke und aktualisiert die Projekte mit dieser Wallet."
+    },
+    "tokens": {
+      "title": "Token und Spam",
+      "hint": "Spam-Token (z. B. „Claim“ im Namen, Transfers mit Wert 0, Adress-Vergiftung) werden ausgeblendet. Mit „kein Spam“ zählt ein Token wieder.",
+      "asset": "Token",
+      "contract": "Vertrag / Mint",
+      "verdict": "Einstufung",
+      "action": "Aktion",
+      "spam": "Spam",
+      "notSpam": "kein Spam (manuell)",
+      "ok": "ok",
+      "markNotSpam": "kein Spam",
+      "undo": "zurücksetzen",
+      "none": "Noch keine Token abgerufen.",
+      "markedNotSpam": "Als „kein Spam“ markiert.",
+      "reset": "Einstufung zurückgesetzt."
+    },
+    "delete": {
+      "button": "Löschen",
+      "title": "Wallet löschen?",
+      "text": "Die Wallet und ihre abgerufenen Daten werden gelöscht, und ihre abgeleiteten Dateien verschwinden aus allen offenen Projekten.",
+      "confirm": "Löschen"
+    },
+    "project": {
+      "intro": "Wallets dieses Projekts. Was abgerufen wird, landet als abgeleitete Datei (Standardformat) bei den Dateien und fliesst so in Berechnung, Prüfungen und Exporte.",
+      "loadFailed": "Die Wallets des Projekts konnten nicht geladen werden.",
+      "add": "Wallet hinzufügen",
+      "choose": "Wallet wählen …",
+      "addButton": "Hinzufügen",
+      "remove": "Aus Projekt entfernen",
+      "added": "Wallet hinzugefügt.",
+      "removed": "Wallet aus dem Projekt entfernt.",
+      "empty": "Dieses Projekt enthält noch keine Wallets.",
+      "files": "Abgeleitete Dateien:"
+    },
+    "balances": {
+      "title": "Saldi per {{date}} (manuell)",
+      "hint": "Für Netzwerke, die nicht (oder nur mit Erträgen) abrufbar sind: Saldo mit Beleg (PDF) erfassen. Er gilt als Kontoauszug für Wallet und Netzwerk.",
+      "asset": "Asset",
+      "quantity": "Menge",
+      "date": "Stichtag",
+      "evidence": "Beleg (PDF)",
+      "noEvidence": "Beleg entfernt",
+      "chooseEvidence": "PDF wählen …",
+      "upload": "PDF hochladen",
+      "note": "Notiz",
+      "add": "Saldo erfassen",
+      "remove": "Entfernen",
+      "added": "Saldo erfasst.",
+      "removed": "Saldo entfernt."
+    }
+  },
+  "hints": {
+    "title": "Hinweise",
+    "subtitle": "Was in den Dateien des Projekts fehlen oder nicht stimmen könnte – mit möglichen Lösungen. Als in Ordnung markierte Hinweise bleiben auch nach einer Neuberechnung erledigt.",
+    "summary": "{{count}} offene Hinweise zu den Dateien",
+    "show": "Hinweise anzeigen",
+    "badge": "{{count}} offene Hinweise",
+    "counts": "{{open}} offen · {{dismissed}} erledigt oder ignoriert",
+    "none": "Keine Hinweise – die Dateien decken das Steuerjahr ab.",
+    "noneFiltered": "Keine Hinweise für diesen Filter.",
+    "loadFailed": "Die Hinweise konnten nicht geladen werden.",
+    "saveFailed": "Der Hinweis konnte nicht gespeichert werden",
+    "unreadFiles": "Nicht erkannte Dateien",
+    "groupCount": "{{count}} Hinweise, {{open}} offen",
+    "wholePlatform": "ganze Plattform",
+    "openItems": "{{count}} offene Punkte in den Prüfungen",
+    "more": "Details und Lösungen anzeigen",
+    "less": "Details ausblenden",
+    "accounts": "Betroffene Konten: {{accounts}}",
+    "noteLabel": "Notiz:",
+    "filter": {
+      "kind": "Typ",
+      "status": "Status",
+      "allKinds": "Alle Typen",
+      "allStatuses": "Alle",
+      "platform": "Plattform: {{platform}}"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "severity": "Dringlichkeit",
+      "kind": "Typ",
+      "date": "Datum"
+    },
+    "fields": {
+      "kind": "Typ",
+      "account": "Konto / Datei",
+      "description": "Beschreibung",
+      "date": "Datum",
+      "status": "Status",
+      "actions": "Aktion"
+    },
+    "kind": {
+      "noYearData": "Fehlende Datei",
+      "startsLate": "Lücke am Anfang",
+      "endsEarly": "Lücke am Ende",
+      "noYearEndBalance": "Kein Bestand per 31.12.",
+      "unrecognisedFile": "Nicht erkannte Datei",
+      "rowErrors": "Datei mit Zeilenfehlern"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warnung",
+      "error": "Fehler"
+    },
+    "status": {
+      "open": "offen",
+      "done": "erledigt",
+      "ignored": "ignoriert"
+    },
+    "short": {
+      "noYearData": "Keine Buchungen im Jahr {{year}} – die Historie endet am {{date}}.",
+      "noYearDataZero": "Historie endet am {{date}}, danach Saldo 0 – nichts fehlt.",
+      "startsLate": "Buchungen beginnen erst am {{date}}.",
+      "endsEarly": "Buchungen enden am {{date}}, bis 31.12.{{year}} fehlt etwas.",
+      "endsEarlyZero": "Buchungen enden am {{date}}; danach Saldo 0 – nichts kann fehlen.",
+      "noYearEndBalance": "Kein Kontoauszug per 31.12.{{year}} – der Saldo laut Buchungen wird nicht geprüft.",
+      "unrecognisedFile": "Kein Mapping – die Datei fliesst nicht in die Berechnung ein.",
+      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden."
+    },
+    "howTo": {
+      "unrecognisedFile": "Für den Aufbau dieser Datei gibt es noch kein Mapping. Lass es von der AI erstellen, ordne ein vorhandenes zu oder markiere die Datei als «nur Beleg».",
+      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch."
+    },
+    "actions": {
+      "upload": "Datei hochladen",
+      "aiStatement": "Kontoauszug mit AI auslesen",
+      "aiMapping": "Mapping mit AI erstellen",
+      "manualHolding": "Bestand manuell erfassen",
+      "template": "Vorlage herunterladen",
+      "holdingsTemplate": "Vorlage «Bestände» herunterladen",
+      "assign": "Mapping zuordnen",
+      "rowErrors": "Zeilenfehler ansehen",
+      "markOk": "Als in Ordnung markieren",
+      "reopen": "Wieder öffnen"
+    },
+    "dismiss": {
+      "title": "Hinweis als in Ordnung markieren",
+      "note": "Notiz (optional)",
+      "placeholder": "z. B. Konto nach 09.02. nicht mehr genutzt",
+      "ignore": "Ignorieren"
+    },
+    "upload": {
+      "title": "Datei für {{platform}} hochladen",
+      "detected": "Plattform und Konto werden aus der Datei erkannt (Standardformat oder Mapping)."
+    },
+    "rowErrors": {
+      "title": "Zeilenfehler in {{name}}",
+      "count": "{{shown}} von {{total}} Fehlern",
+      "column": "Spalte",
+      "problem": "Problem"
+    }
+  },
+  "activity": {
+    "running": "{{label}} …",
+    "withProgress": "{{label}} ({{done}}/{{total}}) …",
+    "withPercent": "{{label}} ({{percent}} %) …",
+    "several": "{{count}} Aufgaben laufen",
+    "expand": "Laufende Aufgaben anzeigen",
+    "collapse": "Laufende Aufgaben ausblenden",
+    "show": "Anzeigen",
+    "calculate": "Ergebnis wird berechnet",
+    "rates": "Kurse werden aktualisiert",
+    "estv": "ESTV-Kursliste wird importiert",
+    "estvUpdate": "ESTV-Kursliste {{year}} wird bezogen · {{phase}}",
+    "export": "Auszug wird erstellt ({{kind}})",
+    "upload": "Dateien werden hochgeladen",
+    "reapply": "Mapping wird auf die Dateien angewendet",
+    "ai": {
+      "mapping": "AI erstellt Mapping für {{name}}",
+      "statement": "AI liest den Kontoauszug {{name}} aus",
+      "statementSave": "Bestände aus {{name}} werden geprüft und gespeichert",
+      "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
+      "statementReady": "Kontoauszug {{name}} ist ausgelesen"
     }
   },
   "dashboard": {
@@ -1509,7 +1879,7 @@
       },
       "wallets": {
         "title": "Wallets & Netzwerke",
-        "intro": "Mit einem Etherscan-Schlüssel (ein Schlüssel für alle EVM-Chains wie Ethereum, Arbitrum oder Polygon) kann lazy-koins Bestände und Erträge deiner Wallet-Adressen abrufen."
+        "intro": "Mit einem Etherscan-Schlüssel (einer für alle EVM-Chains wie Ethereum, Arbitrum oder Polygon) und einem Helius-Schlüssel (Solana) ruft lazy-koins Bestände und Erträge deiner Wallet-Adressen ab. Bitcoin und Cardano brauchen keinen Schlüssel."
       },
       "mail": {
         "title": "Mail",
@@ -1545,7 +1915,8 @@
       "estvLoaded": "Die ESTV-Kursliste {{year}} ist geladen."
     },
     "wallets": {
-      "note": "Die automatische Abfrage der Wallets folgt mit der Wallet-Verwaltung; dann gibt es hier auch einen Test-Knopf und Schlüssel für weitere Netzwerke (z. B. Solana)."
+      "note": "Weitere Netzwerke (Polkadot/Subscan) und eigene Adressen von Esplora, Koios oder Cosmos richtest du in Einstellungen › Wallets & Netzwerke ein.",
+      "addresses": "Erste Wallet-Adressen erfassen"
     },
     "mail": {
       "template": "Die Mail an deinen Treuhänder beginnt mit der Standardvorlage (Betreff, Text mit den Zahlen und den offenen Punkten).",
@@ -1640,7 +2011,8 @@
         "ai": "der API-Schlüssel des AI-Plugins",
         "mail": "das Passwort des Mailers",
         "coingecko": "der CoinGecko-Schlüssel",
-        "etherscan": "der Etherscan-Schlüssel"
+        "etherscan": "der Etherscan-Schlüssel",
+        "chains": "die Schlüssel für weitere Netzwerke (Helius, Subscan)"
       },
       "confirm": "Ich habe verstanden, dass diese Schlüssel gelöscht werden. Projekte, Dateien und Einstellungen bleiben.",
       "reset": "PIN zurücksetzen",

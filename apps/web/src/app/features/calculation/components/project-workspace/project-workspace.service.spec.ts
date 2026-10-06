@@ -10,6 +10,7 @@ import type {
   OpenItem,
   ResultView,
 } from '../../../../core/api/calculation.types';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { correctionBody } from '../project-corrections/correction-form';
 import { ProjectWorkspaceService } from './project-workspace.service';
@@ -174,6 +175,69 @@ describe('ProjectWorkspaceService', () => {
     expect(service.draft()?.values['asset']).toBe('XYZ');
     await settle();
     http.expectOne('/api/projects/p1/corrections').flush([]);
+  });
+
+  it('shows a rate refresh in the activity indicator with the progress it polls', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const { service, http } = await setup();
+      const activity = TestBed.inject(ActivityService);
+      const refreshing = service.refreshRates(true);
+      const request = http.expectOne('/api/projects/p1/rates/refresh');
+      expect(activity.tasks().map((t) => t.label)).toEqual(['activity.rates']);
+      expect(activity.tasks()[0]?.progress()).toBeNull();
+
+      vi.advanceTimersByTime(1000);
+      http
+        .expectOne('/api/projects/p1/rates/refresh/status')
+        .flush({ running: true, done: 12, total: 40, current: 'DOT' });
+      await settle();
+      expect(activity.tasks()[0]?.progress()).toEqual({ done: 12, total: 40 });
+
+      request.flush({ fx: 0, assets: [] });
+      await refreshing;
+      expect(activity.count()).toBe(0);
+      expect(service.refreshProgress()).toBeNull();
+      // No polling after the request ended.
+      vi.advanceTimersByTime(3000);
+      http.expectNone('/api/projects/p1/rates/refresh/status');
+      await settle();
+      http.expectOne('/api/projects/p1/result').flush(view());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows the ESTV import and an export as activities; the export toast offers the download', async () => {
+    const { service, http, notifications } = await setup();
+    const activity = TestBed.inject(ActivityService);
+    const imported = service.importKursliste(
+      new File(['<xml/>'], 'kursliste.xml'),
+    );
+    expect(activity.tasks().map((t) => t.label)).toEqual(['activity.estv']);
+    http
+      .expectOne('/api/projects/p1/rates/estv')
+      .flush({ imported: 3, skipped: 0 });
+    await imported;
+    expect(activity.count()).toBe(0);
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+
+    const created = service.createExport('simple_pdf');
+    expect(activity.tasks()[0]?.label).toBe('activity.export');
+    http.expectOne('/api/projects/p1/exports').flush({
+      id: 'e1',
+      kind: 'simple_pdf',
+      fileName: 'a.pdf',
+    });
+    await created;
+    expect(activity.count()).toBe(0);
+    expect(notifications.success).toHaveBeenCalledWith(
+      'exports.created',
+      expect.objectContaining({ labelKey: 'exports.download' }),
+    );
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
   });
 
   it('creates an export and downloads it', async () => {

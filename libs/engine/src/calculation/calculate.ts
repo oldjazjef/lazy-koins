@@ -1,4 +1,5 @@
 import { type Booking, isIncome } from '../bookings/booking';
+import { walletCheckItems } from './wallet-check';
 import {
   applyCorrections,
   isCorrectionRecord,
@@ -29,6 +30,7 @@ import {
   feeOf,
   ledgerBalances,
   overlay,
+  platformWideStatements,
   positionsAt,
   statementBalances,
 } from './balances';
@@ -355,6 +357,64 @@ export function calculate(input: CalculationInput): CalculationResult {
       });
     }
   }
+  // A platform-wide statement (accounts the ledger does not use) is checked against the sum of
+  // all the platform's ledger accounts, asset by asset — it replaced them in the positions.
+  for (const [platform, wide] of platformWideStatements(
+    ledgerEnd,
+    statementsEnd,
+  )) {
+    applicable.ledgerVsStatement = true;
+    const summed = (keys: readonly string[], from: Balances) => {
+      const out = new Map<string, { quantity: Decimal; ids: string[] }>();
+      for (const key of keys) {
+        for (const balance of from.get(key)?.values() ?? []) {
+          const entry = out.get(balance.asset) ?? { quantity: ZERO, ids: [] };
+          entry.quantity = entry.quantity.plus(balance.quantity);
+          entry.ids.push(...balance.ids);
+          out.set(balance.asset, entry);
+        }
+      }
+      return out;
+    };
+    const statement = summed(wide.statements, statementsEnd);
+    const ledger = summed(wide.ledgers, ledgerEnd);
+    const statementAccount =
+      wide.statements.length === 1
+        ? (statementsEnd
+            .get(wide.statements[0] ?? '')
+            ?.values()
+            .next().value?.accountId ?? null)
+        : null;
+    const assets = [...new Set([...statement.keys(), ...ledger.keys()])].sort(
+      compareText,
+    );
+    for (const asset of assets) {
+      const s = statement.get(asset);
+      const l = ledger.get(asset);
+      const expected = s?.quantity ?? ZERO;
+      const actual = l?.quantity ?? ZERO;
+      if (expected.eq(actual)) continue;
+      if (expected.abs().lt(dust) && actual.abs().lt(dust)) continue;
+      const difference = actual.minus(expected);
+      items.ledgerVsStatement.push({
+        key: `ledgerVsStatement:${platform}|*|${asset}`,
+        check: 'ledgerVsStatement',
+        reason: 'balanceDiffers',
+        light: 'red',
+        platform,
+        accountId: statementAccount,
+        asset,
+        date: yearEnd,
+        params: {
+          expected: str(expected),
+          actual: str(actual),
+          difference: str(difference),
+        },
+        impactChf: impactOf(asset, difference, yearEnd),
+        recordIds: [...(s?.ids ?? []), ...(l?.ids ?? [])],
+      });
+    }
+  }
   // A ledger's own balance column agrees with Σ amount − Σ fee of that file.
   const runningByFile = new Map<string, Balance & { sourceFileId: string }>();
   for (const holding of ledgerHoldings) {
@@ -626,20 +686,10 @@ export function calculate(input: CalculationInput): CalculationResult {
     });
   }
 
-  // F6.4 is not built yet: say so instead of pretending the check passed.
-  items.walletNetworks.push({
-    key: 'walletNetworks:notAvailable',
-    check: 'walletNetworks',
-    reason: 'walletNetworksNotAvailable',
-    light: 'yellow',
-    platform: null,
-    accountId: null,
-    asset: null,
-    date: null,
-    params: {},
-    impactChf: null,
-    recordIds: [],
-  });
+  // F6.4 / F8.1: every wallet of the project checked and fetched on all its networks.
+  const wallets = input.wallets ?? [];
+  applicable.walletNetworks = wallets.length > 0;
+  items.walletNetworks.push(...walletCheckItems(wallets));
 
   const checks: Check[] = CHECK_KINDS.map((kind) => ({
     kind,
