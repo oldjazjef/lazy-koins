@@ -13,8 +13,8 @@ two as a package (F1.3).
 > (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
 > storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances), the Angular web app (`apps/web`: login, project
-> list / form / detail with the files area, the project's mappings and the AI dialogs; settings →
-> AI), the pure engine (`libs/engine`:
+> list / form / detail with the files area, the project's mappings and the AI dialogs; the global
+> **Mappings** page = F11.0; settings → AI), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
 > **mapping spec** and its applier, F5.8 coverage hints, the golden test) and the infrastructure
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
@@ -122,7 +122,7 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
     projects/               #   the reference feature slice — copy its shape
     files/                  #   F5: upload (raw body), list, download, preview, assignment, templates
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
-    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing
+    mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings, PDF statements
       domain/               #     pure: sample builder, prompts, repair logic, statement checks, SSRF guard
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
@@ -134,8 +134,9 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
-    features/<feature>/     #   login, projects, settings (AI), files (components only: embedded in
-                            #   the project detail; ai-assist = the AI dialogs)
+    features/<feature>/     #   login, projects, mappings (F11.0: list + detail), settings (AI), files
+                            #   (components only: embedded in the project detail; ai-assist = the AI
+                            #   dialogs; mapping-editor = the editor body, also used by mappings)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
     shared/                 #   components/<c>/index.ts, forms/zod-validator
@@ -220,6 +221,18 @@ coverage (`coverage/missing-files.ts`), no platform knowledge.
 Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
+
+**Mappings page (F11.0)** — `features/mappings`, `/app/mappings` in the main navigation: every
+mapping of mine (`GET /api/mappings` adds `filesUsing` / `projectsUsing`, counted by the
+database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json`, new.
+`/app/mappings/:id`: facts, JSON, edit (the shared `lk-mapping-editor-form`, preview against a
+file that uses it — any project), save → offer re-apply, download, delete (lists the affected
+files; disabled while a closed project uses it — the API's 409), and "Wird genutzt in"
+(`GET /api/mappings/:id/usage`: projects newest year first, files linking to
+`/app/projects/:id#file-<id>`, where the row is scrolled to and marked). The project's mappings
+section only lists the mappings its files use (linking here), uploads a `.json`, starts
+"Mit AI erstellen" and the editor of a new mapping for one file; edits happen on this page. After
+a save from a project (editor, upload, AI) the toast links to the new mapping's page.
 
 To support a new platform: write (or let the AI write — "Mit AI erstellen") a mapping JSON, check it with the
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic

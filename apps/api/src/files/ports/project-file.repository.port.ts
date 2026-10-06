@@ -25,6 +25,13 @@ export interface AddProjectFileInput {
   readonly analysis: FileAnalysis;
 }
 
+/** How many files of one project a mapping read (counts only). */
+export interface MappingUse {
+  readonly mappingId: string;
+  readonly projectId: string;
+  readonly files: number;
+}
+
 /**
  * Persistence contract for stored files and their use in projects. Ownership is checked by the
  * handlers; the adapter keeps the invariants that need a transaction (F5.7: a stored file goes
@@ -58,6 +65,14 @@ export abstract class ProjectFileRepositoryPort {
 
   /** Every project file a mapping read (any project of its owner). */
   abstract listByMapping(mappingId: string): Promise<ProjectFile[]>;
+
+  /**
+   * For each of these mappings, the projects whose files it read and how many — counted by the
+   * database, no file rows loaded (the global mappings list). Sorted by mapping, then project.
+   */
+  abstract countByMappings(
+    mappingIds: readonly string[],
+  ): Promise<MappingUse[]>;
 
   /**
    * Stores the bytes (unless they exist) and adds the entry, in one transaction. A concurrent

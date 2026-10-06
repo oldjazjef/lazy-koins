@@ -1,0 +1,275 @@
+@if (service.mapping.hasValue()) { @let mapping = service.mapping.value();
+<lk-page-header
+  [title]="mapping.name"
+  [subtitle]="mapping.platform"
+  [back]="true"
+>
+  <span hlmBadge variant="outline"
+    >{{ 'mappings.origin.' + mapping.origin | translate }}</span
+  >
+  <button hlmBtn variant="outline" type="button" (click)="service.download()">
+    <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
+    {{ 'mappings.actions.download' | translate }}
+  </button>
+  <button
+    hlmBtn
+    variant="destructive"
+    type="button"
+    [disabled]="service.isBusy()"
+    (click)="confirmDelete.set(true)"
+  >
+    <ng-icon name="lucideTrash2" size="16" aria-hidden="true" />
+    {{ 'mappings.detail.delete' | translate }}
+  </button>
+</lk-page-header>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section hlmCard class="min-w-0 lg:col-span-2">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'mappings.detail.jsonTitle' | translate }}</h2>
+      @if (service.editing()) {
+      <p hlmCardDescription>{{ 'mappings.detail.editHint' | translate }}</p>
+      }
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      @if (service.editing()) {
+      <lk-mapping-editor-form
+        [idPrefix]="'mapping-detail'"
+        [text]="service.text()"
+        (textChange)="service.text.set($event)"
+        [checkFileId]="service.checkFileId()"
+        (checkFileIdChange)="service.checkFileId.set($event)"
+        [checkFiles]="service.checkFiles()"
+        [issues]="service.issues()"
+        [invalidJson]="service.invalidJson()"
+        [preview]="service.preview()"
+      />
+      <div class="flex flex-wrap justify-end gap-2">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          (click)="service.cancelEdit()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.busy() || !service.canCheck()"
+          (click)="service.check()"
+        >
+          {{ 'mappings.editor.check' | translate }}
+        </button>
+        <button
+          hlmBtn
+          type="button"
+          [disabled]="service.busy()"
+          (click)="service.save()"
+        >
+          {{ 'common.save' | translate }}
+        </button>
+      </div>
+      } @else {
+      <pre
+        class="bg-muted max-h-[60vh] overflow-auto rounded p-4 font-mono text-xs"
+      >
+{{ mapping.spec | json }}</pre>
+      <div class="flex justify-end">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          (click)="service.startEdit()"
+        >
+          <ng-icon name="lucidePencil" size="16" aria-hidden="true" />
+          {{ 'mappings.detail.edit' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+  </section>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'mappings.detail.factsTitle' | translate }}</h2>
+    </div>
+    <div hlmCardContent>
+      <dl class="lk-facts">
+        <dt>{{ 'mappings.fields.platform' | translate }}</dt>
+        <dd>{{ mapping.platform }}</dd>
+        <dt>{{ 'mappings.fields.origin' | translate }}</dt>
+        <dd>{{ 'mappings.origin.' + mapping.origin | translate }}</dd>
+        <dt>{{ 'mappings.list.version' | translate }}</dt>
+        <dd class="tabular-nums">{{ mapping.version }}</dd>
+        <dt>{{ 'mappings.detail.fingerprint' | translate }}</dt>
+        <dd class="break-words">{{ service.columns() }}</dd>
+        <dt>{{ 'mappings.detail.created' | translate }}</dt>
+        <dd>{{ mapping.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dt>{{ 'mappings.fields.updated' | translate }}</dt>
+        <dd>{{ mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dt>{{ 'mappings.list.usedBy' | translate }}</dt>
+        <dd>
+          @if (service.filesUsing() > 0) { {{ 'mappings.list.usage' | translate:
+          { files: service.filesUsing(), projects: service.usage.value()?.length
+          ?? 0 } }} } @else { {{ 'mappings.list.unused' | translate }} }
+        </dd>
+      </dl>
+    </div>
+  </section>
+</div>
+
+<section hlmCard class="mt-6">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'mappings.detail.usageTitle' | translate }}</h2>
+  </div>
+  <div hlmCardContent>
+    @let projects = service.usage.value() ?? []; @if (projects.length === 0) {
+    <p class="text-muted-foreground text-sm">
+      {{ 'mappings.detail.usageEmpty' | translate }}
+    </p>
+    } @else {
+    <div hlmTableContainer class="lk-panel">
+      <table hlmTable>
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh>{{ 'mappings.detail.project' | translate }}</th>
+            <th hlmTh>{{ 'mappings.detail.taxYear' | translate }}</th>
+            <th hlmTh>{{ 'mappings.detail.status' | translate }}</th>
+            <th hlmTh>{{ 'mappings.detail.files' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (project of projects; track project.id) {
+          <tr hlmTr>
+            <td hlmTd>
+              <a
+                class="font-medium hover:underline"
+                [routerLink]="['/app/projects', project.id]"
+                >{{ project.name }}</a
+              >
+            </td>
+            <td hlmTd class="tabular-nums">{{ project.taxYear }}</td>
+            <td hlmTd>
+              <lk-project-status-badge [status]="project.status" />
+            </td>
+            <td hlmTd>
+              <ul class="flex flex-col gap-1 text-sm">
+                @for (file of project.files; track file.id) {
+                <li>
+                  <a
+                    class="hover:underline"
+                    [routerLink]="['/app/projects', project.id]"
+                    [fragment]="'file-' + file.id"
+                    >{{ file.displayName }}</a
+                  >
+                </li>
+                }
+              </ul>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+</section>
+
+<!-- Delete -->
+<hlm-dialog [state]="deleteState()" (stateChanged)="deleteChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mappings.detail.deleteTitle' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'mappings.detail.deleteBody' | translate: { name: mapping.name } }}
+      </p>
+    </hlm-dialog-header>
+    @if (service.usedByClosedProject()) {
+    <p class="text-destructive text-sm" role="alert">
+      {{ 'mappings.detail.deleteClosed' | translate }}
+    </p>
+    } @if (service.usageFiles().length > 0) {
+    <div class="flex flex-col gap-2 text-sm">
+      <p>{{ 'mappings.detail.deleteFiles' | translate }}</p>
+      <ul class="list-disc pl-5">
+        @for (file of service.usageFiles(); track file.fileId) {
+        <li>
+          {{ file.displayName }}
+          <span class="text-muted-foreground">· {{ file.projectName }}</span>
+        </li>
+        }
+      </ul>
+    </div>
+    } @else {
+    <p class="text-muted-foreground text-sm">
+      {{ 'mappings.detail.deleteNoFiles' | translate }}
+    </p>
+    }
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        [disabled]="service.usedByClosedProject()"
+        (click)="deleteConfirmed()"
+      >
+        {{ 'mappings.detail.delete' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Re-apply after saving -->
+<hlm-dialog [state]="reapplyState()" (stateChanged)="reapplyChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mappings.reapplyTitle' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'mappings.reapplyBody' | translate: { count: service.reapplyOffer()
+        ?? 0 } }}
+      </p>
+    </hlm-dialog-header>
+    @if (service.closedFiles() > 0) {
+    <p class="text-muted-foreground text-sm">
+      {{ 'mappings.detail.reapplyClosed' | translate: { count:
+      service.closedFiles() } }}
+    </p>
+    }
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'mappings.reapplyLater' | translate }}
+      </button>
+      <button hlmBtn type="button" (click)="service.reapply()">
+        {{ 'mappings.reapply' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+} @else if (service.notFound()) {
+<lk-empty-state [message]="'mappings.detail.notFound' | translate">
+  <a hlmBtn variant="outline" routerLink="/app/mappings"
+    >{{ 'mappings.detail.backToList' | translate }}</a
+  >
+</lk-empty-state>
+} @else if (service.mapping.error()) {
+<lk-empty-state [message]="'mappings.detail.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.mapping.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<div class="flex flex-col gap-4">
+  <hlm-skeleton class="h-9 w-1/3" />
+  <hlm-skeleton class="h-64 w-full" />
+</div>
+}
