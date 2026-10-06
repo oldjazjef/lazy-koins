@@ -64,11 +64,13 @@ const ALLOWED_ATTRIBUTES = new Set([
   'aria-describedby',
   'aria-controls',
   'aria-autocomplete',
+  'aria-live',
   // Native attributes with technical values: a MIME pattern, loading hints.
   'accept',
   'rel',
   'loading',
   'decoding',
+  'spellcheck',
   'formArrayName',
   'formControlName',
   'formGroupName',

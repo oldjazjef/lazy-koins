@@ -28,6 +28,8 @@ ruleTester.run(RULE_NAME, rule, {
     // ARIA id references and enum tokens, MIME patterns, loading hints.
     `<input aria-describedby="hint" aria-controls="list" aria-autocomplete="list" accept="image/*" />`,
     `<img loading="lazy" decoding="async" />`,
+    `<div aria-live="polite"></div>`,
+    `<textarea spellcheck="false"></textarea>`,
     `<a rel="noopener nofollow" target="_blank"></a>`,
     `<lk-canton-select inputId="project-canton" />`,
     // Bound attributes are out of this rule's scope entirely (checked, if at all, by other means).

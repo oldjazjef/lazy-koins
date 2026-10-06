@@ -1,0 +1,448 @@
+import {
+  HttpClient,
+  HttpErrorResponse,
+  httpResource,
+  type HttpResponse,
+} from '@angular/common/http';
+import { computed, DOCUMENT, inject, Injectable, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { defineAction } from '../../../../core/actions/action';
+import { ActionRunner } from '../../../../core/actions/action-runner';
+import { apiUrl } from '../../../../core/api/api-url';
+import type {
+  FileAssignmentRequest,
+  FilePreview,
+  Mapping,
+  MappingPreview,
+  ProjectFile,
+  ProjectFiles,
+  ProjectMapping,
+  SpecIssue,
+  UpdatedMapping,
+} from '../../../../core/api/api.types';
+import { NotificationService } from '../../../../core/notifications/notification.service';
+import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
+
+/** Mirrors the API's limit (files/domain/project-file.ts) so oversized files fail fast. */
+export const MAX_FILE_BYTES = 20 * 1024 * 1024;
+
+export type UploadState = 'queued' | 'uploading' | 'done' | 'failed';
+
+export interface UploadItem {
+  readonly id: number;
+  readonly name: string;
+  readonly state: UploadState;
+}
+
+export type TemplateKind = 'bookings' | 'holdings' | 'xlsx';
+
+/** The outcome of checking a spec against a file: the preview, or the schema issues. */
+export type SpecCheck =
+  | { readonly ok: true; readonly preview: MappingPreview }
+  | { readonly ok: false; readonly issues: readonly SpecIssue[] };
+
+/**
+ * The files area of one project (F5) and the mappings it uses — provided by the section
+ * component, keyed by the project id. The API decides everything (detection, duplicates, closed
+ * projects); this service moves bytes and maps answers to translated messages.
+ */
+@Injectable()
+export class ProjectFilesService {
+  private readonly http = inject(HttpClient);
+  private readonly actions = inject(ActionRunner);
+  private readonly notifications = inject(NotificationService);
+  private readonly document = inject(DOCUMENT);
+
+  readonly projectId = signal<string | undefined>(undefined);
+
+  readonly overview = httpResource<ProjectFiles>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/files`) : undefined;
+  });
+
+  readonly projectMappings = httpResource<ProjectMapping[]>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/mappings`) : undefined;
+  });
+
+  /** All my mappings — the choice when assigning one to a file. */
+  readonly myMappings = httpResource<Mapping[]>(() =>
+    this.projectId() ? apiUrl('/mappings') : undefined,
+  );
+
+  readonly files = computed<ProjectFile[]>(() =>
+    this.overview.hasValue()
+      ? this.overview.value().groups.flatMap((group) => group.files)
+      : [],
+  );
+
+  readonly tableFiles = computed(() =>
+    this.files().filter((file) => file.kind !== 'pdf'),
+  );
+
+  private readonly uploadQueue = signal<UploadItem[]>([]);
+  readonly uploads = this.uploadQueue.asReadonly();
+  readonly uploading = computed(() =>
+    this.uploadQueue().some(
+      (item) => item.state === 'queued' || item.state === 'uploading',
+    ),
+  );
+  /** 0 … 100 over the current batch. */
+  readonly uploadProgress = computed(() => {
+    const items = this.uploadQueue();
+    if (items.length === 0) return 0;
+    const finished = items.filter(
+      (item) => item.state === 'done' || item.state === 'failed',
+    ).length;
+    return Math.round((finished / items.length) * 100);
+  });
+
+  private seq = 0;
+
+  private readonly removeAction = defineAction<ProjectFile, void>({
+    run: (file) =>
+      firstValueFrom(
+        this.http.delete<void>(
+          apiUrl(`/projects/${this.requireId()}/files/${file.id}`),
+        ),
+      ),
+    messages: { success: 'files.removed', error: 'files.removeFailed' },
+  });
+
+  private readonly assignAction = defineAction<
+    { file: ProjectFile; assignment: FileAssignmentRequest },
+    ProjectFile
+  >({
+    run: ({ file, assignment }) =>
+      firstValueFrom(
+        this.http.patch<ProjectFile>(
+          apiUrl(`/projects/${this.requireId()}/files/${file.id}`),
+          assignment,
+        ),
+      ),
+    messages: { success: 'files.assigned', error: 'files.assignFailed' },
+  });
+
+  private readonly reapplyAction = defineAction<
+    string,
+    { reapplied: number; skippedClosed: number }
+  >({
+    run: (mappingId) =>
+      firstValueFrom(
+        this.http.post<{ reapplied: number; skippedClosed: number }>(
+          apiUrl(`/mappings/${mappingId}/reapply`),
+          {},
+        ),
+      ),
+    messages: {
+      success: 'mappings.reapplied',
+      error: 'mappings.reapplyFailed',
+    },
+  });
+
+  private readonly busyStatus = this.actions.status<unknown>('project-files');
+  readonly isBusy = computed(() => this.busyStatus()?.state === 'pending');
+
+  /** F5.1: several files, one request each, in order; every failure is its own toast. */
+  async upload(files: readonly File[]): Promise<void> {
+    const projectId = this.requireId();
+    const batch = files.map((file) => ({
+      id: ++this.seq,
+      name: file.name,
+      state: 'queued' as UploadState,
+    }));
+    this.uploadQueue.set(batch);
+    let added = 0;
+    for (const [index, file] of files.entries()) {
+      const item = batch[index];
+      if (!item) continue;
+      if (file.size > MAX_FILE_BYTES) {
+        this.notifications.error('files.upload.tooBig', file.name);
+        this.setState(item.id, 'failed');
+        continue;
+      }
+      this.setState(item.id, 'uploading');
+      try {
+        await firstValueFrom(
+          this.http.post<ProjectFile>(
+            apiUrl(`/projects/${projectId}/files`),
+            file,
+            {
+              params: { name: file.name },
+              headers: { 'Content-Type': 'application/octet-stream' },
+            },
+          ),
+        );
+        added += 1;
+        this.setState(item.id, 'done');
+      } catch (error) {
+        this.setState(item.id, 'failed');
+        this.notifications.error(uploadErrorKey(error), file.name);
+      }
+    }
+    if (added > 0) {
+      this.notifications.info('files.upload.added', { count: added });
+      this.reload();
+    }
+  }
+
+  async download(file: ProjectFile): Promise<void> {
+    try {
+      const response = await this.fetchBlob(
+        `/projects/${this.requireId()}/files/${file.id}/content`,
+      );
+      saveBlob(
+        this.document,
+        response.body ?? new Blob(),
+        fileNameFrom(
+          response.headers.get('Content-Disposition'),
+          file.displayName,
+        ),
+      );
+    } catch {
+      this.notifications.error('files.downloadFailed');
+    }
+  }
+
+  /** The original bytes as an object URL (PDF preview); the caller revokes it. */
+  async objectUrl(file: ProjectFile): Promise<string | undefined> {
+    try {
+      const response = await this.fetchBlob(
+        `/projects/${this.requireId()}/files/${file.id}/content`,
+      );
+      return response.body ? URL.createObjectURL(response.body) : undefined;
+    } catch {
+      this.notifications.error('files.preview.failed');
+      return undefined;
+    }
+  }
+
+  preview(file: ProjectFile, rows = 50): Promise<FilePreview> {
+    return firstValueFrom(
+      this.http.get<FilePreview>(
+        apiUrl(`/projects/${this.requireId()}/files/${file.id}/preview`),
+        { params: { rows } },
+      ),
+    );
+  }
+
+  async remove(file: ProjectFile): Promise<void> {
+    await this.actions.run(this.removeAction, file, { key: 'project-files' });
+    this.reload();
+  }
+
+  async assign(
+    file: ProjectFile,
+    assignment: FileAssignmentRequest,
+  ): Promise<void> {
+    await this.actions.run(
+      this.assignAction,
+      { file, assignment },
+      { key: 'project-files' },
+    );
+    this.reload();
+  }
+
+  /** What a stored or unsaved mapping would read from a file; schema issues instead of a 400 toast. */
+  async checkMapping(
+    file: ProjectFile,
+    source: { mappingId: string } | { spec: unknown },
+    limit = 20,
+  ): Promise<SpecCheck> {
+    try {
+      const preview = await firstValueFrom(
+        this.http.post<MappingPreview>(
+          apiUrl(
+            `/projects/${this.requireId()}/files/${file.id}/mapping-preview`,
+          ),
+          { ...source, limit },
+        ),
+      );
+      return { ok: true, preview };
+    } catch (error) {
+      const issues = specIssues(error);
+      if (issues) return { ok: false, issues };
+      this.notifications.error('mappings.checkFailed');
+      throw error;
+    }
+  }
+
+  /**
+   * Saves a spec — new (`origin` manual or copied) or over an existing mapping. Invalid specs come
+   * back as issues; an edit reports how many files use the mapping so the caller can offer to
+   * re-apply it.
+   */
+  async saveMapping(
+    spec: unknown,
+    options: { mappingId?: string; origin?: 'manual' | 'copied' },
+  ): Promise<
+    | { ok: true; mapping: Mapping; filesUsing: number }
+    | { ok: false; issues: readonly SpecIssue[] }
+  > {
+    try {
+      if (options.mappingId) {
+        const updated = await firstValueFrom(
+          this.http.put<UpdatedMapping>(
+            apiUrl(`/mappings/${options.mappingId}`),
+            {
+              spec,
+            },
+          ),
+        );
+        this.notifications.success('mappings.saved');
+        this.reloadMappings();
+        return {
+          ok: true,
+          mapping: updated.mapping,
+          filesUsing: updated.filesUsing,
+        };
+      }
+      const created = await firstValueFrom(
+        this.http.post<Mapping>(apiUrl('/mappings'), {
+          spec,
+          origin: options.origin ?? 'manual',
+        }),
+      );
+      this.notifications.success('mappings.saved');
+      this.reloadMappings();
+      return { ok: true, mapping: created, filesUsing: 0 };
+    } catch (error) {
+      const issues = specIssues(error);
+      if (issues) return { ok: false, issues };
+      this.notifications.error('mappings.saveFailed');
+      throw error;
+    }
+  }
+
+  /** An uploaded `.json` mapping: parsed here, validated and stored by the API. */
+  async importMappingFile(file: File): Promise<Mapping | undefined> {
+    let spec: unknown;
+    try {
+      spec = JSON.parse(await file.text());
+    } catch {
+      this.notifications.error('mappings.upload.notJson', file.name);
+      return undefined;
+    }
+    const saved = await this.saveMapping(spec, { origin: 'copied' });
+    if (!saved.ok) {
+      this.notifications.error(
+        'mappings.upload.invalid',
+        saved.issues
+          .map((issue) => `${issue.path || '/'}: ${issue.message}`)
+          .join('; '),
+      );
+      return undefined;
+    }
+    return saved.mapping;
+  }
+
+  async reapply(mappingId: string): Promise<void> {
+    await this.actions.run(this.reapplyAction, mappingId, {
+      key: 'project-files',
+    });
+    this.reload();
+  }
+
+  async downloadMapping(mapping: Mapping): Promise<void> {
+    try {
+      const response = await this.fetchBlob(`/mappings/${mapping.id}/download`);
+      saveBlob(
+        this.document,
+        response.body ?? new Blob(),
+        fileNameFrom(
+          response.headers.get('Content-Disposition'),
+          `${mapping.name}.json`,
+        ),
+      );
+    } catch {
+      this.notifications.error('files.downloadFailed');
+    }
+  }
+
+  async downloadTemplate(kind: TemplateKind): Promise<void> {
+    const path =
+      kind === 'xlsx'
+        ? '/standard-format/template.xlsx'
+        : `/standard-format/template.csv?type=${kind}`;
+    try {
+      const response = await this.fetchBlob(path as `/${string}`);
+      saveBlob(
+        this.document,
+        response.body ?? new Blob(),
+        fileNameFrom(response.headers.get('Content-Disposition'), 'vorlage'),
+      );
+    } catch {
+      this.notifications.error('files.downloadFailed');
+    }
+  }
+
+  reload(): void {
+    this.overview.reload();
+    this.reloadMappings();
+  }
+
+  private reloadMappings(): void {
+    this.projectMappings.reload();
+    this.myMappings.reload();
+  }
+
+  private fetchBlob(path: `/${string}`): Promise<HttpResponse<Blob>> {
+    return firstValueFrom(
+      this.http.get(apiUrl(path), {
+        responseType: 'blob',
+        observe: 'response',
+      }),
+    );
+  }
+
+  private setState(id: number, state: UploadState): void {
+    this.uploadQueue.update((items) =>
+      items.map((item) => (item.id === id ? { ...item, state } : item)),
+    );
+  }
+
+  private requireId(): string {
+    const id = this.projectId();
+    if (!id) throw new Error('No project on screen');
+    return id;
+  }
+}
+
+/** The translated reason of a failed upload (F5.1, F5.4). */
+export function uploadErrorKey(error: unknown): string {
+  if (!(error instanceof HttpErrorResponse)) return 'files.upload.failed';
+  switch (error.status) {
+    case 409:
+      return (error.error as { existing?: unknown } | null)?.existing
+        ? 'files.upload.duplicate'
+        : 'files.upload.closed';
+    case 413:
+      return 'files.upload.tooBig';
+    case 415:
+      return 'files.upload.unsupported';
+    case 422:
+      return 'files.upload.unreadable';
+    default:
+      return 'files.upload.failed';
+  }
+}
+
+function specIssues(error: unknown): readonly SpecIssue[] | undefined {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 400) {
+    return undefined;
+  }
+  const body = error.error as {
+    issues?: SpecIssue[];
+    message?: unknown;
+  } | null;
+  if (Array.isArray(body?.issues)) return body.issues;
+  const message = body?.message;
+  return [
+    {
+      path: '',
+      message: Array.isArray(message)
+        ? message.join('; ')
+        : String(message ?? ''),
+    },
+  ];
+}

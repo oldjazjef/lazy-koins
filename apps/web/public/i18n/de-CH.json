@@ -82,7 +82,7 @@
       "editTitle": "Angaben",
       "factsTitle": "Übersicht",
       "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",
-      "comingSoon": "Dateien, Buchungen, Prüfungen und Auszüge folgen hier.",
+      "comingSoon": "Buchungen, Prüfungen und Auszüge folgen hier.",
       "saved": "Gespeichert",
       "saveFailed": "Änderung konnte nicht gespeichert werden",
       "reopen": "Wieder öffnen",
@@ -97,6 +97,200 @@
       "notFound": "Dieses Projekt gibt es nicht (mehr).",
       "loadFailed": "Projekt konnte nicht geladen werden.",
       "backToList": "Zu den Projekten"
+    }
+  },
+  "bookings": {
+    "kind": {
+      "trade": "Handel",
+      "deposit": "Einzahlung",
+      "withdrawal": "Auszahlung",
+      "fee": "Gebühr",
+      "transfer": "Umbuchung (eigene Konten)",
+      "income_interest": "Ertrag: Zinsen/Earn",
+      "income_staking": "Ertrag: Staking",
+      "income_airdrop": "Ertrag: Airdrop",
+      "income_launchpool": "Ertrag: Launchpool",
+      "income_hardfork": "Ertrag: Hardfork",
+      "loss": "Verlust",
+      "spam": "Spam",
+      "unknown": "Unbekannt"
+    }
+  },
+  "files": {
+    "title": "Dateien",
+    "subtitle": "Exporte deiner Börsen und Wallets. Die Originale bleiben unverändert und jederzeit herunterladbar.",
+    "closedHint": "Das Projekt ist abgeschlossen: Dateien lassen sich ansehen und herunterladen, aber nicht ändern.",
+    "empty": "Noch keine Dateien. Lade die Exporte für dieses Steuerjahr hoch.",
+    "loadFailed": "Dateien konnten nicht geladen werden.",
+    "removed": "Datei aus dem Projekt entfernt",
+    "removeFailed": "Datei konnte nicht entfernt werden",
+    "assigned": "Zuordnung gespeichert",
+    "assignFailed": "Zuordnung konnte nicht gespeichert werden",
+    "downloadFailed": "Download fehlgeschlagen",
+    "size": "{{kind}} · {{kb}} kB",
+    "records": "{{bookings}} Buchungen · {{holdings}} Bestände",
+    "rowErrorCount": "{{count}} Zeilen mit Fehlern",
+    "removeTitle": "Datei entfernen?",
+    "removeBody": "«{{name}}» wird aus diesem Projekt entfernt. Endgültig gelöscht wird die Datei erst, wenn kein Projekt sie mehr verwendet.",
+    "upload": {
+      "drop": "Dateien hierher ziehen (CSV, XLSX, PDF) – mehrere gleichzeitig möglich.",
+      "pick": "Dateien auswählen",
+      "limits": "Höchstens 20 MB pro Datei. Standardformat und gespeicherte Mappings werden automatisch erkannt.",
+      "progress": "Fortschritt des Uploads",
+      "added": "{{count}} Datei(en) hinzugefügt",
+      "tooBig": "Datei ist grösser als 20 MB",
+      "duplicate": "Diese Datei ist schon im Projekt",
+      "closed": "Das Projekt ist abgeschlossen",
+      "unsupported": "Nur CSV, XLSX und PDF werden angenommen",
+      "unreadable": "Die Datei konnte nicht gelesen werden",
+      "failed": "Upload fehlgeschlagen",
+      "state": {
+        "queued": "wartet",
+        "uploading": "wird hochgeladen …",
+        "done": "fertig",
+        "failed": "fehlgeschlagen"
+      }
+    },
+    "template": {
+      "label": "Vorlage im Standardformat:",
+      "xlsx": "Excel (XLSX)",
+      "bookingsCsv": "Buchungen (CSV)",
+      "holdingsCsv": "Bestände (CSV)"
+    },
+    "missing": {
+      "title": "Möglicherweise fehlende Dateien",
+      "kind": {
+        "startsLate": "Die Buchungen beginnen erst am {{date}} – der Anfang von {{year}} fehlt.",
+        "endsEarly": "Die Buchungen enden am {{date}} – bis 31.12.{{year}} fehlt etwas.",
+        "noYearEndBalance": "Kein Bestand per 31.12.{{year}} (Kontoauszug) vorhanden."
+      },
+      "howTo": {
+        "startsLate": "Lade bei der Plattform einen Export ab spätestens 01.01. herunter – meist unter Verlauf/History → Export – und lade ihn hier hoch. Begann das Konto erst später, ist alles in Ordnung.",
+        "endsEarly": "Exportiere die Historie bis mindestens 31.12. (Verlauf/History → Export, Zeitraum anpassen). Gab es danach keine Bewegungen, ist alles in Ordnung.",
+        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements) und erfasse die Bestände im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft."
+      }
+    },
+    "group": {
+      "unread": "Ohne Plattform (Belege und noch nicht gelesene Dateien)"
+    },
+    "fields": {
+      "name": "Datei",
+      "status": "Status",
+      "period": "Zeitraum",
+      "records": "Inhalt",
+      "added": "Hochgeladen",
+      "origin": "Herkunft",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "standard": "Standardformat",
+      "mapped": "Gelesen mit Mapping",
+      "needs_mapping": "Mapping fehlt",
+      "evidence_only": "Nur Beleg"
+    },
+    "origin": {
+      "fromProject": "aus Projekt «{{name}}»",
+      "uploaded": "neu",
+      "unknownProject": "unbekannt"
+    },
+    "actions": {
+      "preview": "Vorschau",
+      "download": "Herunterladen",
+      "assign": "Zuordnen",
+      "remove": "Entfernen"
+    },
+    "preview": {
+      "description": "Die ersten Zeilen der Datei, unverändert.",
+      "openInTab": "In neuem Tab öffnen",
+      "sheet": "Blatt «{{name}}»: {{shown}} von {{total}} Zeilen",
+      "failed": "Vorschau konnte nicht geladen werden"
+    },
+    "assign": {
+      "title": "«{{name}}» zuordnen",
+      "body": "Wähle ein Mapping, das die Spalten dieser Datei ins Standardformat übersetzt, prüfe die Vorschau und ordne zu. Oder behalte die Datei nur als Beleg.",
+      "mapping": "Mapping",
+      "choose": "Mapping wählen …",
+      "preview": "Vorschau",
+      "apply": "Zuordnen",
+      "newMapping": "Neues Mapping",
+      "automatic": "Automatisch erkennen",
+      "evidenceOnly": "Nur als Beleg"
+    },
+    "rowErrors": {
+      "required": "Pflichtwert fehlt.",
+      "invalidNumber": "Keine gültige Zahl.",
+      "invalidTimestamp": "Kein gültiger Zeitpunkt.",
+      "timeZoneMissing": "Zeitpunkt ohne Zeitzone.",
+      "invalidKind": "Unbekannte Art.",
+      "invalidDate": "Kein gültiges Datum (JJJJ-MM-TT).",
+      "negative": "Darf nicht negativ sein.",
+      "headerNotFound": "Die Kopfzeile des Mappings wurde in der Datei nicht gefunden."
+    }
+  },
+  "mappings": {
+    "title": "Mappings",
+    "subtitle": "Ein Mapping übersetzt den Export einer Plattform ins Standardformat. Hier siehst du, welche dieses Projekt verwendet.",
+    "new": "Neues Mapping",
+    "withAi": "Mit AI erstellen",
+    "aiSoon": "Kommt in einer nächsten Version.",
+    "empty": "Dieses Projekt verwendet noch kein Mapping.",
+    "saved": "Mapping gespeichert",
+    "saveFailed": "Mapping konnte nicht gespeichert werden",
+    "checkFailed": "Prüfung fehlgeschlagen",
+    "reapplied": "Dateien neu gelesen",
+    "reapplyFailed": "Dateien konnten nicht neu gelesen werden",
+    "reapplyTitle": "Dateien neu lesen?",
+    "reapplyBody": "{{count}} Datei(en) verwenden dieses Mapping. Sollen sie mit der neuen Fassung neu gelesen werden? Abgeschlossene Projekte bleiben unverändert.",
+    "reapplyLater": "Später",
+    "reapply": "Neu lesen",
+    "viewDescription": "Plattform {{platform}} · erkennt Dateien mit den Spalten {{fingerprint}}",
+    "upload": {
+      "button": "Mapping hochladen (.json)",
+      "notJson": "Die Datei ist kein JSON",
+      "invalid": "Das Mapping ist ungültig"
+    },
+    "fields": {
+      "name": "Name",
+      "platform": "Plattform",
+      "origin": "Herkunft",
+      "files": "Dateien",
+      "updated": "Geändert"
+    },
+    "origin": {
+      "ai": "AI",
+      "manual": "manuell",
+      "copied": "hochgeladen"
+    },
+    "actions": {
+      "view": "JSON ansehen",
+      "download": "Als JSON herunterladen",
+      "edit": "Bearbeiten"
+    },
+    "editor": {
+      "newTitle": "Neues Mapping",
+      "editTitle": "Mapping bearbeiten",
+      "description": "Das Mapping als JSON. «Prüfen» validiert es und zeigt, was es aus der gewählten Datei liest.",
+      "json": "Mapping (JSON)",
+      "invalidJson": "Das ist kein gültiges JSON.",
+      "issues": "Das Mapping ist noch nicht gültig:",
+      "checkFile": "Prüfen mit Datei",
+      "checkHint": "Noch keine Vorschau – «Prüfen» wählen.",
+      "check": "Prüfen"
+    },
+    "preview": {
+      "totals": "{{bookings}} Buchungen, {{holdings}} Bestände, {{errors}} Fehler, {{notes}} Hinweise.",
+      "period": "Zeitraum {{from}} – {{to}}.",
+      "row": "Zeile",
+      "timestamp": "Zeitpunkt (UTC)",
+      "account": "Konto",
+      "kind": "Art",
+      "asset": "Asset",
+      "quantity": "Menge",
+      "fee": "Gebühr",
+      "rawType": "Original-Typ",
+      "holdings": "Bestände",
+      "errors": "Zeilen mit Fehlern",
+      "errorAt": "Zeile {{row}}, Spalte {{column}}:"
     }
   }
 }
