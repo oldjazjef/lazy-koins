@@ -135,21 +135,26 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 
 ## 11. Profil und Einstellungen
 
-Alles Projektübergreifende lebt an zwei Orten, erreichbar über das Benutzermenü oben rechts:
+Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Profil** und
+**Einstellungen** im Benutzermenü oben rechts.
 
+- **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
+  des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
+  steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
+  zuletzt geändert), suchen, ansehen (JSON), bearbeiten mit Vorschau, löschen (mit Bestätigung
+  und Hinweis auf betroffene Dateien), herunter- und hochladen. Je Mapping sichtbar, **welche
+  Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
+  anderen.
 - **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
   Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
   Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.
-- **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert:
-  **Mappings** (alle Mappings des Benutzers, projektübergreifend: auflisten, ansehen,
-  bearbeiten, löschen, herunter-/hochladen, „wird genutzt in“ Projekt/Datei; ein in einem
-  Projekt erstelltes Mapping steht in allen Projekten zur Verfügung), **AI** (Anbieter, Modell,
+- **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert: **AI** (Anbieter, Modell,
   Schlüssel, Zustimmung, F5.13/F5.14), **Kurse** (Internet-Kurse ein/aus F11.3, CoinGecko-Schlüssel,
   ESTV-Kursliste), **Wallets/Netzwerke** (API-Schlüssel wie Etherscan, F6.7), **Speicherort**
   (Desktop, F3.1) und **Cloud-Verbindungen** (Web, F3.2). Schlüssel werden nie wieder angezeigt
   (nur die letzten Zeichen).
 - Im Projekt bleiben nur projektbezogene Dinge (Dateien, die im Projekt genutzten Mappings mit
-  Link in die Einstellungen, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
+  Link auf die Mappings-Seite, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
   Exporte).
 
 - **F11.1** Persönliche Angaben für die Exporte (Name, Wohnkanton, Treuhänder).
