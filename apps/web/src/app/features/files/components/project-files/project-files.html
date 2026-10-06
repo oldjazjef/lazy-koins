@@ -304,11 +304,11 @@
       [src]="url"
       [title]="current.file.displayName"
     ></iframe>
-    <div>
+    <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" (click)="openPdfInTab()">
         {{ 'files.preview.openInTab' | translate }}
       </button>
-    </div>
+    </hlm-dialog-footer>
     } } @else if (tablePreview(); as preview) { @for (sheet of preview.sheets ??
     []; track sheet.name) {
     <div class="flex flex-col gap-2">
@@ -402,23 +402,6 @@
           }
         </select>
       </div>
-      <button
-        hlmBtn
-        variant="outline"
-        type="button"
-        [disabled]="!selectedMappingId()"
-        (click)="previewAssignment(current.file)"
-      >
-        {{ 'files.assign.preview' | translate }}
-      </button>
-      <button
-        hlmBtn
-        type="button"
-        [disabled]="!selectedMappingId()"
-        (click)="assign(current.file, 'mapping')"
-      >
-        {{ 'files.assign.apply' | translate }}
-      </button>
     </div>
     @if (assignPreview(); as preview) {
     <lk-mapping-preview [preview]="preview" />
@@ -469,6 +452,25 @@
       >
         {{ 'files.assign.evidenceOnly' | translate }}
       </button>
+      @if (current.file.kind !== 'pdf') {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="!selectedMappingId()"
+        (click)="previewAssignment(current.file)"
+      >
+        {{ 'files.assign.preview' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!selectedMappingId()"
+        (click)="assign(current.file, 'mapping')"
+      >
+        {{ 'files.assign.apply' | translate }}
+      </button>
+      }
     </hlm-dialog-footer>
     }
   </hlm-dialog-content>
