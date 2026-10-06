@@ -7,6 +7,13 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F1.1** Web-App: im Browser nutzbar, mehrere Benutzer, jeder sieht nur seine Daten.
 - **F1.2** Lokal: als Desktop-App auf macOS und Windows, ein Benutzer, ohne Login, Daten nur auf dem eigenen Rechner. Gleicher Funktionsumfang wie die Web-App.
 - **F1.3** Ein Projekt lässt sich zwischen den Betriebsarten exportieren und importieren (Paket mit Daten und Originaldateien).
+- **F1.4** Jedes Release (vX.Y.Z, erstellt wie beim Produktions-Deploy – per „Run workflow“
+  oder von Hand veröffentlicht) baut die Desktop-App automatisch in der CI für **Windows**
+  (Installer `.exe`) und **macOS** (`.dmg`, Apple Silicon und Intel) und hängt die Dateien an
+  das GitHub-Release. Von dort lassen sie sich herunterladen und lokal installieren/ausführen.
+  Versionsnummer der App = Release-Tag. Solange nicht signiert wird (offene Entscheidung), steht
+  in den Release-Notes, wie man die Warnung von Windows SmartScreen bzw. macOS Gatekeeper
+  bestätigt.
 
 ## 2. Benutzer (nur Web-App)
 

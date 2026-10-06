@@ -432,6 +432,14 @@ A1). It is git-ignored and must stay that way.
   `127.0.0.1` with its own SQLite file in the chosen storage folder (F3.1) and loads the Angular
   build. No login: the API runs in `AUTH_MODE=local` (already built, see Auth). Same engine, same
   results as the web.
+- **Desktop releases in CI** (F1.4): every release vX.Y.Z builds the Electron app with
+  **electron-builder** on a matrix (`windows-latest` → NSIS `.exe`, `macos-latest` → `.dmg`
+  arm64 + x64) and uploads the files to that GitHub release. It must be a job **inside** the
+  production release workflow (a reusable `_desktop.yml` called from `deploy-production.yml`),
+  because a release created with `GITHUB_TOKEN` (the "Run workflow" path, as in surf-lend) does
+  not trigger other workflows' `release` events. App version = tag. `better-sqlite3` must be
+  rebuilt for Electron's ABI (`electron-builder install-app-deps`). Unsigned until signing is
+  decided; the release notes explain SmartScreen / Gatekeeper.
 - **Web auth = Firebase Authentication**, as in surf-lend: the API is a resource server that
   verifies Firebase ID tokens (port + adapter in `integrations/`); e-mail/password and Google,
   password reset by Firebase (F2.1). A dev mode `dev:<email>` like surf-lend's `AUTH_MODE=dev`.
