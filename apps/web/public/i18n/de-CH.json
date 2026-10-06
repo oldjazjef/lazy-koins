@@ -486,7 +486,6 @@
       "noEncryption": "Auf diesem Server kann kein Schlüssel gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt). Lokale Modelle ohne Schlüssel funktionieren trotzdem.",
       "saved": "AI-Einstellungen gespeichert",
       "test": "Verbindung testen",
-      "testSaveFirst": "Zuerst speichern",
       "testing": "Verbindung wird getestet …",
       "testOk": "Verbindung funktioniert: {{model}} hat in {{millis}} ms geantwortet.",
       "status": {

@@ -316,6 +316,14 @@ export interface AiUsage {
 }
 
 /** `POST /api/ai/settings/test` */
+/** Body of `POST /ai/settings/test`: the form's unsaved values; a typed key is never stored. */
+export interface TestAiConnectionRequest {
+  readonly provider: AiProvider;
+  readonly baseUrl: string;
+  readonly model: string;
+  readonly apiKey?: string;
+}
+
 export interface AiConnectionTest {
   ok: true;
   model: string;

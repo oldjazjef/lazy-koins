@@ -138,9 +138,8 @@
           hlmBtn
           variant="outline"
           type="button"
-          [disabled]="service.testing() || !settings.ready || form.dirty"
-          [attr.title]="form.dirty ? ('settings.ai.testSaveFirst' | translate) : null"
-          (click)="service.test()"
+          [disabled]="service.testing()"
+          (click)="test()"
         >
           {{ 'settings.ai.test' | translate }}
         </button>

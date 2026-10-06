@@ -51,6 +51,15 @@ export function aiConflict(
   });
 }
 
+/** Unsaved values from the settings form, for testing before saving. */
+export interface AiConnectionDraft {
+  readonly provider: AiSettings['provider'];
+  readonly baseUrl: string;
+  readonly model: string;
+  /** Typed into the form; omitted = use the saved key, "" = test without a key. */
+  readonly apiKey?: string;
+}
+
 /**
  * The gate every AI request passes: the plugin is on and configured, the user has consented
  * (F5.14 — the first use records the consent, every use shows the payload first), the key is
@@ -122,6 +131,45 @@ export class AiGate {
       baseUrl: settings.baseUrl,
       model: settings.model,
       ...(apiKey ? { apiKey } : {}),
+    };
+  }
+
+  /**
+   * The connection for the settings page's "Verbindung testen": the saved settings overlaid with
+   * the form's unsaved values, so testing never requires saving first. The on/off switch is
+   * ignored (a test sends no user data) and a key typed into the form is used as is, never
+   * stored; without one the saved key is used.
+   */
+  connectionForTest(
+    saved: AiSettings,
+    draft?: AiConnectionDraft,
+  ): AiConnection {
+    const typedKey = draft?.apiKey?.trim() ?? '';
+    const settings: AiSettings = {
+      ...saved,
+      ...(draft
+        ? {
+            provider: draft.provider,
+            baseUrl: draft.baseUrl,
+            model: draft.model,
+          }
+        : {}),
+      enabled: true,
+      ...(draft?.apiKey === '' ? { apiKeyCipher: null } : {}),
+    };
+    if (typedKey === '') return this.connectionOf(settings);
+    const urlProblem = checkBaseUrl(
+      settings.baseUrl,
+      this.runtime.allowPrivateUrls,
+    );
+    if (urlProblem) {
+      throw aiConflict(urlProblem, 'The provider address is not allowed');
+    }
+    return {
+      kind: settings.provider,
+      baseUrl: settings.baseUrl,
+      model: settings.model,
+      apiKey: typedKey,
     };
   }
 
