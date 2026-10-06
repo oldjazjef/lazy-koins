@@ -118,6 +118,28 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F11.2** Sprache (zunächst Deutsch/Schweiz), Zahlen- und Datumsformat.
 - **F11.3** Kursabfragen aus dem Internet ein-/ausschaltbar.
 
+## 11a. Dashboard
+
+Übersicht über das gesamte Krypto-Vermögen, ähnlich Koinly – **ohne** Einstandswert, ROI und
+realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
+
+- **F11.4** Startseite nach dem Login: Dashboard über **alle Projekte** eines Benutzers mit frei
+  wählbarem Zeitraum (Vorgabe: 01.01. des laufenden Jahres bis heute; Schnellwahl Steuerjahre).
+  Zusätzlich eine kompakte Version je Projekt für dessen Steuerjahr.
+- **F11.5** Gesamtwert in CHF zum Ende des Zeitraums mit Veränderung in % gegenüber dem Beginn,
+  und Verlauf als Liniendiagramm (Tageswerte = Bestände × Tageskurs).
+- **F11.6** Kennzahlen im Zeitraum: Einzahlungen (In), Auszahlungen (Out), Ertrag (mit Anteil am
+  Vermögen in %), Kosten/Verluste, Handelsgebühren – jeweils in CHF, anklickbar bis zu den
+  Buchungen (wie F7.5).
+- **F11.7** Verteilung nach Asset als gestapelter Balken (grösste Positionen benannt, Rest
+  zusammengefasst).
+- **F11.8** Bestände-Tabelle: Asset, Menge, Kurs CHF je Einheit, Marktwert CHF, Kursverlauf im
+  Zeitraum (Sparkline); sortier- und durchsuchbar; aufklappbar nach Plattform/Wallet;
+  Stichtag wählbar.
+- **F11.9** Werte stammen aus denselben Daten und Kursen wie die Steuerberechnung (keine zweite
+  Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
+  Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
+
 ## 12. Abnahme
 
 - **A1** Mit den echten Daten (lokal in `private/`, Sollwerte in `private/golden.json`) ergibt das Projekt 2025 dieselben Werte wie die manuelle Auswertung (±0.05 CHF); der Kraken-Saldo per 31.12.2025 stimmt exakt mit dem Kontoauszug überein.
