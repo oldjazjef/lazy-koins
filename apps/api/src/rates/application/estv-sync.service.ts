@@ -3,6 +3,7 @@ import {
   Logger,
   type OnApplicationBootstrap,
   type OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../../config/env';
@@ -23,6 +24,7 @@ import {
   type EstvProgress,
   EstvSourceError,
 } from '../ports/estv.port';
+import { EstvNotifier } from './estv-notifier';
 
 /** The oldest tax year the ICTax API is asked for. */
 export const ESTV_FIRST_YEAR = 2017;
@@ -73,6 +75,8 @@ export class EstvSyncService {
   private readonly logger = new Logger('EstvSync');
   private current: EstvRunState | null = null;
   private running: Promise<EstvYearResult[]> | null = null;
+  /** Users who asked for the run in flight (they hear about its outcome, F11.12). */
+  private requesters = new Set<string>();
   /** The clock (replaced in specs). */
   now: () => Date = () => new Date();
 
@@ -80,6 +84,7 @@ export class EstvSyncService {
     private readonly source: EstvKurslisteSourcePort,
     private readonly store: EstvKurslisteRepositoryPort,
     private readonly config: ConfigService<Env, true>,
+    @Optional() private readonly notifier?: EstvNotifier,
   ) {}
 
   /** `ESTV_AUTO` and `RATES_ONLINE` both allow it (F7.4a, F11.3). */
@@ -107,16 +112,24 @@ export class EstvSyncService {
    * Starts a run for `years`. While one runs, a request it covers joins it; any other waits for
    * it and then runs (one download at a time). Resolves when the covering run has finished.
    */
-  run(years: readonly number[]): Promise<EstvYearResult[]> {
+  run(
+    years: readonly number[],
+    requestedBy?: string,
+  ): Promise<EstvYearResult[]> {
     const ordered = [...new Set(years)].sort((a, b) => b - a);
     if (this.running) {
       const covering = this.current?.years ?? [];
-      if (ordered.every((y) => covering.includes(y))) return this.running;
-      return this.running.then(() => this.run(ordered));
+      if (ordered.every((y) => covering.includes(y))) {
+        if (requestedBy) this.requesters.add(requestedBy);
+        return this.running;
+      }
+      return this.running.then(() => this.run(ordered, requestedBy));
     }
+    this.requesters = new Set(requestedBy ? [requestedBy] : []);
     this.running = this.runYears(ordered).finally(() => {
       this.running = null;
       this.current = null;
+      this.requesters = new Set();
     });
     return this.running;
   }
@@ -181,11 +194,13 @@ export class EstvSyncService {
   private async checkYear(year: number): Promise<EstvYearResult> {
     let outcome: EstvCheckOutcome;
     let error: string | null = null;
+    let code: string | null = null;
     try {
       outcome = await this.updateYear(year);
     } catch (failure) {
       outcome = 'failed';
       error = message(failure);
+      code = failure instanceof EstvSourceError ? failure.code : 'processing';
       this.logger.warn(`ESTV-Kursliste ${year}: ${error}`);
     }
     await this.store.saveCheck({
@@ -194,6 +209,19 @@ export class EstvSyncService {
       outcome,
       error,
     });
+    if (this.notifier) {
+      const version =
+        outcome === 'updated' ? await this.store.findVersion(year) : undefined;
+      await this.notifier.checked(
+        {
+          year,
+          outcome,
+          code,
+          label: version ? estvSourceLabel(year, version.exportDate) : null,
+        },
+        this.requesters,
+      );
+    }
     return { year, outcome, error };
   }
 

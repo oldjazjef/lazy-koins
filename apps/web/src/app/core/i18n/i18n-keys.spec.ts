@@ -32,6 +32,12 @@ import {
   KPI_KINDS,
 } from '../api/dashboard.types';
 import {
+  NOTIFICATION_ACTION_LABELS,
+  NOTIFICATION_KINDS,
+  NOTIFICATION_REASONS,
+  NOTIFICATION_TITLE_BASES,
+} from '../api/notifications.types';
+import {
   FINGERPRINT_VERDICTS,
   HINT_KINDS,
   HINT_SEVERITIES,
@@ -179,6 +185,13 @@ const DYNAMIC_KEYS = [
   ].map((issue) => `ai.statement.issues.${issue}`),
   ...['openai_compatible', 'anthropic'].map(
     (provider) => `settings.ai.providers.${provider}`,
+  ),
+  ...NOTIFICATION_TITLE_BASES.map((base) => `notifications.title.${base}`),
+  ...NOTIFICATION_ACTION_LABELS.map((label) => `notifications.action.${label}`),
+  ...NOTIFICATION_REASONS.map((reason) => `notifications.reason.${reason}`),
+  ...NOTIFICATION_KINDS.map((kind) => `notifications.kind.${kind}`),
+  ...['all', 'unread', 'resolved'].map(
+    (status) => `notifications.page.statuses.${status}`,
   ),
   ...[
     'openai',

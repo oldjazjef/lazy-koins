@@ -179,6 +179,7 @@
   [projectId]="project.id"
   [closed]="service.isClosed()"
   [taxYear]="project.taxYear"
+  [initialTab]="tab()"
 />
 
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">

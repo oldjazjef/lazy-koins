@@ -6,7 +6,8 @@ import {
   type Signal,
   signal,
 } from '@angular/core';
-import { firstValueFrom, isObservable, type Observable } from 'rxjs';
+import { Router } from '@angular/router';
+import { firstValueFrom, isObservable, type Observable, Subject } from 'rxjs';
 import { extractErrorDetail } from '../actions/extract-error-detail';
 import {
   type NotificationAction,
@@ -43,6 +44,20 @@ export interface ActivitySuccess {
   readonly action?: NotificationAction;
 }
 
+/**
+ * A task that ended (F11.13): the notification centre turns a failure, or a task the user left
+ * the page of, into a notification. URLs are the router's (`/app/projects/<id>?tab=rates`).
+ */
+export interface ActivityFinished {
+  readonly label: string;
+  readonly params: Readonly<Record<string, unknown>>;
+  readonly outcome: 'success' | 'error';
+  /** Where the task was started. */
+  readonly startUrl: string;
+  /** Where the user is when it ended. */
+  readonly endUrl: string;
+}
+
 /** One running task, as the indicator shows it. */
 export interface ActivityTask {
   readonly id: number;
@@ -66,13 +81,17 @@ const NO_PROGRESS = signal<ActivityProgress | null>(null).asReadonly();
 @Injectable({ providedIn: 'root' })
 export class ActivityService {
   private readonly notifications = inject(NotificationService);
+  private readonly router = inject(Router, { optional: true });
   private readonly running = signal<readonly ActivityTask[]>([]);
+  private readonly ended = new Subject<ActivityFinished>();
   private seq = 0;
 
   /** Oldest first. */
   readonly tasks = this.running.asReadonly();
   readonly count = computed(() => this.running().length);
   readonly busy = computed(() => this.running().length > 0);
+  /** Every task when it ends — the notification centre listens (F11.13). */
+  readonly finished: Observable<ActivityFinished> = this.ended.asObservable();
 
   /**
    * Shows `label` while `work` runs and resolves/rejects with it. `work` may be a promise, an
@@ -96,6 +115,7 @@ export class ActivityService {
       progress: options.progress ?? NO_PROGRESS,
     };
     this.running.update((tasks) => [...tasks, task]);
+    const startUrl = this.currentUrl();
     try {
       const result = await (typeof work === 'function'
         ? work()
@@ -104,9 +124,11 @@ export class ActivityService {
           : work);
       this.remove(task.id);
       this.toastSuccess(options.success, result);
+      this.announce(task, 'success', startUrl);
       return result;
     } catch (error) {
       this.remove(task.id);
+      this.announce(task, 'error', startUrl);
       if (options.error) {
         const detail = extractErrorDetail(error);
         if (detail) this.notifications.error(options.error, detail);
@@ -129,6 +151,24 @@ export class ActivityService {
     } else {
       this.notifications.success(message.key);
     }
+  }
+
+  private currentUrl(): string {
+    return this.router?.url ?? '';
+  }
+
+  private announce(
+    task: ActivityTask,
+    outcome: 'success' | 'error',
+    startUrl: string,
+  ): void {
+    this.ended.next({
+      label: task.label,
+      params: task.params(),
+      outcome,
+      startUrl,
+      endUrl: this.currentUrl(),
+    });
   }
 
   private remove(id: number): void {

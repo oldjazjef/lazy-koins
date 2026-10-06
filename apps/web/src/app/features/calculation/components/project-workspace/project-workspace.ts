@@ -64,6 +64,8 @@ export class ProjectWorkspace {
   readonly projectId = input.required<string>();
   readonly closed = input(false);
   readonly taxYear = input.required<number>();
+  /** A tab to show, e.g. from a notification's link (`?tab=hints`); unknown values are ignored. */
+  readonly initialTab = input<string | undefined>();
 
   /** Open (unticked) items of the checks per `platform|account` and `platform|*` (F8.2 ↔ F5.8). */
   protected readonly openItems = computed(() => {
@@ -88,6 +90,12 @@ export class ProjectWorkspace {
       const id = this.projectId();
       this.service.projectId.set(id);
       this.files.projectId.set(id);
+    });
+    effect(() => {
+      const tab = this.initialTab();
+      if (tab && (WORKSPACE_TABS as readonly string[]).includes(tab)) {
+        this.service.tab.set(tab as WorkspaceTab);
+      }
     });
   }
 

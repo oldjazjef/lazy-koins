@@ -29,6 +29,11 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/mappings/mappings.routes'),
       },
       {
+        path: 'notifications',
+        loadChildren: () =>
+          import('./features/notifications/notifications.routes'),
+      },
+      {
         path: 'profile',
         loadChildren: () => import('./features/profile/profile.routes'),
       },

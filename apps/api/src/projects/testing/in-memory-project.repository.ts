@@ -23,6 +23,12 @@ export class InMemoryProjectRepository extends ProjectRepositoryPort {
       );
   }
 
+  async findByTaxYear(taxYear: number): Promise<Project[]> {
+    return [...this.rows.values()]
+      .filter((project) => project.taxYear === taxYear)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
   async findById(id: string): Promise<Project | undefined> {
     return this.rows.get(id);
   }
