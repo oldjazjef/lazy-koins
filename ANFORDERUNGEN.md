@@ -178,14 +178,33 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
 **Einstellungen** im Benutzermenü oben rechts.
 
 - **F11.0s Einrichtung beim ersten Aufruf**: Beim allerersten Start (Desktop) bzw. nach der
-  ersten Anmeldung (Web) führt ein Assistent in Schritten durch die Einrichtung, mit
-  Fortschrittsanzeige, „Zurück“/„Weiter“ und „Später“ für optionale Schritte; jederzeit über
-  Profil/Einstellungen änderbar und wieder aufrufbar:
-  1. **Profil** – Name, Wohnkanton, Sprache (F11.1, F11.2). Pflicht.
-  2. **Plugin** – AI-Anbieter einrichten und testen (F5.13); optional, „ohne AI fortfahren“.
-  3. **Treuhänder** – Name und E-Mail (F11.1), optional Mailer (F11.10).
-  4. **PIN** – 4–8 Ziffern, zweimal eingeben. Desktop: Pflicht; Web: optional.
-     Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App.
+  ersten Anmeldung (Web) führt ein Assistent als **Stepper** durch alles, was die App zum
+  Arbeiten braucht: Schrittleiste mit Nummer, Titel und Zustand je Schritt (offen / erledigt /
+  übersprungen / Fehler), „Zurück“/„Weiter“ fix unten (Dialog-Regel), „Später“ für optionale
+  Schritte, Zwischenstand wird gespeichert (Abbruch und Fortsetzen möglich). Jeder Schritt mit
+  kurzer Erklärung, wozu er dient, Link „Wo bekomme ich den Schlüssel?“ und – wo möglich –
+  einem **Test-Knopf**, der die Eingabe sofort prüft. Schlüssel werden verschlüsselt gespeichert
+  und nie wieder angezeigt (F11.0b). Jederzeit über Einstellungen wieder aufrufbar; danach
+  ist alles in Profil/Einstellungen einzeln änderbar.
+  1. **Profil** – Name, Wohnkanton, Sprache, Zahlen-/Datumsformat (F11.1, F11.2). Pflicht.
+  2. **Treuhänder** – Name und E-Mail (F11.1). Optional.
+  3. **AI-Plugin** – Anbieter, Modell, Schlüssel, Verbindung testen, Zustimmung (F5.13, F5.14).
+     Optional („ohne AI fortfahren“ – dann Mappings nur manuell).
+  4. **Kurse** – Internet-Kurse ein/aus (F11.3), CoinGecko-Schlüssel (testen), ESTV-Kursliste
+     automatisch beziehen (F7.4a). Optional, mit Hinweis auf fehlende Kurse ohne Schlüssel.
+  5. **Wallets & Netzwerke** – Etherscan-Schlüssel (alle EVM-Chains), Solana-Indexer (z. B.
+     Helius), weitere Netzwerk-Schlüssel nach Bedarf (F6.3, F6.7), je mit Test; optional,
+     erste Wallet-Adressen direkt erfassen.
+  6. **Mail** – Mailer (SMTP) mit Test-Mail und Vorlage übernehmen/anpassen (F11.10). Optional.
+  7. **Speicherort** (nur Desktop) – Datenordner wählen, auch Sync-Ordner (F3.1).
+  8. **PIN** – 4–8 Ziffern, zweimal eingeben (F11.0p). Desktop: Pflicht; Web: optional.
+  9. **Zusammenfassung** – was eingerichtet ist und was fehlt (mit Auswirkung, z. B. „ohne
+     CoinGecko-Schlüssel haben FLR/SGB keinen Kurs“), Knopf „App starten“ bzw. „Erstes
+     Projekt anlegen“.
+
+  Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App. Fehlt
+  später etwas, das eine Funktion braucht, verweist die App direkt auf den passenden Schritt.
+
 - **F11.0p PIN-Sperre**: Der PIN wird bei **jedem Öffnen** der App verlangt – Desktop: bei jedem
   Start und nach dem Entsperren aus dem Ruhezustand/automatischer Sperre nach einstellbarer
   Inaktivität; Web (falls gesetzt): beim Öffnen eines neuen Tabs/Fensters nach dem Schliessen
