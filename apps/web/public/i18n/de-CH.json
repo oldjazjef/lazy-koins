@@ -719,6 +719,7 @@
     "loadFailed": "Die Prüfungen konnten nicht geladen werden.",
     "saveFailed": "Offener Punkt konnte nicht gespeichert werden",
     "showRecords": "Buchungen anzeigen",
+    "addNote": "Notiz hinzufügen",
     "fields": {
       "done": "Erledigt",
       "item": "Punkt",
