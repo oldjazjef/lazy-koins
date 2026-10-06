@@ -116,6 +116,93 @@ function correction(
   return { id, createdAt, reason: 'Test', data };
 }
 
+describe('platform-wide statement (one statement for every sub-account)', () => {
+  // Kraken-like: a ledger with spot + two earn sub-accounts, and one statement under "kraken".
+  const ledger = () => [
+    booking({ accountId: 'spot / main', asset: 'BTC', quantity: '0.5' }),
+    booking({ accountId: 'spot / main', asset: 'DOT', quantity: '4' }),
+    booking({ accountId: 'earn / bonded', asset: 'DOT', quantity: '6' }),
+    booking({ accountId: 'earn / flexible', asset: 'ETH', quantity: '1' }),
+  ];
+  const statement = (dot: string) => [
+    holding({ accountId: 'kraken', asset: 'BTC', quantity: '0.5' }),
+    holding({ accountId: 'kraken', asset: 'DOT', quantity: dot }),
+    holding({ accountId: 'kraken', asset: 'ETH', quantity: '1' }),
+  ];
+  const rates = [
+    fx('2025-12-31', '0.8'),
+    usd('BTC', '2025-12-31', '100000'),
+    usd('DOT', '2025-12-31', '5'),
+    usd('ETH', '2025-12-31', '3000'),
+  ];
+
+  it('replaces the ledger of all the platform’s accounts — no double count', () => {
+    const result = calculate(
+      input({ bookings: ledger(), holdings: statement('10'), rates }),
+    );
+    expect(
+      result.positions.map((p) => [
+        p.accountId,
+        p.asset,
+        p.quantity,
+        p.quantitySource,
+      ]),
+    ).toEqual([
+      ['kraken', 'BTC', '0.5', 'statement'],
+      ['kraken', 'DOT', '10', 'statement'],
+      ['kraken', 'ETH', '1', 'statement'],
+    ]);
+    // 0.5 × 100000 + 10 × 5 + 1 × 3000 = 53050 USD × 0.8
+    expect(result.totals.wealthChf).toBe('42440');
+    const check = result.checks.find((c) => c.kind === 'ledgerVsStatement');
+    expect(check?.light).toBe('green');
+    expect(
+      result.openItems.filter((i) => i.check === 'ledgerVsStatement'),
+    ).toEqual([]);
+  });
+
+  it('compares the summed ledger per asset with the statement: red with the difference', () => {
+    const result = calculate(
+      input({ bookings: ledger(), holdings: statement('9.5'), rates }),
+    );
+    expect(result.totals.wealthChf).toBe('42438');
+    const check = result.checks.find((c) => c.kind === 'ledgerVsStatement');
+    expect(check?.light).toBe('red');
+    expect(
+      result.openItems
+        .filter((i) => i.check === 'ledgerVsStatement')
+        .map((i) => [i.key, i.accountId, i.params]),
+    ).toEqual([
+      [
+        'ledgerVsStatement:kraken|*|DOT',
+        'kraken',
+        { expected: '9.5', actual: '10', difference: '0.5' },
+      ],
+    ]);
+  });
+
+  it('keeps per-account statements per account (not platform-wide)', () => {
+    const result = calculate(
+      input({
+        bookings: ledger(),
+        holdings: [
+          holding({ accountId: 'spot / main', asset: 'BTC', quantity: '0.5' }),
+          holding({ accountId: 'spot / main', asset: 'DOT', quantity: '4' }),
+        ],
+        rates,
+      }),
+    );
+    expect(
+      result.positions.map((p) => [p.accountId, p.asset, p.quantitySource]),
+    ).toEqual([
+      ['earn / bonded', 'DOT', 'ledger'],
+      ['earn / flexible', 'ETH', 'ledger'],
+      ['spot / main', 'BTC', 'statement'],
+      ['spot / main', 'DOT', 'statement'],
+    ]);
+  });
+});
+
 describe('positions at 31.12. (F7.1)', () => {
   it('sums a ledger: Σ quantity − Σ fee up to year end, later bookings ignored', () => {
     const result = calculate(

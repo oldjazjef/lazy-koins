@@ -180,12 +180,18 @@ export function describeItem(item: OpenItem): string {
 
 /** One line of an F5.8 missing-file hint (internal report). */
 export function describeHint(hint: MissingFileHint): string {
-  const where = `${hint.platform} / ${hint.accountId}`;
+  const where = `${hint.platform} / ${hint.accountId || hint.accounts.join(', ')}`;
   switch (hint.kind) {
+    case 'noYearData':
+      return hint.zeroBalance
+        ? `${where}: Buchungen enden am ${swissDate(hint.date ?? '')}, danach Saldo 0 – nichts fehlt`
+        : `${where}: keine Buchungen im Steuerjahr – Historie endet am ${swissDate(hint.date ?? '')}`;
     case 'startsLate':
       return `${where}: Buchungen erst ab ${swissDate(hint.date ?? '')} – Export ab 01.01. fehlt`;
     case 'endsEarly':
-      return `${where}: Buchungen nur bis ${swissDate(hint.date ?? '')} – Export bis 31.12. fehlt`;
+      return hint.zeroBalance
+        ? `${where}: Buchungen nur bis ${swissDate(hint.date ?? '')}, danach Saldo 0 – nichts fehlt`
+        : `${where}: Buchungen nur bis ${swissDate(hint.date ?? '')} – Export bis 31.12. fehlt`;
     case 'noYearEndBalance':
       return `${where}: kein Saldo/Kontoauszug per 31.12.`;
   }

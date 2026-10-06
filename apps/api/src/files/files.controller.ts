@@ -45,6 +45,7 @@ import {
   PreviewQueryDto,
   ProjectFileResponseDto,
   ProjectFilesResponseDto,
+  RowErrorsResponseDto,
   UploadFileQueryDto,
 } from './dto/project-file.dto';
 import { FilesService } from './files.service';
@@ -160,6 +161,31 @@ export class FilesController {
         query.rows ?? 50,
       ),
     );
+  }
+
+  @Get(':fileId/row-errors')
+  @ApiOperation({
+    summary:
+      'Rows the file’s own reader could not read (F5.10) — row, code, column; no cell values',
+  })
+  @ApiOkResponse({ type: RowErrorsResponseDto })
+  @ApiNotFoundResponse()
+  async rowErrors(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Query() query: PreviewQueryDto,
+  ): Promise<RowErrorsResponseDto> {
+    const result = await this.files.rowErrors(
+      user.userId,
+      projectId,
+      fileId,
+      query.rows ?? 50,
+    );
+    return {
+      total: result.total,
+      errors: result.errors.map((error) => ({ ...error })),
+    };
   }
 
   @Post(':fileId/mapping-preview')

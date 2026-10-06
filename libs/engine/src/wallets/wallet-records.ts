@@ -180,6 +180,15 @@ export function spamAssetName(asset: string): string {
   return `SPAM:${asset}`;
 }
 
+/**
+ * `Plattform` of a wallet's records: the label and the network (`Ledger · ethereum`). One
+ * platform per wallet and network, so a manual balance (a statement, F6.5) of one network never
+ * counts as a platform-wide statement that replaces another network's ledger (F7.1).
+ */
+export function walletPlatform(label: string, network: string): string {
+  return `${label.trim()} · ${network}`;
+}
+
 export interface WalletBookingContext {
   /** `Plattform`: the wallet's label. */
   readonly platform: string;

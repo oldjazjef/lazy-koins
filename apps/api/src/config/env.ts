@@ -170,6 +170,16 @@ export class Env {
   LK_CHAINS_FAKE = '';
 
   /**
+   * Development only: waits this long before each series of "Kurse aktualisieren", so the
+   * progress in the app's activity indicator can be watched. Refused outside development/test.
+   */
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  RATES_DEV_DELAY_MS = 0;
+
+  /**
    * F7.4a: download the ESTV Kursliste (ICTax) automatically — on demand and once a day when a
    * newer version exists. `false` switches it off (the manual Kursliste import stays). Also off
    * with `RATES_ONLINE=false`.
@@ -240,6 +250,17 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   if (env.LK_CHAINS_FAKE === '1' && env.NODE_ENV === NodeEnv.Production) {
     messages.push(
       '  LK_CHAINS_FAKE: fake chains answer with synthetic data — never in production',
+    );
+  }
+
+  // A deliberate slowdown has no place outside development.
+  if (
+    env.RATES_DEV_DELAY_MS > 0 &&
+    env.NODE_ENV !== NodeEnv.Development &&
+    env.NODE_ENV !== NodeEnv.Test
+  ) {
+    messages.push(
+      '  RATES_DEV_DELAY_MS: only with NODE_ENV=development or test',
     );
   }
 

@@ -250,6 +250,73 @@
     @apply bg-secondary text-secondary-foreground;
   }
 
+  /*
+   * The activity indicator (bottom right): above dialogs (CDK overlay 1000) and the toaster
+   * (1100), never catching clicks outside its card. Its list scrolls inside a capped height.
+   */
+  .lk-activity {
+    @apply pointer-events-none fixed right-6 bottom-6 z-1200 flex w-80 max-w-[calc(100vw-3rem)] flex-col items-end;
+  }
+
+  /* Sonner sets its offset inline; while the indicator shows, the toasts stack above it. */
+  .lk-toasts-raised [data-sonner-toaster][data-y-position='bottom'] {
+    bottom: 6.5rem !important;
+  }
+
+  .lk-activity-card {
+    @apply bg-popover text-popover-foreground pointer-events-auto flex w-full flex-col gap-2 rounded-lg border px-4 py-3 shadow-lg;
+  }
+
+  .lk-activity-toggle {
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-md;
+  }
+
+  .lk-activity-list {
+    @apply flex max-h-48 flex-col gap-2 overflow-y-auto border-t pt-2 text-sm;
+  }
+
+  .lk-activity-progress {
+    @apply bg-muted h-1.5 w-full appearance-none overflow-hidden rounded-full border-0;
+    color: var(--primary);
+  }
+
+  .lk-activity-progress::-webkit-progress-bar {
+    background-color: var(--muted);
+  }
+
+  .lk-activity-progress::-webkit-progress-value {
+    background-color: var(--primary);
+  }
+
+  .lk-activity-progress::-moz-progress-bar {
+    background-color: var(--primary);
+  }
+
+  .lk-spinner {
+    @apply animate-spin;
+  }
+
+  /* Severity of a hint (F5.8): info / warning / error, readable in both themes. */
+  .lk-severity {
+    @apply inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap;
+  }
+
+  .lk-severity-info {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .lk-severity-warning {
+    background-color: color-mix(in oklab, var(--light-yellow) 18%, transparent);
+    border-color: color-mix(in oklab, var(--light-yellow) 55%, transparent);
+    color: var(--foreground);
+  }
+
+  .lk-severity-error {
+    background-color: color-mix(in oklab, var(--destructive) 12%, transparent);
+    border-color: color-mix(in oklab, var(--destructive) 45%, transparent);
+    color: var(--destructive);
+  }
+
   /* A bordered surface for tables and lists. */
   .lk-panel {
     @apply bg-card rounded-lg border;
@@ -389,5 +456,10 @@
 @media (prefers-reduced-motion: reduce) {
   .lk-nav-link {
     transition: none;
+  }
+
+  /* The spinner stands still; the label and progress still say what runs. */
+  .lk-spinner {
+    animation: none;
   }
 }

@@ -2,6 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import Decimal from 'decimal.js';
 import { firstValueFrom } from 'rxjs';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { apiUrl } from '../../../../core/api/api-url';
 import type {
   DashboardHolding,
@@ -36,6 +37,7 @@ function compareDecimal(a: string | null, b: string | null): number {
 export class DashboardPageService {
   private readonly http = inject(HttpClient);
   private readonly notifications = inject(NotificationService);
+  private readonly activity = inject(ActivityService);
   /** Injectable for tests. */
   today = (): Date => new Date();
 
@@ -193,6 +195,16 @@ export class DashboardPageService {
    */
   async refreshRates(): Promise<void> {
     if (this.refreshing()) return;
+    // Shown in the app-wide activity indicator ("Kurse werden aktualisiert (3/7) …").
+    await this.activity.track('activity.rates', () => this.refreshAll(), {
+      progress: computed(() => {
+        const progress = this.refreshing();
+        return progress ? { done: progress.done, total: progress.total } : null;
+      }),
+    });
+  }
+
+  private async refreshAll(): Promise<void> {
     const { from, to } = this.period();
     const assets = [...this.missingAssets()];
     const results: DashboardRefreshSummary['assets'][number][] = [];

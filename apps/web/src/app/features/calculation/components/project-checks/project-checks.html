@@ -1,4 +1,21 @@
-@if (view(); as view) { @if (view.snapshot) {
+@if (view(); as view) { @if (files.openHints() > 0) {
+<!-- F5.8 ↔ F8.2: file issues are hints, not open items — linked, never listed twice -->
+<p class="lk-panel mb-4 flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
+  <span class="flex-1"
+    >{{ 'checks.hintsNote' | translate: { count: files.openHints() } }}</span
+  >
+  <button
+    hlmBtn
+    variant="link"
+    size="sm"
+    type="button"
+    class="h-auto p-0"
+    (click)="showHints.emit(null)"
+  >
+    {{ 'hints.show' | translate }}
+  </button>
+</p>
+} @if (view.snapshot) {
 <section class="mb-8 flex flex-col gap-2">
   <h3 class="font-medium">{{ 'checks.title' | translate }}</h3>
   <ul class="lk-panel divide-y">
@@ -89,6 +106,19 @@
               (click)="records(item)"
             >
               {{ 'checks.showRecords' | translate }}
+            </button>
+            } @if (item.platform && hintsByPlatform().get(item.platform); as
+            count) {
+            <button
+              hlmBtn
+              variant="link"
+              size="sm"
+              type="button"
+              class="ml-3 h-auto p-0"
+              (click)="showHints.emit(item.platform)"
+            >
+              {{ 'checks.platformHints' | translate: { count, platform:
+              item.platform } }}
             </button>
             }
           </td>

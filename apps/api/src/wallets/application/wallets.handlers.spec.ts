@@ -284,7 +284,7 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     if (!result) throw new Error('no result');
     const eth = result.positions.find(
       (p) =>
-        p.platform === 'Ledger' &&
+        p.platform === 'Ledger · ethereum' &&
         p.accountId === 'ethereum' &&
         p.asset === 'ETH',
     );
@@ -402,7 +402,9 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     const view = await t.calculate.execute(
       new CalculateProjectCommand('anna', t.project.id),
     );
-    const ada = view.result?.positions.find((p) => p.platform === 'Yoroi');
+    const ada = view.result?.positions.find(
+      (p) => p.platform === 'Yoroi · cardano',
+    );
     expect(ada).toMatchObject({
       asset: 'ADA',
       quantity: '1250.5',
@@ -411,7 +413,7 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     // Staking rewards of the year are income (F6.3 Cardano: income only).
     expect(
       view.result?.income
-        .filter((l) => l.platform === 'Yoroi')
+        .filter((l) => l.platform === 'Yoroi · cardano')
         .map((l) => l.date),
     ).toEqual(['2025-02-27', '2025-06-06']);
     expect(

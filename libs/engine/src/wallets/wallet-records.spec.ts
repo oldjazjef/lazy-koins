@@ -10,6 +10,7 @@ import {
   walletBookingRows,
   walletBookingsCsv,
   walletHoldingsCsv,
+  walletPlatform,
 } from './wallet-records';
 
 const ME = '0x1111111111111111111111111111111111111111';
@@ -275,5 +276,60 @@ describe('derived standard records', () => {
       asOf: '2025-12-31',
       evidence: 'yoroi-31-12.pdf',
     });
+  });
+});
+
+describe('one platform per wallet and network (F6.5 with F7.1)', () => {
+  it("a manual balance of one network never replaces another network's ledger", () => {
+    const read = (csv: string, id: string) =>
+      parseStandardFile(
+        csvSourceFile({
+          id,
+          name: `${id}.csv`,
+          bytes: new TextEncoder().encode(csv),
+        }),
+      );
+    const bookings = read(
+      walletBookingsCsv(
+        walletBookingRows([movement({ quantity: '2' })], {
+          platform: walletPlatform('Ledger', 'ethereum'),
+          accountId: 'ethereum',
+          nativeAsset: 'ETH',
+        }),
+      ),
+      'b',
+    );
+    const holdings = read(
+      walletHoldingsCsv([
+        {
+          platform: walletPlatform('Ledger', 'cardano'),
+          accountId: 'cardano',
+          asset: 'ADA',
+          quantity: '100',
+          asOf: '2025-12-31',
+          evidence: 'beleg.pdf',
+        },
+      ]),
+      'h',
+    );
+    const result = calculate({
+      taxYear: 2025,
+      rules: chRules,
+      bookings: bookings.bookings,
+      holdings: holdings.holdings,
+      corrections: [],
+      rates: [],
+    });
+    expect(
+      result.positions.map((p) => [
+        p.platform,
+        p.asset,
+        p.quantity,
+        p.quantitySource,
+      ]),
+    ).toEqual([
+      ['Ledger · cardano', 'ADA', '100', 'statement'],
+      ['Ledger · ethereum', 'ETH', '2', 'ledger'],
+    ]);
   });
 });

@@ -12,7 +12,14 @@
     [attr.aria-selected]="service.tab() === tab"
     (click)="select(tab)"
   >
-    {{ 'workspace.tabs.' + tab | translate }}
+    {{ 'workspace.tabs.' + tab | translate }} @if (tab === 'hints' &&
+    files.openHints() > 0) {
+    <span
+      class="bg-primary text-primary-foreground ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums"
+      [attr.aria-label]="'hints.badge' | translate: { count: files.openHints() }"
+      >{{ files.openHints() }}</span
+    >
+    }
   </button>
   }
 </nav>
@@ -23,6 +30,15 @@
     class="flex flex-col gap-6"
     [projectId]="projectId()"
     [closed]="closed()"
+    (showHints)="showHints(null)"
+  />
+  } @case ('hints') {
+  <lk-project-hints
+    [closed]="closed()"
+    [openItems]="openItems()"
+    (manualHolding)="manualHolding($event)"
+    (showChecks)="select('checks')"
+    (showFiles)="select('files')"
   />
   } @case ('wallets') {
   <lk-project-wallets [projectId]="projectId()" [closed]="closed()" />
@@ -31,13 +47,16 @@
   } @case ('result') {
   <lk-project-result [closed]="closed()" />
   } @case ('checks') {
-  <lk-project-checks [closed]="closed()" />
+  <lk-project-checks [closed]="closed()" (showHints)="showHints($event)" />
   } @case ('corrections') {
   <lk-project-corrections [closed]="closed()" [taxYear]="taxYear()" />
   } @case ('exports') {
   <lk-project-exports />
   } }
 </div>
+
+<!-- The AI dialogs (F5.13), started from the files area or from a hint -->
+<lk-ai-assist />
 
 <!-- F7.5: the records behind a figure, with file and row -->
 <lk-records-dialog

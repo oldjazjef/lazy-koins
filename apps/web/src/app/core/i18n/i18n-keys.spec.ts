@@ -41,7 +41,13 @@ import {
   HOLDING_STATUSES,
   KPI_KINDS,
 } from '../api/dashboard.types';
-import { FINGERPRINT_VERDICTS } from '../api/api.types';
+import {
+  FINGERPRINT_VERDICTS,
+  HINT_KINDS,
+  HINT_SEVERITIES,
+  HINT_STATUSES,
+  MISSING_FILE_KINDS,
+} from '../api/api.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -65,10 +71,19 @@ const DYNAMIC_KEYS = [
   ...['queued', 'uploading', 'done', 'failed'].map(
     (state) => `files.upload.state.${state}`,
   ),
-  ...['startsLate', 'endsEarly', 'noYearEndBalance'].flatMap((kind) => [
-    `files.missing.kind.${kind}`,
-    `files.missing.howTo.${kind}`,
+  ...MISSING_FILE_KINDS.map((kind) => `files.missing.howTo.${kind}`),
+  ...['noYearDataZero', 'endsEarlyZero'].map(
+    (kind) => `files.missing.howTo.${kind}`,
+  ),
+  ...HINT_KINDS.flatMap((kind) => [
+    `hints.kind.${kind}`,
+    `hints.short.${kind}`,
   ]),
+  ...['noYearDataZero', 'endsEarlyZero'].map((kind) => `hints.short.${kind}`),
+  ...['unrecognisedFile', 'rowErrors'].map((kind) => `hints.howTo.${kind}`),
+  ...HINT_SEVERITIES.map((severity) => `hints.severity.${severity}`),
+  ...HINT_STATUSES.map((status) => `hints.status.${status}`),
+  ...['mapping', 'statement'].map((mode) => `activity.ai.${mode}Ready`),
   ...[
     'required',
     'invalidNumber',

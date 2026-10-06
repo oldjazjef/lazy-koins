@@ -1,4 +1,8 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import {
+  type ActivityOptions,
+  ActivityService,
+} from '../activity/activity.service';
 import { NotificationService } from '../notifications/notification.service';
 import { Action, ActionEntry, defineAction } from './action';
 import { extractErrorDetail } from './extract-error-detail';
@@ -8,6 +12,15 @@ interface RunOptions {
   key?: string;
   /** Suppresses the automatic success/error notification for this call. */
   silent?: boolean;
+  /**
+   * Long action (may take more than ~1 s): shown in the app-wide activity indicator while it
+   * runs — `label` is an i18n key. The runner's own toast (from `action.messages`) ends it.
+   */
+  activity?: {
+    readonly label: string;
+    readonly params?: ActivityOptions['params'];
+    readonly progress?: ActivityOptions['progress'];
+  };
 }
 
 /**
@@ -19,6 +32,7 @@ interface RunOptions {
 @Injectable({ providedIn: 'root' })
 export class ActionRunner {
   private readonly notifications = inject(NotificationService);
+  private readonly activities = inject(ActivityService);
   private readonly store = signal<Record<string, ActionEntry<unknown>>>({});
 
   readonly busy = computed(() =>
@@ -39,7 +53,14 @@ export class ActionRunner {
     this.patch(key, { state: 'pending', retry });
 
     try {
-      const result = await action.run(payload);
+      const activity = opts.activity;
+      const result = activity
+        ? await this.activities.track(
+            activity.label,
+            () => action.run(payload),
+            { params: activity.params, progress: activity.progress },
+          )
+        : await action.run(payload);
       const undoFn = action.undo;
       const undo = undoFn
         ? () => this.runUndo(undoFn, payload, result, key, action.messages)

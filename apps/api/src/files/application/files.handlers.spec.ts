@@ -25,7 +25,18 @@ import {
 } from '../../mappings/application/queries/mapping.queries';
 import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memory-import-mapping.repository';
 import { MAX_FILE_BYTES } from '../domain/project-file';
+import { InMemoryHintStateRepository } from '../testing/in-memory-hint-state.repository';
 import { InMemoryProjectFileRepository } from '../testing/in-memory-project-file.repository';
+import {
+  ListProjectHintsHandler,
+  ListProjectHintsQuery,
+  UpdateHintStateCommand,
+  UpdateHintStateHandler,
+} from './queries/project-hints.query';
+import {
+  FileRowErrorsHandler,
+  FileRowErrorsQuery,
+} from './queries/row-errors.query';
 import {
   ChangeProjectFileCommand,
   ChangeProjectFileHandler,
@@ -83,6 +94,7 @@ async function setup() {
   const files = new InMemoryProjectFileRepository();
   const mappings = new InMemoryImportMappingRepository(files);
   const analysis = new FileAnalysisService(new SourceFileReader(), mappings);
+  const hintStates = new InMemoryHintStateRepository();
   const views = new FileViews(
     projects as ProjectRepositoryPort,
     mappings,
@@ -132,6 +144,9 @@ async function setup() {
     updateMapping: new UpdateMappingHandler(mappings, files),
     deleteMapping: new DeleteMappingHandler(mappings, files, projects),
     projectMappings: new ListProjectMappingsHandler(projects, files, mappings),
+    hints: new ListProjectHintsHandler(projects, files, hintStates),
+    updateHint: new UpdateHintStateHandler(projects, hintStates),
+    rowErrors: new FileRowErrorsHandler(projects, files, mappings, analysis),
   };
 }
 
@@ -355,17 +370,113 @@ describe('overview, preview, removal (F5.5–F5.8)', () => {
     ).toEqual([
       'kraken/earn / bonded:startsLate',
       'kraken/earn / bonded:endsEarly',
-      'kraken/earn / bonded:noYearEndBalance',
       'kraken/earn / flexible:startsLate',
       'kraken/earn / flexible:endsEarly',
-      'kraken/earn / flexible:noYearEndBalance',
       'kraken/spot / main:endsEarly',
-      'kraken/spot / main:noYearEndBalance',
+      // One platform-level hint instead of one per sub-account.
+      'kraken/:noYearEndBalance',
       'ledger-nano/main:noYearEndBalance',
     ]);
     await expect(
       t.list.execute(new ListProjectFilesQuery('bruno', t.p1.id)),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('lists hints with file hints, keeps a dismissal across new uploads and reopens it', async () => {
+    const t = await setup();
+    const unread = await t.upload(t.p1.id, 'ledgers.csv', fixture(KRAKEN));
+    const standard = await t.upload(t.p1.id, 'b.csv', fixture(STANDARD));
+    const first = await t.hints.execute(
+      new ListProjectHintsQuery('anna', t.p1.id),
+    );
+    expect(first.hints.map((h) => [h.key, h.severity, h.status])).toEqual([
+      ['noYearEndBalance:ledger-nano', 'warning', 'open'],
+      ['rowErrors:' + standard.id, 'warning', 'open'],
+      ['unrecognisedFile:' + unread.id, 'error', 'open'],
+    ]);
+    expect(first.open).toBe(3);
+
+    await t.updateHint.execute(
+      new UpdateHintStateCommand(
+        'anna',
+        t.p1.id,
+        'noYearEndBalance:ledger-nano',
+        'done',
+        '  Wallet ohne Auszug  ',
+      ),
+    );
+    // A mapping reads the unknown file now: its hint goes, the dismissal stays.
+    await t.createMapping.execute(
+      new CreateMappingCommand('anna', spec('kraken-ledger'), 'copied'),
+    );
+    await t.change.execute(
+      new ChangeProjectFileCommand('anna', t.p1.id, unread.id, {
+        mode: 'automatic',
+      }),
+    );
+    const second = await t.hints.execute(
+      new ListProjectHintsQuery('anna', t.p1.id),
+    );
+    const nano = second.hints.find(
+      (h) => h.key === 'noYearEndBalance:ledger-nano',
+    );
+    expect(nano).toMatchObject({
+      status: 'done',
+      note: 'Wallet ohne Auszug',
+    });
+    expect(second.hints.some((h) => h.kind === 'unrecognisedFile')).toBe(false);
+    // Kraken: one platform-level year-end hint, not one per sub-account.
+    expect(
+      second.hints.filter(
+        (h) => h.platform === 'kraken' && h.kind === 'noYearEndBalance',
+      ),
+    ).toHaveLength(1);
+
+    await t.updateHint.execute(
+      new UpdateHintStateCommand(
+        'anna',
+        t.p1.id,
+        'noYearEndBalance:ledger-nano',
+        'open',
+        '',
+      ),
+    );
+    const third = await t.hints.execute(
+      new ListProjectHintsQuery('anna', t.p1.id),
+    );
+    expect(
+      third.hints.find((h) => h.key === 'noYearEndBalance:ledger-nano')?.status,
+    ).toBe('open');
+    await expect(
+      t.hints.execute(new ListProjectHintsQuery('bruno', t.p1.id)),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('lists the row errors of a file with its own reader, none for an unread one', async () => {
+    const t = await setup();
+    const standard = await t.upload(t.p1.id, 'b.csv', fixture(STANDARD));
+    const unread = await t.upload(t.p1.id, 'ledgers.csv', fixture(KRAKEN));
+    const errors = await t.rowErrors.execute(
+      new FileRowErrorsQuery('anna', t.p1.id, standard.id, 1),
+    );
+    expect(errors.total).toBe(2);
+    expect(errors.errors).toHaveLength(1);
+    expect(errors.errors[0]).toMatchObject({ row: expect.any(Number) });
+    expect(
+      await t.rowErrors.execute(
+        new FileRowErrorsQuery('anna', t.p1.id, unread.id, 50),
+      ),
+    ).toEqual({ total: 0, errors: [] });
+  });
+
+  it('refuses to change a hint of a closed project', async () => {
+    const t = await setup();
+    await t.projects.update(t.p1.id, { status: 'closed' });
+    await expect(
+      t.updateHint.execute(
+        new UpdateHintStateCommand('anna', t.p1.id, 'k', 'ignored', ''),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('previews a table (header + rows) and says "pdf" for a PDF', async () => {

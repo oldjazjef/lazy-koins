@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   BOOKING_KINDS,
   type Booking,
+  HINT_SEVERITIES,
   type Holding,
   MISSING_FILE_KINDS,
   type MissingFileHint,
@@ -180,15 +181,19 @@ export class FileGroupDto {
 }
 
 export class MissingFileHintDto {
+  @ApiProperty({ description: 'Stable key (see GET …/hints)' }) key!: string;
   @ApiProperty() platform!: string;
-  @ApiProperty() accountId!: string;
+  @ApiProperty({ description: "'' = the whole platform" }) accountId!: string;
+  @ApiProperty({ type: [String] }) accounts!: string[];
   @ApiProperty({ enum: MISSING_FILE_KINDS }) kind!: string;
+  @ApiProperty({ enum: HINT_SEVERITIES }) severity!: string;
   @ApiPropertyOptional() date?: string;
+  @ApiPropertyOptional() zeroBalance?: boolean;
   @ApiProperty({ description: 'i18n key with the instructions' })
   hintKey!: string;
 
   static from(hint: MissingFileHint): MissingFileHintDto {
-    return { ...hint };
+    return { ...hint, accounts: [...hint.accounts] };
   }
 }
 
@@ -326,6 +331,11 @@ export class RowErrorDto {
   code!: string;
   @ApiPropertyOptional() column?: string;
   @ApiPropertyOptional() sheet?: string;
+}
+
+export class RowErrorsResponseDto {
+  @ApiProperty() total!: number;
+  @ApiProperty({ type: [RowErrorDto] }) errors!: RowErrorDto[];
 }
 
 export class ImportNoteDto {

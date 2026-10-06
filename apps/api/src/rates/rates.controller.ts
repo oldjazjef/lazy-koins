@@ -37,6 +37,7 @@ import {
   RatesResponseDto,
   RefreshRatesDto,
   RefreshResponseDto,
+  RefreshStatusResponseDto,
 } from './dto/rates.dto';
 import { RatesService } from './rates.service';
 
@@ -88,6 +89,19 @@ export class RatesController {
       projectId,
       dto.force ?? false,
     )) as unknown as RefreshResponseDto;
+  }
+
+  @Get('refresh/status')
+  @ApiOperation({
+    summary:
+      'Progress of a running "Kurse aktualisieren" (the app polls it only while its request runs)',
+  })
+  @ApiOkResponse({ type: RefreshStatusResponseDto })
+  async refreshStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+  ): Promise<RefreshStatusResponseDto> {
+    return { ...(await this.rates.refreshStatus(user.userId, projectId)) };
   }
 
   @Put('manual')

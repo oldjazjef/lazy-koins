@@ -6,6 +6,7 @@ import {
 } from '../calculation/ports/calculation.repository.port';
 import { ProjectExportRepositoryPort } from '../exports/ports/project-export.repository.port';
 import { AiSettingsRepositoryPort } from '../ai/ports/ai-settings.repository.port';
+import { HintStateRepositoryPort } from '../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../mappings/ports/import-mapping.repository.port';
 import {
@@ -40,6 +41,7 @@ import {
   OpenItemStatePrismaRepository,
 } from './prisma/repositories/calculation.prisma.repository';
 import { AiSettingsPrismaRepository } from './prisma/repositories/ai-settings.prisma.repository';
+import { HintStatePrismaRepository } from './prisma/repositories/hint-state.prisma.repository';
 import { ImportMappingPrismaRepository } from './prisma/repositories/import-mapping.prisma.repository';
 import {
   MailLogPrismaRepository,
@@ -109,6 +111,7 @@ import {
       provide: ChainSettingsRepositoryPort,
       useClass: ChainSettingsPrismaRepository,
     },
+    { provide: HintStateRepositoryPort, useClass: HintStatePrismaRepository },
     {
       provide: MailSettingsRepositoryPort,
       useClass: MailSettingsPrismaRepository,
@@ -144,6 +147,7 @@ import {
     AiSettingsRepositoryPort,
     WalletRepositoryPort,
     ChainSettingsRepositoryPort,
+    HintStateRepositoryPort,
     MailSettingsRepositoryPort,
     MailTemplateRepositoryPort,
     MailLogRepositoryPort,

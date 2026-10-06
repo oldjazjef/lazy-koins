@@ -79,13 +79,7 @@
       />
       {{ 'dashboard.rates.refresh' | translate }}
     </button>
-    @if (service.refreshing(); as progress) {
-    <p class="text-muted-foreground text-xs" role="status">
-      {{ 'dashboard.rates.progress' | translate: { done: progress.done, total:
-      progress.total, asset: progress.asset ?? ('dashboard.rates.fx' |
-      translate) } }}
-    </p>
-    } @else if (!service.view.value().online) {
+    @if (!service.view.value().online) {
     <p class="text-muted-foreground text-xs">
       {{ 'dashboard.rates.offlineHint' | translate }}
     </p>

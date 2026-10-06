@@ -4,6 +4,7 @@ import type { RateEntry } from '@lazykoins/engine';
 import {
   DeleteManualRateCommand,
   GetRatesQuery,
+  GetRefreshStatusQuery,
   ImportKurslisteCommand,
   type ManualRateInput,
   type RatesView,
@@ -11,6 +12,7 @@ import {
   type RefreshSummary,
   SetManualRateCommand,
 } from './application/rates.handlers';
+import type { RefreshStatus } from './application/refresh-progress';
 import { ApplyEstvCommand } from './application/estv.handlers';
 import type { EstvApplySummary } from './application/estv-project-rates.service';
 import type { ProjectRate } from './domain/project-rate';
@@ -29,6 +31,10 @@ export class RatesService {
     asset?: string,
   ): Promise<RatesView | ProjectRate[]> {
     return this.queries.execute(new GetRatesQuery(userId, projectId, asset));
+  }
+
+  refreshStatus(userId: string, projectId: string): Promise<RefreshStatus> {
+    return this.queries.execute(new GetRefreshStatusQuery(userId, projectId));
   }
 
   refresh(

@@ -262,17 +262,13 @@
       "holdingsCsv": "Bestände (CSV)"
     },
     "missing": {
-      "title": "Möglicherweise fehlende Dateien",
-      "summary": "{{count}} Hinweise zu möglicherweise fehlenden Dateien – anzeigen",
-      "kind": {
-        "startsLate": "Die Buchungen beginnen erst am {{date}} – der Anfang von {{year}} fehlt.",
-        "endsEarly": "Die Buchungen enden am {{date}} – bis 31.12.{{year}} fehlt etwas.",
-        "noYearEndBalance": "Kein Bestand per 31.12.{{year}} (Kontoauszug) vorhanden."
-      },
       "howTo": {
+        "noYearData": "Für dieses Konto gibt es im Steuerjahr keine einzige Buchung. Lade die Historie des ganzen Jahres hoch (Verlauf/History → Export). Wurde das Konto vorher aufgelöst, markiere den Hinweis als in Ordnung.",
+        "noYearDataZero": "Die Buchungen enden vor dem Steuerjahr, und danach war das Konto leer (Saldo 0) – es kann nichts fehlen. Nur zur Information.",
         "startsLate": "Lade bei der Plattform einen Export ab spätestens 01.01. herunter – meist unter Verlauf/History → Export – und lade ihn hier hoch. Begann das Konto erst später, ist alles in Ordnung.",
         "endsEarly": "Exportiere die Historie bis mindestens 31.12. (Verlauf/History → Export, Zeitraum anpassen). Gab es danach keine Bewegungen, ist alles in Ordnung.",
-        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements) und erfasse die Bestände im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft."
+        "endsEarlyZero": "Nach der letzten Buchung war der Saldo des Kontos 0 – danach kann nichts fehlen. Nur zur Information; markiere den Hinweis als in Ordnung, wenn das Konto nicht mehr genutzt wurde.",
+        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements), lies einen PDF-Auszug mit AI aus oder erfasse die Bestände manuell bzw. im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft. Ein Auszug für die ganze Plattform gilt für alle ihre Unterkonten."
       }
     },
     "group": {
@@ -865,6 +861,7 @@
     "label": "Bereiche des Projekts",
     "tabs": {
       "files": "Dateien",
+      "hints": "Hinweise",
       "wallets": "Wallets",
       "rates": "Kurse",
       "result": "Ergebnis",
@@ -1031,7 +1028,9 @@
       "new": "Neue Positionen",
       "removed": "Weggefallene Positionen",
       "hint": "Aus dem letzten berechneten Projekt des Vorjahres."
-    }
+    },
+    "hintsNote": "{{count}} offene Hinweise zu den Dateien (fehlende Zeiträume, Auszüge, nicht erkannte Dateien) – sie stehen nicht in dieser Liste.",
+    "platformHints": "{{count}} Hinweise zu {{platform}}"
   },
   "corrections": {
     "newTitle": "Neue Korrektur",
@@ -1463,6 +1462,130 @@
       "remove": "Entfernen",
       "added": "Saldo erfasst.",
       "removed": "Saldo entfernt."
+    }
+  },
+  "hints": {
+    "title": "Hinweise",
+    "subtitle": "Was in den Dateien des Projekts fehlen oder nicht stimmen könnte – mit möglichen Lösungen. Als in Ordnung markierte Hinweise bleiben auch nach einer Neuberechnung erledigt.",
+    "summary": "{{count}} offene Hinweise zu den Dateien",
+    "show": "Hinweise anzeigen",
+    "badge": "{{count}} offene Hinweise",
+    "counts": "{{open}} offen · {{dismissed}} erledigt oder ignoriert",
+    "none": "Keine Hinweise – die Dateien decken das Steuerjahr ab.",
+    "noneFiltered": "Keine Hinweise für diesen Filter.",
+    "loadFailed": "Die Hinweise konnten nicht geladen werden.",
+    "saveFailed": "Der Hinweis konnte nicht gespeichert werden",
+    "unreadFiles": "Nicht erkannte Dateien",
+    "groupCount": "{{count}} Hinweise, {{open}} offen",
+    "wholePlatform": "ganze Plattform",
+    "openItems": "{{count}} offene Punkte in den Prüfungen",
+    "more": "Details und Lösungen anzeigen",
+    "less": "Details ausblenden",
+    "accounts": "Betroffene Konten: {{accounts}}",
+    "noteLabel": "Notiz:",
+    "filter": {
+      "kind": "Typ",
+      "status": "Status",
+      "allKinds": "Alle Typen",
+      "allStatuses": "Alle",
+      "platform": "Plattform: {{platform}}"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "severity": "Dringlichkeit",
+      "kind": "Typ",
+      "date": "Datum"
+    },
+    "fields": {
+      "kind": "Typ",
+      "account": "Konto / Datei",
+      "description": "Beschreibung",
+      "date": "Datum",
+      "status": "Status",
+      "actions": "Aktion"
+    },
+    "kind": {
+      "noYearData": "Fehlende Datei",
+      "startsLate": "Lücke am Anfang",
+      "endsEarly": "Lücke am Ende",
+      "noYearEndBalance": "Kein Bestand per 31.12.",
+      "unrecognisedFile": "Nicht erkannte Datei",
+      "rowErrors": "Datei mit Zeilenfehlern"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warnung",
+      "error": "Fehler"
+    },
+    "status": {
+      "open": "offen",
+      "done": "erledigt",
+      "ignored": "ignoriert"
+    },
+    "short": {
+      "noYearData": "Keine Buchungen im Jahr {{year}} – die Historie endet am {{date}}.",
+      "noYearDataZero": "Historie endet am {{date}}, danach Saldo 0 – nichts fehlt.",
+      "startsLate": "Buchungen beginnen erst am {{date}}.",
+      "endsEarly": "Buchungen enden am {{date}}, bis 31.12.{{year}} fehlt etwas.",
+      "endsEarlyZero": "Buchungen enden am {{date}}; danach Saldo 0 – nichts kann fehlen.",
+      "noYearEndBalance": "Kein Kontoauszug per 31.12.{{year}} – der Saldo laut Buchungen wird nicht geprüft.",
+      "unrecognisedFile": "Kein Mapping – die Datei fliesst nicht in die Berechnung ein.",
+      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden."
+    },
+    "howTo": {
+      "unrecognisedFile": "Für den Aufbau dieser Datei gibt es noch kein Mapping. Lass es von der AI erstellen, ordne ein vorhandenes zu oder markiere die Datei als «nur Beleg».",
+      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch."
+    },
+    "actions": {
+      "upload": "Datei hochladen",
+      "aiStatement": "Kontoauszug mit AI auslesen",
+      "aiMapping": "Mapping mit AI erstellen",
+      "manualHolding": "Bestand manuell erfassen",
+      "template": "Vorlage herunterladen",
+      "holdingsTemplate": "Vorlage «Bestände» herunterladen",
+      "assign": "Mapping zuordnen",
+      "rowErrors": "Zeilenfehler ansehen",
+      "markOk": "Als in Ordnung markieren",
+      "reopen": "Wieder öffnen"
+    },
+    "dismiss": {
+      "title": "Hinweis als in Ordnung markieren",
+      "note": "Notiz (optional)",
+      "placeholder": "z. B. Konto nach 09.02. nicht mehr genutzt",
+      "ignore": "Ignorieren"
+    },
+    "upload": {
+      "title": "Datei für {{platform}} hochladen",
+      "detected": "Plattform und Konto werden aus der Datei erkannt (Standardformat oder Mapping)."
+    },
+    "rowErrors": {
+      "title": "Zeilenfehler in {{name}}",
+      "count": "{{shown}} von {{total}} Fehlern",
+      "column": "Spalte",
+      "problem": "Problem"
+    }
+  },
+  "activity": {
+    "running": "{{label}} …",
+    "withProgress": "{{label}} ({{done}}/{{total}}) …",
+    "withPercent": "{{label}} ({{percent}} %) …",
+    "several": "{{count}} Aufgaben laufen",
+    "expand": "Laufende Aufgaben anzeigen",
+    "collapse": "Laufende Aufgaben ausblenden",
+    "show": "Anzeigen",
+    "calculate": "Ergebnis wird berechnet",
+    "rates": "Kurse werden aktualisiert",
+    "estv": "ESTV-Kursliste wird importiert",
+    "estvUpdate": "ESTV-Kursliste {{year}} wird bezogen · {{phase}}",
+    "export": "Auszug wird erstellt ({{kind}})",
+    "upload": "Dateien werden hochgeladen",
+    "reapply": "Mapping wird auf die Dateien angewendet",
+    "ai": {
+      "mapping": "AI erstellt Mapping für {{name}}",
+      "statement": "AI liest den Kontoauszug {{name}} aus",
+      "statementSave": "Bestände aus {{name}} werden geprüft und gespeichert",
+      "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
+      "statementReady": "Kontoauszug {{name}} ist ausgelesen"
     }
   },
   "dashboard": {

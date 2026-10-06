@@ -10,6 +10,7 @@ import type {
   ProjectFile,
   ProjectFiles,
 } from '../../../../core/api/api.types';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom } from '../../../../shared/files/save-blob';
 import { skeleton } from '../mapping-editor';
@@ -124,7 +125,7 @@ const csv = (name: string, size = 10) =>
 describe('ProjectFilesService', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
     } finally {
       TestBed.resetTestingModule();
     }
@@ -153,8 +154,13 @@ describe('ProjectFilesService', () => {
       'application/octet-stream',
     );
     expect(first.request.body).toBeInstanceOf(File);
+    // The activity indicator shows the batch with its progress.
+    const activity = TestBed.inject(ActivityService);
+    expect(activity.tasks()[0]?.label).toBe('activity.upload');
+    expect(activity.tasks()[0]?.progress()).toEqual({ done: 0, total: 3 });
     first.flush(file({ id: 'new' }), { status: 201, statusText: 'Created' });
     await settle();
+    expect(activity.tasks()[0]?.progress()).toEqual({ done: 1, total: 3 });
     const second = http.expectOne((r) => r.method === 'POST');
     expect(second.request.params.get('name')).toBe('b.csv');
     second.flush(
@@ -308,12 +314,68 @@ describe('upload messages and download names', () => {
     );
     expect(fileNameFrom(null, 'fallback.csv')).toBe('fallback.csv');
   });
+
+  it('loads the hints, dismisses one with a note and reopens it (F5.8)', async () => {
+    const { service, http } = await setup();
+    const hint = {
+      key: 'endsEarly:kraken|spot',
+      kind: 'endsEarly' as const,
+      severity: 'warning' as const,
+      platform: 'kraken',
+      accountId: 'spot',
+      accounts: ['spot'],
+      date: '2025-02-09',
+      zeroBalance: false,
+      hintKey: 'files.missing.howTo.endsEarly',
+      fileId: null,
+      fileName: null,
+      count: null,
+      status: 'open' as const,
+      note: '',
+    };
+    http
+      .expectOne('/api/projects/p1/hints')
+      .flush({ taxYear: 2025, hints: [hint], open: 1 });
+    await settle();
+    expect(service.openHints()).toBe(1);
+
+    const done = service.setHintStatus(
+      hint,
+      'done',
+      'Konto nach 09.02. nicht mehr genutzt',
+    );
+    const patch = http.expectOne('/api/projects/p1/hints');
+    expect(patch.request.method).toBe('PATCH');
+    expect(patch.request.body).toEqual({
+      key: hint.key,
+      status: 'done',
+      note: 'Konto nach 09.02. nicht mehr genutzt',
+    });
+    patch.flush({ key: hint.key, status: 'done', note: '' });
+    await done;
+    await settle();
+    http.expectOne('/api/projects/p1/hints').flush({
+      taxYear: 2025,
+      hints: [{ ...hint, status: 'done' }],
+      open: 0,
+    });
+    await settle();
+    expect(service.openHints()).toBe(0);
+
+    const reopened = service.setHintStatus(hint, 'open');
+    const again = http.expectOne(
+      (r) => r.url === '/api/projects/p1/hints' && r.method === 'PATCH',
+    );
+    expect(again.request.body).toMatchObject({ status: 'open' });
+    again.flush({ key: hint.key, status: 'open', note: '' });
+    await reopened;
+  });
 });
 
 describe('MappingEditorState', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
     } finally {
       TestBed.resetTestingModule();
     }
@@ -358,3 +420,13 @@ describe('MappingEditorState', () => {
     expect(editor.open()).toBe(false);
   });
 });
+
+/** The hints (F5.8) reload with the files; their own behaviour is tested separately. */
+function verifyIgnoringHints(http: HttpTestingController): void {
+  for (const request of http.match('/api/projects/p1/hints')) {
+    if (!request.cancelled) {
+      request.flush({ taxYear: 2025, hints: [], open: 0 });
+    }
+  }
+  http.verify();
+}

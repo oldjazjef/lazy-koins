@@ -6,6 +6,7 @@ import {
   walletBookingRows,
   walletBookingsCsv,
   walletHoldingsCsv,
+  walletPlatform,
 } from '@lazykoins/engine';
 import {
   DuplicateFileException,
@@ -56,7 +57,7 @@ export class WalletDerivedFiles {
       )
       .flatMap((d) =>
         walletBookingRows(d.movements, {
-          platform: wallet.label,
+          platform: walletPlatform(wallet.label, d.network),
           accountId: d.network,
           nativeAsset: networkInfo(d.network).nativeAsset,
           notSpam: new Set(
@@ -84,7 +85,7 @@ export class WalletDerivedFiles {
         }
       }
       const manual: ManualBalance[] = balances.map((b) => ({
-        platform: wallet.label,
+        platform: walletPlatform(wallet.label, b.network),
         accountId: b.network,
         asset: b.asset,
         quantity: b.quantity,

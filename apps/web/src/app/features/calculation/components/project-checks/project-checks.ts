@@ -4,8 +4,10 @@ import {
   computed,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
+import { ProjectFilesService } from '../../../files/components/project-files/project-files.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -43,8 +45,24 @@ import { Truncate } from '../../../../shared/components/truncate';
 })
 export class ProjectChecks {
   protected readonly service = inject(ProjectWorkspaceService);
+  protected readonly files = inject(ProjectFilesService);
 
   readonly closed = input(false);
+  /** To the Hinweise (F5.8) of a platform, or all of them (null). */
+  readonly showHints = output<string | null>();
+
+  /** Open hints per platform — an open item links to the file hints of its platform. */
+  protected readonly hintsByPlatform = computed(() => {
+    const counts = new Map<string, number>();
+    const hints = this.files.hints.hasValue()
+      ? this.files.hints.value().hints
+      : [];
+    for (const hint of hints) {
+      if (hint.status !== 'open' || !hint.platform) continue;
+      counts.set(hint.platform, (counts.get(hint.platform) ?? 0) + 1);
+    }
+    return counts;
+  });
 
   protected readonly view = computed(() =>
     this.service.checks.hasValue() ? this.service.checks.value() : undefined,

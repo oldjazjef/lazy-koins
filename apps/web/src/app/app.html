@@ -5,4 +5,7 @@
   richColors
   position="bottom-right"
   class="z-1100"
+  [class.lk-toasts-raised]="activity.busy()"
 />
+<!-- Long-running tasks (ActivityService), above dialogs and toasts; survives navigation. -->
+<lk-activity-indicator />
