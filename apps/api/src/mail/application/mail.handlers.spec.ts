@@ -13,6 +13,7 @@ import { SecretBox } from '../../common/crypto/secret-box';
 import type { Env } from '../../config/env';
 import { ExportDataService } from '../../exports/application/exports.handlers';
 import { InMemoryProjectExportRepository } from '../../exports/testing/in-memory-project-export.repository';
+import { InMemoryHintStateRepository } from '../../files/testing/in-memory-hint-state.repository';
 import { InMemoryProjectSentRepository } from '../../projects/testing/in-memory-project-sent.repository';
 import {
   SettingsReader,
@@ -104,6 +105,7 @@ async function setup(options: { allowPrivate?: boolean; key?: string } = {}) {
     t.files,
     t.inputs,
     calculation,
+    new InMemoryHintStateRepository(),
   );
   const runtime = new MailRuntime(
     new SecretBox(options.key ?? 'test-encryption-key'),
