@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The gate lives in package.json (`ci:verify` / `ci:integration`), not here, so `pnpm check`
+# locally is literally the same command. Add a check to package.json, never to this file alone.
+#
+# There are no Nx `test` targets on purpose (Vitest fails inside Nx's run-commands spawn), which is
+# why the scripts call Vitest directly — see CLAUDE.md, Testing.
+#
+# private/ (real tax data) never exists in CI, so the golden test (A1) skips itself here.
+
+env:
+  NX_DAEMON: 'false'
+  # Nx plugin workers use unix sockets whose paths include node_modules/.pnpm; a deep checkout
+  # path would push them past the ~108 byte limit.
+  NX_SOCKET_DIR: /tmp/nx
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:verify
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # SQLite: no database service. scripts/dev/with-test-db.mjs points DATABASE_URL at a fresh
+      # file under tmp/, applies the migration history, then runs the specs that need a real database.
+      - run: pnpm ci:integration

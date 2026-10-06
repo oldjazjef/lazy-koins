@@ -1,0 +1,401 @@
+import { HttpClient, httpResource } from '@angular/common/http';
+import { computed, DOCUMENT, inject, Injectable, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { defineAction } from '../../../../core/actions/action';
+import { ActionRunner } from '../../../../core/actions/action-runner';
+import { apiUrl } from '../../../../core/api/api-url';
+import type {
+  ChecksView,
+  Correction,
+  ExportKind,
+  FigureRecords,
+  MailDraft,
+  ManualRateRequest,
+  OpenItem,
+  ProjectExport,
+  RatesView,
+  RefreshSummary,
+  ResultView,
+  StoredRate,
+} from '../../../../core/api/calculation.types';
+import { NotificationService } from '../../../../core/notifications/notification.service';
+import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
+
+/** The tabs of a project's workspace, in order. */
+export const WORKSPACE_TABS = [
+  'files',
+  'rates',
+  'result',
+  'checks',
+  'corrections',
+  'exports',
+] as const;
+export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
+
+/** A correction started from a figure (F9: "aus einer Position/Buchung erfassen"). */
+export interface CorrectionDraft {
+  readonly type:
+    'price_override' | 'reclassify' | 'manual_booking' | 'manual_holding';
+  readonly values: Readonly<Record<string, string>>;
+}
+
+/** A correction as the API takes it (amounts as decimal strings). */
+export interface NewCorrection {
+  readonly data: Record<string, unknown>;
+  readonly reason: string;
+}
+
+/**
+ * Everything of one project beyond its files: result (F7), rates (F7.4), checks (F8),
+ * corrections (F9) and exports (F10). Provided by the workspace component and keyed by the
+ * project id; the API decides everything (calculation, closed projects) — this service loads,
+ * triggers and maps answers to translated messages. Figures stay decimal strings.
+ */
+@Injectable()
+export class ProjectWorkspaceService {
+  private readonly http = inject(HttpClient);
+  private readonly actions = inject(ActionRunner);
+  private readonly notifications = inject(NotificationService);
+  private readonly document = inject(DOCUMENT);
+
+  readonly projectId = signal<string | undefined>(undefined);
+  readonly tab = signal<WorkspaceTab>('files');
+
+  private url(path: string): string | undefined {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}${path}` as `/${string}`) : undefined;
+  }
+
+  readonly result = httpResource<ResultView>(() => this.url('/result'));
+  readonly checks = httpResource<ChecksView>(() =>
+    this.tab() === 'checks' || this.tab() === 'result'
+      ? this.url('/checks')
+      : undefined,
+  );
+  readonly corrections = httpResource<Correction[]>(() =>
+    this.tab() === 'corrections' ? this.url('/corrections') : undefined,
+  );
+  readonly rates = httpResource<RatesView>(() =>
+    this.tab() === 'rates' ? this.url('/rates') : undefined,
+  );
+  readonly exports = httpResource<ProjectExport[]>(() =>
+    this.tab() === 'exports' ? this.url('/exports') : undefined,
+  );
+
+  readonly lastRefresh = signal<RefreshSummary | null>(null);
+
+  /** The drill-down on screen (F7.5): which figure, and its records once loaded. */
+  readonly recordsOf = signal<{ figureId: string; title: string } | null>(null);
+  readonly records = signal<FigureRecords | null>(null);
+
+  /** A correction being prepared in the corrections tab. */
+  readonly draft = signal<CorrectionDraft | null>(null);
+
+  private readonly status = this.actions.status<unknown>('project-workspace');
+  readonly isBusy = computed(() => this.status()?.state === 'pending');
+
+  private readonly calculateAction = defineAction<string, ResultView>({
+    run: (id) =>
+      firstValueFrom(
+        this.http.post<ResultView>(apiUrl(`/projects/${id}/calculate`), {}),
+      ),
+    messages: {
+      success: 'calculation.calculated',
+      error: 'calculation.calculateFailed',
+    },
+  });
+
+  private readonly refreshAction = defineAction<
+    { id: string; force: boolean },
+    RefreshSummary
+  >({
+    run: ({ id, force }) =>
+      firstValueFrom(
+        this.http.post<RefreshSummary>(
+          apiUrl(`/projects/${id}/rates/refresh`),
+          { force },
+        ),
+      ),
+    messages: {
+      success: 'rates.refreshed',
+      error: 'rates.refreshFailed',
+    },
+  });
+
+  private readonly manualRateAction = defineAction<
+    { id: string; rate: ManualRateRequest },
+    unknown
+  >({
+    run: ({ id, rate }) =>
+      firstValueFrom(
+        this.http.put(apiUrl(`/projects/${id}/rates/manual`), rate),
+      ),
+    messages: { success: 'rates.overridden', error: 'rates.overrideFailed' },
+  });
+
+  private readonly deleteRateAction = defineAction<
+    { id: string; rate: StoredRate },
+    unknown
+  >({
+    run: ({ id, rate }) =>
+      firstValueFrom(
+        this.http.delete(apiUrl(`/projects/${id}/rates/manual`), {
+          params: {
+            kind: rate.kind,
+            asset: rate.asset,
+            currency: rate.currency,
+            date: rate.date,
+            source: rate.source,
+          },
+        }),
+      ),
+    messages: { success: 'rates.removed', error: 'rates.removeFailed' },
+  });
+
+  private readonly kurslisteAction = defineAction<
+    { id: string; file: File },
+    { imported: number; skipped: number }
+  >({
+    run: ({ id, file }) =>
+      firstValueFrom(
+        this.http.post<{ imported: number; skipped: number }>(
+          apiUrl(`/projects/${id}/rates/estv`),
+          file,
+          { headers: { 'Content-Type': 'application/octet-stream' } },
+        ),
+      ),
+    messages: { error: 'rates.estvFailed' },
+  });
+
+  private readonly correctionAction = defineAction<
+    { id: string; correction: NewCorrection },
+    Correction
+  >({
+    run: ({ id, correction }) =>
+      firstValueFrom(
+        this.http.post<Correction>(
+          apiUrl(`/projects/${id}/corrections`),
+          correction,
+        ),
+      ),
+    messages: {
+      success: 'corrections.created',
+      error: 'corrections.createFailed',
+    },
+  });
+
+  private readonly undoAction = defineAction<
+    { id: string; correction: Correction; undo: boolean },
+    Correction
+  >({
+    run: ({ id, correction, undo }) =>
+      firstValueFrom(
+        this.http.post<Correction>(
+          apiUrl(
+            `/projects/${id}/corrections/${correction.id}/${undo ? 'undo' : 'redo'}`,
+          ),
+          {},
+        ),
+      ),
+    messages: {
+      success: 'corrections.changed',
+      error: 'corrections.changeFailed',
+    },
+  });
+
+  private readonly itemAction = defineAction<
+    { id: string; key: string; done?: boolean; note?: string },
+    unknown
+  >({
+    run: ({ id, key, done, note }) =>
+      firstValueFrom(
+        this.http.patch(apiUrl(`/projects/${id}/open-items`), {
+          key,
+          done,
+          note,
+        }),
+      ),
+    messages: { error: 'checks.saveFailed' },
+  });
+
+  private readonly exportAction = defineAction<
+    { id: string; kind: ExportKind },
+    ProjectExport
+  >({
+    run: ({ id, kind }) =>
+      firstValueFrom(
+        this.http.post<ProjectExport>(apiUrl(`/projects/${id}/exports`), {
+          kind,
+        }),
+      ),
+    messages: { success: 'exports.created', error: 'exports.createFailed' },
+  });
+
+  /** F7.6: recalculate, then every view shows the new snapshot. */
+  async calculate(): Promise<void> {
+    const view = await this.actions.run(
+      this.calculateAction,
+      this.requireId(),
+      { key: 'project-workspace' },
+    );
+    this.result.set(view);
+    this.reloadDerived();
+  }
+
+  async refreshRates(force = false): Promise<void> {
+    const summary = await this.actions.run(
+      this.refreshAction,
+      { id: this.requireId(), force },
+      { key: 'project-workspace' },
+    );
+    this.lastRefresh.set(summary);
+    this.rates.reload();
+    this.result.reload();
+  }
+
+  async setManualRate(rate: ManualRateRequest): Promise<void> {
+    await this.actions.run(
+      this.manualRateAction,
+      { id: this.requireId(), rate },
+      { key: 'project-workspace' },
+    );
+    this.rates.reload();
+    this.result.reload();
+  }
+
+  async deleteManualRate(rate: StoredRate): Promise<void> {
+    await this.actions.run(
+      this.deleteRateAction,
+      { id: this.requireId(), rate },
+      { key: 'project-workspace' },
+    );
+    this.rates.reload();
+    this.result.reload();
+  }
+
+  async importKursliste(file: File): Promise<void> {
+    const result = await this.actions.run(
+      this.kurslisteAction,
+      { id: this.requireId(), file },
+      { key: 'project-workspace' },
+    );
+    this.notifications.info('rates.estvImported', {
+      count: result.imported,
+    });
+    this.rates.reload();
+    this.result.reload();
+  }
+
+  /** F9: creates the correction and recalculates, so its before/after shows at once. */
+  async createCorrection(correction: NewCorrection): Promise<void> {
+    await this.actions.run(
+      this.correctionAction,
+      { id: this.requireId(), correction },
+      { key: 'project-workspace' },
+    );
+    await this.calculate();
+  }
+
+  async setUndone(correction: Correction, undo: boolean): Promise<void> {
+    await this.actions.run(
+      this.undoAction,
+      { id: this.requireId(), correction, undo },
+      { key: 'project-workspace' },
+    );
+    await this.calculate();
+  }
+
+  async saveItem(
+    item: OpenItem,
+    changes: { done?: boolean; note?: string },
+  ): Promise<void> {
+    await this.actions.run(
+      this.itemAction,
+      { id: this.requireId(), key: item.key, ...changes },
+      { key: `open-item:${item.key}` },
+    );
+    this.checks.reload();
+  }
+
+  async createExport(kind: ExportKind): Promise<void> {
+    await this.actions.run(
+      this.exportAction,
+      { id: this.requireId(), kind },
+      { key: 'project-workspace' },
+    );
+    this.exports.reload();
+    this.result.reload();
+  }
+
+  /** F7.5: the records behind a figure. */
+  figureRecords(figureId: string): Promise<FigureRecords> {
+    return firstValueFrom(
+      this.http.get<FigureRecords>(
+        apiUrl(`/projects/${this.requireId()}/result/records`),
+        { params: { figure: figureId } },
+      ),
+    );
+  }
+
+  async showRecords(figureId: string, title: string): Promise<void> {
+    this.records.set(null);
+    this.recordsOf.set({ figureId, title });
+    try {
+      this.records.set(await this.figureRecords(figureId));
+    } catch {
+      this.recordsOf.set(null);
+      this.notifications.error('result.recordsFailed');
+    }
+  }
+
+  closeRecords(): void {
+    this.recordsOf.set(null);
+    this.records.set(null);
+  }
+
+  /** Opens the corrections tab with a prefilled form. */
+  startCorrection(draft: CorrectionDraft): void {
+    this.draft.set(draft);
+    this.tab.set('corrections');
+  }
+
+  mailDraft(): Promise<MailDraft> {
+    return firstValueFrom(
+      this.http.get<MailDraft>(
+        apiUrl(`/projects/${this.requireId()}/mail-draft`),
+      ),
+    );
+  }
+
+  async download(item: ProjectExport): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get(
+          apiUrl(`/projects/${this.requireId()}/exports/${item.id}/content`),
+          { observe: 'response', responseType: 'blob' },
+        ),
+      );
+      saveBlob(
+        this.document,
+        response.body ?? new Blob(),
+        fileNameFrom(
+          response.headers.get('Content-Disposition'),
+          item.fileName,
+        ),
+      );
+    } catch {
+      this.notifications.error('exports.downloadFailed');
+    }
+  }
+
+  private reloadDerived(): void {
+    this.checks.reload();
+    this.corrections.reload();
+  }
+
+  private requireId(): string {
+    const id = this.projectId();
+    if (!id) throw new Error('No project on screen');
+    return id;
+  }
+}

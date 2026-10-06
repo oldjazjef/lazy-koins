@@ -1,0 +1,257 @@
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideTranslateService } from '@ngx-translate/core';
+import type {
+  ChecksView,
+  OpenItem,
+  ResultView,
+} from '../../../../core/api/calculation.types';
+import { NotificationService } from '../../../../core/notifications/notification.service';
+import { correctionBody } from '../project-corrections/correction-form';
+import { ProjectWorkspaceService } from './project-workspace.service';
+
+const view = (wealthChf = '100.5'): ResultView => ({
+  snapshot: {
+    id: 's1',
+    projectId: 'p1',
+    inputHash: 'a'.repeat(64),
+    engineVersion: 1,
+    wealthChf,
+    incomeChf: '1',
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  stale: false,
+  result: null,
+  files: [],
+});
+
+const item: OpenItem = {
+  key: 'missingPrice:pos:kraken|main|XYZ',
+  check: 'missingPrices',
+  reason: 'positionWithoutPrice',
+  light: 'yellow',
+  platform: 'kraken',
+  accountId: 'main',
+  asset: 'XYZ',
+  date: '2025-12-31',
+  params: { quantity: '5' },
+  impactChf: null,
+  recordIds: ['f:2'],
+  done: false,
+  note: '',
+};
+
+const checks: ChecksView = {
+  snapshot: null,
+  checks: [],
+  items: [item],
+  comparison: null,
+};
+
+/** httpResource issues its request from an effect; a flushed response lands one task later. */
+const settle = async () => {
+  await new Promise((resolve) => setTimeout(resolve));
+  TestBed.tick();
+  await new Promise((resolve) => setTimeout(resolve));
+};
+
+async function setup() {
+  const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+  TestBed.configureTestingModule({
+    providers: [
+      ProjectWorkspaceService,
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      provideTranslateService(),
+      { provide: NotificationService, useValue: notifications },
+    ],
+  });
+  const service = TestBed.inject(ProjectWorkspaceService);
+  const http = TestBed.inject(HttpTestingController);
+  service.projectId.set('p1');
+  await settle();
+  http.expectOne('/api/projects/p1/result').flush(view());
+  await settle();
+  return { service, http, notifications };
+}
+
+describe('ProjectWorkspaceService', () => {
+  afterEach(() => {
+    try {
+      TestBed.inject(HttpTestingController).verify();
+    } finally {
+      TestBed.resetTestingModule();
+    }
+  });
+
+  it('loads the result, and each tab only when it is shown', async () => {
+    const { service, http } = await setup();
+    expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
+    service.tab.set('rates');
+    await settle();
+    http
+      .expectOne('/api/projects/p1/rates')
+      .flush({ taxYear: 2025, online: true, series: [], manual: [] });
+    service.tab.set('exports');
+    await settle();
+    http.expectOne('/api/projects/p1/exports').flush([]);
+    await settle();
+    expect(service.exports.value()).toEqual([]);
+  });
+
+  it('recalculates and shows the new snapshot (F7.6)', async () => {
+    const { service, http, notifications } = await setup();
+    const done = service.calculate();
+    await settle();
+    const request = http.expectOne('/api/projects/p1/calculate');
+    expect(request.request.method).toBe('POST');
+    request.flush(view('200'));
+    await done;
+    expect(service.result.value()?.snapshot?.wealthChf).toBe('200');
+    expect(notifications.success).toHaveBeenCalledWith(
+      'calculation.calculated',
+    );
+  });
+
+  it('drills a figure down to its records (F7.5)', async () => {
+    const { service, http } = await setup();
+    const shown = service.showRecords('pos:kraken|main|BTC', 'kraken · BTC');
+    const request = http.expectOne(
+      (r) => r.url === '/api/projects/p1/result/records',
+    );
+    expect(request.request.params.get('figure')).toBe('pos:kraken|main|BTC');
+    request.flush({ figureId: 'pos:kraken|main|BTC', total: 0, records: [] });
+    await shown;
+    expect(service.recordsOf()?.title).toBe('kraken · BTC');
+    expect(service.records()?.total).toBe(0);
+    service.closeRecords();
+    expect(service.recordsOf()).toBeNull();
+  });
+
+  it('refreshes rates and reports a refusal with its reason (F11.3)', async () => {
+    const { service, http, notifications } = await setup();
+    const refused = service.refreshRates(false);
+    const request = http.expectOne('/api/projects/p1/rates/refresh');
+    expect(request.request.body).toEqual({ force: false });
+    request.flush(
+      { message: 'Rate lookups on the internet are switched off (settings)' },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await expect(refused).rejects.toBeDefined();
+    expect(notifications.error).toHaveBeenCalledWith(
+      'rates.refreshFailed',
+      'Rate lookups on the internet are switched off (settings)',
+    );
+  });
+
+  it('ticks off an open item and starts a correction from a figure (F8.2, F9)', async () => {
+    const { service, http } = await setup();
+    service.tab.set('checks');
+    await settle();
+    http.expectOne('/api/projects/p1/checks').flush(checks);
+    await settle();
+    const saved = service.saveItem(item, { done: true });
+    const patch = http.expectOne('/api/projects/p1/open-items');
+    expect(patch.request.body).toEqual({
+      key: item.key,
+      done: true,
+      note: undefined,
+    });
+    patch.flush({});
+    await saved;
+    await settle();
+    http.expectOne('/api/projects/p1/checks').flush(checks);
+
+    service.startCorrection({
+      type: 'price_override',
+      values: { asset: 'XYZ', date: '2025-12-31' },
+    });
+    expect(service.tab()).toBe('corrections');
+    expect(service.draft()?.values['asset']).toBe('XYZ');
+    await settle();
+    http.expectOne('/api/projects/p1/corrections').flush([]);
+  });
+
+  it('creates an export and downloads it', async () => {
+    const { service, http } = await setup();
+    const created = service.createExport('detailed_xlsx');
+    const post = http.expectOne('/api/projects/p1/exports');
+    expect(post.request.body).toEqual({ kind: 'detailed_xlsx' });
+    post.flush({ id: 'e1' });
+    await created;
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+  });
+});
+
+describe('correction form → API body (F9)', () => {
+  const base = {
+    reason: 'ESTV-Kurs',
+    asset: 'eth',
+    date: '2025-12-31',
+    priceChf: '2500.5',
+    bookingId: '',
+    kind: 'transfer',
+    platform: '',
+    accountId: 'main',
+    timestamp: '',
+    quantity: '',
+    fee: '',
+    evidence: '',
+  };
+
+  it('builds a price override and asks for a reason', () => {
+    expect(correctionBody({ ...base, type: 'price_override' })).toEqual({
+      ok: true,
+      body: {
+        reason: 'ESTV-Kurs',
+        data: {
+          type: 'price_override',
+          asset: 'eth',
+          date: '2025-12-31',
+          priceChf: '2500.5',
+        },
+      },
+    });
+    expect(
+      correctionBody({ ...base, type: 'price_override', reason: ' ' }),
+    ).toEqual({ ok: false, error: 'corrections.errors.reason' });
+    expect(
+      correctionBody({ ...base, type: 'price_override', priceChf: '1,5' }),
+    ).toEqual({ ok: false, error: 'corrections.errors.positive' });
+  });
+
+  it('builds a manual booking in UTC with signed quantity', () => {
+    const result = correctionBody({
+      ...base,
+      type: 'manual_booking',
+      platform: 'ledger',
+      asset: 'BCH',
+      timestamp: '2025-08-01T12:00',
+      quantity: '-0.5',
+      kind: 'loss',
+    });
+    expect(result).toEqual({
+      ok: true,
+      body: {
+        reason: 'ESTV-Kurs',
+        data: {
+          type: 'manual_booking',
+          booking: {
+            platform: 'ledger',
+            accountId: 'main',
+            timestamp: '2025-08-01T12:00:00Z',
+            asset: 'BCH',
+            quantity: '-0.5',
+            kind: 'loss',
+            priceChf: '2500.5',
+          },
+        },
+      },
+    });
+  });
+});

@@ -1,0 +1,86 @@
+<div class="flex min-h-dvh flex-col">
+  <header class="bg-card border-b">
+    <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
+      <a routerLink="/app" class="lk-brand">{{ 'app.name' | translate }}</a>
+
+      <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
+        <ul class="flex items-center gap-1">
+          @for (item of items; track item.path) {
+          <li>
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="lk-nav-active"
+              ariaCurrentWhenActive="page"
+              class="lk-nav-link"
+            >
+              <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+              <span>{{ item.labelKey | translate }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </nav>
+
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        type="button"
+        (click)="theme.toggle()"
+        [attr.aria-label]="'nav.toggleTheme' | translate"
+      >
+        <ng-icon
+          [name]="theme.current() === 'dark' ? 'lucideSun' : 'lucideMoon'"
+          size="18"
+        />
+      </button>
+      <div class="relative" data-user-menu>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          [attr.aria-haspopup]="'menu'"
+          [attr.aria-expanded]="menuOpen()"
+          [attr.aria-label]="'nav.userMenu' | translate"
+          (click)="toggleMenu()"
+        >
+          <ng-icon name="lucideCircleUserRound" size="18" aria-hidden="true" />
+          @if (auth.email(); as email) {
+          <span class="hidden max-w-48 truncate md:inline">{{ email }}</span>
+          }
+          <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
+        </button>
+        @if (menuOpen()) {
+        <div class="lk-menu" role="menu">
+          @for (item of userItems; track item.path) {
+          <a
+            role="menuitem"
+            class="lk-menu-item"
+            [routerLink]="item.path"
+            routerLinkActive="lk-nav-active"
+            (click)="menuOpen.set(false)"
+          >
+            <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+            {{ item.labelKey | translate }}
+          </a>
+          }
+          <button
+            role="menuitem"
+            type="button"
+            class="lk-menu-item border-t"
+            (click)="signOut()"
+          >
+            <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
+            {{ 'nav.signOut' | translate }}
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+    <router-outlet />
+  </main>
+</div>

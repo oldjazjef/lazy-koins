@@ -1,0 +1,274 @@
+@if (view(); as view) {
+<div class="mb-4 flex flex-wrap items-center gap-2">
+  @if (view.online) {
+  <span hlmBadge variant="secondary">{{ 'rates.online' | translate }}</span>
+  } @else {
+  <span hlmBadge variant="outline">{{ 'rates.offline' | translate }}</span>
+  }
+  <span class="flex-1"></span>
+  @if (!closed()) {
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="kursliste.click()"
+    [disabled]="service.isBusy()"
+  >
+    {{ 'rates.estvImport' | translate }}
+  </button>
+  <input
+    #kursliste
+    id="kursliste-picker"
+    class="sr-only"
+    type="file"
+    accept=".xml,.csv,.txt,text/csv,application/xml,text/xml"
+    (change)="picked($event)"
+  />
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    [disabled]="!view.online || service.isBusy()"
+    (click)="refresh(true)"
+  >
+    {{ 'rates.refreshAll' | translate }}
+  </button>
+  <button
+    hlmBtn
+    type="button"
+    [disabled]="!view.online || service.isBusy()"
+    (click)="refresh(false)"
+  >
+    {{ 'rates.refresh' | translate }}
+  </button>
+  }
+</div>
+<p class="text-muted-foreground mb-4 text-sm">{{ 'rates.hint' | translate }}</p>
+
+@if (service.lastRefresh(); as summary) {
+<div class="lk-panel mb-6 p-4 text-sm" aria-live="polite">
+  <p class="font-medium">
+    {{ 'rates.summary' | translate: { fx: summary.fx } }}
+  </p>
+  <ul class="mt-2 flex flex-wrap gap-2">
+    @for (asset of summary.assets; track asset.asset) {
+    <li>
+      <span
+        hlmBadge
+        [variant]="asset.status === 'notFound' || asset.status === 'failed' ? 'destructive' : 'outline'"
+        >{{ asset.asset }} · {{ 'rates.status.' + asset.status | translate
+        }}</span
+      >
+    </li>
+    }
+  </ul>
+</div>
+} @if (!closed()) {
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'rates.overrideTitle' | translate }}</h3>
+    <p hlmCardDescription>{{ 'rates.overrideHint' | translate }}</p>
+  </div>
+  <div hlmCardContent>
+    <form
+      class="grid gap-3 sm:grid-cols-6"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+    >
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="rate-kind"
+          >{{ 'rates.fields.kind' | translate }}</label
+        >
+        <select hlmInput id="rate-kind" formControlName="kind">
+          <option value="price">{{ 'rates.kind.price' | translate }}</option>
+          <option value="fx">{{ 'rates.kind.fx' | translate }}</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="rate-asset"
+          >{{ 'rates.fields.asset' | translate }}</label
+        >
+        <input hlmInput id="rate-asset" type="text" formControlName="asset" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="rate-currency"
+          >{{ 'rates.fields.currency' | translate }}</label
+        >
+        <select hlmInput id="rate-currency" formControlName="currency">
+          <option value="CHF">{{ 'rates.currency.CHF' | translate }}</option>
+          <option value="USD">{{ 'rates.currency.USD' | translate }}</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="rate-date"
+          >{{ 'rates.fields.date' | translate }}</label
+        >
+        <input hlmInput id="rate-date" type="date" formControlName="date" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label hlmLabel for="rate-value"
+          >{{ 'rates.fields.value' | translate }}</label
+        >
+        <input hlmInput id="rate-value" type="text" formControlName="value" />
+      </div>
+      <div class="flex items-end">
+        <button
+          hlmBtn
+          type="submit"
+          class="w-full"
+          [disabled]="service.isBusy()"
+        >
+          {{ 'rates.override' | translate }}
+        </button>
+      </div>
+      @if (error(); as key) {
+      <p class="text-destructive text-sm sm:col-span-6" role="alert">
+        {{ key | translate }}
+      </p>
+      }
+    </form>
+  </div>
+</section>
+} @if (view.manual.length > 0) {
+<section class="mb-6 flex flex-col gap-2">
+  <h3 class="font-medium">{{ 'rates.manualTitle' | translate }}</h3>
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'rates.fields.asset' | translate }}</th>
+          <th hlmTh>{{ 'rates.fields.date' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'rates.fields.value' | translate }}
+          </th>
+          <th hlmTh>{{ 'rates.fields.source' | translate }}</th>
+          <th hlmTh class="text-right">
+            <span class="sr-only"
+              >{{ 'rates.fields.actions' | translate }}</span
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (rate of view.manual; track rate.id) {
+        <tr hlmTr>
+          <td hlmTd>
+            {{ rate.asset }} · {{ 'rates.kind.' + rate.kind | translate }}
+          </td>
+          <td hlmTd class="tabular-nums">
+            {{ rate.date | date: 'dd.MM.yyyy' }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            {{ rate.value | lkQuantity: 10 }} {{ rate.currency }}
+          </td>
+          <td hlmTd>{{ 'rates.source.' + rate.source | translate }}</td>
+          <td hlmTd class="text-right">
+            @if (!closed()) {
+            <button
+              hlmBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              (click)="service.deleteManualRate(rate)"
+            >
+              {{ 'rates.remove' | translate }}
+            </button>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+}
+
+<section class="flex flex-col gap-2">
+  <div class="flex flex-wrap items-center gap-3">
+    <h3 class="flex-1 font-medium">{{ 'rates.seriesTitle' | translate }}</h3>
+    <input
+      hlmInput
+      class="w-48"
+      type="search"
+      [attr.aria-label]="'rates.search' | translate"
+      [placeholder]="'rates.search' | translate"
+      (input)="search($event)"
+    />
+  </div>
+  @if (series().length === 0) {
+  <lk-empty-state [message]="'rates.empty' | translate" />
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'rates.fields.asset' | translate }}</th>
+          <th hlmTh>{{ 'rates.fields.source' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'rates.fields.points' | translate }}
+          </th>
+          <th hlmTh>{{ 'rates.fields.range' | translate }}</th>
+          <th hlmTh class="text-right">
+            {{ 'rates.fields.yearEnd' | translate: { year: taxYear() } }}
+          </th>
+          <th hlmTh>{{ 'rates.fields.fetchedAt' | translate }}</th>
+          <th hlmTh class="text-right">
+            <span class="sr-only"
+              >{{ 'rates.fields.actions' | translate }}</span
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (s of series(); track s.kind + s.asset + s.currency + s.source) {
+        <tr hlmTr>
+          <td hlmTd class="font-medium">
+            {{ s.asset }}
+            <span class="text-muted-foreground text-xs"
+              >{{ 'rates.kind.' + s.kind | translate }} · {{ s.currency }}</span
+            >
+          </td>
+          <td hlmTd>{{ 'rates.source.' + s.source | translate }}</td>
+          <td hlmTd class="text-right tabular-nums">{{ s.points }}</td>
+          <td hlmTd class="tabular-nums whitespace-nowrap">
+            {{ s.from | date: 'dd.MM.yyyy' }} – {{ s.to | date: 'dd.MM.yyyy' }}
+          </td>
+          <td hlmTd class="text-right tabular-nums">
+            @if (s.yearEnd; as point) { {{ point.value | lkQuantity: 8 }}
+            <span class="text-muted-foreground block text-xs"
+              >{{ point.date | date: 'dd.MM.yyyy' }}</span
+            >
+            } @else {
+            <span hlmBadge variant="destructive"
+              >{{ 'rates.noYearEnd' | translate }}</span
+            >
+            }
+          </td>
+          <td hlmTd class="text-muted-foreground text-xs">
+            {{ s.fetchedAt | date: 'dd.MM.yyyy HH:mm' }}
+          </td>
+          <td hlmTd class="text-right">
+            @if (!closed()) {
+            <button
+              hlmBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              (click)="prefill(s)"
+            >
+              {{ 'rates.override' | translate }}
+            </button>
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</section>
+} @else if (service.rates.error()) {
+<lk-empty-state [message]="'rates.loadFailed' | translate" />
+} @else {
+<hlm-skeleton class="h-64 w-full" />
+}

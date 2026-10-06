@@ -1,0 +1,71 @@
+<lk-page-header
+  [title]="'projects.list.title' | translate"
+  [subtitle]="'projects.list.subtitle' | translate"
+>
+  <a hlmBtn routerLink="new">
+    <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
+    {{ 'projects.list.new' | translate }}
+  </a>
+</lk-page-header>
+
+@if (service.projects.isLoading() && !service.projects.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.projects.error()) {
+<lk-empty-state [message]="'projects.list.loadFailed' | translate">
+  <button hlmBtn variant="outline" type="button" (click)="service.refresh()">
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.isEmpty()) {
+<lk-empty-state [message]="'projects.list.empty' | translate">
+  <a hlmBtn routerLink="new">{{ 'projects.list.new' | translate }}</a>
+</lk-empty-state>
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'projects.fields.name' | translate }}</th>
+        <th hlmTh>{{ 'projects.fields.taxYear' | translate }}</th>
+        <th hlmTh>{{ 'projects.fields.canton' | translate }}</th>
+        <th hlmTh>{{ 'projects.fields.status' | translate }}</th>
+        <th hlmTh class="text-right">
+          {{ 'projects.fields.wealth' | translate }}
+        </th>
+        <th hlmTh class="text-right">
+          {{ 'projects.fields.income' | translate }}
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (project of service.projects.value(); track project.id) {
+      <tr hlmTr class="cursor-pointer" (click)="open(project.id)">
+        <td hlmTd>
+          <a
+            [routerLink]="project.id"
+            class="font-medium hover:underline"
+            (click)="$event.stopPropagation()"
+            >{{ project.name }}</a
+          >
+        </td>
+        <td hlmTd class="tabular-nums">{{ project.taxYear }}</td>
+        <td hlmTd>{{ project.canton }}</td>
+        <td hlmTd>
+          <lk-project-status-badge [status]="project.status" />
+        </td>
+        <td hlmTd class="text-right tabular-nums">
+          {{ project.wealthChf | lkChf }}
+        </td>
+        <td hlmTd class="text-right tabular-nums">
+          {{ project.incomeChf | lkChf }}
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+}

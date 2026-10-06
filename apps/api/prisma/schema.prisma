@@ -1,0 +1,333 @@
+// Prisma schema for apps/api.
+//
+// Conventions (same as surf-lend / etx-working-time-manager, see CLAUDE.md "Database"):
+//
+//  1. `@default(uuid(7))` keys — generated client-side, time-ordered. Those columns carry no DDL
+//     default, so anything inserting outside Prisma must supply an id (scripts/dev/seed.mjs does).
+//  2. snake_case table/column names via @@map/@map, so the SQL reads like SQL.
+//  3. SQLite (one file, `DATABASE_URL=file:…`). No native uuid/timestamptz types: ids are TEXT,
+//     DateTime values are stored in UTC by Prisma, and the enums below are TEXT that hand-written
+//     CHECK constraints in the migrations keep honest.
+//  4. Quantities, rates and CHF amounts (coming with bookings) are **decimal strings in TEXT
+//     columns**, never REAL: crypto quantities have up to 18 decimals (CLAUDE.md, Numbers).
+//  5. Every row belongs to one user; someone else's row reads as absent (404).
+//
+// The datasource URL lives in prisma.config.ts (Prisma 7 removed `url` from this block).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+
+  // apps/api builds to CommonJS through webpack. Prisma 7 emits ESM by default, which would force
+  // `"type": "module"` onto the whole repo; `cjs` keeps the generated client bundleable.
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// F4.1: in Arbeit / geprüft / abgeschlossen. A closed project is read-only (F4.5).
+enum ProjectStatus {
+  in_progress
+  reviewed
+  closed
+
+  @@map("project_status")
+}
+
+/// F7.7: country rules are exchangeable; only Switzerland so far.
+enum Country {
+  CH
+
+  @@map("country")
+}
+
+/// A person. In the web app identified by their Firebase Authentication uid; `dev:<email>` with
+/// AUTH_MODE=dev; `local:owner` — the single user — in the desktop app (AUTH_MODE=local).
+///
+/// Created on the first authenticated request (see auth/principal.service.ts).
+model User {
+  id             String   @id @default(uuid(7))
+  /// Firebase uid, `dev:<email>` or `local:owner`.
+  identityUid    String   @unique @map("identity_uid")
+  email          String
+  displayName    String   @map("display_name")
+  /// Firebase's `sign_in_provider` claim (`password`, `google.com`), or `dev` / `local`.
+  signInProvider String   @map("sign_in_provider")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  projects    Project[]
+  storedFiles StoredFile[]
+  mappings    ImportMapping[]
+  settings    UserSettings?
+  aiSettings  AiSettings?
+
+  @@map("user")
+}
+
+/// One tax year of one person (F4.1): "Steuern 2025", Switzerland, canton ZH.
+model Project {
+  id        String        @id @default(uuid(7))
+  ownerId   String        @map("owner_id")
+  name      String
+  taxYear   Int           @map("tax_year")
+  country   Country       @default(CH)
+  /// Two-letter canton code; which codes exist is checked by the API against the country.
+  canton    String
+  status    ProjectStatus @default(in_progress)
+  notes     String        @default("")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  /// Deleting an account deletes its projects (F2.2).
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  files       ProjectFile[]
+  rates       ProjectRate[]
+  snapshots   CalculationSnapshot[]
+  corrections Correction[]
+  itemStates  OpenItemState[]
+  exports     ProjectExport[]
+
+  @@index([ownerId, taxYear])
+  @@map("project")
+}
+
+/// An original file, byte for byte (F5.3), content-addressed by SHA-256 **per owner**: the same
+/// bytes uploaded twice by one user are one row (F5.4, F4.4), two users never share a row. It is
+/// deleted when no project_file references it any more (F5.7) — in the same transaction.
+model StoredFile {
+  id           String   @id @default(uuid(7))
+  ownerId      String   @map("owner_id")
+  /// Lower-case hex SHA-256 of `bytes` — also the `sourceFileId` every record carries (F7.5).
+  sha256       String
+  bytes        Bytes
+  size         Int
+  /// `text/csv`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `application/pdf`.
+  mediaType    String   @map("media_type")
+  /// csv | xlsx | pdf — decided from the bytes, not the name. CHECK in the migration.
+  kind         String
+  /// The name of the first upload; the download uses it.
+  originalName String   @map("original_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  projectFiles ProjectFile[]
+
+  @@unique([ownerId, sha256])
+  @@map("stored_file")
+}
+
+/// A mapping spec (libs/engine `mapping/`): turns one export layout into standard records.
+/// Owner-scoped; `spec` is the validated JSON as text (CHECK json_valid).
+model ImportMapping {
+  id          String   @id @default(uuid(7))
+  ownerId     String   @map("owner_id")
+  name        String
+  platform    String
+  spec        String
+  /// The spec's normalised headers, sorted (`mappingFingerprint`), for listing and lookup.
+  fingerprint String
+  /// Spec format version (`MAPPING_VERSION`).
+  version     Int
+  /// ai | manual | copied. CHECK in the migration.
+  origin      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  files ProjectFile[]
+
+  @@index([ownerId])
+  @@map("import_mapping")
+}
+
+/// A stored file as part of one project (F5.5): how it was read and what it contributed.
+model ProjectFile {
+  id           String   @id @default(uuid(7))
+  projectId    String   @map("project_id")
+  fileId       String   @map("file_id")
+  displayName  String   @map("display_name")
+  /// standard | mapped | needs_mapping | evidence_only. CHECK in the migration.
+  status       String
+  /// `standard-v1` or `mapping:<id>` — the importer that read it; null otherwise.
+  importerId   String?  @map("importer_id")
+  mappingId    String?  @map("mapping_id")
+  /// The platform(s) the records name, comma-separated in order of appearance.
+  platform     String?
+  /// ISO dates over bookings and balances (F5.5).
+  periodFrom   String?  @map("period_from")
+  periodTo     String?  @map("period_to")
+  bookingCount Int      @default(0) @map("booking_count")
+  holdingCount Int      @default(0) @map("holding_count")
+  errorCount   Int      @default(0) @map("error_count")
+  /// JSON array of coverage entries per platform/account (F5.8).
+  coverage     String   @default("[]")
+  /// `uploaded`, `from_project:<id>` when the bytes were already in another project (F4.4), or
+  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF.
+  origin       String   @default("uploaded")
+  addedAt      DateTime @default(now()) @map("added_at")
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  mapping ImportMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, fileId])
+  @@index([fileId])
+  @@index([mappingId])
+  @@map("project_file")
+}
+
+/// Personal settings (F11.1–F11.3) and the API keys a user stores (F6.7). Keys are sealed with
+/// AES-256-GCM (`SETTINGS_ENCRYPTION_KEY`) and never returned — the API answers with a hint only.
+model UserSettings {
+  userId        String   @id @map("user_id")
+  /// Name on the exports (F10.4); empty = the account's display name.
+  displayName   String   @default("") @map("display_name")
+  /// Canton of residence, two letters, or empty.
+  canton        String   @default("")
+  advisorName   String   @default("") @map("advisor_name")
+  advisorEmail  String   @default("") @map("advisor_email")
+  /// F11.2. Only `de-CH` / `dd.MM.yyyy` exist so far. CHECK in the migration.
+  numberFormat  String   @default("de-CH") @map("number_format")
+  dateFormat    String   @default("dd.MM.yyyy") @map("date_format")
+  /// F11.3: rate lookups on the internet allowed.
+  onlineRates   Boolean  @default(true) @map("online_rates")
+  /// `enc:v1:…` (secret-box.ts), or null.
+  coingeckoKey  String?  @map("coingecko_key")
+  etherscanKey  String?  @map("etherscan_key")
+  /// JSON object symbol → CoinGecko id, overriding the built-in table.
+  coingeckoIds  String   @default("{}") @map("coingecko_ids")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+/// A stored rate of a project (F7.4): a price (asset in CHF/USD) or an exchange rate (USD, EUR in
+/// CHF) for one day, with its source. `manual` rows are the user's overrides. The calculation reads
+/// only these rows — fetching is a separate, explicit action.
+model ProjectRate {
+  id        String   @id @default(uuid(7))
+  projectId String   @map("project_id")
+  /// price | fx. CHECK in the migration.
+  kind      String
+  asset     String
+  /// CHF | USD. CHECK in the migration.
+  currency  String
+  /// ISO date.
+  date      String
+  /// Decimal string.
+  value     String
+  /// manual | estv | binance | coingecko | ecb. CHECK in the migration.
+  source    String
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, kind, asset, currency, date, source])
+  @@map("project_rate")
+}
+
+/// The result of one calculation (F7.6) as JSON, with the hash of its input: same hash, same
+/// result. `records` holds the records behind the figures (F7.5) separately — it is large and only
+/// read for drill-downs.
+model CalculationSnapshot {
+  id            String   @id @default(uuid(7))
+  projectId     String   @map("project_id")
+  inputHash     String   @map("input_hash")
+  engineVersion Int      @map("engine_version")
+  result        String
+  records       String
+  /// Decimal strings, for the project list (F4.2).
+  wealthChf     String   @map("wealth_chf")
+  incomeChf     String   @map("income_chf")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("calculation_snapshot")
+}
+
+/// A correction (F9): data applied on top of the imported records, never an edit. Undo sets
+/// `undone_at`; the row stays as history (F9.4).
+model Correction {
+  id        String    @id @default(uuid(7))
+  projectId String    @map("project_id")
+  /// price_override | reclassify | manual_booking | manual_holding. CHECK in the migration.
+  type      String
+  /// The validated correction data (libs/engine `CorrectionDataSchema`) as JSON.
+  data      String
+  reason    String
+  createdAt DateTime  @default(now()) @map("created_at")
+  undoneAt  DateTime? @map("undone_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("correction")
+}
+
+/// F8.2: an open item ticked off and/or annotated, keyed by the item's stable key.
+model OpenItemState {
+  projectId String   @map("project_id")
+  itemKey   String   @map("item_key")
+  done      Boolean  @default(false)
+  note      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, itemKey])
+  @@map("open_item_state")
+}
+
+/// A generated statement (F10.5), kept with its date.
+model ProjectExport {
+  id         String   @id @default(uuid(7))
+  projectId  String   @map("project_id")
+  /// simple_pdf | simple_xlsx | detailed_pdf | detailed_xlsx. CHECK in the migration.
+  kind       String
+  fileName   String   @map("file_name")
+  mediaType  String   @map("media_type")
+  bytes      Bytes
+  size       Int
+  snapshotId String?  @map("snapshot_id")
+  wealthChf  String   @map("wealth_chf")
+  incomeChf  String   @map("income_chf")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_export")
+}
+
+/// The AI plugin's settings of one user (F5.13, F5.14) — its own table, one row per user, created
+/// on first save. The API key is stored only encrypted (AES-256-GCM with SETTINGS_ENCRYPTION_KEY,
+/// `ai/domain/secret-box.ts`) and never returned; `api_key_hint` keeps its last four characters.
+model AiSettings {
+  userId       String    @id @map("user_id")
+  enabled      Boolean   @default(false)
+  /// openai_compatible | anthropic. CHECK in the migration.
+  provider     String    @default("openai_compatible")
+  /// e.g. https://api.openai.com/v1 or http://localhost:11434/v1; empty = the provider's default.
+  baseUrl      String    @default("") @map("base_url")
+  /// Empty = the provider's default model.
+  model        String    @default("")
+  /// `enc:v1:<iv>:<tag>:<ciphertext>`; null = no key (e.g. a local Ollama).
+  apiKeyCipher String?   @map("api_key_cipher")
+  apiKeyHint   String?   @map("api_key_hint")
+  /// F5.14: when the user first agreed to send file excerpts to the provider; null = not yet.
+  consentAt    DateTime? @map("consent_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_settings")
+}

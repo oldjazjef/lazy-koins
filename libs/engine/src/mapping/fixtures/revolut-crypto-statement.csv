@@ -1,0 +1,6 @@
+Symbol,Type,Quantity,Price,Value,Fees,Date
+BTC,Buy,0.00100000,"CHF 60,000.00",CHF 60.00,CHF 0.90,"Jan 5, 2025, 10:12:13 AM"
+ETH,Buy,0.05,"CHF 3,000.00",CHF 150.00,CHF 2.25,"Feb 10, 2025, 3:00:00 PM"
+BTC,Sell,0.0004,"CHF 70,000.00",CHF 28.00,CHF 0.42,"Jul 1, 2025, 9:00:00 AM"
+DOT,Staking reward,0.01234,CHF 5.00,CHF 0.06,,"Aug 1, 2025, 2:00:00 AM"
+ETH,Send,0.01,,,,"Sep 1, 2025, 8:00:00 PM"

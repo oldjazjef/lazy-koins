@@ -1,0 +1,484 @@
+<section hlmCard>
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'files.title' | translate }}</h2>
+    <p hlmCardDescription>{{ 'files.subtitle' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-6">
+    @if (!closed()) {
+    <div
+      class="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors"
+      [class.border-primary]="dragging()"
+      [class.bg-muted]="dragging()"
+      (dragover)="dragOver($event)"
+      (dragleave)="dragLeave()"
+      (drop)="drop($event)"
+    >
+      <ng-icon name="lucideUpload" size="24" aria-hidden="true" />
+      <p class="text-sm">{{ 'files.upload.drop' | translate }}</p>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="filePicker.click()"
+      >
+        {{ 'files.upload.pick' | translate }}
+      </button>
+      <input
+        #filePicker
+        id="file-picker"
+        class="sr-only"
+        type="file"
+        multiple
+        accept=".csv,.xlsx,.pdf,text/csv,application/pdf"
+        (change)="picked($event)"
+      />
+      <p class="text-muted-foreground text-xs">
+        {{ 'files.upload.limits' | translate }}
+      </p>
+    </div>
+    } @else {
+    <p class="text-muted-foreground text-sm">
+      {{ 'files.closedHint' | translate }}
+    </p>
+    } @if (service.uploads().length > 0) {
+    <div class="flex flex-col gap-2" aria-live="polite">
+      <progress
+        class="w-full"
+        max="100"
+        [value]="service.uploadProgress()"
+        [attr.aria-label]="'files.upload.progress' | translate"
+      ></progress>
+      <ul class="flex flex-col gap-1 text-sm">
+        @for (item of service.uploads(); track item.id) {
+        <li class="flex justify-between gap-4">
+          <span class="truncate">{{ item.name }}</span>
+          <span
+            [class.text-destructive]="item.state === 'failed'"
+            class="text-muted-foreground shrink-0"
+            >{{ 'files.upload.state.' + item.state | translate }}</span
+          >
+        </li>
+        }
+      </ul>
+    </div>
+    }
+
+    <div class="flex flex-wrap items-center gap-2 text-sm">
+      <span class="text-muted-foreground"
+        >{{ 'files.template.label' | translate }}</span
+      >
+      <button
+        hlmBtn
+        variant="ghost"
+        size="sm"
+        type="button"
+        (click)="service.downloadTemplate('xlsx')"
+      >
+        <ng-icon name="lucideDownload" size="14" aria-hidden="true" />
+        {{ 'files.template.xlsx' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="ghost"
+        size="sm"
+        type="button"
+        (click)="service.downloadTemplate('bookings')"
+      >
+        {{ 'files.template.bookingsCsv' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="ghost"
+        size="sm"
+        type="button"
+        (click)="service.downloadTemplate('holdings')"
+      >
+        {{ 'files.template.holdingsCsv' | translate }}
+      </button>
+    </div>
+
+    @if (service.overview.hasValue()) { @let overview =
+    service.overview.value(); @if (overview.missing.length > 0) {
+    <div class="lk-panel flex flex-col gap-2 p-4" role="note">
+      <h3 class="font-medium">{{ 'files.missing.title' | translate }}</h3>
+      <ul class="flex flex-col gap-2 text-sm">
+        @for (hint of overview.missing; track hint.platform + hint.accountId +
+        hint.kind) {
+        <li>
+          <span class="font-medium"
+            >{{ hint.platform }} · {{ hint.accountId }}</span
+          >
+          {{ 'files.missing.kind.' + hint.kind | translate: { date: (hint.date |
+          date: 'dd.MM.yyyy'), year: overview.taxYear } }}
+          <span class="text-muted-foreground block"
+            >{{ hint.hintKey | translate }}</span
+          >
+        </li>
+        }
+      </ul>
+    </div>
+    } @if (overview.groups.length === 0) {
+    <lk-empty-state [message]="'files.empty' | translate" />
+    } @else { @for (group of overview.groups; track group.platform) {
+    <div class="flex flex-col gap-2">
+      <h3 class="font-medium">
+        {{ group.platform ?? ('files.group.unread' | translate) }}
+      </h3>
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh>{{ 'files.fields.name' | translate }}</th>
+              <th hlmTh>{{ 'files.fields.status' | translate }}</th>
+              <th hlmTh>{{ 'files.fields.period' | translate }}</th>
+              <th hlmTh class="text-right">
+                {{ 'files.fields.records' | translate }}
+              </th>
+              <th hlmTh>{{ 'files.fields.added' | translate }}</th>
+              <th hlmTh>{{ 'files.fields.origin' | translate }}</th>
+              <th hlmTh class="text-right">
+                <span class="sr-only"
+                  >{{ 'files.fields.actions' | translate }}</span
+                >
+              </th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (file of group.files; track file.id) {
+            <tr
+              hlmTr
+              class="scroll-mt-24"
+              [id]="'file-' + file.id"
+              [class.bg-muted]="highlighted() === file.id"
+            >
+              <td hlmTd>
+                <span class="font-medium">{{ file.displayName }}</span>
+                <span class="text-muted-foreground ml-2 text-xs"
+                  >{{ 'files.size' | translate: { kind: (file.kind | uppercase),
+                  kb: (file.size / 1024 | number: '1.0-1') } }}</span
+                >
+              </td>
+              <td hlmTd>
+                <span hlmBadge [variant]="statusVariant(file.status)"
+                  >{{ 'files.status.' + file.status | translate }}</span
+                >
+                @if (file.mappingName && file.mappingId) {
+                <a
+                  class="text-muted-foreground ml-1 text-xs hover:underline"
+                  [routerLink]="['/app/mappings', file.mappingId]"
+                  >{{ file.mappingName }}</a
+                >
+                }
+              </td>
+              <td hlmTd class="tabular-nums">
+                @if (file.period) { {{ file.period.from | date: 'dd.MM.yyyy' }}
+                – {{ file.period.to | date: 'dd.MM.yyyy' }} }
+              </td>
+              <td hlmTd class="text-right tabular-nums">
+                {{ 'files.records' | translate: { bookings: file.bookingCount,
+                holdings: file.holdingCount } }} @if (file.errorCount > 0) {
+                <span class="text-destructive block text-xs"
+                  >{{ 'files.rowErrorCount' | translate: { count:
+                  file.errorCount } }}</span
+                >
+                }
+              </td>
+              <td hlmTd class="tabular-nums">
+                {{ file.addedAt | date: 'dd.MM.yyyy' }}
+              </td>
+              <td hlmTd>
+                @if (file.origin === 'from_project') { {{
+                'files.origin.fromProject' | translate: { name:
+                file.originProjectName ?? ('files.origin.unknownProject' |
+                translate) } }} } @else if (file.origin === 'derived') { {{
+                'files.origin.derived' | translate: { name: file.derivedFromName
+                ?? ('files.origin.unknownFile' | translate) } }} } @else { {{
+                'files.origin.uploaded' | translate }} }
+              </td>
+              <td hlmTd class="text-right whitespace-nowrap">
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.preview' | translate"
+                  (click)="openPreview(file)"
+                >
+                  <ng-icon name="lucideEye" size="16" aria-hidden="true" />
+                </button>
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.download' | translate"
+                  (click)="service.download(file)"
+                >
+                  <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
+                </button>
+                @if (!closed()) { @if (file.kind === 'pdf') {
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.aiStatement' | translate"
+                  [attr.title]="'files.actions.aiStatement' | translate"
+                  (click)="withAi(file)"
+                >
+                  <ng-icon name="lucideScanText" size="16" aria-hidden="true" />
+                </button>
+                } @else if (file.status === 'needs_mapping') {
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.aiMapping' | translate"
+                  [attr.title]="'files.actions.aiMapping' | translate"
+                  (click)="withAi(file)"
+                >
+                  <ng-icon name="lucideSparkles" size="16" aria-hidden="true" />
+                </button>
+                }
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.assign' | translate"
+                  (click)="openAssign(file)"
+                >
+                  <ng-icon name="lucideLink2" size="16" aria-hidden="true" />
+                </button>
+                <button
+                  hlmBtn
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  [attr.aria-label]="'files.actions.remove' | translate"
+                  (click)="dialog.set({ kind: 'remove', file })"
+                >
+                  <ng-icon name="lucideTrash2" size="16" aria-hidden="true" />
+                </button>
+                }
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+    } } } @else if (service.overview.error()) {
+    <lk-empty-state [message]="'files.loadFailed' | translate">
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="service.overview.reload()"
+      >
+        {{ 'common.retry' | translate }}
+      </button>
+    </lk-empty-state>
+    } @else {
+    <div class="flex flex-col gap-3">
+      @for (row of skeletonRows; track row) {
+      <hlm-skeleton class="h-10 w-full" />
+      }
+    </div>
+    }
+  </div>
+</section>
+
+<lk-project-mappings [closed]="closed()" />
+
+<lk-ai-assist />
+
+<!-- Preview (F5.6) -->
+<hlm-dialog
+  [state]="dialogState('preview')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ current.file.displayName }}</h3>
+      <p hlmDialogDescription>{{ 'files.preview.description' | translate }}</p>
+    </hlm-dialog-header>
+    @if (current.file.kind === 'pdf') { @if (safePdfUrl(); as url) {
+    <iframe
+      class="h-[70vh] w-full rounded border"
+      [src]="url"
+      [title]="current.file.displayName"
+    ></iframe>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" (click)="openPdfInTab()">
+        {{ 'files.preview.openInTab' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } } @else if (tablePreview(); as preview) { @for (sheet of preview.sheets ??
+    []; track sheet.name) {
+    <div class="flex flex-col gap-2">
+      <p class="text-muted-foreground text-sm">
+        {{ 'files.preview.sheet' | translate: { name: sheet.name, shown:
+        sheet.rows.length, total: sheet.totalRows } }}
+      </p>
+      <div hlmTableContainer class="lk-panel max-h-[60vh] overflow-y-auto">
+        <table hlmTable>
+          <tbody hlmTBody>
+            @for (row of sheet.rows; track $index; let first = $first) {
+            <tr hlmTr [class.font-medium]="first">
+              @for (cell of row; track $index) {
+              <td hlmTd class="font-mono text-xs whitespace-nowrap">
+                {{ cell }}
+              </td>
+              }
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+    } } @else {
+    <hlm-skeleton class="h-64 w-full" />
+    } }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Remove (F5.7) -->
+<hlm-dialog
+  [state]="dialogState('remove')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'files.removeTitle' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'files.removeBody' | translate: { name: current.file.displayName } }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        (click)="confirmRemove(current.file)"
+      >
+        {{ 'files.actions.remove' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Manual assignment (F5.2) -->
+<hlm-dialog
+  [state]="dialogState('assign')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-4xl">
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'files.assign.title' | translate: { name: current.file.displayName }
+        }}
+      </h3>
+      <p hlmDialogDescription>{{ 'files.assign.body' | translate }}</p>
+    </hlm-dialog-header>
+    @if (current.file.kind !== 'pdf') {
+    <div class="flex flex-wrap items-end gap-2">
+      <div class="flex min-w-64 flex-1 flex-col gap-2">
+        <label class="text-sm font-medium" for="assign-mapping"
+          >{{ 'files.assign.mapping' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="assign-mapping"
+          [ngModel]="selectedMappingId()"
+          (ngModelChange)="selectedMappingId.set($event); assignPreview.set(null)"
+        >
+          <option value="">{{ 'files.assign.choose' | translate }}</option>
+          @for (mapping of service.myMappings.value() ?? []; track mapping.id) {
+          <option [value]="mapping.id">
+            {{ mapping.name }} ({{ mapping.platform }})
+          </option>
+          }
+        </select>
+      </div>
+    </div>
+    @if (assignPreview(); as preview) {
+    <lk-mapping-preview [preview]="preview" />
+    } }
+    <hlm-dialog-footer class="flex-wrap">
+      @if (current.file.kind !== 'pdf') {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="newMappingFor(current.file)"
+      >
+        {{ 'files.assign.newMapping' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="withAi(current.file)"
+      >
+        <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+        {{ 'mappings.withAi' | translate }}
+      </button>
+      } @else {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="withAi(current.file)"
+      >
+        <ng-icon name="lucideScanText" size="14" aria-hidden="true" />
+        {{ 'files.actions.aiStatement' | translate }}
+      </button>
+      }
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="assign(current.file, 'automatic')"
+      >
+        {{ 'files.assign.automatic' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="assign(current.file, 'evidenceOnly')"
+      >
+        {{ 'files.assign.evidenceOnly' | translate }}
+      </button>
+      @if (current.file.kind !== 'pdf') {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="!selectedMappingId()"
+        (click)="previewAssignment(current.file)"
+      >
+        {{ 'files.assign.preview' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!selectedMappingId()"
+        (click)="assign(current.file, 'mapping')"
+      >
+        {{ 'files.assign.apply' | translate }}
+      </button>
+      }
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

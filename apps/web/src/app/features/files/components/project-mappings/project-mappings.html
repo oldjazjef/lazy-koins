@@ -1,0 +1,170 @@
+<section hlmCard>
+  <div hlmCardHeader>
+    <h2 hlmCardTitle>{{ 'mappings.title' | translate }}</h2>
+    <p hlmCardDescription>
+      {{ 'mappings.subtitle' | translate }}
+      <a routerLink="/app/mappings" class="text-primary hover:underline"
+        >{{ 'mappings.allMappings' | translate }}</a
+      >
+    </p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-4">
+    <div class="flex flex-wrap gap-2">
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        (click)="mappingPicker.click()"
+      >
+        <ng-icon name="lucideUpload" size="14" aria-hidden="true" />
+        {{ 'mappings.upload.button' | translate }}
+      </button>
+      <input
+        #mappingPicker
+        id="mapping-picker"
+        class="sr-only"
+        type="file"
+        accept=".json,application/json"
+        (change)="picked($event)"
+      />
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        [disabled]="closed()"
+        (click)="ai.openPicker()"
+      >
+        <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+        {{ 'mappings.withAi' | translate }}
+      </button>
+    </div>
+
+    @let entries = service.projectMappings.value() ?? []; @if (entries.length
+    === 0) {
+    <p class="text-muted-foreground text-sm">
+      {{ 'mappings.empty' | translate }}
+    </p>
+    } @else {
+    <div hlmTableContainer class="lk-panel">
+      <table hlmTable>
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh>{{ 'mappings.fields.name' | translate }}</th>
+            <th hlmTh>{{ 'mappings.fields.platform' | translate }}</th>
+            <th hlmTh>{{ 'mappings.fields.origin' | translate }}</th>
+            <th hlmTh>{{ 'mappings.fields.files' | translate }}</th>
+            <th hlmTh>{{ 'mappings.fields.updated' | translate }}</th>
+            <th hlmTh class="text-right">
+              <span class="sr-only"
+                >{{ 'files.fields.actions' | translate }}</span
+              >
+            </th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (entry of entries; track entry.mapping.id) {
+          <tr hlmTr>
+            <td hlmTd class="font-medium">
+              <a
+                class="hover:underline"
+                [routerLink]="['/app/mappings', entry.mapping.id]"
+                >{{ entry.mapping.name }}</a
+              >
+            </td>
+            <td hlmTd>{{ entry.mapping.platform }}</td>
+            <td hlmTd>
+              <span hlmBadge variant="outline"
+                >{{ 'mappings.origin.' + entry.mapping.origin | translate
+                }}</span
+              >
+            </td>
+            <td hlmTd class="text-sm">
+              @for (file of entry.files; track file.id; let last = $last) { {{
+              file.displayName }}@if (!last) {, } }
+            </td>
+            <td hlmTd class="tabular-nums">
+              {{ entry.mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}
+            </td>
+            <td hlmTd class="text-right whitespace-nowrap">
+              <button
+                hlmBtn
+                variant="ghost"
+                size="icon"
+                type="button"
+                [attr.aria-label]="'mappings.actions.download' | translate"
+                (click)="service.downloadMapping(entry.mapping)"
+              >
+                <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
+              </button>
+              <a
+                hlmBtn
+                variant="ghost"
+                size="icon"
+                [routerLink]="['/app/mappings', entry.mapping.id]"
+                [attr.aria-label]="'mappings.openPage' | translate"
+              >
+                <ng-icon
+                  name="lucideExternalLink"
+                  size="16"
+                  aria-hidden="true"
+                />
+              </a>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+</section>
+
+<!-- Editor of a new mapping for one file (from the files table) -->
+<hlm-dialog [state]="editorState()" (stateChanged)="editorChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mappings.editor.newTitle' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'mappings.editor.description' | translate }}
+      </p>
+    </hlm-dialog-header>
+    <lk-mapping-editor-form
+      [idPrefix]="'project-mapping'"
+      [text]="editor.text()"
+      (textChange)="editor.text.set($event)"
+      [checkFileId]="editor.checkFileId()"
+      (checkFileIdChange)="editor.checkFileId.set($event)"
+      [checkFiles]="editor.checkFiles()"
+      [issues]="editor.issues()"
+      [invalidJson]="editor.invalidJson()"
+      [preview]="editor.preview()"
+    />
+    <hlm-dialog-footer>
+      @if (editor.targetFile()) {
+      <button hlmBtn variant="outline" type="button" (click)="editorWithAi()">
+        <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+        {{ 'mappings.withAi' | translate }}
+      </button>
+      }
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="editor.busy() || !editor.checkFile()"
+        (click)="editor.check()"
+      >
+        {{ 'mappings.editor.check' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="editor.busy()"
+        (click)="editor.save()"
+      >
+        {{ 'common.save' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

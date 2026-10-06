@@ -1,0 +1,10 @@
+#,DESCRIPTION,CURRENCY,AMOUNT,BALANCE,DATE,WALLET
+1009,Something new on wallet exchange,BTC,0.00000001,0.00960001,11-03-2025 08:00:00,exchange
+1008,Bitcoin Withdrawal #6001 on wallet exchange,BTC,-0.04000000,0.00960000,10-03-2025 08:00:01,exchange
+1007,Crypto Withdrawal fee on wallet exchange,BTC,-0.00040000,0.04960000,10-03-2025 08:00:00,exchange
+1006,Transfer of 100 UST from wallet Exchange to Funding on wallet funding,UST,100.00000000,100.00000000,05-02-2025 12:00:00,funding
+1005,Staking reward 0.12 DOT on wallet exchange,DOT,0.12000000,0.12000000,01-02-2025 00:00:00,exchange
+1004,Trading fees for 0.05 BTC (BTCUSD) @ 40000 on BFX (0.2%) on wallet exchange,USD,-4.00000000,1996.00000000,04-01-2025 10:00:00,exchange
+1003,Exchange 0.05 BTC for USD @ 40000 on wallet exchange,USD,2000.00000000,2000.00000000,04-01-2025 10:00:00,exchange
+1002,Exchange 0.05 BTC for USD @ 40000 on wallet exchange,BTC,-0.05000000,0.05000000,04-01-2025 10:00:00,exchange
+1001,Deposit (BITCOIN) #5001 on wallet exchange,BTC,0.10000000,0.10000000,03-01-2025 09:00:00,exchange

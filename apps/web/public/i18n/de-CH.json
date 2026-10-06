@@ -1,0 +1,897 @@
+{
+  "app": {
+    "name": "lazy-koins"
+  },
+  "actions": {
+    "undo": "Rückgängig"
+  },
+  "common": {
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "retry": "Erneut versuchen",
+    "save": "Speichern",
+    "close": "Schliessen",
+    "chf": "CHF"
+  },
+  "countries": {
+    "CH": "Schweiz"
+  },
+  "nav": {
+    "label": "Hauptnavigation",
+    "projects": "Projekte",
+    "mappings": "Mappings",
+    "signOut": "Abmelden",
+    "toggleTheme": "Hell/Dunkel umschalten",
+    "settings": "Einstellungen",
+    "profile": "Profil",
+    "userMenu": "Benutzermenü"
+  },
+  "login": {
+    "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "signIn": "Anmelden",
+    "register": "Konto erstellen",
+    "forgotPassword": "Passwort vergessen?",
+    "or": "oder",
+    "withGoogle": "Mit Google anmelden",
+    "emailInvalid": "Bitte eine gültige E-Mail-Adresse eingeben.",
+    "passwordTooShort": "Das Passwort braucht mindestens 6 Zeichen.",
+    "failed": "Anmeldung fehlgeschlagen",
+    "registerFailed": "Konto konnte nicht erstellt werden",
+    "resetSent": "Wir haben dir einen Link zum Zurücksetzen geschickt.",
+    "resetFailed": "Link zum Zurücksetzen konnte nicht gesendet werden",
+    "dev": {
+      "hint": "Entwicklungsmodus: Anmeldung mit einer beliebigen E-Mail-Adresse, ohne Passwort.",
+      "submit": "Weiter"
+    }
+  },
+  "projects": {
+    "status": {
+      "in_progress": "In Arbeit",
+      "reviewed": "Geprüft",
+      "closed": "Abgeschlossen"
+    },
+    "fields": {
+      "name": "Name",
+      "taxYear": "Steuerjahr",
+      "country": "Land",
+      "canton": "Kanton",
+      "status": "Status",
+      "notes": "Notizen",
+      "createdAt": "Erstellt",
+      "updatedAt": "Zuletzt geändert",
+      "wealth": "Vermögen CHF",
+      "income": "Ertrag CHF"
+    },
+    "list": {
+      "title": "Projekte",
+      "subtitle": "Ein Projekt pro Steuerjahr.",
+      "new": "Neues Projekt",
+      "empty": "Noch kein Projekt. Lege eines für dein Steuerjahr an.",
+      "loadFailed": "Projekte konnten nicht geladen werden."
+    },
+    "form": {
+      "title": "Neues Projekt",
+      "namePlaceholder": "z. B. Steuern 2025",
+      "cantonPlaceholder": "Kanton wählen",
+      "submit": "Projekt anlegen",
+      "created": "Projekt angelegt",
+      "createFailed": "Projekt konnte nicht angelegt werden",
+      "nameRequired": "Bitte einen Namen eingeben.",
+      "nameTooLong": "Der Name ist zu lang (höchstens 120 Zeichen).",
+      "taxYearInvalid": "Bitte ein Steuerjahr zwischen 2009 und 2100 eingeben.",
+      "cantonRequired": "Bitte einen Kanton wählen.",
+      "notesTooLong": "Die Notizen sind zu lang (höchstens 5000 Zeichen)."
+    },
+    "detail": {
+      "title": "Projekt",
+      "subtitle": "Steuerjahr {{year}}",
+      "editTitle": "Angaben",
+      "factsTitle": "Übersicht",
+      "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",
+      "saved": "Gespeichert",
+      "saveFailed": "Änderung konnte nicht gespeichert werden",
+      "reopen": "Wieder öffnen",
+      "reopened": "Projekt wieder geöffnet",
+      "reopenTitle": "Projekt wieder öffnen?",
+      "reopenBody": "Das Projekt ist abgeschlossen. Wieder geöffnet lässt es sich ändern — Auszüge, die du schon weitergegeben hast, stimmen danach womöglich nicht mehr.",
+      "delete": "Löschen",
+      "deleted": "Projekt gelöscht",
+      "deleteFailed": "Projekt konnte nicht gelöscht werden",
+      "deleteTitle": "Projekt löschen?",
+      "deleteBody": "Das Projekt wird mit allen Angaben gelöscht. Das lässt sich nicht rückgängig machen.",
+      "notFound": "Dieses Projekt gibt es nicht (mehr).",
+      "loadFailed": "Projekt konnte nicht geladen werden.",
+      "backToList": "Zu den Projekten"
+    }
+  },
+  "bookings": {
+    "kind": {
+      "trade": "Handel",
+      "deposit": "Einzahlung",
+      "withdrawal": "Auszahlung",
+      "fee": "Gebühr",
+      "transfer": "Umbuchung (eigene Konten)",
+      "income_interest": "Ertrag: Zinsen/Earn",
+      "income_staking": "Ertrag: Staking",
+      "income_airdrop": "Ertrag: Airdrop",
+      "income_launchpool": "Ertrag: Launchpool",
+      "income_hardfork": "Ertrag: Hardfork",
+      "loss": "Verlust",
+      "spam": "Spam",
+      "unknown": "Unbekannt"
+    }
+  },
+  "files": {
+    "title": "Dateien",
+    "subtitle": "Exporte deiner Börsen und Wallets. Die Originale bleiben unverändert und jederzeit herunterladbar.",
+    "closedHint": "Das Projekt ist abgeschlossen: Dateien lassen sich ansehen und herunterladen, aber nicht ändern.",
+    "empty": "Noch keine Dateien. Lade die Exporte für dieses Steuerjahr hoch.",
+    "loadFailed": "Dateien konnten nicht geladen werden.",
+    "removed": "Datei aus dem Projekt entfernt",
+    "removeFailed": "Datei konnte nicht entfernt werden",
+    "assigned": "Zuordnung gespeichert",
+    "assignFailed": "Zuordnung konnte nicht gespeichert werden",
+    "downloadFailed": "Download fehlgeschlagen",
+    "size": "{{kind}} · {{kb}} kB",
+    "records": "{{bookings}} Buchungen · {{holdings}} Bestände",
+    "rowErrorCount": "{{count}} Zeilen mit Fehlern",
+    "removeTitle": "Datei entfernen?",
+    "removeBody": "«{{name}}» wird aus diesem Projekt entfernt. Endgültig gelöscht wird die Datei erst, wenn kein Projekt sie mehr verwendet.",
+    "upload": {
+      "drop": "Dateien hierher ziehen (CSV, XLSX, PDF) – mehrere gleichzeitig möglich.",
+      "pick": "Dateien auswählen",
+      "limits": "Höchstens 20 MB pro Datei. Standardformat und gespeicherte Mappings werden automatisch erkannt.",
+      "progress": "Fortschritt des Uploads",
+      "added": "{{count}} Datei(en) hinzugefügt",
+      "tooBig": "Datei ist grösser als 20 MB",
+      "duplicate": "Diese Datei ist schon im Projekt",
+      "closed": "Das Projekt ist abgeschlossen",
+      "unsupported": "Nur CSV, XLSX und PDF werden angenommen",
+      "unreadable": "Die Datei konnte nicht gelesen werden",
+      "failed": "Upload fehlgeschlagen",
+      "state": {
+        "queued": "wartet",
+        "uploading": "wird hochgeladen …",
+        "done": "fertig",
+        "failed": "fehlgeschlagen"
+      }
+    },
+    "template": {
+      "label": "Vorlage im Standardformat:",
+      "xlsx": "Excel (XLSX)",
+      "bookingsCsv": "Buchungen (CSV)",
+      "holdingsCsv": "Bestände (CSV)"
+    },
+    "missing": {
+      "title": "Möglicherweise fehlende Dateien",
+      "kind": {
+        "startsLate": "Die Buchungen beginnen erst am {{date}} – der Anfang von {{year}} fehlt.",
+        "endsEarly": "Die Buchungen enden am {{date}} – bis 31.12.{{year}} fehlt etwas.",
+        "noYearEndBalance": "Kein Bestand per 31.12.{{year}} (Kontoauszug) vorhanden."
+      },
+      "howTo": {
+        "startsLate": "Lade bei der Plattform einen Export ab spätestens 01.01. herunter – meist unter Verlauf/History → Export – und lade ihn hier hoch. Begann das Konto erst später, ist alles in Ordnung.",
+        "endsEarly": "Exportiere die Historie bis mindestens 31.12. (Verlauf/History → Export, Zeitraum anpassen). Gab es danach keine Bewegungen, ist alles in Ordnung.",
+        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements) und erfasse die Bestände im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft."
+      }
+    },
+    "group": {
+      "unread": "Ohne Plattform (Belege und noch nicht gelesene Dateien)"
+    },
+    "fields": {
+      "name": "Datei",
+      "status": "Status",
+      "period": "Zeitraum",
+      "records": "Inhalt",
+      "added": "Hochgeladen",
+      "origin": "Herkunft",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "standard": "Standardformat",
+      "mapped": "Gelesen mit Mapping",
+      "needs_mapping": "Mapping fehlt",
+      "evidence_only": "Nur Beleg"
+    },
+    "origin": {
+      "fromProject": "aus Projekt «{{name}}»",
+      "uploaded": "neu",
+      "unknownProject": "unbekannt",
+      "derived": "aus «{{name}}» (AI)",
+      "unknownFile": "entfernter Datei"
+    },
+    "actions": {
+      "preview": "Vorschau",
+      "download": "Herunterladen",
+      "assign": "Zuordnen",
+      "remove": "Entfernen",
+      "aiMapping": "Mapping mit AI erstellen",
+      "aiStatement": "Mit AI auslesen"
+    },
+    "preview": {
+      "description": "Die ersten Zeilen der Datei, unverändert.",
+      "openInTab": "In neuem Tab öffnen",
+      "sheet": "Blatt «{{name}}»: {{shown}} von {{total}} Zeilen",
+      "failed": "Vorschau konnte nicht geladen werden"
+    },
+    "assign": {
+      "title": "«{{name}}» zuordnen",
+      "body": "Wähle ein Mapping, das die Spalten dieser Datei ins Standardformat übersetzt, prüfe die Vorschau und ordne zu. Oder behalte die Datei nur als Beleg.",
+      "mapping": "Mapping",
+      "choose": "Mapping wählen …",
+      "preview": "Vorschau",
+      "apply": "Zuordnen",
+      "newMapping": "Neues Mapping",
+      "automatic": "Automatisch erkennen",
+      "evidenceOnly": "Nur als Beleg"
+    },
+    "rowErrors": {
+      "required": "Pflichtwert fehlt.",
+      "invalidNumber": "Keine gültige Zahl.",
+      "invalidTimestamp": "Kein gültiger Zeitpunkt.",
+      "timeZoneMissing": "Zeitpunkt ohne Zeitzone.",
+      "invalidKind": "Unbekannte Art.",
+      "invalidDate": "Kein gültiges Datum (JJJJ-MM-TT).",
+      "negative": "Darf nicht negativ sein.",
+      "headerNotFound": "Die Kopfzeile des Mappings wurde in der Datei nicht gefunden."
+    }
+  },
+  "mappings": {
+    "title": "Mappings",
+    "subtitle": "Ein Mapping übersetzt den Export einer Plattform ins Standardformat. Hier siehst du, mit welchen Mappings die Dateien dieses Projekts gelesen werden – bearbeiten und löschen kannst du sie auf der Mappings-Seite.",
+    "withAi": "Mit AI erstellen",
+    "empty": "Dieses Projekt verwendet noch kein Mapping.",
+    "saved": "Mapping gespeichert",
+    "saveFailed": "Mapping konnte nicht gespeichert werden",
+    "checkFailed": "Prüfung fehlgeschlagen",
+    "reapplyFailed": "Dateien konnten nicht neu gelesen werden",
+    "reapplyTitle": "Dateien neu lesen?",
+    "reapplyBody": "{{count}} Datei(en) verwenden dieses Mapping. Sollen sie mit der neuen Fassung neu gelesen werden? Abgeschlossene Projekte bleiben unverändert.",
+    "reapplyLater": "Später",
+    "reapply": "Neu lesen",
+    "upload": {
+      "button": "Mapping hochladen (.json)",
+      "notJson": "Die Datei ist kein JSON",
+      "invalid": "Das Mapping ist ungültig"
+    },
+    "fields": {
+      "name": "Name",
+      "platform": "Plattform",
+      "origin": "Herkunft",
+      "files": "Dateien",
+      "updated": "Geändert"
+    },
+    "origin": {
+      "ai": "AI",
+      "manual": "manuell",
+      "copied": "hochgeladen"
+    },
+    "actions": {
+      "download": "Als JSON herunterladen"
+    },
+    "editor": {
+      "newTitle": "Neues Mapping",
+      "description": "Das Mapping als JSON. «Prüfen» validiert es und zeigt, was es aus der gewählten Datei liest.",
+      "json": "Mapping (JSON)",
+      "invalidJson": "Das ist kein gültiges JSON.",
+      "issues": "Das Mapping ist noch nicht gültig:",
+      "checkFile": "Prüfen mit Datei",
+      "checkHint": "Noch keine Vorschau – «Prüfen» wählen.",
+      "check": "Prüfen",
+      "noCheckFile": "Noch keine Datei wird mit diesem Mapping gelesen, deshalb gibt es keine Vorschau. «Speichern» prüft das Mapping trotzdem vollständig."
+    },
+    "preview": {
+      "totals": "{{bookings}} Buchungen, {{holdings}} Bestände, {{errors}} Fehler, {{notes}} Hinweise.",
+      "period": "Zeitraum {{from}} – {{to}}.",
+      "row": "Zeile",
+      "timestamp": "Zeitpunkt (UTC)",
+      "account": "Konto",
+      "kind": "Art",
+      "asset": "Asset",
+      "quantity": "Menge",
+      "fee": "Gebühr",
+      "rawType": "Original-Typ",
+      "holdings": "Bestände",
+      "errors": "Zeilen mit Fehlern",
+      "errorAt": "Zeile {{row}}, Spalte {{column}}:"
+    },
+    "allMappings": "Alle Mappings",
+    "openPage": "Mapping öffnen",
+    "list": {
+      "subtitle": "Alle deine Mappings. Sie gelten für alle deine Projekte: Dateien mit denselben Spalten werden beim Hochladen automatisch damit gelesen.",
+      "new": "Neues Mapping",
+      "newDescription": "Das Mapping als JSON. «Speichern» prüft es vollständig; die Vorschau mit einer Datei gibt es auf der Seite des Mappings, sobald eine Datei es nutzt.",
+      "search": "Suchen",
+      "searchPlaceholder": "Name oder Plattform",
+      "sort": "Sortieren nach",
+      "sortBy": {
+        "name": "Name",
+        "platform": "Plattform",
+        "updated": "Zuletzt geändert",
+        "files": "Anzahl Dateien"
+      },
+      "empty": "Noch keine Mappings. Ein Mapping übersetzt den Export einer Plattform (zum Beispiel das Kraken-Ledger) ins Standardformat von lazy-koins. Ein Mapping, das du in einem Projekt erstellst – von Hand, hochgeladen oder mit AI –, steht in allen deinen Projekten zur Verfügung.",
+      "noMatch": "Kein Mapping passt zu deiner Suche.",
+      "loadFailed": "Die Mappings konnten nicht geladen werden.",
+      "usage": "{{files}} Datei(en) in {{projects}} Projekt(en)",
+      "unused": "nicht genutzt",
+      "version": "Version",
+      "usedBy": "Genutzt von"
+    },
+    "detail": {
+      "factsTitle": "Angaben",
+      "fingerprint": "Erkennt Spalten",
+      "created": "Erstellt",
+      "jsonTitle": "Mapping (JSON)",
+      "edit": "Bearbeiten",
+      "editHint": "Ändere das JSON, prüfe es mit einer Datei, die das Mapping nutzt, und speichere. Die Dateien behalten ihr bisheriges Ergebnis, bis du sie neu lesen lässt.",
+      "usageTitle": "Wird genutzt in",
+      "usageEmpty": "Noch keine Datei wird mit diesem Mapping gelesen. Lade in einem Projekt einen Export mit diesen Spalten hoch – er wird automatisch damit gelesen.",
+      "project": "Projekt",
+      "taxYear": "Steuerjahr",
+      "status": "Status",
+      "files": "Dateien",
+      "notFound": "Dieses Mapping gibt es nicht (mehr).",
+      "loadFailed": "Das Mapping konnte nicht geladen werden.",
+      "backToList": "Zu den Mappings",
+      "delete": "Löschen",
+      "deleteTitle": "Mapping löschen?",
+      "deleteBody": "«{{name}}» wird endgültig gelöscht.",
+      "deleteFiles": "Diese Dateien werden danach nicht mehr gelesen und brauchen wieder ein Mapping:",
+      "deleteNoFiles": "Keine Datei nutzt dieses Mapping.",
+      "deleteClosed": "Ein abgeschlossenes Projekt nutzt dieses Mapping. Öffne das Projekt wieder, dann kannst du das Mapping löschen.",
+      "deleted": "Mapping gelöscht",
+      "deleteFailed": "Das Mapping konnte nicht gelöscht werden",
+      "reapplyClosed": "Davon in abgeschlossenen Projekten: {{count}} – sie bleiben unverändert.",
+      "reapplied": "{{reapplied}} Datei(en) neu gelesen.",
+      "reappliedSkipped": "{{reapplied}} Datei(en) neu gelesen, {{skipped}} in abgeschlossenen Projekten unverändert gelassen."
+    }
+  },
+  "ai": {
+    "next": "Weiter",
+    "loading": "Einstellungen und Ausschnitt werden geladen …",
+    "working": "Die AI arbeitet – das kann bei lokalen Modellen eine Minute dauern …",
+    "meta": "Modell {{model}}, {{rounds}} Runde(n).",
+    "usage": "Verbrauch: {{input}} Eingabe- und {{output}} Ausgabe-Tokens.",
+    "noUsage": "Der Anbieter meldet keinen Token-Verbrauch.",
+    "notReady": {
+      "title": "AI ist nicht eingerichtet",
+      "disabled": "Das AI-Plugin ist ausgeschaltet. Schalte es in den Einstellungen ein und wähle einen Anbieter.",
+      "notConfigured": "Das AI-Plugin ist eingeschaltet, aber noch nicht vollständig eingerichtet: Es fehlt der API-Schlüssel oder die Adresse eines lokalen Modells.",
+      "withoutAi": "Ohne AI funktioniert alles weiter: Lade die Vorlage im Standardformat herunter oder schreibe ein Mapping von Hand.",
+      "openSettings": "Zu den Einstellungen"
+    },
+    "consent": {
+      "mappingBody": "Für das Mapping wird dieser Ausschnitt der Datei an {{provider}} gesendet (Modell {{model}}, Adresse {{address}}). Die AI schreibt nur das Mapping, nicht die Buchungen; nichts wird ohne deine Bestätigung gespeichert.",
+      "statementBody": "Zum Auslesen der Bestände wird dieser Text des PDFs an {{provider}} gesendet (Modell {{model}}, Adresse {{address}}). Nichts wird ohne deine Bestätigung gespeichert.",
+      "payload": "Das wird gesendet:",
+      "alsoSent": "Dazu kommen die allgemeinen Anweisungen und das erwartete Antwortformat (JSON-Schema) – sie enthalten keine Daten von dir.",
+      "agree": "Ich bin einverstanden, dass dieser Ausschnitt an den Anbieter gesendet wird. (Einmalige Zustimmung – vor jeder Anfrage siehst du wieder, was gesendet wird. Widerrufbar in den Einstellungen.)",
+      "send": "Senden",
+      "defaultModel": "Standard",
+      "defaultAddress": "Standard"
+    },
+    "mapping": {
+      "title": "Mapping mit AI erstellen",
+      "pickFile": "Für welche Datei soll die AI ein Mapping schreiben?",
+      "pickFileLabel": "Datei",
+      "noFile": "Keine Datei braucht ein Mapping.",
+      "reviewTitle": "Vorschlag der AI prüfen",
+      "reviewBody": "So würde das Mapping «{{name}}» lesen. Prüfe Arten, Fehler und unbekannte Werte, passe das JSON bei Bedarf an und speichere es dann.",
+      "kindCounts": "Arten in der ganzen Datei",
+      "unknownValues": "Nicht zugeordnete Werte",
+      "save": "Mapping speichern",
+      "saved": "Mapping gespeichert – die Datei ist jetzt gelesen. Gleich aufgebaute Dateien werden künftig ohne AI erkannt.",
+      "problems": {
+        "invalidSpec": "Das Mapping ist noch nicht gültig.",
+        "headerNotFound": "Die Kopfzeile wurde in der Datei nicht gefunden.",
+        "noRecords": "Das Mapping liest keine einzige Buchung.",
+        "rowErrors": "Viele Zeilen können nicht gelesen werden.",
+        "unknownKinds": "Viele Buchungen haben noch keine Art (unknown)."
+      }
+    },
+    "statement": {
+      "title": "Kontoauszug mit AI auslesen",
+      "reviewTitle": "Bestände prüfen",
+      "reviewBody": "Die AI hat diese Bestände gelesen. Jede Menge wurde mit dem Text des PDFs verglichen. Wähle aus, was übernommen wird – es entsteht eine neue Datei im Standardformat, das PDF bleibt als Beleg.",
+      "truncated": "Das PDF ist lang: Nur die ersten Seiten wurden gesendet.",
+      "none": "Die AI hat keine Bestände gefunden.",
+      "keep": "Übernehmen",
+      "verbatim": "im PDF gefunden",
+      "priceChf": "{{value}} CHF",
+      "priceUsd": "{{value}} USD",
+      "save": "{{count}} Bestände übernehmen",
+      "saved": "Bestände als Datei im Standardformat gespeichert.",
+      "duplicate": "Genau diese Bestände sind schon als Datei im Projekt.",
+      "fields": {
+        "asset": "Asset",
+        "quantity": "Menge",
+        "printed": "Im PDF",
+        "asOf": "Stichtag",
+        "platform": "Plattform · Konto",
+        "price": "Kurs",
+        "page": "Seite",
+        "check": "Prüfung"
+      },
+      "issues": {
+        "notVerbatim": "Menge nicht im PDF",
+        "pageMismatch": "andere Seite",
+        "invalidNumber": "keine Zahl",
+        "ambiguousSeparator": "Trennzeichen unklar",
+        "priceNotVerbatim": "Kurs nicht im PDF",
+        "pageOutOfRange": "Seite fehlt",
+        "invalidRecord": "ungültig"
+      }
+    },
+    "errors": {
+      "failed": "Die AI-Anfrage ist fehlgeschlagen.",
+      "unreachable": "Der Server ist nicht erreichbar.",
+      "closed": "Das Projekt ist abgeschlossen – öffne es zuerst wieder.",
+      "aiDisabled": "Das AI-Plugin ist ausgeschaltet.",
+      "aiNotConfigured": "Das AI-Plugin ist noch nicht eingerichtet.",
+      "consentRequired": "Bitte zuerst dem Senden zustimmen.",
+      "keyUnreadable": "Der gespeicherte API-Schlüssel kann nicht mehr entschlüsselt werden – bitte neu eingeben.",
+      "privateUrl": "Lokale Adressen sind auf diesem Server nicht erlaubt.",
+      "invalidUrl": "Die Adresse ist keine gültige http(s)-URL.",
+      "encryptionUnavailable": "Auf diesem Server können keine API-Schlüssel gespeichert werden.",
+      "noText": "Das PDF enthält keinen Text (gescannt?). Erfasse die Bestände von Hand.",
+      "invalidAnswer": "Die Antwort der AI hatte nicht das erwartete Format.",
+      "invalidKey": "Der Anbieter lehnt den API-Schlüssel ab.",
+      "rateLimited": "Zu viele Anfragen beim Anbieter – bitte später nochmals versuchen.",
+      "network": "Der Anbieter ist nicht erreichbar (Adresse prüfen, läuft das lokale Modell?).",
+      "timeout": "Der Anbieter hat zu lange nicht geantwortet.",
+      "badResponse": "Die Antwort des Anbieters war unbrauchbar.",
+      "providerError": "Der Anbieter meldet einen Fehler.",
+      "modelNotFound": "Das Modell oder die Adresse gibt es beim Anbieter nicht."
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "ai": {
+      "title": "AI-Plugin",
+      "subtitle": "AI-Anbieter für Mappings und Kontoauszüge",
+      "intro": "Die AI schreibt Mappings für unbekannte Exporte und liest Bestände aus PDF-Kontoauszügen. Gesendet wird nur ein kleiner Ausschnitt, den du vor jeder Anfrage siehst. Ohne AI funktioniert alles mit der Vorlage und Mappings.",
+      "loadFailed": "Die Einstellungen konnten nicht geladen werden.",
+      "enabled": "AI-Plugin verwenden",
+      "provider": "Anbieter",
+      "providers": {
+        "openai_compatible": "OpenAI-kompatibel",
+        "anthropic": "Anthropic"
+      },
+      "presets": {
+        "label": "Schnellwahl",
+        "openai": "OpenAI",
+        "anthropic": "Anthropic (Claude)",
+        "mistral": "Mistral",
+        "groq": "Groq",
+        "openrouter": "OpenRouter",
+        "ollama": "Ollama (lokal)",
+        "lmstudio": "LM Studio (lokal)"
+      },
+      "baseUrl": "Adresse (Base URL)",
+      "baseUrlPlaceholder": "leer = Standard des Anbieters",
+      "baseUrlHint": "OpenAI-kompatibel: bis und mit /v1, z. B. http://localhost:11434/v1 für Ollama.",
+      "privateUrlsHint": "Lokale Adressen (localhost, Heimnetz) sind auf diesem Server nicht erlaubt.",
+      "model": "Modell",
+      "modelPlaceholder": "leer = Standardmodell",
+      "apiKey": "API-Schlüssel",
+      "apiKeyPlaceholder": "Schlüssel einfügen",
+      "apiKeyKeep": "leer lassen = gespeicherten Schlüssel behalten",
+      "apiKeyStored": "Gespeichert (verschlüsselt): {{hint}}",
+      "apiKeyNone": "Kein Schlüssel gespeichert – für lokale Modelle nicht nötig.",
+      "apiKeyRemove": "Schlüssel entfernen",
+      "keyRemoved": "API-Schlüssel entfernt",
+      "noEncryption": "Auf diesem Server kann kein Schlüssel gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt). Lokale Modelle ohne Schlüssel funktionieren trotzdem.",
+      "saved": "AI-Einstellungen gespeichert",
+      "test": "Verbindung testen",
+      "testSaveFirst": "Zuerst speichern",
+      "testing": "Verbindung wird getestet …",
+      "testOk": "Verbindung funktioniert: {{model}} hat in {{millis}} ms geantwortet.",
+      "status": {
+        "ready": "bereit",
+        "off": "aus",
+        "notConfigured": "unvollständig"
+      },
+      "consent": {
+        "title": "Zustimmung (Datenschutz)",
+        "body": "Bevor zum ersten Mal Daten an einen Anbieter gehen, fragt die App nach deiner Zustimmung. Vor jeder Anfrage siehst du genau, was gesendet wird.",
+        "given": "Zugestimmt am {{date}}.",
+        "none": "Noch keine Zustimmung – sie wird bei der ersten Anfrage eingeholt.",
+        "revoke": "Zustimmung widerrufen"
+      },
+      "consentRevoked": "Zustimmung widerrufen",
+      "form": {
+        "providerRequired": "Bitte einen Anbieter wählen.",
+        "baseUrlInvalid": "Bitte eine http(s)-Adresse eingeben.",
+        "modelTooLong": "Der Modellname ist zu lang.",
+        "apiKeyTooLong": "Der Schlüssel ist zu lang."
+      }
+    },
+    "keysUnavailable": "Schlüssel können auf diesem Server nicht gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
+    "noKey": "Kein Schlüssel gespeichert",
+    "removeKey": "Schlüssel entfernen",
+    "saved": "Einstellungen gespeichert",
+    "saveFailed": "Einstellungen konnten nicht gespeichert werden",
+    "fields": {
+      "onlineRates": "Kursabfragen aus dem Internet erlauben",
+      "coingeckoKey": "CoinGecko API-Schlüssel",
+      "etherscanKey": "Etherscan API-Schlüssel"
+    },
+    "sections": {
+      "label": "Bereiche der Einstellungen",
+      "rates": "Kurse",
+      "wallets": "Wallets",
+      "ai": "AI-Plugin"
+    },
+    "rates": {
+      "title": "Kursabfragen",
+      "subtitle": "Kurse aus dem Internet, CoinGecko-Schlüssel, ESTV-Kursliste",
+      "hint": "Ausgeschaltet holt lazy-koins keine Kurse aus dem Internet; gespeicherte und manuell erfasste Kurse gelten weiter.",
+      "coingeckoHint": "Für Assets ohne Binance-Kurs (CoinGecko Demo-Schlüssel). Wird verschlüsselt gespeichert.",
+      "estvTitle": "ESTV-Kursliste",
+      "estvHint": "Die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
+      "project": "Projekt"
+    },
+    "wallets": {
+      "title": "Wallet-Abfragen",
+      "subtitle": "Schlüssel für die Abfrage von Wallets",
+      "hint": "Etherscan API V2 – ein Schlüssel für alle EVM-Netzwerke. Die automatische Wallet-Abfrage folgt; der Schlüssel wird verschlüsselt gespeichert."
+    }
+  },
+  "workspace": {
+    "label": "Bereiche des Projekts",
+    "tabs": {
+      "files": "Dateien",
+      "rates": "Kurse",
+      "result": "Ergebnis",
+      "checks": "Prüfungen",
+      "corrections": "Korrekturen",
+      "exports": "Exporte"
+    }
+  },
+  "calculation": {
+    "calculated": "Neu berechnet",
+    "calculateFailed": "Berechnung fehlgeschlagen"
+  },
+  "records": {
+    "title": "Zugrunde liegende Buchungen",
+    "count": "{{shown}} von {{total}} Einträgen",
+    "file": "Datei",
+    "row": "Zeile",
+    "at": "Zeitpunkt (UTC)",
+    "kind": "Art",
+    "asset": "Plattform · Asset",
+    "quantity": "Menge",
+    "fee": "Gebühr",
+    "raw": "Originalzeile",
+    "correction": "Korrektur (manuell)",
+    "unknownFile": "Datei nicht mehr im Projekt",
+    "holding": "Bestand"
+  },
+  "result": {
+    "calculatedAt": "Berechnet am {{date}}",
+    "stale": "Daten geändert – neu berechnen",
+    "calculate": "Neu berechnen",
+    "wealth": "Steuerwert per 31.12.{{year}}",
+    "income": "Ertrag {{year}}",
+    "missingPrices": "{{count}} Werte ohne Kurs – siehe Prüfungen und Kurse.",
+    "missingShort": "{{count}} ohne Kurs",
+    "wealthTitle": "Vermögen je Plattform/Wallet",
+    "incomeTitle": "Ertrag je Kategorie",
+    "earnGapTitle": "Earn-Lücke (Differenzmethode)",
+    "earnGapHint": "Lücke = (Bestand Ende − Bestand Anfang) − Buchungen des Jahres ohne interne Umbuchungen. Nur positive Lücken zählen als Ertrag (Jahresmittelkurs).",
+    "oneOffTitle": "Einmalereignisse (Hardforks, Airdrops, Verluste)",
+    "noPositions": "Keine Positionen per 31.12.",
+    "notCalculated": "Noch nicht berechnet. Lade Dateien hoch, aktualisiere die Kurse und berechne.",
+    "loadFailed": "Das Ergebnis konnte nicht geladen werden.",
+    "recordsFailed": "Buchungen konnten nicht geladen werden",
+    "estvMissing": "ESTV-Kurs nachtragen",
+    "total": "Total",
+    "fields": {
+      "platform": "Plattform/Wallet",
+      "positions": "Positionen",
+      "valueChf": "Wert CHF",
+      "asset": "Asset",
+      "account": "Konto",
+      "quantity": "Menge",
+      "priceChf": "Kurs CHF",
+      "source": "Quelle",
+      "actions": "Aktionen",
+      "category": "Kategorie",
+      "bookings": "Buchungen",
+      "date": "Datum",
+      "netQuantity": "Menge netto",
+      "grossChf": "Brutto CHF",
+      "start": "Anfang",
+      "end": "Ende",
+      "booked": "Gebucht",
+      "gap": "Lücke",
+      "event": "Ereignis"
+    },
+    "actions": {
+      "overridePrice": "Kurs überschreiben",
+      "setQuantity": "Menge erfassen",
+      "reclassify": "Umklassieren"
+    },
+    "status": {
+      "ok": "ok",
+      "missingPrice": "Kurs fehlt",
+      "spam": "Spam (ausgeblendet)",
+      "negative": "Negativ"
+    },
+    "gapStatus": {
+      "negative": "negativ – prüfen",
+      "missingPrice": "Kurs fehlt"
+    },
+    "quantitySource": {
+      "statement": "Kontoauszug",
+      "ledger": "Ledger",
+      "manual": "Manuell"
+    },
+    "priceOrigin": {
+      "home": "CHF",
+      "override": "Überschrieben",
+      "estv": "ESTV-Kursliste",
+      "recordChf": "Kurs CHF laut Beleg",
+      "recordUsd": "Kurs USD laut Beleg",
+      "recordValueUsd": "USD-Wert der Plattform",
+      "pegged": "Stablecoin = 1 USD",
+      "fx": "Devisenkurs",
+      "tableChf": "Tageskurs CHF",
+      "tableUsd": "Tagesschluss USD"
+    },
+    "category": {
+      "interest": "Zinsen / Earn",
+      "staking": "Staking",
+      "airdrop": "Airdrop",
+      "launchpool": "Launchpool",
+      "hardfork": "Hardfork",
+      "earn_gap": "Earn-Lücke"
+    }
+  },
+  "checks": {
+    "title": "Prüfungen",
+    "items": "{{count}} offene Punkte",
+    "openItems": "Offene Punkte ({{count}} nicht erledigt)",
+    "noItems": "Keine offenen Punkte.",
+    "loadFailed": "Die Prüfungen konnten nicht geladen werden.",
+    "saveFailed": "Offener Punkt konnte nicht gespeichert werden",
+    "showRecords": "Buchungen anzeigen",
+    "addNote": "Notiz hinzufügen",
+    "fields": {
+      "done": "Erledigt",
+      "item": "Punkt",
+      "impact": "Auswirkung CHF (geschätzt)",
+      "note": "Notiz"
+    },
+    "light": {
+      "green": "grün",
+      "yellow": "gelb",
+      "red": "rot",
+      "grey": "nicht anwendbar"
+    },
+    "kind": {
+      "ledgerVsStatement": "Saldo laut Ledger = Saldo laut Kontoauszug",
+      "earnGap": "Fehlende Earn-Erträge ausgewiesen",
+      "unmatchedWithdrawals": "Auszahlungen ohne Gegenbuchung",
+      "unmatchedDeposits": "Zuflüsse ohne Gegenbuchung (möglicher Ertrag)",
+      "openingBalance": "Anfangsbestand = Endbestand des Vorjahres",
+      "missingPrices": "Positionen ohne Kurs",
+      "unclassified": "Nicht zugeordnete Buchungen",
+      "walletNetworks": "Wallets auf allen Netzwerken geprüft"
+    },
+    "reason": {
+      "balanceDiffers": "Ledger {{actual}} ≠ Kontoauszug {{expected}} (Differenz {{difference}})",
+      "ledgerBalanceDiffers": "Summe der Buchungen {{actual}} ≠ Saldo-Spalte {{expected}}",
+      "negativeBalance": "Negativer Bestand {{quantity}} – Buchungen fehlen",
+      "negativeEarnGap": "Negative Earn-Lücke {{gap}} – Bestand oder Historie prüfen",
+      "earnGapWithoutPrice": "Earn-Lücke {{gap}} ohne Jahresmittelkurs",
+      "withdrawalWithoutDeposit": "Auszahlung {{quantity}} am {{date}} ohne Eingang auf einem eigenen Konto",
+      "depositWithoutWithdrawal": "Zufluss {{quantity}} am {{date}} ohne Herkunft – möglicher Ertrag",
+      "openingDiffers": "Anfangsbestand {{actual}} ≠ Endbestand Vorjahr {{expected}}",
+      "positionWithoutPrice": "Kein Kurs per 31.12. – ESTV-Kurs nachtragen oder Kurs überschreiben",
+      "incomeWithoutPrice": "{{count}} Ertragsbuchungen ohne Kurs",
+      "oneOffWithoutPrice": "Einmalereignis ohne Kurs – ESTV-Kurs nachtragen",
+      "unclassifiedBookings": "{{count}} Buchungen „{{rawType}}“ ohne Zuordnung – Mapping oder Korrektur",
+      "walletNetworksNotAvailable": "Die automatische Prüfung der Wallets auf allen Netzwerken ist noch nicht verfügbar – bitte manuell prüfen."
+    },
+    "comparison": {
+      "title": "Vergleich mit {{year}}",
+      "wealth": "Vermögen (Vorjahr → Veränderung)",
+      "income": "Ertrag (Vorjahr → Veränderung)",
+      "new": "Neue Positionen",
+      "removed": "Weggefallene Positionen",
+      "hint": "Aus dem letzten berechneten Projekt des Vorjahres."
+    }
+  },
+  "corrections": {
+    "newTitle": "Neue Korrektur",
+    "newHint": "Korrekturen ändern keine Originaldaten; sie werden bei jeder Berechnung angewendet und sind rückgängig machbar.",
+    "submit": "Korrektur erfassen",
+    "clear": "Leeren",
+    "closedHint": "Das Projekt ist abgeschlossen – keine neuen Korrekturen.",
+    "historyTitle": "Verlauf",
+    "empty": "Noch keine Korrekturen.",
+    "undo": "Rückgängig",
+    "redo": "Wieder anwenden",
+    "created": "Korrektur erfasst",
+    "createFailed": "Korrektur konnte nicht erfasst werden",
+    "changed": "Korrektur geändert",
+    "changeFailed": "Korrektur konnte nicht geändert werden",
+    "type": {
+      "price_override": "Kurs überschreiben",
+      "reclassify": "Buchung umklassieren",
+      "manual_booking": "Manuelle Buchung",
+      "manual_holding": "Manueller Bestand"
+    },
+    "status": {
+      "applied": "angewendet",
+      "undone": "rückgängig gemacht",
+      "targetMissing": "Buchung nicht gefunden",
+      "pending": "noch nicht berechnet"
+    },
+    "fields": {
+      "type": "Art der Korrektur",
+      "reason": "Begründung",
+      "asset": "Asset",
+      "date": "Datum",
+      "priceChf": "Kurs CHF",
+      "priceChfOptional": "Kurs CHF (optional)",
+      "bookingId": "Buchung (Kennung)",
+      "kind": "Neue Art",
+      "platform": "Plattform/Wallet",
+      "account": "Konto",
+      "timestamp": "Zeitpunkt (UTC)",
+      "quantity": "Menge (mit Vorzeichen)",
+      "fee": "Gebühr (optional)",
+      "asOf": "Stichtag",
+      "evidence": "Beleg",
+      "createdAt": "Erfasst",
+      "before": "Vorher",
+      "after": "Nachher",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "errors": {
+      "required": "Bitte alle Pflichtfelder ausfüllen.",
+      "reason": "Bitte eine Begründung angeben.",
+      "reasonTooLong": "Die Begründung ist zu lang.",
+      "decimal": "Bitte eine Zahl mit Punkt als Dezimaltrennzeichen eingeben.",
+      "positive": "Bitte eine positive Zahl mit Punkt als Dezimaltrennzeichen eingeben.",
+      "date": "Bitte ein Datum wählen.",
+      "kind": "Bitte eine Art wählen.",
+      "tooLong": "Der Text ist zu lang."
+    }
+  },
+  "rates": {
+    "online": "Kursabfragen aus dem Internet: ein",
+    "offline": "Kursabfragen aus dem Internet: aus (Einstellungen)",
+    "refresh": "Kurse aktualisieren",
+    "refreshAll": "Alle neu abrufen",
+    "estvImport": "ESTV-Kursliste importieren",
+    "hint": "Kurse werden pro Projekt gespeichert (EZB-Devisen, Binance-Tagesschluss, CoinGecko mit Schlüssel). Die Berechnung liest nur gespeicherte Kurse; Überschreibungen und ESTV-Werte haben Vorrang. Kursliste: XML von ictax.admin.ch oder CSV asset;kurs_chf;datum.",
+    "summary": "Abgerufen: {{fx}} Devisenkurse",
+    "refreshed": "Kurse aktualisiert",
+    "refreshFailed": "Kurse konnten nicht aktualisiert werden",
+    "overridden": "Kurs gespeichert",
+    "overrideFailed": "Kurs konnte nicht gespeichert werden",
+    "removed": "Kurs entfernt",
+    "removeFailed": "Kurs konnte nicht entfernt werden",
+    "estvFailed": "Kursliste konnte nicht importiert werden",
+    "estvImported": "{{count}} ESTV-Kurse importiert",
+    "loadFailed": "Die Kurse konnten nicht geladen werden.",
+    "overrideTitle": "Kurs überschreiben",
+    "overrideHint": "Z. B. USD/CHF per 31.12. laut ESTV oder der Kurs eines Assets. Gilt vor allen anderen Quellen.",
+    "override": "Überschreiben",
+    "remove": "Entfernen",
+    "manualTitle": "Überschriebene Kurse und ESTV-Werte",
+    "seriesTitle": "Gespeicherte Kursreihen",
+    "search": "Asset suchen",
+    "empty": "Noch keine Kurse gespeichert.",
+    "noYearEnd": "kein Kurs",
+    "fields": {
+      "kind": "Art",
+      "asset": "Asset / Währung",
+      "currency": "In",
+      "date": "Datum",
+      "value": "Wert",
+      "source": "Quelle",
+      "actions": "Aktionen",
+      "points": "Tage",
+      "range": "Zeitraum",
+      "yearEnd": "Kurs 31.12.{{year}}",
+      "fetchedAt": "Abgerufen"
+    },
+    "kind": {
+      "price": "Kurs",
+      "fx": "Devisenkurs"
+    },
+    "currency": {
+      "CHF": "CHF",
+      "USD": "USD"
+    },
+    "source": {
+      "manual": "Überschrieben",
+      "estv": "ESTV-Kursliste",
+      "binance": "Binance",
+      "coingecko": "CoinGecko",
+      "ecb": "EZB"
+    },
+    "status": {
+      "fetched": "abgerufen",
+      "cached": "schon gespeichert",
+      "notFound": "nicht gefunden",
+      "failed": "Fehler"
+    },
+    "errors": {
+      "asset": "Bitte ein Asset-Kürzel eingeben.",
+      "date": "Bitte ein Datum wählen.",
+      "value": "Bitte einen positiven Wert mit Punkt als Dezimaltrennzeichen eingeben."
+    }
+  },
+  "exports": {
+    "createTitle": "Auszug erstellen",
+    "createHint": "Aus dem aktuellen Ergebnis (bei geänderten Daten wird zuerst neu berechnet). Jeder Auszug wird mit Datum gespeichert.",
+    "listTitle": "Erstellte Auszüge",
+    "empty": "Noch keine Auszüge erstellt.",
+    "loadFailed": "Die Auszüge konnten nicht geladen werden.",
+    "created": "Auszug erstellt",
+    "createFailed": "Auszug konnte nicht erstellt werden",
+    "download": "Herunterladen",
+    "downloadFailed": "Download fehlgeschlagen",
+    "kind": {
+      "simple_pdf": "Einfach (PDF)",
+      "simple_xlsx": "Einfach (Excel)",
+      "detailed_pdf": "Ausführlich (PDF)",
+      "detailed_xlsx": "Ausführlich (Excel)"
+    },
+    "fields": {
+      "createdAt": "Erstellt",
+      "kind": "Auszug",
+      "wealth": "Vermögen CHF",
+      "income": "Ertrag CHF",
+      "actions": "Aktionen"
+    },
+    "mail": {
+      "open": "Mail an Treuhänder",
+      "title": "Mail-Entwurf an den Treuhänder",
+      "hint": "Text zum Kopieren – es wird nichts gesendet. Name und Adresse kommen aus den Einstellungen.",
+      "to": "An",
+      "subject": "Betreff",
+      "body": "Text",
+      "copy": "Kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "copyFailed": "Kopieren fehlgeschlagen",
+      "failed": "Mail-Entwurf nicht verfügbar – zuerst berechnen"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "subtitle": "Angaben für die Auszüge und den Mail-Entwurf.",
+    "personalTitle": "Persönliche Angaben",
+    "personalHint": "Erscheinen im Kopf der Auszüge und im Mail-Entwurf an den Treuhänder.",
+    "formatTitle": "Format",
+    "formatHint": "Zahlen und Daten wie in der Schweiz; weitere Sprachen folgen.",
+    "noCanton": "Kein Kanton",
+    "fields": {
+      "displayName": "Name",
+      "canton": "Wohnkanton",
+      "advisorName": "Treuhänder",
+      "advisorEmail": "E-Mail Treuhänder",
+      "numberFormat": "Zahlenformat",
+      "dateFormat": "Datumsformat"
+    },
+    "numberFormats": {
+      "deCH": "1’234.56"
+    },
+    "dateFormats": {
+      "ddMMyyyy": "31.12.2025"
+    },
+    "errors": {
+      "tooLong": "Der Text ist zu lang.",
+      "email": "Bitte eine gültige E-Mail-Adresse eingeben."
+    }
+  }
+}

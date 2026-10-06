@@ -1,0 +1,20 @@
+{
+  "name": "engine",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/engine/src",
+  "projectType": "library",
+  "tags": ["scope:engine"],
+  "lk-note-no-test-target": "Deliberate — see the Testing section in CLAUDE.md. Tests run via `pnpm test` (root Vitest workspace) or `pnpm vitest run --project engine`.",
+  "lk-note-no-build-target": "Consumed through the tsconfig.base.json path mapping (`@lazykoins/engine`) and bundled by its consumers, like libs/ui. `typecheck` is what `pnpm check` runs instead, because Vitest's esbuild transform does not type-check.",
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "options": {
+        "command": "tsc -p libs/engine/tsconfig.lib.json --noEmit && tsc -p libs/engine/tsconfig.spec.json --noEmit",
+        "cwd": "."
+      }
+    }
+  }
+}

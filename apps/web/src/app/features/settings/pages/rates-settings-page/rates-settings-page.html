@@ -1,0 +1,105 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'settings.rates.subtitle' | translate"
+/>
+
+@if (service.settings.hasValue()) { @let settings = service.settings.value();
+<div class="flex max-w-3xl flex-col gap-6">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle>{{ 'settings.rates.title' | translate }}</h2>
+        <p hlmCardDescription>{{ 'settings.rates.hint' | translate }}</p>
+      </div>
+      <div hlmCardContent class="flex flex-col gap-4">
+        <label class="flex items-center gap-2 text-sm" for="set-online">
+          <input
+            id="set-online"
+            type="checkbox"
+            formControlName="onlineRates"
+          />
+          {{ 'settings.fields.onlineRates' | translate }}
+        </label>
+        @if (!settings.keyStorageAvailable) {
+        <p class="text-destructive text-sm" role="note">
+          {{ 'settings.keysUnavailable' | translate }}
+        </p>
+        }
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="set-cg"
+            >{{ 'settings.fields.coingeckoKey' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="set-cg"
+            type="password"
+            autocomplete="off"
+            formControlName="coingeckoKey"
+            [placeholder]="settings.keys.coingecko ?? ('settings.noKey' | translate)"
+          />
+          <p class="text-muted-foreground text-xs">
+            {{ 'settings.rates.coingeckoHint' | translate }}
+          </p>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2">
+          @if (settings.keys.coingecko) {
+          <button hlmBtn variant="ghost" type="button" (click)="removeKey()">
+            {{ 'settings.removeKey' | translate }}
+          </button>
+          }
+          <button
+            hlmBtn
+            type="submit"
+            [disabled]="service.isSaving() || form.pristine"
+          >
+            {{ 'common.save' | translate }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </form>
+
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'settings.rates.estvTitle' | translate }}</h2>
+      <p hlmCardDescription>{{ 'settings.rates.estvHint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-wrap items-end gap-3">
+      <div class="flex min-w-64 flex-1 flex-col gap-2">
+        <label hlmLabel for="estv-project"
+          >{{ 'settings.rates.project' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="estv-project"
+          [value]="projectId()"
+          (change)="selectProject($event)"
+        >
+          @for (project of projects(); track project.id) {
+          <option [value]="project.id">{{ project.name }}</option>
+          }
+        </select>
+      </div>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        [disabled]="!projectId()"
+        (click)="kursliste.click()"
+      >
+        {{ 'rates.estvImport' | translate }}
+      </button>
+      <input
+        #kursliste
+        id="settings-kursliste-picker"
+        class="sr-only"
+        type="file"
+        accept=".xml,.csv,.txt,text/csv,application/xml,text/xml"
+        (change)="picked($event)"
+      />
+    </div>
+  </section>
+</div>
+} @else {
+<hlm-skeleton class="h-64 w-full max-w-3xl" />
+}

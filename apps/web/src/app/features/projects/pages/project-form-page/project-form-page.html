@@ -1,0 +1,95 @@
+<lk-page-header [title]="'projects.form.title' | translate" [back]="true" />
+
+<section hlmCard class="max-w-2xl">
+  <div hlmCardContent>
+    <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="project-name"
+          >{{ 'projects.fields.name' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="project-name"
+          type="text"
+          formControlName="name"
+          [placeholder]="'projects.form.namePlaceholder' | translate"
+        />
+        @if (form.controls.name.touched && form.controls.name.errors?.['zod'];
+        as error) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="project-year"
+            >{{ 'projects.fields.taxYear' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="project-year"
+            type="number"
+            inputmode="numeric"
+            formControlName="taxYear"
+          />
+          @if ( form.controls.taxYear.touched &&
+          form.controls.taxYear.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="project-country"
+            >{{ 'projects.fields.country' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="project-country"
+            type="text"
+            [value]="'countries.CH' | translate"
+            disabled
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="project-canton"
+            >{{ 'projects.fields.canton' | translate }}</label
+          >
+          <select hlmInput id="project-canton" formControlName="canton">
+            <option value="" disabled>
+              {{ 'projects.form.cantonPlaceholder' | translate }}
+            </option>
+            @for (canton of cantons; track canton) {
+            <option [value]="canton">{{ canton }}</option>
+            }
+          </select>
+          @if ( form.controls.canton.touched &&
+          form.controls.canton.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="project-notes"
+          >{{ 'projects.fields.notes' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="project-notes"
+          rows="4"
+          formControlName="notes"
+        ></textarea>
+        @if (form.controls.notes.errors?.['zod']; as error) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button hlmBtn type="submit" [disabled]="service.isSaving()">
+          {{ 'projects.form.submit' | translate }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

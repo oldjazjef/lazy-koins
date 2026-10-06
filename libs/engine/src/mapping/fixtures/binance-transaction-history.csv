@@ -1,0 +1,14 @@
+User_ID,UTC_Time,Account,Operation,Coin,Change,Remark
+10000001,2025-01-05 10:00:00,Spot,Deposit,USDT,500.00000000,
+10000001,2025-01-06 11:00:00,Spot,Buy,BTC,0.00500000,
+10000001,2025-01-06 11:00:00,Spot,Buy,USDT,-475.00000000,
+10000001,2025-01-06 11:00:00,Spot,Fee,BTC,-0.00000500,
+10000001,2025-02-01 00:00:00,Earn,Simple Earn Flexible Interest,USDT,0.01234567,
+10000001,2025-02-02 00:00:00,Spot,Simple Earn Flexible Subscription,USDT,-20.00000000,
+10000001,2025-02-02 00:00:00,Earn,Simple Earn Flexible Subscription,USDT,20.00000000,
+10000001,2025-03-01 00:00:00,Spot,Launchpool Airdrop - System Distribution,XYZ,1.50000000,
+10000001,2025-03-02 00:00:00,Spot,HODLer Airdrops Distribution,ABC,2.00000000,
+10000001,2025-03-03 00:00:00,Earn,Simple Earn Locked Rewards,DOT,0.10000000,
+10000001,2025-04-01 00:00:00,Spot,Transfer Between Main and Funding Wallet,USDT,-5.00000000,
+10000001,2025-05-01 00:00:00,Spot,Withdraw,BTC,-0.00400000,"synthetic, quoted remark"
+10000001,2025-06-01 00:00:00,Spot,Mystery Operation,BNB,0.00010000,

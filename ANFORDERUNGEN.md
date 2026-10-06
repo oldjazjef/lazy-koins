@@ -7,6 +7,13 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F1.1** Web-App: im Browser nutzbar, mehrere Benutzer, jeder sieht nur seine Daten.
 - **F1.2** Lokal: als Desktop-App auf macOS und Windows, ein Benutzer, ohne Login, Daten nur auf dem eigenen Rechner. Gleicher Funktionsumfang wie die Web-App.
 - **F1.3** Ein Projekt lässt sich zwischen den Betriebsarten exportieren und importieren (Paket mit Daten und Originaldateien).
+- **F1.4** Jedes Release (vX.Y.Z, erstellt wie beim Produktions-Deploy – per „Run workflow“
+  oder von Hand veröffentlicht) baut die Desktop-App automatisch in der CI für **Windows**
+  (Installer `.exe`) und **macOS** (`.dmg`, Apple Silicon und Intel) und hängt die Dateien an
+  das GitHub-Release. Von dort lassen sie sich herunterladen und lokal installieren/ausführen.
+  Versionsnummer der App = Release-Tag. Solange nicht signiert wird (offene Entscheidung), steht
+  in den Release-Notes, wie man die Warnung von Windows SmartScreen bzw. macOS Gatekeeper
+  bestätigt.
 
 ## 2. Benutzer (nur Web-App)
 
@@ -27,19 +34,74 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F4.2** Projektliste mit Status, Vermögen und Ertrag je Projekt.
 - **F4.3** Neues Projekt anlegen; Land, Kanton und Wallets werden aus dem neusten Projekt vorgeschlagen.
 - **F4.4** Aus älteren Projekten übernehmen: Dateien, Wallets und Korrekturen auswählen, gruppiert nach Plattform/Wallet. Eine übernommene Datei wird nicht doppelt gespeichert.
+- **F4.4a Folgeprojekt erstellen**: In einem Projekt per Knopf „Folgeprojekt erstellen“ ein
+  Projekt für das nächste Steuerjahr anlegen (Name, Jahr = Vorjahr + 1, Land und Kanton
+  vorbelegt und änderbar). Ein Dialog zeigt, was übernommen werden kann, als **Checkboxen**
+  (gruppiert, mit „alle/keine“ je Gruppe und einer Zusammenfassung, was übernommen wird):
+  - **Dateien** je Plattform/Wallet einzeln wählbar, mit Hinweis auf ihren Zeitraum –
+    vorausgewählt sind Dateien, deren Zeitraum ins neue Jahr reicht (z. B. ein Ledger bis heute);
+    sie werden verknüpft, nicht kopiert (F4.4, F5.7).
+  - **Wallets** (Adressen, Bezeichnung, Netzwerke) – vorausgewählt.
+  - **Korrekturen**, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im
+    neuen Jahr vorkommen; manuelle Positionen ohne Stichtag) – einzeln wählbar, nicht
+    vorausgewählt; jahresgebundene Korrekturen (Kurs-Overrides per 31.12.) werden nicht angeboten.
+  - **Offene Punkte**, die noch nicht erledigt sind – als offene Punkte im neuen Projekt.
+  - **Notizen** des Projekts.
+
+  Immer automatisch: Endbestand per 31.12. des Vorjahres als Vergleichswert für die Prüfung
+  „Anfangsbestand = Endbestand Vorjahr“ (F8.1) und den Vorjahresvergleich (F8.3). Mappings
+  gelten ohnehin für alle Projekte (F11.0). Das Vorjahresprojekt bleibt unverändert; im neuen
+  Projekt ist sichtbar, was woher übernommen wurde.
+
 - **F4.5** Abgeschlossene Projekte sind schreibgeschützt; Entsperren mit Bestätigung.
 - **F4.6** Projekt umbenennen, archivieren, löschen (mit Bestätigung).
+- **F4.7 An Treuhänder gesendet**: Jedes Projekt zeigt, ob und wann die Unterlagen dem
+  Treuhänder zugestellt wurden (Datum, Empfänger, Weg, welche Auszüge). Gesetzt wird der Status
+  **automatisch** beim erfolgreichen Senden über „An Treuhänder senden“ (F10.6a) oder
+  **manuell** („als gesendet markieren“ mit Datum, Weg – z. B. Mail, Post, persönlich – und
+  Notiz; rückgängig machbar). Sichtbar als Abzeichen in der Projektliste und im Projekt; werden
+  danach Daten geändert oder neue Auszüge erstellt, erscheint der Hinweis „seit dem Versand
+  geändert“.
 
 ## 5. Dateien
 
 - **F5.1** Upload per Drag & Drop oder Dateiauswahl, mehrere Dateien gleichzeitig (CSV, XLSX, PDF).
-- **F5.2** Plattform und Dateityp werden automatisch erkannt. Mindestens: Kraken Ledger und Kontoauszug · Binance Transaktions-, Ein- und Auszahlungshistorie, Account Statement · Bitfinex Ledger · Bittrex Transaction History und Order History · Revolut Krypto-Kontoauszug. Nicht Erkanntes ordnet der User manuell zu oder markiert es als „nur Beleg“.
+- **F5.2** Dateien werden über das Standardformat (F5.9) oder ein passendes Mapping (F5.11) erkannt – keine plattformspezifischen Parser im Code. Die Exporte von mindestens Kraken (Ledger, Kontoauszug), Binance (Transaktions-, Ein- und Auszahlungshistorie, Account Statement), Bitfinex (Ledger), Bittrex (Transaction/Order History) und Revolut (Krypto-Kontoauszug) müssen so einlesbar sein. Ohne passendes Mapping: Mapping per AI (F5.13) oder manuell erstellen, oder als „nur Beleg“ markieren.
 - **F5.3** Originaldateien bleiben unverändert erhalten und sind jederzeit herunterladbar.
 - **F5.4** Doppelte Uploads werden erkannt und abgelehnt bzw. verknüpft.
 - **F5.5** Dateiübersicht gruppiert nach Plattform/Wallet mit Typ, erkanntem Zeitraum, Anzahl Buchungen, Upload-Datum und Herkunft (neu / aus Projekt X).
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
 - **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
 - **F5.8** Fehlende Dateien anzeigen, z. B. „Kraken-Kontoauszug Dezember fehlt“ oder „Binance-Historie endet am 30.06.“, mit Anleitung, wo der Export zu finden ist.
+
+## 5a. Standardformat, Mappings und AI-Umwandlung
+
+Entscheid 06.10.2026: **keine plattformspezifischen Parser** im Code (Wartungsaufwand). Alle
+Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingelesen.
+
+- **F5.9** Standardformat „lazy-koins Buchungen“ als Vorlage in der App herunterladbar (CSV und
+  Excel). Excel mit Erklärungsblatt, Beispielzeilen und Auswahllisten. Zwei Teile:
+  **Buchungen** (Datum mit Zeitzone, Plattform/Wallet, Art, Asset, Menge, Gebühr, Gebühr-Asset,
+  optional Kurs CHF/USD, Referenz, Notiz) und **Bestände per Stichtag** (Plattform/Wallet,
+  Asset, Menge, Stichtag, optional Kurs, Beleg).
+- **F5.10** Eine befüllte Vorlage wird wie jeder andere Export hochgeladen, erkannt und geprüft;
+  Fehler werden pro Zeile angezeigt.
+- **F5.11** Mapping: eine JSON-Datei, die beschreibt, wie ein beliebiger Export (CSV/XLSX) ins
+  Standardformat übersetzt wird (Kopfzeile, Spalten, Datumsformat, Zeitzone, Vorzeichen,
+  Gebühren, Arten, Asset-Schreibweisen, Filter). Die App wendet es deterministisch an; jede
+  Buchung verweist auf die Zeile der Originaldatei (F7.5).
+- **F5.12** Mappings sind **im Projekt sichtbar** (Name, Plattform, Herkunft AI/manuell, welche
+  Dateien es nutzen), als JSON einsehbar, herunter- und hochladbar und bearbeitbar. Eine neue
+  Datei mit gleichem Aufbau (Fingerabdruck) wird automatisch mit dem passenden Mapping
+  eingelesen – **ohne AI**.
+- **F5.13** AI-Plugin: ein beliebiger Anbieter lässt sich anbinden (OpenAI-kompatible API – z. B.
+  OpenAI, Mistral, Groq, lokal Ollama/LM Studio – sowie Anthropic), konfiguriert in den
+  Einstellungen (Anbieter, Adresse, Modell, API-Schlüssel). Für eine Datei ohne passendes Mapping
+  erstellt die AI das **Mapping**, nicht die Buchungen; nach Vorschau und Bestätigung wird es
+  gespeichert und künftig wiederverwendet (spart Tokens).
+- **F5.14** Datenschutz: Vor dem ersten Senden an einen externen Anbieter ausdrückliche
+  Zustimmung; es wird angezeigt, was gesendet wird (Kopfzeile + wenige Beispielzeilen).
+  AI-Nutzung ist ein-/ausschaltbar; ohne AI funktioniert alles mit Vorlage und Mappings.
 
 ## 6. Wallets
 
@@ -57,6 +119,13 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F7.2** Ertrag des Jahres je Kategorie (Zinsen/Earn, Staking, Airdrop, Launchpool, Hardfork), bewertet zum Zuflusszeitpunkt in CHF.
 - **F7.3** Einmalereignisse (Hardforks, Airdrops, Verluste) separat ausweisen.
 - **F7.4** Kurse automatisch ermitteln mit Angabe der Quelle; Stichtags-Wechselkurse je Projekt einsehbar und überschreibbar (z. B. ESTV-Kursliste).
+- **F7.4a ESTV-Kursliste automatisch**: Die Kursliste (ICTax) des Steuerjahres wird online
+  bezogen (offizieller XML-Export, jeweils die neueste Fassung – die ESTV aktualisiert sie auch
+  nach dem 31.03. noch) und daraus die Jahresendkurse für Kryptowährungen und Devisen
+  übernommen; Quelle „ESTV-Kursliste <Jahr>, Stand <Datum>“. Einmal je Jahr und Stand
+  heruntergeladen und gespeichert (nicht pro Benutzer), danach regelmässig auf neue Stände
+  geprüft. Kryptowährungen ohne ESTV-Kurs fallen auf die übrigen Quellen zurück (F7.4).
+  Respektiert „Kursabfragen aus dem Internet“ (F11.3); der manuelle Import bleibt als Ersatz.
 - **F7.5** Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (Klick auf Betrag → zugrunde liegende Buchungen → Quelldatei und Zeile).
 - **F7.6** Neuberechnung jederzeit per Knopfdruck; gleiche Daten ergeben gleiches Ergebnis.
 - **F7.7** Landesregeln sind austauschbar; zunächst nur Schweiz wählbar.
@@ -82,12 +151,107 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F10.4** Kopfzeile mit Name, Steuerjahr, Kanton, Erstellungsdatum und Hinweis „keine Steuerberatung“.
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
 - **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
+- **F10.6a** Mail direkt aus der App senden: Im Projekt (Exporte) „An Treuhänder senden“ öffnet
+  einen Dialog mit Empfänger (aus dem Profil, änderbar), CC an mich, Betreff und Text aus der
+  Vorlage (F11.10, im Dialog noch bearbeitbar), auswählbaren Anhängen (erstellte Auszüge PDF/Excel)
+  und Vorschau. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
+  protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
+  eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
 
-## 11. Einstellungen
+### Datenexport
+
+- **F10.7** Buchungen und Bestände eines Projekts (alle oder gefiltert nach Plattform/Wallet,
+  Asset, Art, Zeitraum) als CSV und Excel im **Standardformat** (F5.9) – mit angewendeten
+  Korrekturen, verwendeten Kursen und Kursquelle sowie Verweis auf Quelldatei und Zeile. Die
+  Datei lässt sich unverändert wieder importieren.
+- **F10.8** Projekt-Paket (ZIP): Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse,
+  Prüf-Notizen, erstellte Auszüge und eine Beschreibung des Inhalts (Manifest mit Version und
+  SHA-256 je Datei). Importierbar in Web-App und Desktop-App (= F1.3); beim Import werden
+  bereits vorhandene Dateien nicht doppelt gespeichert (F4.4).
+- **F10.9** Konto-Paket (ZIP): alle Projekte als Projekt-Pakete plus Mappings und Einstellungen
+  (ohne API-Schlüssel) – zum Herunterladen aller Daten eines Benutzers (= F2.3, Auskunft nach
+  DSG/DSGVO) und zum Umzug in die Desktop-App.
+
+## 11. Profil und Einstellungen
+
+Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Profil** und
+**Einstellungen** im Benutzermenü oben rechts.
+
+- **F11.0s Einrichtung beim ersten Aufruf**: Beim allerersten Start (Desktop) bzw. nach der
+  ersten Anmeldung (Web) führt ein Assistent in Schritten durch die Einrichtung, mit
+  Fortschrittsanzeige, „Zurück“/„Weiter“ und „Später“ für optionale Schritte; jederzeit über
+  Profil/Einstellungen änderbar und wieder aufrufbar:
+  1. **Profil** – Name, Wohnkanton, Sprache (F11.1, F11.2). Pflicht.
+  2. **Plugin** – AI-Anbieter einrichten und testen (F5.13); optional, „ohne AI fortfahren“.
+  3. **Treuhänder** – Name und E-Mail (F11.1), optional Mailer (F11.10).
+  4. **PIN** – 4–8 Ziffern, zweimal eingeben. Desktop: Pflicht; Web: optional.
+     Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App.
+- **F11.0p PIN-Sperre**: Der PIN wird bei **jedem Öffnen** der App verlangt – Desktop: bei jedem
+  Start und nach dem Entsperren aus dem Ruhezustand/automatischer Sperre nach einstellbarer
+  Inaktivität; Web (falls gesetzt): beim Öffnen eines neuen Tabs/Fensters nach dem Schliessen
+  und nach Inaktivität, zusätzlich zum Login. Gespeichert wird nur ein langsamer Hash (z. B.
+  scrypt/Argon2 mit Salz), nie der PIN. Nach mehreren Fehlversuchen wachsende Wartezeit.
+  Solange gesperrt, beantwortet auch die lokale API keine Datenanfragen. PIN ändern im Profil
+  (alter PIN nötig); PIN vergessen: Desktop – Zurücksetzen nur mit Bestätigung, dass
+  verschlüsselte Schlüssel (AI, Mailer, Kurse) neu eingegeben werden müssen; Web – über den
+  Login (E-Mail) neu setzen.
+- **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
+  des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
+  steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
+  zuletzt geändert), suchen, ansehen (JSON), bearbeiten mit Vorschau, löschen (mit Bestätigung
+  und Hinweis auf betroffene Dateien), herunter- und hochladen. Je Mapping sichtbar, **welche
+  Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
+  anderen.
+- **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
+  Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
+  Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.
+- **F11.0b Einstellungen** – app-weite Konfiguration, in Abschnitte gegliedert: **AI** (Anbieter, Modell,
+  Schlüssel, Zustimmung, F5.13/F5.14), **Kurse** (Internet-Kurse ein/aus F11.3, CoinGecko-Schlüssel,
+  ESTV-Kursliste), **Wallets/Netzwerke** (API-Schlüssel wie Etherscan, F6.7), **Speicherort**
+  (Desktop, F3.1), **Cloud-Verbindungen** (Web, F3.2) und **Mail** (F11.10). Schlüssel und
+  Passwörter werden nie wieder angezeigt (nur die letzten Zeichen).
+- **F11.10 Mail** (Einstellungen): **Mailer** hinterlegen – SMTP (Server, Port, Verschlüsselung
+  TLS/STARTTLS, Benutzer, Passwort verschlüsselt gespeichert, Absendername und -adresse) mit
+  „Test-Mail an mich senden“. **Text-Vorlage** für die Treuhänder-Mail definieren: Betreff und
+  Text mit Platzhaltern (z. B. `{{name}}`, `{{treuhaender}}`, `{{steuerjahr}}`, `{{kanton}}`,
+  `{{vermoegen}}`, `{{ertrag}}`, `{{anhaenge}}`, `{{offene_punkte}}`, `{{datum}}`), Liste der
+  Platzhalter mit Erklärung, Live-Vorschau mit Beispielwerten, „auf Standard zurücksetzen“.
+  Eine Standardvorlage je Sprache (F11.2) ist vorhanden; die eigene Vorlage gilt für alle
+  Projekte.
+- Im Projekt bleiben nur projektbezogene Dinge (Dateien, die im Projekt genutzten Mappings mit
+  Link auf die Mappings-Seite, Kurse/Overrides des Projekts, Ergebnis, Prüfungen, Korrekturen,
+  Exporte).
 
 - **F11.1** Persönliche Angaben für die Exporte (Name, Wohnkanton, Treuhänder).
-- **F11.2** Sprache (zunächst Deutsch/Schweiz), Zahlen- und Datumsformat.
+- **F11.2** Sprache, Zahlen- und Datumsformat. Die App ist vollständig übersetzbar; zunächst
+  **Deutsch (Schweiz)** und **Englisch**. Die Sprache wird im Benutzerprofil eingestellt und
+  gespeichert (Web: am Benutzer; Desktop: lokal) und gilt sofort, ohne Neuladen. Vorgabe beim
+  ersten Login: Browsersprache, sonst Deutsch. Exporte erscheinen in der eingestellten Sprache;
+  steuerliche Fachbegriffe und Formularverweise kommen aus den Landesregeln (F10.3). Weitere
+  Sprachen = eine neue Übersetzungsdatei.
 - **F11.3** Kursabfragen aus dem Internet ein-/ausschaltbar.
+
+## 11a. Dashboard
+
+Übersicht über das gesamte Krypto-Vermögen, ähnlich Koinly – **ohne** Einstandswert, ROI und
+realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
+
+- **F11.4** Startseite nach dem Login: Dashboard über **alle Projekte** eines Benutzers mit frei
+  wählbarem Zeitraum (Vorgabe: 01.01. des laufenden Jahres bis heute; Schnellwahl Steuerjahre).
+  Zusätzlich eine kompakte Version je Projekt für dessen Steuerjahr.
+- **F11.5** Gesamtwert in CHF zum Ende des Zeitraums mit Veränderung in % gegenüber dem Beginn,
+  und Verlauf als Liniendiagramm (Tageswerte = Bestände × Tageskurs).
+- **F11.6** Kennzahlen im Zeitraum: Einzahlungen (In), Auszahlungen (Out), Ertrag (mit Anteil am
+  Vermögen in %), Kosten/Verluste, Handelsgebühren – jeweils in CHF, anklickbar bis zu den
+  Buchungen (wie F7.5).
+- **F11.7** Verteilung nach Asset als gestapelter Balken (grösste Positionen benannt, Rest
+  zusammengefasst).
+- **F11.8** Bestände-Tabelle: Asset, Menge, Kurs CHF je Einheit, Marktwert CHF, Kursverlauf im
+  Zeitraum (Sparkline); sortier- und durchsuchbar; aufklappbar nach Plattform/Wallet;
+  Stichtag wählbar.
+- **F11.9** Werte stammen aus denselben Daten und Kursen wie die Steuerberechnung (keine zweite
+  Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
+  Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
 
 ## 12. Abnahme
 
