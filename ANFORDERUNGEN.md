@@ -272,6 +272,27 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
   Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
 
+## 11b. Benachrichtigungen
+
+- **F11.11** Benachrichtigungs-Zentrale: Glocke in der Kopfzeile mit Zähler der ungelesenen
+  Meldungen; Klick öffnet eine Liste (neueste zuerst, gruppiert nach Projekt) mit Typ
+  (Fehler / Handlungsbedarf / Info / Erfolg), Zeit, kurzer Beschreibung und **direkter Aktion**
+  („Zum Hinweis“, „Erneut versuchen“, „Schlüssel prüfen“, „Auszug öffnen“). Einzeln oder alle als
+  gelesen markieren, erledigte ausblenden; Meldungen bleiben gespeichert (pro Benutzer, auch nach
+  Neustart) und verschwinden automatisch, wenn die Ursache behoben ist.
+- **F11.12** Was eine Meldung auslöst, mindestens:
+  - **Fehlgeschlagen**: Kursabruf (welche Assets), ESTV-Kursliste, AI-Aufruf (mit Fehlerdetails),
+    Mail-Versand, Export/Auszug, Paket-Import, Wallet-Abruf, Upload/Lesen einer Datei.
+  - **Handlungsbedarf**: Datei ohne Mapping, Zeilenfehler, neue offene Punkte/Hinweise nach einer
+    Neuberechnung, Positionen ohne Kurs, Daten seit dem Versand an den Treuhänder geändert (F4.7),
+    Einrichtung unvollständig (F11.0s), Schlüssel ungültig/abgelaufen, Sync-Konflikt (F3.4).
+  - **Info/Erfolg**: neue Fassung der ESTV-Kursliste verfügbar, lange Aufgabe fertig (aus der
+    Aktivitätsanzeige), Mail gesendet.
+- **F11.13** Fertige oder fehlgeschlagene Hintergrundaufgaben aus der Aktivitätsanzeige landen
+  automatisch als Meldung in der Zentrale. Desktop: optional zusätzlich als System-Benachrichtigung
+  (ein-/ausschaltbar in den Einstellungen); Web: nur in der App. Keine Meldung enthält Schlüssel,
+  Passwörter oder Buchungsdetails.
+
 ## 12. Abnahme
 
 - **A1** Mit den echten Daten (lokal in `private/`, Sollwerte in `private/golden.json`) ergibt das Projekt 2025 dieselben Werte wie die manuelle Auswertung (±0.05 CHF); der Kraken-Saldo per 31.12.2025 stimmt exakt mit dem Kontoauszug überein.
