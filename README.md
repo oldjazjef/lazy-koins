@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://buymeacoffee.com/oldjazjef">☕ Buy me a coffee</a>
+  <a href="https://buymeacoffee.com/hello.eme">☕ Buy me a coffee</a>
 </p>
 
 ---
@@ -125,7 +125,7 @@ pnpm build:desktop  # build the installer for your OS
 ## Support
 
 If lazy-koins saves you an afternoon of spreadsheets, you can
-[buy me a coffee](https://buymeacoffee.com/oldjazjef). Bugs and ideas are welcome as
+[buy me a coffee](https://buymeacoffee.com/hello.eme). Bugs and ideas are welcome as
 [issues](https://github.com/oldjazjef/lazy-koins/issues); security problems please via
 [private vulnerability reporting](SECURITY.md).
 
