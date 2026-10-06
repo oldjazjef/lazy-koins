@@ -166,6 +166,7 @@
     },
     "missing": {
       "title": "Möglicherweise fehlende Dateien",
+      "summary": "{{count}} Hinweise zu möglicherweise fehlenden Dateien – anzeigen",
       "kind": {
         "startsLate": "Die Buchungen beginnen erst am {{date}} – der Anfang von {{year}} fehlt.",
         "endsEarly": "Die Buchungen enden am {{date}} – bis 31.12.{{year}} fehlt etwas.",
