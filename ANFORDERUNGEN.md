@@ -112,6 +112,20 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
 - **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
 
+### Datenexport
+
+- **F10.7** Buchungen und Bestände eines Projekts (alle oder gefiltert nach Plattform/Wallet,
+  Asset, Art, Zeitraum) als CSV und Excel im **Standardformat** (F5.9) – mit angewendeten
+  Korrekturen, verwendeten Kursen und Kursquelle sowie Verweis auf Quelldatei und Zeile. Die
+  Datei lässt sich unverändert wieder importieren.
+- **F10.8** Projekt-Paket (ZIP): Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse,
+  Prüf-Notizen, erstellte Auszüge und eine Beschreibung des Inhalts (Manifest mit Version und
+  SHA-256 je Datei). Importierbar in Web-App und Desktop-App (= F1.3); beim Import werden
+  bereits vorhandene Dateien nicht doppelt gespeichert (F4.4).
+- **F10.9** Konto-Paket (ZIP): alle Projekte als Projekt-Pakete plus Mappings und Einstellungen
+  (ohne API-Schlüssel) – zum Herunterladen aller Daten eines Benutzers (= F2.3, Auskunft nach
+  DSG/DSGVO) und zum Umzug in die Desktop-App.
+
 ## 11. Einstellungen
 
 - **F11.1** Persönliche Angaben für die Exporte (Name, Wohnkanton, Treuhänder).
