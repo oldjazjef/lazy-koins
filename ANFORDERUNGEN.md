@@ -55,6 +55,13 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 
 - **F4.5** Abgeschlossene Projekte sind schreibgeschützt; Entsperren mit Bestätigung.
 - **F4.6** Projekt umbenennen, archivieren, löschen (mit Bestätigung).
+- **F4.7 An Treuhänder gesendet**: Jedes Projekt zeigt, ob und wann die Unterlagen dem
+  Treuhänder zugestellt wurden (Datum, Empfänger, Weg, welche Auszüge). Gesetzt wird der Status
+  **automatisch** beim erfolgreichen Senden über „An Treuhänder senden“ (F10.6a) oder
+  **manuell** („als gesendet markieren“ mit Datum, Weg – z. B. Mail, Post, persönlich – und
+  Notiz; rückgängig machbar). Sichtbar als Abzeichen in der Projektliste und im Projekt; werden
+  danach Daten geändert oder neue Auszüge erstellt, erscheint der Hinweis „seit dem Versand
+  geändert“.
 
 ## 5. Dateien
 
@@ -112,6 +119,13 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F7.2** Ertrag des Jahres je Kategorie (Zinsen/Earn, Staking, Airdrop, Launchpool, Hardfork), bewertet zum Zuflusszeitpunkt in CHF.
 - **F7.3** Einmalereignisse (Hardforks, Airdrops, Verluste) separat ausweisen.
 - **F7.4** Kurse automatisch ermitteln mit Angabe der Quelle; Stichtags-Wechselkurse je Projekt einsehbar und überschreibbar (z. B. ESTV-Kursliste).
+- **F7.4a ESTV-Kursliste automatisch**: Die Kursliste (ICTax) des Steuerjahres wird online
+  bezogen (offizieller XML-Export, jeweils die neueste Fassung – die ESTV aktualisiert sie auch
+  nach dem 31.03. noch) und daraus die Jahresendkurse für Kryptowährungen und Devisen
+  übernommen; Quelle „ESTV-Kursliste <Jahr>, Stand <Datum>“. Einmal je Jahr und Stand
+  heruntergeladen und gespeichert (nicht pro Benutzer), danach regelmässig auf neue Stände
+  geprüft. Kryptowährungen ohne ESTV-Kurs fallen auf die übrigen Quellen zurück (F7.4).
+  Respektiert „Kursabfragen aus dem Internet“ (F11.3); der manuelle Import bleibt als Ersatz.
 - **F7.5** Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (Klick auf Betrag → zugrunde liegende Buchungen → Quelldatei und Zeile).
 - **F7.6** Neuberechnung jederzeit per Knopfdruck; gleiche Daten ergeben gleiches Ergebnis.
 - **F7.7** Landesregeln sind austauschbar; zunächst nur Schweiz wählbar.
@@ -163,6 +177,24 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Profil** und
 **Einstellungen** im Benutzermenü oben rechts.
 
+- **F11.0s Einrichtung beim ersten Aufruf**: Beim allerersten Start (Desktop) bzw. nach der
+  ersten Anmeldung (Web) führt ein Assistent in Schritten durch die Einrichtung, mit
+  Fortschrittsanzeige, „Zurück“/„Weiter“ und „Später“ für optionale Schritte; jederzeit über
+  Profil/Einstellungen änderbar und wieder aufrufbar:
+  1. **Profil** – Name, Wohnkanton, Sprache (F11.1, F11.2). Pflicht.
+  2. **Plugin** – AI-Anbieter einrichten und testen (F5.13); optional, „ohne AI fortfahren“.
+  3. **Treuhänder** – Name und E-Mail (F11.1), optional Mailer (F11.10).
+  4. **PIN** – 4–8 Ziffern, zweimal eingeben. Desktop: Pflicht; Web: optional.
+     Erst nach Abschluss (oder Überspringen der optionalen Schritte) öffnet sich die App.
+- **F11.0p PIN-Sperre**: Der PIN wird bei **jedem Öffnen** der App verlangt – Desktop: bei jedem
+  Start und nach dem Entsperren aus dem Ruhezustand/automatischer Sperre nach einstellbarer
+  Inaktivität; Web (falls gesetzt): beim Öffnen eines neuen Tabs/Fensters nach dem Schliessen
+  und nach Inaktivität, zusätzlich zum Login. Gespeichert wird nur ein langsamer Hash (z. B.
+  scrypt/Argon2 mit Salz), nie der PIN. Nach mehreren Fehlversuchen wachsende Wartezeit.
+  Solange gesperrt, beantwortet auch die lokale API keine Datenanfragen. PIN ändern im Profil
+  (alter PIN nötig); PIN vergessen: Desktop – Zurücksetzen nur mit Bestätigung, dass
+  verschlüsselte Schlüssel (AI, Mailer, Kurse) neu eingegeben werden müssen; Web – über den
+  Login (E-Mail) neu setzen.
 - **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
   des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
   steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
