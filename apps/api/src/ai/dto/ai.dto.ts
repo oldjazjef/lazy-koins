@@ -84,6 +84,13 @@ export class SaveAiSettingsDto {
   @IsOptional()
   @IsBoolean()
   revokeConsent?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Give the consent up front (F5.14, setup wizard)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  giveConsent?: boolean;
 }
 
 /** Optional body of `POST /ai/settings/test`: the form's unsaved values (all omitted = saved). */

@@ -386,8 +386,90 @@
   }
 }
 
+@layer components {
+  /* F11.0s: the setup wizard's step bar — number, title and state per step. */
+  .lk-stepper {
+    @apply flex gap-1 overflow-x-auto pb-1;
+  }
+
+  .lk-step {
+    @apply text-muted-foreground flex min-w-0 shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors lg:shrink;
+  }
+
+  .lk-step:enabled {
+    @apply hover:bg-muted hover:text-foreground cursor-pointer;
+  }
+
+  .lk-step:disabled {
+    @apply cursor-default opacity-60;
+  }
+
+  /* Narrow screens: only the current step shows its title, the others their number. */
+  .lk-step-title-collapsed {
+    @apply hidden lg:inline;
+  }
+
+  .lk-step-current {
+    @apply bg-secondary text-secondary-foreground font-medium;
+  }
+
+  .lk-step-number {
+    @apply border-border bg-card flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular-nums;
+  }
+
+  .lk-step-current .lk-step-number {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .lk-step-done .lk-step-number {
+    border-color: var(--light-green);
+    background-color: var(--light-green);
+    color: var(--card);
+  }
+
+  .lk-step-error .lk-step-number {
+    @apply border-destructive bg-destructive text-primary-foreground;
+  }
+
+  .lk-step-skipped .lk-step-number {
+    @apply border-dashed;
+  }
+
+  /* The wizard's footer: stays at the bottom of the scroll area (Zurück / Später / Weiter). */
+  .lk-wizard-footer {
+    @apply bg-background/95 sticky bottom-0 z-20 -mx-6 mt-6 flex flex-wrap items-center gap-2 border-t px-6 py-3 backdrop-blur;
+  }
+
+  /* F11.0p: the lock screen over the whole app (above dialogs, below toasts). */
+  .lk-lock-screen {
+    @apply bg-background fixed inset-0 z-1050 flex items-center justify-center overflow-y-auto p-4;
+  }
+
+  .lk-lock-card {
+    @apply bg-card flex w-full max-w-sm flex-col items-center gap-4 rounded-xl border p-6 shadow-lg;
+  }
+
+  .lk-pin-input {
+    @apply h-12 w-full text-center text-2xl tracking-[0.5em];
+  }
+
+  .lk-pin-pad {
+    @apply grid w-full grid-cols-3 gap-2;
+  }
+
+  .lk-pin-key {
+    @apply bg-secondary text-secondary-foreground hover:bg-accent focus-visible:ring-ring flex h-12 items-center justify-center rounded-md text-lg font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50;
+  }
+
+  .lk-pin-key-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 text-sm;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lk-nav-link {
+  .lk-nav-link,
+  .lk-step,
+  .lk-pin-key {
     transition: none;
   }
 }

@@ -1,5 +1,6 @@
 import type { Route } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { setupGuard } from './core/setup/setup-state.service';
 
 export const appRoutes: Route[] = [
   { path: '', pathMatch: 'full', redirectTo: 'app' },
@@ -12,6 +13,8 @@ export const appRoutes: Route[] = [
     // Everything behind sign-in lives under /app, inside the shell with the header.
     path: 'app',
     canActivate: [authGuard],
+    // F11.0s: until the setup wizard is finished, /app/* opens it.
+    canActivateChild: [setupGuard],
     loadComponent: () =>
       import('./core/layout/app-shell').then((m) => m.AppShell),
     children: [
@@ -35,6 +38,10 @@ export const appRoutes: Route[] = [
       {
         path: 'settings',
         loadChildren: () => import('./features/settings/settings.routes'),
+      },
+      {
+        path: 'setup',
+        loadChildren: () => import('./features/setup/setup.routes'),
       },
     ],
   },

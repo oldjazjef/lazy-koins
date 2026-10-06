@@ -56,4 +56,19 @@
       >
     </dd>
   </dl>
+
+  <!-- F11.0s: the setup wizard again; everything stays changeable in Profil/Einstellungen too. -->
+  <div class="lk-panel flex flex-wrap items-center justify-between gap-3 p-4">
+    <div class="flex min-w-0 flex-col gap-1">
+      <h3 class="text-sm font-semibold">
+        {{ 'settings.system.setupTitle' | translate }}
+      </h3>
+      <p class="text-muted-foreground text-sm">
+        {{ 'settings.system.setupHint' | translate }}
+      </p>
+    </div>
+    <a hlmBtn variant="outline" routerLink="/app/setup"
+      >{{ 'settings.system.setupAgain' | translate }}</a
+    >
+  </div>
 </section>

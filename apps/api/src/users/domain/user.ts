@@ -25,6 +25,11 @@ export interface VerifiedIdentity {
   readonly emailVerified: boolean;
   readonly name: string | null;
   readonly signInProvider: string;
+  /**
+   * When the person signed in (ISO; Firebase `auth_time`) — a fresh sign-in is the web's proof
+   * for "PIN vergessen" (F11.0p). Absent when the token does not say.
+   */
+  readonly authTime?: string | null;
 }
 
 /** Fallback display name when the identity provider supplies none. */

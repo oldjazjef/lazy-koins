@@ -27,6 +27,11 @@ export interface DesktopBridge {
     useDefault(): Promise<StorageChangeResult>;
     reveal(): Promise<void>;
   };
+  /** F11.0p: the shell locks the app on OS lock / suspend / system idle. */
+  readonly lock?: {
+    onLocked(listener: (reason: string) => void): () => void;
+    setIdleMinutes(minutes: number): Promise<void>;
+  };
 }
 
 declare global {

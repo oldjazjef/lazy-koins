@@ -11,7 +11,7 @@ import {
   profileChanges,
   ProfileSchema,
 } from '../profile/pages/profile-page/profile-page';
-import { ratesSettingsChanges } from './pages/rates-settings-page/rates-settings-page';
+import { ratesSettingsChanges } from './components/rates-key-form/rates-key-form';
 import { RatesSettingsPageService } from './pages/rates-settings-page/rates-settings-page.service';
 import { UserSettingsService } from './user-settings.service';
 

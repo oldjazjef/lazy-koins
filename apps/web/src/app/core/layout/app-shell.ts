@@ -16,6 +16,7 @@ import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideChevronDown,
   lucideCircleUserRound,
+  lucideLock,
   lucideLogOut,
   lucideMoon,
   lucideSun,
@@ -23,6 +24,8 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { AuthService } from '../auth/auth.service';
+import { PinLockService } from '../pin/pin-lock.service';
+import { SetupStateService } from '../setup/setup-state.service';
 import { ThemeService } from '../theme/theme.service';
 import { AppVersionService } from '../version/app-version.service';
 import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
@@ -47,6 +50,7 @@ import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
       ...NAV_ICONS,
       lucideChevronDown,
       lucideCircleUserRound,
+      lucideLock,
       lucideLogOut,
       lucideMoon,
       lucideSun,
@@ -63,6 +67,15 @@ export class AppShell {
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   protected readonly version = inject(AppVersionService);
+  /** F11.0s: no main navigation until the setup wizard is finished. */
+  protected readonly setup = inject(SetupStateService);
+  /** F11.0p: "Jetzt sperren" in the user menu when a PIN is set. */
+  protected readonly pin = inject(PinLockService);
+
+  protected lockNow(): void {
+    this.menuOpen.set(false);
+    void this.pin.lock();
+  }
   /** The app icon (generated from assets/brand/icon.svg, see `pnpm icons`), 24 px in the header. */
   // A template literal: i18n-keys.spec.ts reads quoted dotted literals as translation keys.
   protected readonly logo = `favicon.svg`;

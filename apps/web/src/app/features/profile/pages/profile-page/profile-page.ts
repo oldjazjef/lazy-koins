@@ -17,6 +17,7 @@ import type { UpdateSettingsRequest } from '../../../../core/api/calculation.typ
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { UserSettingsService } from '../../../settings/user-settings.service';
+import { PinSettings } from '../../components/pin-settings/pin-settings';
 import { ProfilePageService } from './profile-page.service';
 
 export const ProfileSchema = z.object({
@@ -51,6 +52,7 @@ export function profileChanges(
     ReactiveFormsModule,
     TranslatePipe,
     PageHeader,
+    PinSettings,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmInputImports,

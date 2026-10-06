@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
@@ -54,6 +55,7 @@ const ManualRateSchema = z.object({
   imports: [
     DatePipe,
     ReactiveFormsModule,
+    RouterLink,
     TranslatePipe,
     Paginator,
     Truncate,

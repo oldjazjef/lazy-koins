@@ -1,6 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { HlmButtonImports } from '@lazykoins/ui/button';
 import { desktopBridge } from '../../../../core/desktop/desktop-bridge';
 import { AppVersionService } from '../../../../core/version/app-version.service';
 
@@ -11,7 +13,7 @@ export const SUPPORT_URL = 'https://buymeacoffee.com/oldjazjef';
 /** Einstellungen › System: the running version (number + commit), build time and the repository. */
 @Component({
   selector: 'lk-system-settings-page',
-  imports: [TranslatePipe, DatePipe],
+  imports: [TranslatePipe, DatePipe, RouterLink, ...HlmButtonImports],
   templateUrl: './system-settings-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

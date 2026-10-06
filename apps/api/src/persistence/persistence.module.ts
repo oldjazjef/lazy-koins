@@ -24,6 +24,10 @@ import {
   ProjectBundleRepositoryPort,
 } from '../carryover/ports/carryover.repository.port';
 import { UserRateRepositoryPort } from '../dashboard/ports/user-rate.repository.port';
+import { UserPinRepositoryPort } from '../pin/ports/user-pin.repository.port';
+import { SetupProgressRepositoryPort } from '../setup/ports/setup-progress.repository.port';
+import { SetupProgressPrismaRepository } from './prisma/repositories/setup-progress.prisma.repository';
+import { UserPinPrismaRepository } from './prisma/repositories/user-pin.prisma.repository';
 import { PrismaService } from './prisma/prisma.service';
 import {
   CarryoverPrismaRepository,
@@ -115,6 +119,11 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
       useClass: ProjectBundlePrismaRepository,
     },
     { provide: UserRateRepositoryPort, useClass: UserRatePrismaRepository },
+    {
+      provide: SetupProgressRepositoryPort,
+      useClass: SetupProgressPrismaRepository,
+    },
+    { provide: UserPinRepositoryPort, useClass: UserPinPrismaRepository },
   ],
   exports: [
     UserRepositoryPort,
@@ -136,6 +145,8 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
     CarryoverRepositoryPort,
     ProjectBundleRepositoryPort,
     UserRateRepositoryPort,
+    SetupProgressRepositoryPort,
+    UserPinRepositoryPort,
   ],
 })
 export class PersistenceModule {}

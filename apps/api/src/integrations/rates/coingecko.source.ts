@@ -1,8 +1,10 @@
 import type { RateEntry } from '@lazykoins/engine';
 import {
   ChfPriceSourcePort,
+  type KeyCheckResult,
   type SeriesRequest,
 } from '../../rates/ports/rate-source.port';
+import { redactSecrets } from '../ai/redact';
 import {
   dayStartMs,
   type Fetcher,
@@ -62,4 +64,79 @@ export class CoinGeckoSource extends ChfPriceSourcePort {
     }
     return [...out.values()];
   }
+
+  /**
+   * `GET /ping` with the key — CoinGecko answers 401/403 for an unknown or wrong-plan key and 429
+   * when the plan's limit is used up. The provider's message is kept, the key never.
+   */
+  async checkKey(apiKey: string): Promise<KeyCheckResult> {
+    const url = `${BASE}/ping`;
+    const started = Date.now();
+    return this.gate.run(async () => {
+      let response: Response;
+      try {
+        response = await this.fetcher(url, {
+          headers: {
+            accept: 'application/json',
+            'x-cg-demo-api-key': apiKey,
+          },
+          signal: AbortSignal.timeout(15_000),
+        });
+      } catch (error) {
+        const timeout =
+          error instanceof Error &&
+          (error.name === 'TimeoutError' || error.name === 'AbortError');
+        return {
+          ok: false,
+          code: timeout ? 'timeout' : 'network',
+          status: null,
+          providerMessage: null,
+          url,
+          millis: Date.now() - started,
+        };
+      }
+      const millis = Date.now() - started;
+      if (response.ok) {
+        return {
+          ok: true,
+          status: response.status,
+          providerMessage: null,
+          url,
+          millis,
+        };
+      }
+      const text = await response.text().catch(() => '');
+      return {
+        ok: false,
+        code:
+          response.status === 401 || response.status === 403
+            ? 'invalidKey'
+            : response.status === 429
+              ? 'rateLimited'
+              : 'providerError',
+        status: response.status,
+        providerMessage: providerMessageOf(text, apiKey),
+        url,
+        millis,
+      };
+    });
+  }
+}
+
+/** CoinGecko's `{ status: { error_message } }` or `{ error }`, redacted; else the plain text. */
+function providerMessageOf(text: string, apiKey: string): string | null {
+  let message = text;
+  try {
+    const body = JSON.parse(text) as {
+      status?: { error_message?: unknown };
+      error?: unknown;
+    };
+    const fromStatus = body.status?.error_message;
+    if (typeof fromStatus === 'string') message = fromStatus;
+    else if (typeof body.error === 'string') message = body.error;
+  } catch {
+    // Not JSON (an HTML error page): the text itself.
+  }
+  const redacted = redactSecrets(message, [apiKey]);
+  return redacted === '' ? null : redacted;
 }

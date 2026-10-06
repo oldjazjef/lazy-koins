@@ -4,6 +4,12 @@
   <span hlmBadge variant="secondary">{{ 'rates.online' | translate }}</span>
   } @else {
   <span hlmBadge variant="outline">{{ 'rates.offline' | translate }}</span>
+  <a
+    class="text-primary text-sm hover:underline"
+    routerLink="/app/setup"
+    [queryParams]="{ step: 'rates' }"
+    >{{ 'setup.deepLink.rates' | translate }}</a
+  >
   }
   <span class="flex-1"></span>
   @if (!closed()) {

@@ -15,6 +15,9 @@ import { CalculationModule } from '../calculation/calculation.module';
 import { CarryoverModule } from '../carryover/carryover.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { PackagesModule } from '../packages/packages.module';
+import { PinLockGuard } from '../pin/pin-lock.guard';
+import { PinModule } from '../pin/pin.module';
+import { SetupModule } from '../setup/setup.module';
 import { ExportsModule } from '../exports/exports.module';
 import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
@@ -59,6 +62,8 @@ import { AppController } from './app.controller';
     DashboardModule,
     CarryoverModule,
     PackagesModule,
+    PinModule,
+    SetupModule,
   ],
   controllers: [AppController],
   providers: [
@@ -67,6 +72,8 @@ import { AppController } from './app.controller';
     // on the user the token named). All bound here so the order lives in one place.
     { provide: APP_GUARD, useClass: IpThrottlerGuard },
     { provide: APP_GUARD, useClass: AccessTokenGuard },
+    // F11.0p: a user with a PIN gets 423 for data requests until unlocked (needs the user).
+    { provide: APP_GUARD, useExisting: PinLockGuard },
     { provide: APP_GUARD, useClass: AccountThrottlerGuard },
   ],
 })

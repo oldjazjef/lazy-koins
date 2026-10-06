@@ -4,6 +4,7 @@ import {
   GetSettingsHandler,
   SettingsReader,
   SettingsSecrets,
+  TestCoingeckoKeyHandler,
   UpdateSettingsHandler,
 } from './application/settings.handlers';
 import { SettingsController } from './settings.controller';
@@ -23,6 +24,7 @@ import { SettingsService } from './settings.service';
     SettingsReader,
     GetSettingsHandler,
     UpdateSettingsHandler,
+    TestCoingeckoKeyHandler,
   ],
   exports: [SettingsReader],
 })

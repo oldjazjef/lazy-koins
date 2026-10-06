@@ -1,0 +1,139 @@
+<section hlmCard class="mt-6 max-w-3xl" aria-labelledby="pin-settings-title">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle id="pin-settings-title">
+      {{ 'pin.settings.title' | translate }}
+    </h2>
+    <p hlmCardDescription>
+      {{ (pin.status()?.mode === 'desktop' ? 'pin.settings.hintDesktop' :
+      'pin.settings.hintWeb') | translate }}
+    </p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-6">
+    @if (pin.status(); as status) { @if (!status.hasPin) {
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm">{{ 'pin.settings.none' | translate }}</p>
+      <a
+        hlmBtn
+        variant="outline"
+        routerLink="/app/setup"
+        [queryParams]="{ step: 'pin' }"
+        >{{ 'pin.settings.set' | translate }}</a
+      >
+    </div>
+    } @else {
+    <form
+      class="grid gap-4 sm:grid-cols-3"
+      [formGroup]="changeForm"
+      (ngSubmit)="change()"
+      [attr.aria-label]="'pin.settings.change' | translate"
+    >
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="pin-current"
+          >{{ 'pin.form.current' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="pin-current"
+          type="password"
+          inputmode="numeric"
+          autocomplete="current-password"
+          maxlength="8"
+          formControlName="currentPin"
+        />
+        @if (changeError('currentPin'); as message) {
+        <p class="text-destructive text-sm">{{ message | translate }}</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="pin-new">{{ 'pin.form.new' | translate }}</label>
+        <input
+          hlmInput
+          id="pin-new"
+          type="password"
+          inputmode="numeric"
+          autocomplete="new-password"
+          maxlength="8"
+          formControlName="pin"
+        />
+        @if (changeError('pin'); as message) {
+        <p class="text-destructive text-sm">{{ message | translate }}</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="pin-repeat"
+          >{{ 'pin.form.repeat' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="pin-repeat"
+          type="password"
+          inputmode="numeric"
+          autocomplete="new-password"
+          maxlength="8"
+          formControlName="repeat"
+        />
+        @if (changeError('repeat'); as message) {
+        <p class="text-destructive text-sm">{{ message | translate }}</p>
+        }
+      </div>
+      <div class="flex justify-end sm:col-span-3">
+        <button hlmBtn type="submit" [disabled]="busy()">
+          {{ 'pin.settings.change' | translate }}
+        </button>
+      </div>
+    </form>
+
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="pin-autolock"
+        >{{ 'pin.form.autoLock' | translate }}</label
+      >
+      <select
+        hlmInput
+        id="pin-autolock"
+        class="max-w-64"
+        [disabled]="busy()"
+        (change)="autoLock($event)"
+      >
+        @for (minutes of choices; track minutes) {
+        <option
+          [value]="minutes"
+          [selected]="minutes === status.autoLockMinutes"
+        >
+          {{ 'pin.form.minutes' | translate: { count: minutes } }}
+        </option>
+        }
+      </select>
+    </div>
+
+    @if (status.mode === 'web') {
+    <form
+      class="flex flex-wrap items-end gap-3 border-t pt-4"
+      [formGroup]="removeForm"
+      (ngSubmit)="remove()"
+      [attr.aria-label]="'pin.settings.remove' | translate"
+    >
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="pin-remove-current"
+          >{{ 'pin.form.current' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="pin-remove-current"
+          type="password"
+          inputmode="numeric"
+          autocomplete="current-password"
+          maxlength="8"
+          formControlName="currentPin"
+        />
+      </div>
+      <button hlmBtn variant="outline" type="submit" [disabled]="busy()">
+        {{ 'pin.settings.remove' | translate }}
+      </button>
+    </form>
+    } } @if (problem(); as code) {
+    <p class="text-destructive text-sm" role="alert">
+      {{ 'pin.errors.' + code | translate }}
+    </p>
+    } }
+  </div>
+</section>

@@ -28,6 +28,20 @@ export abstract class UsdPriceSourcePort implements RateSourcePort {
   abstract dailyUsd(request: SeriesRequest): Promise<RateEntry[]>;
 }
 
+/** The outcome of a key check ("Testen", F11.0s) — never contains the key. */
+export interface KeyCheckResult {
+  readonly ok: boolean;
+  /** Why it failed: the key, the provider's limit, the network, … */
+  readonly code?:
+    'invalidKey' | 'rateLimited' | 'network' | 'timeout' | 'providerError';
+  readonly status: number | null;
+  /** The provider's own message, redacted (no key in it). */
+  readonly providerMessage: string | null;
+  /** scheme://host/path that was called — never the query. */
+  readonly url: string;
+  readonly millis: number;
+}
+
 /** Daily CHF prices of a crypto asset (CoinGecko, the user's API key). */
 export abstract class ChfPriceSourcePort implements RateSourcePort {
   abstract readonly name: RateEntry['source'];
@@ -37,6 +51,9 @@ export abstract class ChfPriceSourcePort implements RateSourcePort {
       readonly apiKey: string;
     },
   ): Promise<RateEntry[]>;
+
+  /** One cheap authenticated request that proves the key works (no prices, no user data). */
+  abstract checkKey(apiKey: string): Promise<KeyCheckResult>;
 }
 
 /** Daily ECB reference rates of USD and EUR in CHF (Frankfurter). */

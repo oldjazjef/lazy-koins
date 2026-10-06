@@ -18,33 +18,19 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
-import {
-  MAIL_SECURITIES,
-  type MailSecurity,
-  type MailSettings,
-  type MailTemplate,
-} from '../../../../core/api/mail.types';
+import type { MailTemplate } from '../../../../core/api/mail.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
-import { SmtpError } from '../../../../shared/components/smtp-error';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
-import {
-  MailSettingsFormSchema,
-  MailTemplateFormSchema,
-} from './mail-settings.schema';
+import { MailerForm } from '../../components/mailer-form/mailer-form';
+import { MailTemplateFormSchema } from './mail-settings.schema';
 import { MailSettingsPageService } from './mail-settings-page.service';
 
-/** The usual port of each security mode, offered when the user switches it. */
-const DEFAULT_PORTS: Readonly<Record<MailSecurity, number>> = {
-  starttls: 587,
-  tls: 465,
-  none: 25,
-};
-
 /**
- * Einstellungen › Mail (F11.10): the mailer (SMTP server, port, security, user, password, sender,
- * on/off) with "Test-Mail an mich senden", and the text template of the mail to the Treuhänder
- * with placeholders, a live preview and "auf Standard zurücksetzen".
+ * Einstellungen › Mail (F11.10): the mailer (`lk-mailer-form`, shared with the setup wizard —
+ * SMTP server, port, security, user, password, sender, on/off, "Test-Mail an mich senden"), and
+ * the text template of the mail to the Treuhänder with placeholders, a live preview and "auf
+ * Standard zurücksetzen".
  */
 @Component({
   selector: 'lk-mail-settings-page',
@@ -53,7 +39,7 @@ const DEFAULT_PORTS: Readonly<Record<MailSecurity, number>> = {
     TranslatePipe,
     PageHeader,
     EmptyState,
-    SmtpError,
+    MailerForm,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -68,21 +54,6 @@ const DEFAULT_PORTS: Readonly<Record<MailSecurity, number>> = {
 })
 export class MailSettingsPage {
   protected readonly service = inject(MailSettingsPageService);
-  protected readonly securities = MAIL_SECURITIES;
-
-  protected readonly form = inject(FormBuilder).nonNullable.group(
-    {
-      enabled: [false],
-      host: [''],
-      port: [587],
-      security: ['starttls' as MailSecurity],
-      username: [''],
-      password: [''],
-      fromName: [''],
-      fromAddress: [''],
-    },
-    { validators: zodValidator(MailSettingsFormSchema) },
-  );
 
   protected readonly templateForm = inject(FormBuilder).nonNullable.group(
     { subject: [''], body: [''] },
@@ -111,11 +82,7 @@ export class MailSettingsPage {
   );
 
   constructor() {
-    // Fill the forms from the saved values (again after each save) unless the user is editing.
-    effect(() => {
-      const settings = this.current();
-      if (settings && this.form.pristine) this.fill(settings);
-    });
+    // Fill the form from the saved template (again after each save) unless the user is editing.
     effect(() => {
       const template = this.template();
       if (template && this.templateForm.pristine) this.fillTemplate(template);
@@ -126,47 +93,6 @@ export class MailSettingsPage {
         const { subject, body } = this.templateForm.getRawValue();
         this.service.previewText.set({ subject, body });
       });
-  }
-
-  protected securityChanged(): void {
-    const { security, port } = this.form.getRawValue();
-    if (Object.values(DEFAULT_PORTS).includes(port)) {
-      this.form.controls.port.setValue(DEFAULT_PORTS[security]);
-    }
-  }
-
-  protected async submit(): Promise<void> {
-    this.form.markAllAsTouched();
-    const parsed = MailSettingsFormSchema.safeParse(this.form.getRawValue());
-    if (!parsed.success) return;
-    const { password, ...rest } = parsed.data;
-    const saved = await this.service.save({
-      ...rest,
-      ...(password !== '' ? { password } : {}),
-    });
-    if (saved) {
-      this.form.markAsPristine();
-      const settings = this.current();
-      if (settings) this.fill(settings);
-    }
-  }
-
-  /** Tests what is in the form right now — saved or not; a typed password is used, never stored. */
-  protected test(): void {
-    const parsed = MailSettingsFormSchema.safeParse(this.form.getRawValue());
-    if (!parsed.success) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    const { enabled: _enabled, password, ...rest } = parsed.data;
-    void this.service.test({
-      ...rest,
-      ...(password !== '' ? { password } : {}),
-    });
-  }
-
-  protected async removePassword(settings: MailSettings): Promise<void> {
-    if (await this.service.removePassword(settings)) this.form.markAsPristine();
   }
 
   /** `{{name}}` — built here: braces cannot be written inside a template interpolation. */
@@ -219,22 +145,6 @@ export class MailSettingsPage {
 
   protected resetChanged(state: 'open' | 'closed'): void {
     if (state === 'closed') this.confirmReset.set(false);
-  }
-
-  private fill(settings: MailSettings): void {
-    this.form.reset(
-      {
-        enabled: settings.enabled,
-        host: settings.host,
-        port: settings.port,
-        security: settings.security,
-        username: settings.username,
-        password: '',
-        fromName: settings.fromName,
-        fromAddress: settings.fromAddress,
-      },
-      { emitEvent: false },
-    );
   }
 
   private fillTemplate(template: MailTemplate): void {

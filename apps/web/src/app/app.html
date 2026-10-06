@@ -1,4 +1,10 @@
-<router-outlet />
+<!-- F11.0p: while the PIN lock is up, the app behind it is inert (no focus, no clicks). -->
+<div class="contents" [attr.inert]="showLock() ? '' : null">
+  <router-outlet />
+</div>
+@if (showLock()) {
+<lk-lock-screen />
+}
 <!-- Above the CDK overlay container (z-index 1000), or toasts paint behind open dialogs. -->
 <hlm-toaster
   [theme]="toasterTheme()"
