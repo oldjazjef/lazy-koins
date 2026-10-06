@@ -23,3 +23,4 @@ export * from './rates/kursliste';
 export * from './corrections/corrections';
 export * from './calculation/types';
 export * from './calculation/calculate';
+export * from './calculation/analysis';
