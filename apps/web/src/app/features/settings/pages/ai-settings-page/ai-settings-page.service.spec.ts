@@ -135,15 +135,38 @@ describe('AiSettingsPageService', () => {
     expect(service.testResult()?.model).toBe('claude-sonnet-5-5');
 
     const failed = service.test();
-    http
-      .expectOne('/api/ai/settings/test')
-      .flush(
-        { statusCode: 502, code: 'network' },
-        { status: 502, statusText: 'Bad Gateway' },
-      );
+    http.expectOne('/api/ai/settings/test').flush(
+      {
+        statusCode: 502,
+        code: 'network',
+        url: 'http://localhost:11434/v1/chat/completions',
+        model: 'llama3.1',
+        cause: 'ECONNREFUSED',
+      },
+      { status: 502, statusText: 'Bad Gateway' },
+    );
     await failed;
     expect(service.testResult()).toBeNull();
     expect(notifications.error).toHaveBeenCalledWith('ai.errors.network');
+    // The details stay on the page (user rule: "genaue Fehlerinfos").
+    expect(service.testError()).toMatchObject({
+      key: 'ai.errors.network',
+      code: 'network',
+      url: 'http://localhost:11434/v1/chat/completions',
+      model: 'llama3.1',
+      cause: 'ECONNREFUSED',
+      hintKey: 'ai.hints.refused',
+    });
+
+    const again = service.test();
+    expect(service.testError()).toBeNull();
+    http.expectOne('/api/ai/settings/test').flush({
+      ok: true,
+      model: 'llama3.1',
+      usage: null,
+      millis: 12,
+    });
+    await again;
   });
 });
 

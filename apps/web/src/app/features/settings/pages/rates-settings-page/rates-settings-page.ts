@@ -19,6 +19,7 @@ import { HlmTableImports } from '@lazykoins/ui/table';
 import { z } from 'zod';
 import type { UpdateSettingsRequest } from '../../../../core/api/calculation.types';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { Truncate } from '../../../../shared/components/truncate';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { UserSettingsService } from '../../user-settings.service';
 import { RatesSettingsPageService } from './rates-settings-page.service';
@@ -50,6 +51,7 @@ export function ratesSettingsChanges(
     ReactiveFormsModule,
     TranslatePipe,
     PageHeader,
+    Truncate,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,

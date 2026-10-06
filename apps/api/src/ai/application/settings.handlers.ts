@@ -189,23 +189,25 @@ export class TestAiConnectionHandler implements ICommandHandler<
       draft,
     );
     const started = Date.now();
-    const answer = await this.gate.call(() =>
-      this.ai.complete(connection, {
-        system:
-          'This is a connection test. Answer with the JSON object {"ok": true}.',
-        messages: [{ role: 'user', content: 'Connection test.' }],
-        output: {
-          name: 'connection_test',
-          description: 'Confirms the connection works.',
-          schema: {
-            type: 'object',
-            properties: { ok: { type: 'boolean' } },
-            required: ['ok'],
+    const answer = await this.gate.call(
+      () =>
+        this.ai.complete(connection, {
+          system:
+            'This is a connection test. Answer with the JSON object {"ok": true}.',
+          messages: [{ role: 'user', content: 'Connection test.' }],
+          output: {
+            name: 'connection_test',
+            description: 'Confirms the connection works.',
+            schema: {
+              type: 'object',
+              properties: { ok: { type: 'boolean' } },
+              required: ['ok'],
+            },
           },
-        },
-        maxTokens: 50,
-        timeoutMs: 30_000,
-      }),
+          maxTokens: 50,
+          timeoutMs: 30_000,
+        }),
+      connection,
     );
     return {
       ok: true,

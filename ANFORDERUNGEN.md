@@ -344,6 +344,20 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Zugriffstoken (erstellen, benennen, Ablauf, widerrufen); Desktop: lokaler Server
   (stdio oder 127.0.0.1) ohne Netzwerkzugriff von aussen. Jeder MCP-Aufruf wird protokolliert.
 
+## 11b. Bedienung
+
+- **U1 Tabellen**: Alle Tabellen passen ab 1024 px Breite ohne seitliches Scrollen. Zu lange
+  Texte werden mit „…“ abgeschnitten, der volle Text erscheint als Tooltip. Die Aktionen einer
+  Zeile stehen fix am rechten Rand: eine einzelne Aktion als Symbol-Knopf, mehrere hinter einem
+  Knopf mit drei senkrechten Punkten, der ein Menü öffnet (z. B. Dateien: Vorschau,
+  Herunterladen, Mit AI auslesen/erstellen, Zuordnen, Entfernen).
+- **U2 Seitenweise Anzeige**: Jede Tabelle, die gross werden kann, zeigt 10 Zeilen pro Seite
+  (wählbar 10 / 25 / 50 / 100, pro Tabelle gemerkt), mit „Zeile 1–10 von 57“ und Blättern.
+- **U3 Genaue AI-Fehler**: Schlägt eine AI-Anfrage oder der Verbindungstest fehl, zeigt die App
+  neben der Zusammenfassung die Details (HTTP-Status und Meldung des Anbieters, Adresse, Modell,
+  Fehlercode, Ursache) mit einem Hinweis, was zu prüfen ist, und „Details kopieren“. Der
+  API-Schlüssel erscheint nie in einer Meldung oder einem Log.
+
 ## 12. Abnahme
 
 - **A1** Mit den echten Daten (lokal in `private/`, Sollwerte in `private/golden.json`) ergibt das Projekt 2025 dieselben Werte wie die manuelle Auswertung (±0.05 CHF); der Kraken-Saldo per 31.12.2025 stimmt exakt mit dem Kontoauszug überein.

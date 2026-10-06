@@ -302,6 +302,59 @@ describe('AI settings (F5.13)', () => {
     expect(await t.settings.find('anna')).toBeUndefined();
   });
 
+  it('answers a failed test with the precise, redacted details (502)', async () => {
+    const t = await setup();
+    t.ai.answer(
+      new AiProviderError('invalidKey', {
+        status: 401,
+        url: 'https://api.example.com/v1/chat/completions',
+        providerMessage:
+          'Incorrect API key provided: sk-typed-only-abcdef. Bearer sk-typed-only-abcdef',
+        providerType: 'invalid_request_error',
+        providerCode: 'invalid_api_key',
+      }),
+    );
+    const error = await t
+      .testConnection({
+        provider: 'openai_compatible',
+        baseUrl: 'https://api.example.com/v1',
+        model: 'gpt-x',
+        apiKey: 'sk-typed-only-abcdef',
+      })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(BadGatewayException);
+    const body = (error as BadGatewayException).getResponse();
+    expect(body).toMatchObject({
+      statusCode: 502,
+      code: 'invalidKey',
+      status: 401,
+      url: 'https://api.example.com/v1/chat/completions',
+      model: 'gpt-x',
+      providerType: 'invalid_request_error',
+      providerCode: 'invalid_api_key',
+    });
+    expect((body as { providerMessage: string }).providerMessage).toContain(
+      'Incorrect API key provided',
+    );
+    expect((body as { detail: string }).detail).toContain('HTTP 401');
+    expect(JSON.stringify(body)).not.toContain('typed-only');
+  });
+
+  it('says what is missing when the plugin is not ready (409 detail)', async () => {
+    const t = await setup();
+    const notReady = await t
+      .testConnection({ provider: 'anthropic', baseUrl: '', model: '' })
+      .catch((e: unknown) => e);
+    expect(codeOf(notReady)).toBe('aiNotConfigured');
+    expect(
+      (
+        (notReady as ConflictException).getResponse() as {
+          detail?: string;
+        }
+      ).detail,
+    ).toContain('API key');
+  });
+
   it('tests while the plugin is switched off (nothing of the user is sent)', async () => {
     const t = await setup();
     await t.save({ enabled: false });
@@ -413,7 +466,7 @@ describe('AI mapping (F5.13, F5.14)', () => {
     const t = await setup();
     await t.save();
     const file = await t.upload('bitfinex.csv', BITFINEX);
-    t.ai.answer(new AiProviderError('rateLimited', 429));
+    t.ai.answer(new AiProviderError('rateLimited', { status: 429 }));
     const error = await t.generate(file.id).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(BadGatewayException);
     expect(codeOf(error)).toBe('rateLimited');
