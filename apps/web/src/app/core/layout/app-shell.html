@@ -1,5 +1,5 @@
-<div class="flex min-h-dvh flex-col">
-  <header class="bg-card border-b">
+<div class="flex h-dvh flex-col overflow-hidden">
+  <header class="bg-card z-40 shrink-0 border-b">
     <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
       <a
         routerLink="/app"
@@ -88,16 +88,19 @@
     </div>
   </header>
 
-  <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
-    <router-outlet />
-  </main>
+  <!-- Only this area scrolls (user rule): the header above stays put. -->
+  <div class="lk-scroll-area flex min-h-0 flex-1 flex-col overflow-y-auto">
+    <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+      <router-outlet />
+    </main>
 
-  @if (version.info(); as build) {
-  <footer
-    class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
-  >
-    {{ 'app.version' | translate: { version: build.version, commit: build.commit
-    } }}
-  </footer>
-  }
+    @if (version.info(); as build) {
+    <footer
+      class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+    >
+      {{ 'app.version' | translate: { version: build.version, commit:
+      build.commit } }}
+    </footer>
+    }
+  </div>
 </div>
