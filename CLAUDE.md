@@ -600,11 +600,11 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`login-page.spec.ts` guards it).
 - Mutations go through `defineAction` + `ActionRunner` in the page service; messages are i18n keys.
 - Dialogs for decisions (reopen a closed project, delete), pages for forms.
-- **Dialog actions never scroll away** (user rule, 06.10.2026): a dialog is at most the viewport
-  high, only its body scrolls; `hlm-dialog-header` sticks to the top and `hlm-dialog-footer` (the
-  buttons) to the bottom. Set globally in `styles.css` — so put the buttons in an
-  `<hlm-dialog-footer>` that is a **direct child** of `<hlm-dialog-content>`, never inside the
-  scrolling body. The same goes for any other overlay (sheet, popover with actions).
+- **Dialog layout** (user rule, 07.10.2026): three fixed regions — `<hlm-dialog-header>` at the top,
+  `<div class="lk-dialog-body">` in the middle (the ONLY part that scrolls), `<hlm-dialog-footer>`
+  with every action button across the full width at the bottom. All three are **direct children**
+  of `<hlm-dialog-content>`; a footer inside an `@if` is fine as long as it stays a direct child.
+  Styled globally in `styles.css`. The same goes for any other overlay with actions.
 - Desktop first: the shell is a header with the navigation (`core/layout/app-shell`), no tab bar.
 - **Every action that can take more than ~1 s goes through the `ActivityService`** (user rule,
   F11.20): `core/activity/activity.service.ts` (root, signals) shows it in the app-wide

@@ -348,19 +348,21 @@
         (current.hint.platform ?? '') }} {{ where(current.hint) }}
       </p>
     </hlm-dialog-header>
-    <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium" for="hint-note"
-        >{{ 'hints.dismiss.note' | translate }}</label
-      >
-      <textarea
-        hlmTextarea
-        id="hint-note"
-        class="min-h-20"
-        maxlength="500"
-        [placeholder]="'hints.dismiss.placeholder' | translate"
-        [ngModel]="note()"
-        (ngModelChange)="note.set($event)"
-      ></textarea>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium" for="hint-note"
+          >{{ 'hints.dismiss.note' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="hint-note"
+          class="min-h-20"
+          maxlength="500"
+          [placeholder]="'hints.dismiss.placeholder' | translate"
+          [ngModel]="note()"
+          (ngModelChange)="note.set($event)"
+        ></textarea>
+      </div>
     </div>
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
@@ -396,28 +398,30 @@
       </h3>
       <p hlmDialogDescription>{{ current.hint.hintKey | translate }}</p>
     </hlm-dialog-header>
-    <div
-      class="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed px-6 py-8 text-center"
-      [class.border-primary]="dragging()"
-      [class.bg-muted]="dragging()"
-      (dragover)="dragOver($event)"
-      (dragleave)="dragging.set(false)"
-      (drop)="drop($event)"
-    >
-      <ng-icon name="lucideUpload" size="24" aria-hidden="true" />
-      <p class="text-sm">{{ 'files.upload.drop' | translate }}</p>
-      <p class="text-muted-foreground text-xs">
-        {{ 'hints.upload.detected' | translate }}
-      </p>
+    <div class="lk-dialog-body">
+      <div
+        class="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed px-6 py-8 text-center"
+        [class.border-primary]="dragging()"
+        [class.bg-muted]="dragging()"
+        (dragover)="dragOver($event)"
+        (dragleave)="dragging.set(false)"
+        (drop)="drop($event)"
+      >
+        <ng-icon name="lucideUpload" size="24" aria-hidden="true" />
+        <p class="text-sm">{{ 'files.upload.drop' | translate }}</p>
+        <p class="text-muted-foreground text-xs">
+          {{ 'hints.upload.detected' | translate }}
+        </p>
+      </div>
+      <input
+        #hintPicker
+        class="sr-only"
+        type="file"
+        multiple
+        accept=".csv,.xlsx,.pdf,text/csv,application/pdf"
+        (change)="picked($event)"
+      />
     </div>
-    <input
-      #hintPicker
-      class="sr-only"
-      type="file"
-      multiple
-      accept=".csv,.xlsx,.pdf,text/csv,application/pdf"
-      (change)="picked($event)"
-    />
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
@@ -449,32 +453,34 @@
       </p>
       }
     </hlm-dialog-header>
-    @if (current.errors; as errors) {
-    <div hlmTableContainer class="lk-panel">
-      <table hlmTable>
-        <thead hlmTHead>
-          <tr hlmTr>
-            <th hlmTh class="text-right">{{ 'records.row' | translate }}</th>
-            <th hlmTh>{{ 'hints.rowErrors.column' | translate }}</th>
-            <th hlmTh>{{ 'hints.rowErrors.problem' | translate }}</th>
-          </tr>
-        </thead>
-        <tbody hlmTBody>
-          @for (error of errors.errors; track $index) {
-          <tr hlmTr>
-            <td hlmTd class="text-right tabular-nums">{{ error.row }}</td>
-            <td hlmTd>{{ error.column ?? '–' }}</td>
-            <td hlmTd class="whitespace-normal">
-              {{ 'files.rowErrors.' + error.code | translate }}
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
+    <div class="lk-dialog-body">
+      @if (current.errors; as errors) {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh class="text-right">{{ 'records.row' | translate }}</th>
+              <th hlmTh>{{ 'hints.rowErrors.column' | translate }}</th>
+              <th hlmTh>{{ 'hints.rowErrors.problem' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (error of errors.errors; track $index) {
+            <tr hlmTr>
+              <td hlmTd class="text-right tabular-nums">{{ error.row }}</td>
+              <td hlmTd>{{ error.column ?? '–' }}</td>
+              <td hlmTd class="whitespace-normal">
+                {{ 'files.rowErrors.' + error.code | translate }}
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      } @else {
+      <hlm-skeleton class="h-40 w-full" />
+      }
     </div>
-    } @else {
-    <hlm-skeleton class="h-40 w-full" />
-    }
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.close' | translate }}

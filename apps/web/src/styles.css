@@ -127,22 +127,26 @@
 
 @layer components {
   /*
-   * Dialogs: actions never scroll away. Every dialog is at most the viewport high; only its body
-   * scrolls, while the header (title) sticks to the top and the footer (the action buttons) to
-   * the bottom. Set here, once, for every hlm dialog — libs/ui is vendored and stays untouched.
-   * The negative margins + padding let the sticky bars cover the dialog's own p-6 padding, so
-   * scrolled content never shows above or below them.
+   * Dialogs (user rule): three fixed regions — the header at the top, the footer with the action
+   * buttons across the full width at the bottom, and between them the body, the ONLY part that
+   * scrolls. Every dialog wraps its content in `<div class="lk-dialog-body">` between
+   * `<hlm-dialog-header>` and `<hlm-dialog-footer>` (all three direct children of
+   * `<hlm-dialog-content>`). The `!` overrides hlm's own padding/grid (libs/ui stays untouched).
    */
   hlm-dialog-content {
-    @apply max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain;
+    @apply flex! max-h-[calc(100dvh-2rem)] flex-col! gap-0! overflow-hidden! p-0!;
   }
 
   hlm-dialog-content > hlm-dialog-header {
-    @apply bg-popover sticky -top-6 z-10 -mt-6 pt-6 pb-2;
+    @apply shrink-0 border-b px-6 pt-6 pb-4 pr-12;
+  }
+
+  hlm-dialog-content > .lk-dialog-body {
+    @apply flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-6 py-4;
   }
 
   hlm-dialog-content > hlm-dialog-footer {
-    @apply bg-popover sticky -bottom-6 z-10 -mb-6 border-t pt-4 pb-6;
+    @apply bg-muted/40 w-full shrink-0 border-t px-6 py-4;
   }
 
   /* The user menu at the top right. */
