@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { CreateProjectInput } from '../domain/project';
 import { InMemoryProjectRepository } from '../testing/in-memory-project.repository';
+import { InMemoryProjectSentRepository } from '../testing/in-memory-project-sent.repository';
 import {
   CreateProjectCommand,
   CreateProjectHandler,
@@ -40,7 +41,11 @@ function setup() {
   return {
     repo,
     create: new CreateProjectHandler(repo),
-    list: new ListMyProjectsHandler(repo, new InMemorySnapshotRepository()),
+    list: new ListMyProjectsHandler(
+      repo,
+      new InMemorySnapshotRepository(),
+      new InMemoryProjectSentRepository(),
+    ),
     get: new GetProjectHandler(repo),
     update: new UpdateProjectHandler(repo),
     remove: new DeleteProjectHandler(repo),

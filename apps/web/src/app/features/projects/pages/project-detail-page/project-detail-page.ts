@@ -26,6 +26,7 @@ import { EmptyState } from '../../../../shared/components/empty-state';
 import { ProjectWorkspace } from '../../../calculation/components/project-workspace/project-workspace';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
+import { ProjectSentBadge } from '../../components/project-sent-badge';
 import { ProjectStatusBadge } from '../../components/project-status-badge';
 import { ProjectDetailPageService } from './project-detail-page.service';
 
@@ -55,6 +56,7 @@ type Confirm = 'reopen' | 'delete';
     PageHeader,
     EmptyState,
     ProjectStatusBadge,
+    ProjectSentBadge,
     ProjectWorkspace,
     ...HlmButtonImports,
     ...HlmCardImports,

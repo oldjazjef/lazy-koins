@@ -55,7 +55,13 @@
         <td hlmTd class="tabular-nums">{{ project.taxYear }}</td>
         <td hlmTd>{{ project.canton }}</td>
         <td hlmTd>
-          <lk-project-status-badge [status]="project.status" />
+          <span class="inline-flex flex-wrap items-center gap-1">
+            <lk-project-status-badge [status]="project.status" />
+            <lk-project-sent-badge
+              [sentAt]="project.sent?.sentAt ?? null"
+              [changedSince]="project.sent?.changedSince ?? false"
+            />
+          </span>
         </td>
         <td hlmTd class="text-right tabular-nums">
           {{ project.wealthChf | lkChf }}

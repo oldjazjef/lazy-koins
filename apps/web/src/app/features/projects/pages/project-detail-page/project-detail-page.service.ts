@@ -9,6 +9,8 @@ import type {
   Project,
   UpdateProjectRequest,
 } from '../../../../core/api/api.types';
+import type { ProjectSentStatus } from '../../../../core/api/mail.types';
+import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
 
 /**
  * Page-scoped: the project on screen (provided by the page, keyed by the route's id). The API
@@ -20,12 +22,20 @@ export class ProjectDetailPageService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly actions = inject(ActionRunner);
+  private readonly sentEvents = inject(ProjectSentEvents);
 
   readonly projectId = signal<string | undefined>(undefined);
 
   readonly project = httpResource<Project>(() => {
     const id = this.projectId();
     return id ? apiUrl(`/projects/${id}`) : undefined;
+  });
+
+  /** F4.7: sent to the Treuhänder; follows sends, marks, exports and calculations. */
+  readonly sent = httpResource<ProjectSentStatus>(() => {
+    this.sentEvents.version();
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/sent`) : undefined;
   });
 
   /** F4.5: read-only while closed. */

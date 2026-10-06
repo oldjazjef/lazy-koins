@@ -1,4 +1,5 @@
 import type { BookingKind, Project } from './api.types';
+import type { ProjectSentSummary } from './mail.types';
 
 /**
  * Shapes of the calculation, rates, corrections, exports and settings endpoints, hand-mirrored
@@ -11,6 +12,8 @@ export interface ProjectListItem extends Project {
   wealthChf: string | null;
   incomeChf: string | null;
   calculatedAt: string | null;
+  /** F4.7: sent to the Treuhänder (null = not yet). */
+  sent: ProjectSentSummary | null;
 }
 
 export const INCOME_CATEGORIES = [

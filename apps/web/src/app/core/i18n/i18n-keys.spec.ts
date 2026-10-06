@@ -17,6 +17,14 @@ import {
   PRICE_ORIGINS,
   QUANTITY_SOURCES,
 } from '../api/calculation.types';
+import {
+  CHANGE_REASONS,
+  MAIL_ERROR_CODES,
+  MAIL_PLACEHOLDERS,
+  MAIL_SECURITIES,
+  SENT_VIA,
+  SMTP_ERROR_KINDS,
+} from '../api/mail.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -87,6 +95,14 @@ const DYNAMIC_KEYS = [
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
+  ...MAIL_SECURITIES.map((security) => `settings.mail.securities.${security}`),
+  ...MAIL_PLACEHOLDERS.map((name) => `mail.placeholders.${name}`),
+  ...SMTP_ERROR_KINDS.map((kind) => `mail.smtp.kind.${kind}`),
+  ...[...MAIL_ERROR_CODES, 'failed', 'unreachable'].map(
+    (code) => `mail.errors.${code}`,
+  ),
+  ...SENT_VIA.map((way) => `projects.sent.via.${way}`),
+  ...CHANGE_REASONS.map((reason) => `projects.sent.reason.${reason}`),
   ...['name', 'platform', 'updated', 'files'].map(
     (sort) => `mappings.list.sortBy.${sort}`,
   ),

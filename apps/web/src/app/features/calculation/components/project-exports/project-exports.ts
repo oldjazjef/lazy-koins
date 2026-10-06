@@ -23,6 +23,7 @@ import { NotificationService } from '../../../../core/notifications/notification
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
 
 /**
  * Exporte (F10): create the simple and the detailed statement as PDF or Excel, every one kept
@@ -36,6 +37,7 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
     TranslatePipe,
     ChfPipe,
     EmptyState,
+    SendToAdvisor,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,

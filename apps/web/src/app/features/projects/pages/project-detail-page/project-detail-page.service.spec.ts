@@ -52,6 +52,8 @@ async function setup(initial: Project | 'missing') {
   } else {
     request.flush(initial);
   }
+  // F4.7: the sent status loads alongside the project.
+  http.expectOne('/api/projects/p1/sent').flush({ sent: null, changes: [] });
   await settle();
   return { service, http };
 }

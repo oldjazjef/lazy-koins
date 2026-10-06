@@ -1,6 +1,6 @@
 import type { Routes } from '@angular/router';
 
-/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI — each section a sub-route. */
+/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail — each section a sub-route. */
 const routes: Routes = [
   {
     path: '',
@@ -27,6 +27,13 @@ const routes: Routes = [
         loadComponent: () =>
           import('./pages/ai-settings-page/ai-settings-page').then(
             (m) => m.AiSettingsPage,
+          ),
+      },
+      {
+        path: 'mail',
+        loadComponent: () =>
+          import('./pages/mail-settings-page/mail-settings-page').then(
+            (m) => m.MailSettingsPage,
           ),
       },
     ],

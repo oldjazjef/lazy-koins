@@ -3,7 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 /** The sections of Einstellungen (ANFORDERUNGEN §11), each a sub-route. */
-export const SETTINGS_SECTIONS = ['rates', 'wallets', 'ai'] as const;
+export const SETTINGS_SECTIONS = ['rates', 'wallets', 'ai', 'mail'] as const;
 
 /** Einstellungen: the section links above the section's page. */
 @Component({

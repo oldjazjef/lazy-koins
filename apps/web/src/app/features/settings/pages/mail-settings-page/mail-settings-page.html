@@ -1,0 +1,360 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'settings.mail.subtitle' | translate"
+/>
+
+@if (current(); as settings) {
+<section hlmCard class="max-w-3xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle class="flex items-center gap-2">
+      {{ 'settings.mail.title' | translate }} @if (!settings.enabled) {
+      <span hlmBadge variant="outline"
+        >{{ 'settings.mail.status.off' | translate }}</span
+      >
+      } @else if (settings.ready) {
+      <span hlmBadge variant="secondary"
+        >{{ 'settings.mail.status.ready' | translate }}</span
+      >
+      } @else {
+      <span hlmBadge variant="destructive"
+        >{{ 'settings.mail.status.notConfigured' | translate }}</span
+      >
+      }
+    </h2>
+    <p hlmCardDescription>{{ 'settings.mail.intro' | translate }}</p>
+  </div>
+  <div hlmCardContent>
+    <form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="flex items-center gap-2 text-sm font-medium">
+        <input type="checkbox" formControlName="enabled" />
+        {{ 'settings.mail.enabled' | translate }}
+      </label>
+
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div class="flex flex-col gap-2 sm:col-span-2">
+          <label hlmLabel for="mail-host"
+            >{{ 'settings.mail.host' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-host"
+            type="text"
+            autocomplete="off"
+            formControlName="host"
+            [placeholder]="'settings.mail.hostPlaceholder' | translate"
+          />
+          @if ( form.controls.host.touched &&
+          form.controls.host.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mail-port"
+            >{{ 'settings.mail.port' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-port"
+            type="number"
+            min="1"
+            max="65535"
+            formControlName="port"
+          />
+          @if (form.controls.port.errors?.['zod']; as error) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="mail-security"
+          >{{ 'settings.mail.security' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="mail-security"
+          formControlName="security"
+          (change)="securityChanged()"
+        >
+          @for (security of securities; track security) {
+          <option [value]="security">
+            {{ 'settings.mail.securities.' + security | translate }}
+          </option>
+          }
+        </select>
+        <p class="text-muted-foreground text-xs">
+          {{ 'settings.mail.securityHint' | translate }} @if
+          (!settings.privateHostsAllowed) { {{ 'settings.mail.privateHostsHint'
+          | translate }} }
+        </p>
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mail-username"
+            >{{ 'settings.mail.username' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-username"
+            type="text"
+            autocomplete="off"
+            formControlName="username"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mail-password"
+            >{{ 'settings.mail.password' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-password"
+            type="password"
+            autocomplete="new-password"
+            formControlName="password"
+            [attr.disabled]="settings.canStorePassword ? null : true"
+            [placeholder]="(settings.hasPassword ? 'settings.mail.passwordKeep' : 'settings.mail.passwordPlaceholder') | translate"
+          />
+          <p class="text-muted-foreground text-xs">
+            @if (!settings.canStorePassword) { {{ 'settings.mail.noEncryption' |
+            translate }} } @else if (settings.hasPassword) { {{
+            'settings.mail.passwordStored' | translate: { hint:
+            settings.passwordHint } }} } @else { {{ 'settings.mail.passwordNone'
+            | translate }} }
+          </p>
+        </div>
+      </div>
+
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mail-from-name"
+            >{{ 'settings.mail.fromName' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-from-name"
+            type="text"
+            formControlName="fromName"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="mail-from-address"
+            >{{ 'settings.mail.fromAddress' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="mail-from-address"
+            type="email"
+            formControlName="fromAddress"
+          />
+          @if ( form.controls.fromAddress.touched &&
+          form.controls.fromAddress.errors?.['zod']; as error ) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-wrap justify-end gap-2">
+        @if (settings.hasPassword) {
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.isSaving()"
+          (click)="removePassword(settings)"
+        >
+          {{ 'settings.mail.passwordRemove' | translate }}
+        </button>
+        }
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.testing()"
+          (click)="test()"
+        >
+          {{ 'settings.mail.test' | translate: { to: settings.testRecipient ||
+          form.controls.fromAddress.value } }}
+        </button>
+        <button hlmBtn type="submit" [disabled]="service.isSaving()">
+          {{ 'common.save' | translate }}
+        </button>
+      </div>
+      @if (service.testing()) {
+      <p class="text-muted-foreground text-sm" aria-live="polite">
+        {{ 'settings.mail.testing' | translate }}
+      </p>
+      } @if (service.testResult(); as result) {
+      <p class="text-sm" aria-live="polite">
+        {{ 'settings.mail.testOk' | translate: { to: result.to, millis:
+        result.millis } }}
+        <span class="text-muted-foreground block font-mono text-xs"
+          >{{ result.response }}</span
+        >
+      </p>
+      } @if (service.testError(); as error) {
+      <lk-smtp-error [detail]="error" />
+      }
+    </form>
+  </div>
+</section>
+} @else if (service.settings.error()) {
+<lk-empty-state [message]="'settings.mail.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.settings.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<hlm-skeleton class="h-96 w-full max-w-3xl" />
+}
+
+<!-- F11.10: the text template of the mail to the Treuhänder -->
+@if (template(); as stored) {
+<section hlmCard class="mt-6 max-w-5xl">
+  <div hlmCardHeader>
+    <h2 hlmCardTitle class="flex items-center gap-2">
+      {{ 'settings.mail.template.title' | translate }} @if (stored.isDefault) {
+      <span hlmBadge variant="outline"
+        >{{ 'settings.mail.template.default' | translate }}</span
+      >
+      }
+    </h2>
+    <p hlmCardDescription>{{ 'settings.mail.template.intro' | translate }}</p>
+  </div>
+  <div hlmCardContent class="grid gap-6 lg:grid-cols-2">
+    <form
+      class="flex flex-col gap-4"
+      [formGroup]="templateForm"
+      (ngSubmit)="saveTemplate()"
+    >
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="template-subject"
+          >{{ 'settings.mail.template.subject' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="template-subject"
+          type="text"
+          formControlName="subject"
+        />
+        @if ( templateForm.controls.subject.touched &&
+        templateForm.controls.subject.errors?.['zod']; as error ) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="template-body"
+          >{{ 'settings.mail.template.body' | translate }}</label
+        >
+        <textarea
+          #bodyArea
+          hlmTextarea
+          id="template-body"
+          rows="18"
+          class="font-mono text-sm"
+          formControlName="body"
+        ></textarea>
+        @if ( templateForm.controls.body.touched &&
+        templateForm.controls.body.errors?.['zod']; as error ) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium"
+          >{{ 'settings.mail.template.placeholders' | translate }}</span
+        >
+        <p class="text-muted-foreground text-xs">
+          {{ 'settings.mail.template.placeholdersHint' | translate }}
+        </p>
+        <ul class="flex flex-col gap-1 text-sm">
+          @for (name of stored.placeholders; track name) {
+          <li class="flex flex-wrap items-baseline gap-2">
+            <button
+              hlmBtn
+              variant="outline"
+              size="sm"
+              type="button"
+              class="font-mono"
+              (click)="insert(bodyArea, name)"
+            >
+              {{ token(name) }}
+            </button>
+            <span>{{ 'mail.placeholders.' + name | translate }}</span>
+          </li>
+          }
+        </ul>
+      </div>
+
+      <div class="flex flex-wrap justify-end gap-2">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.isSaving() || stored.isDefault"
+          (click)="confirmReset.set(true)"
+        >
+          {{ 'settings.mail.template.resetAction' | translate }}
+        </button>
+        <button
+          hlmBtn
+          type="submit"
+          [disabled]="service.isSaving() || templateForm.pristine"
+        >
+          {{ 'common.save' | translate }}
+        </button>
+      </div>
+    </form>
+
+    <div class="flex flex-col gap-2" aria-live="polite">
+      <span class="text-sm font-medium"
+        >{{ 'settings.mail.template.preview' | translate }}</span
+      >
+      <p class="text-muted-foreground text-xs">
+        {{ 'settings.mail.template.previewHint' | translate }}
+      </p>
+      @if (preview(); as rendered) { @if (rendered.unknownPlaceholders.length >
+      0) {
+      <p class="text-destructive text-sm" role="alert">
+        {{ 'settings.mail.template.unknown' | translate: { names:
+        rendered.unknownPlaceholders.join(', ') } }}
+      </p>
+      }
+      <div class="lk-panel flex flex-col gap-2 p-4">
+        <p class="font-medium break-words">{{ rendered.subject }}</p>
+        <pre class="text-sm break-words whitespace-pre-wrap">
+{{ rendered.body }}</pre>
+      </div>
+      }
+    </div>
+  </div>
+</section>
+} @else if (service.template.error()) {
+<lk-empty-state [message]="'settings.mail.template.loadFailed' | translate" />
+}
+
+<hlm-dialog [state]="resetState()" (stateChanged)="resetChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'settings.mail.template.resetTitle' | translate }}
+      </h3>
+      <p hlmDialogDescription>
+        {{ 'settings.mail.template.resetBody' | translate }}
+      </p>
+    </hlm-dialog-header>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="button" (click)="resetTemplate()">
+        {{ 'settings.mail.template.resetAction' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

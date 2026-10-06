@@ -8,6 +8,13 @@ import {
   ListMyProjectsQuery,
   type ProjectListEntry,
 } from './application/queries/list-my-projects.query';
+import {
+  GetProjectSentQuery,
+  MarkProjectSentCommand,
+  type MarkProjectSentInput,
+  type ProjectSentView,
+  UndoProjectSentCommand,
+} from './application/sent.handlers';
 import type {
   CreateProjectInput,
   Project,
@@ -46,5 +53,23 @@ export class ProjectsService {
 
   remove(userId: string, projectId: string): Promise<void> {
     return this.commands.execute(new DeleteProjectCommand(userId, projectId));
+  }
+
+  sent(userId: string, projectId: string): Promise<ProjectSentView> {
+    return this.queries.execute(new GetProjectSentQuery(userId, projectId));
+  }
+
+  markSent(
+    userId: string,
+    projectId: string,
+    input: MarkProjectSentInput,
+  ): Promise<ProjectSentView> {
+    return this.commands.execute(
+      new MarkProjectSentCommand(userId, projectId, input),
+    );
+  }
+
+  undoSent(userId: string, projectId: string): Promise<ProjectSentView> {
+    return this.commands.execute(new UndoProjectSentCommand(userId, projectId));
   }
 }

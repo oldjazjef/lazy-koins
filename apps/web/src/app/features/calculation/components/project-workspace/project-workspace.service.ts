@@ -20,6 +20,7 @@ import type {
 } from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
+import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
 
 /** The tabs of a project's workspace, in order. */
 export const WORKSPACE_TABS = [
@@ -57,6 +58,8 @@ export class ProjectWorkspaceService {
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
+  /** F4.7: calculations and exports can make a project "seit dem Versand geändert". */
+  private readonly sentEvents = inject(ProjectSentEvents);
 
   readonly projectId = signal<string | undefined>(undefined);
   readonly tab = signal<WorkspaceTab>('files');
@@ -240,6 +243,7 @@ export class ProjectWorkspaceService {
     );
     this.result.set(view);
     this.reloadDerived();
+    this.sentEvents.changed();
   }
 
   async refreshRates(force = false): Promise<void> {
@@ -325,6 +329,7 @@ export class ProjectWorkspaceService {
     );
     this.exports.reload();
     this.result.reload();
+    this.sentEvents.changed();
   }
 
   /** F7.5: the records behind a figure. */

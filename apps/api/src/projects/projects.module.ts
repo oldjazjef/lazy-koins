@@ -5,6 +5,12 @@ import { DeleteProjectHandler } from './application/commands/delete-project.comm
 import { UpdateProjectHandler } from './application/commands/update-project.command';
 import { GetProjectHandler } from './application/queries/get-project.query';
 import { ListMyProjectsHandler } from './application/queries/list-my-projects.query';
+import {
+  GetProjectSentHandler,
+  MarkProjectSentHandler,
+  UndoProjectSentHandler,
+} from './application/sent.handlers';
+import { ProjectSentController } from './project-sent.controller';
 import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
 
@@ -14,7 +20,7 @@ import { ProjectsService } from './projects.service';
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [ProjectsController],
+  controllers: [ProjectsController, ProjectSentController],
   providers: [
     ProjectsService,
     ListMyProjectsHandler,
@@ -22,6 +28,9 @@ import { ProjectsService } from './projects.service';
     CreateProjectHandler,
     UpdateProjectHandler,
     DeleteProjectHandler,
+    GetProjectSentHandler,
+    MarkProjectSentHandler,
+    UndoProjectSentHandler,
   ],
   exports: [ProjectsService],
 })

@@ -5,6 +5,12 @@
   [back]="true"
 >
   <lk-project-status-badge [status]="project.status" />
+  @if (service.sent.hasValue() && service.sent.value().sent; as sent) {
+  <lk-project-sent-badge
+    [sentAt]="sent.sentAt"
+    [changedSince]="service.sent.value().changes.length > 0"
+  />
+  }
 </lk-page-header>
 
 <div class="grid gap-6 lg:grid-cols-3">

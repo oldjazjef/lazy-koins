@@ -8,7 +8,13 @@ import { ProjectExportRepositoryPort } from '../exports/ports/project-export.rep
 import { AiSettingsRepositoryPort } from '../ai/ports/ai-settings.repository.port';
 import { ProjectFileRepositoryPort } from '../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../mappings/ports/import-mapping.repository.port';
+import {
+  MailLogRepositoryPort,
+  MailSettingsRepositoryPort,
+  MailTemplateRepositoryPort,
+} from '../mail/ports/mail.repository.port';
 import { ProjectRepositoryPort } from '../projects/ports/project.repository.port';
+import { ProjectSentRepositoryPort } from '../projects/ports/project-sent.repository.port';
 import { ProjectRateRepositoryPort } from '../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
@@ -20,7 +26,13 @@ import {
 } from './prisma/repositories/calculation.prisma.repository';
 import { AiSettingsPrismaRepository } from './prisma/repositories/ai-settings.prisma.repository';
 import { ImportMappingPrismaRepository } from './prisma/repositories/import-mapping.prisma.repository';
+import {
+  MailLogPrismaRepository,
+  MailSettingsPrismaRepository,
+  MailTemplatePrismaRepository,
+} from './prisma/repositories/mail.prisma.repository';
 import { ProjectExportPrismaRepository } from './prisma/repositories/project-export.prisma.repository';
+import { ProjectSentPrismaRepository } from './prisma/repositories/project-sent.prisma.repository';
 import { ProjectFilePrismaRepository } from './prisma/repositories/project-file.prisma.repository';
 import { ProjectRatePrismaRepository } from './prisma/repositories/project-rate.prisma.repository';
 import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
@@ -68,6 +80,19 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
       useClass: ProjectExportPrismaRepository,
     },
     { provide: AiSettingsRepositoryPort, useClass: AiSettingsPrismaRepository },
+    {
+      provide: MailSettingsRepositoryPort,
+      useClass: MailSettingsPrismaRepository,
+    },
+    {
+      provide: MailTemplateRepositoryPort,
+      useClass: MailTemplatePrismaRepository,
+    },
+    { provide: MailLogRepositoryPort, useClass: MailLogPrismaRepository },
+    {
+      provide: ProjectSentRepositoryPort,
+      useClass: ProjectSentPrismaRepository,
+    },
   ],
   exports: [
     UserRepositoryPort,
@@ -81,6 +106,10 @@ import { UserPrismaRepository } from './prisma/repositories/user.prisma.reposito
     OpenItemStateRepositoryPort,
     ProjectExportRepositoryPort,
     AiSettingsRepositoryPort,
+    MailSettingsRepositoryPort,
+    MailTemplateRepositoryPort,
+    MailLogRepositoryPort,
+    ProjectSentRepositoryPort,
   ],
 })
 export class PersistenceModule {}
