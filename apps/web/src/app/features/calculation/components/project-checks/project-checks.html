@@ -29,12 +29,18 @@
   <lk-empty-state [message]="'checks.noItems' | translate" />
   } @else {
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col class="w-20" />
+        <col />
+        <col class="w-32" />
+        <col class="w-44" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'checks.fields.done' | translate }}</th>
           <th hlmTh>{{ 'checks.fields.item' | translate }}</th>
-          <th hlmTh class="text-right">
+          <th hlmTh class="text-right whitespace-normal">
             {{ 'checks.fields.impact' | translate }}
           </th>
           <th hlmTh>{{ 'checks.fields.note' | translate }}</th>
@@ -42,7 +48,12 @@
       </thead>
       <tbody hlmTBody>
         @for (item of view.items; track item.key) {
-        <tr hlmTr [class.text-muted-foreground]="item.done">
+        <tr
+          hlmTr
+          class="align-top"
+          [class.text-muted-foreground]="item.done"
+          [class.border-b-0]="isExpanded(item)"
+        >
           <td hlmTd>
             <input
               type="checkbox"
@@ -52,7 +63,7 @@
               (change)="toggle(item, $event)"
             />
           </td>
-          <td hlmTd>
+          <td hlmTd class="whitespace-normal break-words">
             <span
               [class]="'lk-light lk-light-' + item.light + ' mr-2 align-middle'"
             ></span>
@@ -83,19 +94,68 @@
           <td hlmTd class="text-right tabular-nums">
             {{ item.impactChf | lkChf }}
           </td>
-          <td hlmTd>
-            <input
-              hlmInput
-              class="w-full min-w-40"
-              type="text"
-              [value]="item.note"
-              [disabled]="closed()"
-              [attr.aria-label]="'checks.fields.note' | translate"
-              (change)="saveNote(item, $event)"
-            />
+          <td hlmTd class="whitespace-normal break-words">
+            <button
+              hlmBtn
+              variant="link"
+              size="sm"
+              type="button"
+              class="h-auto max-w-full p-0 text-left whitespace-normal"
+              [attr.aria-expanded]="isExpanded(item)"
+              [attr.aria-controls]="'note-' + item.key"
+              (click)="toggleExpanded(item)"
+            >
+              @if (item.note) {
+              <span class="line-clamp-2">{{ item.note }}</span>
+              } @else if (!closed()) { {{ 'checks.addNote' | translate }} }
+              @else { – }
+            </button>
           </td>
         </tr>
-        }
+        @if (isExpanded(item)) {
+        <tr hlmTr [id]="'note-' + item.key">
+          <td hlmTd></td>
+          <td hlmTd colspan="3" class="whitespace-normal">
+            <div class="flex flex-col gap-2 pb-2">
+              <label
+                class="text-sm font-medium"
+                [for]="'note-input-' + item.key"
+                >{{ 'checks.fields.note' | translate }}</label
+              >
+              <textarea
+                #note
+                hlmTextarea
+                rows="3"
+                class="w-full"
+                [id]="'note-input-' + item.key"
+                [value]="item.note"
+                [disabled]="closed()"
+              ></textarea>
+              @if (!closed()) {
+              <div class="flex justify-end gap-2">
+                <button
+                  hlmBtn
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  (click)="toggleExpanded(item)"
+                >
+                  {{ 'common.cancel' | translate }}
+                </button>
+                <button
+                  hlmBtn
+                  size="sm"
+                  type="button"
+                  (click)="saveNote(item, note.value)"
+                >
+                  {{ 'common.save' | translate }}
+                </button>
+              </div>
+              }
+            </div>
+          </td>
+        </tr>
+        } }
       </tbody>
     </table>
   </div>

@@ -4,13 +4,14 @@ import {
   computed,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
-import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
+import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import type { OpenItem } from '../../../../core/api/calculation.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe, QuantityPipe } from '../../../../shared/format/number-format';
@@ -29,9 +30,9 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
     EmptyState,
     ...HlmButtonImports,
     ...HlmCardImports,
-    ...HlmInputImports,
     ...HlmSkeletonImports,
     ...HlmTableImports,
+    ...HlmTextareaImports,
   ],
   templateUrl: './project-checks.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,13 +50,28 @@ export class ProjectChecks {
     () => this.view()?.items.filter((item) => !item.done).length ?? 0,
   );
 
+  /** Keys of the rows whose note editor is open (the row is "expanded"). */
+  protected readonly expanded = signal<ReadonlySet<string>>(new Set());
+
+  protected isExpanded(item: OpenItem): boolean {
+    return this.expanded().has(item.key);
+  }
+
+  protected toggleExpanded(item: OpenItem): void {
+    this.expanded.update((keys) => {
+      const next = new Set(keys);
+      if (!next.delete(item.key)) next.add(item.key);
+      return next;
+    });
+  }
+
   protected toggle(item: OpenItem, event: Event): void {
     const done = (event.target as HTMLInputElement).checked;
     void this.service.saveItem(item, { done }).catch(() => undefined);
   }
 
-  protected saveNote(item: OpenItem, event: Event): void {
-    const note = (event.target as HTMLInputElement).value;
+  protected saveNote(item: OpenItem, note: string): void {
+    this.toggleExpanded(item);
     if (note.trim() === item.note) return;
     void this.service.saveItem(item, { note }).catch(() => undefined);
   }
