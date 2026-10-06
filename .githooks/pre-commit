@@ -1,0 +1,7 @@
+#!/bin/sh
+# private/ holds real tax data (exports + golden.json) and must never be committed — not even with `git add -f`.
+if git diff --cached --name-only --diff-filter=ACMR | grep -E '^private/' >/dev/null; then
+  echo "pre-commit: files under private/ are staged - they hold real tax data and must never be committed." >&2
+  echo "            unstage them with: git restore --staged private/" >&2
+  exit 1
+fi

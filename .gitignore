@@ -1,0 +1,17 @@
+# Real tax data (exports + golden.json) – never commit
+private/
+
+# Claude Code
+.claude/worktrees
+.claude/settings.local.json
+
+# Secrets
+.env
+*.pem
+
+# SQLite databases
+.data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
