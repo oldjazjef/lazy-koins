@@ -480,7 +480,7 @@ prisma/schema.prisma` must still report **no difference**.
   (spec as JSON text, `json_valid` CHECK) and `project_file` (status/origin/count/period CHECKs,
   `mapped` needs a `mapping_id`). A stored file is deleted with its **last** `project_file` — in the
   same transaction, also when a project is deleted (`ProjectPrismaRepository.delete`).
-- **Mail** (migration `20261008100000_mail`, new tables only): `mail_settings` (PK `user_id`;
+- **Mail** (migration `20261008130000_mail`, new tables only): `mail_settings` (PK `user_id`;
   security/port CHECKs, password sealed `enc:v1:%`, hint ≤ 8), `mail_template` (PK
   `(user_id, language)`, language/length CHECKs), `mail_log` (status, `json_valid` array,
   `failed` needs an error) and `project_sent_state` (PK `project_id`; way CHECK, exports JSON
