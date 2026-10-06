@@ -1,3 +1,4 @@
+import type { AiConnectionDraft } from './application/ai-gate';
 import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
@@ -57,8 +58,11 @@ export class AiService {
     return this.commands.execute(new SaveAiSettingsCommand(userId, input));
   }
 
-  testConnection(userId: string): Promise<AiConnectionTest> {
-    return this.commands.execute(new TestAiConnectionCommand(userId));
+  testConnection(
+    userId: string,
+    draft?: AiConnectionDraft,
+  ): Promise<AiConnectionTest> {
+    return this.commands.execute(new TestAiConnectionCommand(userId, draft));
   }
 
   mappingPayload(

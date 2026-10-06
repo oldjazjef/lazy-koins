@@ -2,6 +2,7 @@ import { computed, Injectable, signal } from '@angular/core';
 import { runtimeEnv } from '../config/runtime-env';
 import { DevAuthStrategy } from './dev-auth.strategy';
 import { FirebaseAuthStrategy } from './firebase-auth.strategy';
+import { LocalAuthStrategy } from './local-auth.strategy';
 
 export type SessionState = 'restoring' | 'signedOut' | 'signedIn';
 
@@ -20,8 +21,12 @@ export class AuthService {
       : undefined;
   private readonly dev =
     this.env.authMode === 'dev' ? new DevAuthStrategy() : undefined;
+  private readonly local =
+    this.env.authMode === 'local'
+      ? new LocalAuthStrategy(this.env.apiBaseUrl)
+      : undefined;
   private readonly strategy =
-    this.firebase ?? this.dev ?? new DevAuthStrategy();
+    this.firebase ?? this.dev ?? this.local ?? new DevAuthStrategy();
 
   private readonly state = signal<SessionState>('restoring');
   private readonly signedInEmail = signal<string | null>(null);
@@ -29,6 +34,8 @@ export class AuthService {
   readonly isSignedIn = computed(() => this.state() === 'signedIn');
   readonly email = this.signedInEmail.asReadonly();
   readonly mode = this.env.authMode;
+  /** The desktop app: no account, so no sign-out and no account-only UI (F11.0a). */
+  readonly hasAccount = this.env.authMode !== 'local';
 
   readonly ready: Promise<void> = this.strategy
     .restore()

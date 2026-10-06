@@ -86,6 +86,35 @@ export class SaveAiSettingsDto {
   revokeConsent?: boolean;
 }
 
+/** Optional body of `POST /ai/settings/test`: the form's unsaved values (all omitted = saved). */
+export class TestAiConnectionDto {
+  @ApiPropertyOptional({ enum: AI_PROVIDER_KINDS })
+  @IsOptional()
+  @IsIn(AI_PROVIDER_KINDS)
+  provider?: AiProviderKind;
+
+  @ApiPropertyOptional({ description: 'Empty = provider default' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  baseUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Empty = provider default' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  model?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Typed but not saved: used for this test only, never stored. Omit = the saved key.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  apiKey?: string;
+}
+
 export class AiConnectionTestResponseDto {
   @ApiProperty() ok!: true;
   @ApiProperty() model!: string;

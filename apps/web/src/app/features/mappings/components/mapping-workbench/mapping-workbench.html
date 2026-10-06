@@ -403,7 +403,14 @@
       <h3 hlmDialogTitle>{{ 'ai.mapping.title' | translate }}</h3>
       <p hlmDialogDescription>{{ 'ai.loading' | translate }}</p>
     </hlm-dialog-header>
-    <hlm-skeleton class="h-48 w-full" />
+    <div class="lk-dialog-body">
+      <hlm-skeleton class="h-48 w-full" />
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+    </hlm-dialog-footer>
     } @if (step === 'notReady') {
     <hlm-dialog-header>
       <h3 hlmDialogTitle>{{ 'ai.notReady.title' | translate }}</h3>
@@ -411,9 +418,11 @@
         {{ 'ai.notReady.' + state.aiNotReadyReason() | translate }}
       </p>
     </hlm-dialog-header>
-    <p class="text-muted-foreground text-sm">
-      {{ 'ai.notReady.withoutAi' | translate }}
-    </p>
+    <div class="lk-dialog-body">
+      <p class="text-muted-foreground text-sm">
+        {{ 'ai.notReady.withoutAi' | translate }}
+      </p>
+    </div>
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
@@ -433,37 +442,41 @@
         request.baseUrl || ('ai.consent.defaultAddress' | translate) } }}
       </p>
     </hlm-dialog-header>
-    <div class="flex flex-col gap-2">
-      <p class="text-sm font-medium">{{ 'ai.consent.payload' | translate }}</p>
-      <pre
-        class="bg-muted max-h-[45vh] overflow-auto rounded p-3 font-mono text-xs break-all whitespace-pre-wrap"
-      >
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-2">
+        <p class="text-sm font-medium">
+          {{ 'ai.consent.payload' | translate }}
+        </p>
+        <pre
+          class="bg-muted rounded p-3 font-mono text-xs break-all whitespace-pre-wrap"
+        >
 {{ state.aiPayloadText() }}</pre>
-      <p class="text-muted-foreground text-xs">
-        {{ 'ai.consent.alsoSent' | translate }}
-      </p>
+        <p class="text-muted-foreground text-xs">
+          {{ 'ai.consent.alsoSent' | translate }}
+        </p>
+      </div>
+      @if (!request.consentGiven) {
+      <label class="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          class="mt-1"
+          [ngModel]="state.consentChecked()"
+          (ngModelChange)="state.consentChecked.set($event)"
+        />
+        <span>{{ 'ai.consent.agree' | translate }}</span>
+      </label>
+      } @if (step === 'working') {
+      <div class="flex flex-col gap-2" aria-live="polite">
+        <progress
+          class="w-full"
+          [attr.aria-label]="'ai.working' | translate"
+        ></progress>
+        <p class="text-muted-foreground text-sm">
+          {{ 'ai.working' | translate }}
+        </p>
+      </div>
+      }
     </div>
-    @if (!request.consentGiven) {
-    <label class="flex items-start gap-2 text-sm">
-      <input
-        type="checkbox"
-        class="mt-1"
-        [ngModel]="state.consentChecked()"
-        (ngModelChange)="state.consentChecked.set($event)"
-      />
-      <span>{{ 'ai.consent.agree' | translate }}</span>
-    </label>
-    } @if (step === 'working') {
-    <div class="flex flex-col gap-2" aria-live="polite">
-      <progress
-        class="w-full"
-        [attr.aria-label]="'ai.working' | translate"
-      ></progress>
-      <p class="text-muted-foreground text-sm">
-        {{ 'ai.working' | translate }}
-      </p>
-    </div>
-    }
     <hlm-dialog-footer>
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}

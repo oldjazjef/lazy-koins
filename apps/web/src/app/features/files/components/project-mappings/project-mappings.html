@@ -130,17 +130,19 @@
         {{ 'mappings.editor.description' | translate }}
       </p>
     </hlm-dialog-header>
-    <lk-mapping-editor-form
-      [idPrefix]="'project-mapping'"
-      [text]="editor.text()"
-      (textChange)="editor.text.set($event)"
-      [checkFileId]="editor.checkFileId()"
-      (checkFileIdChange)="editor.checkFileId.set($event)"
-      [checkFiles]="editor.checkFiles()"
-      [issues]="editor.issues()"
-      [invalidJson]="editor.invalidJson()"
-      [preview]="editor.preview()"
-    />
+    <div class="lk-dialog-body">
+      <lk-mapping-editor-form
+        [idPrefix]="'project-mapping'"
+        [text]="editor.text()"
+        (textChange)="editor.text.set($event)"
+        [checkFileId]="editor.checkFileId()"
+        (checkFileIdChange)="editor.checkFileId.set($event)"
+        [checkFiles]="editor.checkFiles()"
+        [issues]="editor.issues()"
+        [invalidJson]="editor.invalidJson()"
+        [preview]="editor.preview()"
+      />
+    </div>
     <hlm-dialog-footer>
       @if (editor.targetFile()) {
       <button hlmBtn variant="outline" type="button" (click)="editorWithAi()">

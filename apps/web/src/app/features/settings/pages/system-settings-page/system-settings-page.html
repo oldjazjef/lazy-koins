@@ -1,0 +1,59 @@
+<section class="flex max-w-2xl flex-col gap-6">
+  <div class="flex flex-col gap-1">
+    <h2 class="text-lg font-semibold">
+      {{ 'settings.system.title' | translate }}
+    </h2>
+    <p class="text-muted-foreground text-sm">
+      {{ 'settings.system.subtitle' | translate }}
+    </p>
+  </div>
+
+  <dl class="lk-facts lk-panel p-4">
+    <dt>{{ 'settings.system.version' | translate }}</dt>
+    <dd class="font-mono">
+      @if (version(); as v) { {{ v.full }} } @else { – }
+    </dd>
+    <dt>{{ 'settings.system.commit' | translate }}</dt>
+    <dd class="font-mono">
+      @if (version(); as v) {
+      <a
+        class="text-primary hover:underline"
+        [href]="commitUrl(v.commit)"
+        target="_blank"
+        rel="noopener noreferrer"
+        >{{ v.commit }}</a
+      >
+      } @else { – }
+    </dd>
+    <dt>{{ 'settings.system.builtAt' | translate }}</dt>
+    <dd>
+      @if (version()?.builtAt; as builtAt) { {{ builtAt | date: 'dd.MM.yyyy
+      HH:mm' }} } @else { – }
+    </dd>
+    <dt>{{ 'settings.system.runtime' | translate }}</dt>
+    <dd>
+      {{ (desktop ? 'settings.system.runtimeDesktop' :
+      'settings.system.runtimeWeb') | translate }}
+    </dd>
+    <dt>{{ 'settings.system.repository' | translate }}</dt>
+    <dd>
+      <a
+        class="text-primary hover:underline"
+        [href]="repositoryUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        >{{ repositoryUrl }}</a
+      >
+    </dd>
+    <dt>{{ 'settings.system.support' | translate }}</dt>
+    <dd>
+      <a
+        class="text-primary hover:underline"
+        [href]="supportUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        >{{ 'settings.system.supportLink' | translate }}</a
+      >
+    </dd>
+  </dl>
+</section>

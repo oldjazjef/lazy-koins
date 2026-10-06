@@ -140,7 +140,9 @@
         {{ 'mappings.list.newDescription' | translate }}
       </p>
     </hlm-dialog-header>
-    <lk-mapping-workbench [idPrefix]="'new-mapping'" />
+    <div class="lk-dialog-body">
+      <lk-mapping-workbench [idPrefix]="'new-mapping'" />
+    </div>
     <hlm-dialog-footer>
       @if (workbench.sample()) {
       <div
