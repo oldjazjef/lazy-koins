@@ -92,25 +92,27 @@
     {{ 'charts.missingLegend' | translate }}
   </figcaption>
   }
-  <table class="sr-only">
-    <caption>
-      {{ label() }}
-    </caption>
-    <thead>
-      <tr>
-        <th>{{ 'charts.date' | translate }}</th>
-        <th>{{ 'charts.valueChf' | translate }}</th>
-        <th>{{ 'charts.missing' | translate }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (point of points(); track point.date) {
-      <tr>
-        <td>{{ point.date | date: 'dd.MM.yyyy' }}</td>
-        <td>{{ point.value | lkChf }}</td>
-        <td>{{ point.missing.join(', ') }}</td>
-      </tr>
-      }
-    </tbody>
-  </table>
+  <div class="sr-only">
+    <table>
+      <caption>
+        {{ label() }}
+      </caption>
+      <thead>
+        <tr>
+          <th>{{ 'charts.date' | translate }}</th>
+          <th>{{ 'charts.valueChf' | translate }}</th>
+          <th>{{ 'charts.missing' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (point of points(); track point.date) {
+        <tr>
+          <td>{{ point.date | date: 'dd.MM.yyyy' }}</td>
+          <td>{{ point.value | lkChf }}</td>
+          <td>{{ point.missing.join(', ') }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </figure>

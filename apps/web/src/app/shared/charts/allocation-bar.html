@@ -39,28 +39,30 @@
       }
     </ul>
   </figcaption>
-  <table class="sr-only">
-    <caption>
-      {{ label() }}
-    </caption>
-    <thead>
-      <tr>
-        <th>{{ 'charts.asset' | translate }}</th>
-        <th>{{ 'charts.share' | translate }}</th>
-        <th>{{ 'charts.valueChf' | translate }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (slice of slices(); track $index) {
-      <tr>
-        <td>
-          {{ slice.part.asset ?? ('charts.others' | translate: { count:
-          slice.part.assets }) }}
-        </td>
-        <td>{{ slice.part.sharePct }} %</td>
-        <td>{{ slice.part.valueChf | lkChf }}</td>
-      </tr>
-      }
-    </tbody>
-  </table>
+  <div class="sr-only">
+    <table>
+      <caption>
+        {{ label() }}
+      </caption>
+      <thead>
+        <tr>
+          <th>{{ 'charts.asset' | translate }}</th>
+          <th>{{ 'charts.share' | translate }}</th>
+          <th>{{ 'charts.valueChf' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (slice of slices(); track $index) {
+        <tr>
+          <td>
+            {{ slice.part.asset ?? ('charts.others' | translate: { count:
+            slice.part.assets }) }}
+          </td>
+          <td>{{ slice.part.sharePct }} %</td>
+          <td>{{ slice.part.valueChf | lkChf }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </figure>
