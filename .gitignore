@@ -5,9 +5,16 @@ private/
 .claude/worktrees
 .claude/settings.local.json
 
-# Secrets
+# Secrets – credentials belong in GitHub Actions secrets or local .env files
 .env
+.env.*
+!.env.example
 *.pem
+*.key
+*.p12
+*.pfx
+*service-account*.json
+firebase-adminsdk*.json
 
 # SQLite databases
 .data/

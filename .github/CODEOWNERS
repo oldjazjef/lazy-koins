@@ -1,0 +1,8 @@
+# Everything needs my review
+*                     @oldjazjef
+
+# Extra care for workflows, agent config and the private-data guard
+/.github/workflows/   @oldjazjef
+/.claude/             @oldjazjef
+/.githooks/           @oldjazjef
+/.gitignore           @oldjazjef

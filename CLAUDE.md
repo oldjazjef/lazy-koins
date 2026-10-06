@@ -16,7 +16,8 @@ two as a package (F1.3).
 
 ## Stack
 
-Same as surf-lend, minus mobile/Capacitor, Stripe and Firebase push.
+Same as surf-lend, minus mobile/Capacitor, Stripe and Firebase push; plus Electron for the
+desktop app (see Decisions).
 
 ### Shared
 
@@ -60,7 +61,7 @@ Frontend rules: no `zone.js`, no NgModules, no Material. `input()`/`output()`/`s
 ```
 apps/api/                 # NestJS API — the web app's backend AND the desktop app's local server
 apps/web/                 # Angular app (served by the API in the desktop build)
-apps/desktop/             # desktop shell (open decision, see below)
+apps/desktop/             # Electron shell: starts the API in-process, loads the web build
 libs/engine/              # PURE TypeScript, no Nest/Angular/Prisma/network:
   importers/<platform>/   #   detect + parse one export type -> Booking[] (with file + row)
   ledger/                 #   transfers matching, balances per account/asset/date
@@ -104,6 +105,11 @@ The engine is a library so the API, the desktop app and the tests run **the same
 `private/` holds the user's **real** exports and `private/golden.json` (the expected values for
 A1). It is git-ignored and must stay that way.
 
+- **Claude reads structure only** (decided 06.10.2026): file names, column headers, row counts and
+  periods — through a script that prints exactly that (planned: `pnpm private:inspect`), never the
+  rows. Don't open files under `private/` with any tool (a `Read(./private/**)` deny in
+  `.claude/settings.json` is still to be added by the user). Results against real data come from the golden test, which reports
+  "matches" or "off by X CHF in <position>" — not the underlying rows.
 - Never commit it, and never copy values, addresses, amounts or file excerpts from it into
   fixtures, tests, logs, commit messages, PRs or issues. Fixtures are synthetic.
 - The golden test reads `private/` at run time and **skips** when it is absent (CI, other
@@ -112,16 +118,45 @@ A1). It is git-ignored and must stay that way.
   `private/` (also after `git add -f`). Git only runs it with `git config core.hooksPath .githooks`
   — set it in every fresh clone (the scaffold's `prepare` script will do it). Never `--no-verify`.
 
+## Decisions (06.10.2026)
+
+- **Desktop = Electron** (`apps/desktop`): the main process starts the Nest API in-process on
+  `127.0.0.1` with its own SQLite file in the chosen storage folder (F3.1) and loads the Angular
+  build. No login: the API runs in a single-user mode. Same engine, same results as the web.
+- **Web auth = Firebase Authentication**, as in surf-lend: the API is a resource server that
+  verifies Firebase ID tokens (port + adapter in `integrations/`); e-mail/password and Google,
+  password reset by Firebase (F2.1). A dev mode `dev:<email>` like surf-lend's `AUTH_MODE=dev`.
+  Every row is scoped to its owner; someone else's project reads as 404.
+- **Hosting = Coolify** on the Hostinger VPS (next to surf-lend / hello-eme), same pipeline
+  (ghcr images, test → production). **Original files are BLOBs in SQLite**, keyed by SHA-256 —
+  same storage in web and desktop, one file to back up. One API replica per database file.
+- **Rates = ESTV + CoinGecko**: Steuerwert at 31.12. from the ESTV Kursliste (ICTax) when the
+  asset is listed; otherwise, and for income on the day it arrives, CoinGecko's daily CHF price
+  (user's API key, F6.7). Every rate is stored per project with its source and can be overridden
+  (F7.4, F9.1). Fetching happens before the calculation, never inside it.
+- **Wallet networks, automatic** (F6.3): Bitcoin (mempool.space / Esplora, addresses + xpub/zpub),
+  EVM chains (Etherscan API V2, one key for all chains), Solana (indexer such as Helius), and
+  Cardano / Polkadot / Cosmos (Koios, Subscan, Mintscan). One `ChainDataPort` adapter per network
+  in `integrations/`; everything else is manual with a receipt (F6.5).
+- **Exports = ExcelJS + Chromium PDF**: Excel with real formulas, named cells and styles (ExcelJS);
+  PDF from HTML/CSS templates printed by Chromium (Electron's `printToPDF` on the desktop,
+  Playwright in the API container).
+
+## Secrets
+
+- Never commit `.env` files, keys, service-account JSON or passwords (`.gitignore` covers the usual
+  names; only `.env.example` with placeholders is committed). CI credentials live in GitHub →
+  Settings → Secrets and variables → Actions; runtime secrets in Coolify.
+- If a secret was ever committed: **revoke and rotate it first** — deleting the file does not
+  remove it from history. Scrubbing history (`git filter-repo`) comes after, if at all.
+- Security reports go through GitHub private vulnerability reporting ([SECURITY.md](SECURITY.md));
+  `.github/CODEOWNERS` requires the owner's review.
+
 ## Open decisions — ask, don't decide
 
-- **Desktop shell**: Electron (runs the Nest API + SQLite in-process, one codebase) vs. Tauri
-  (smaller, but the API needs a sidecar). Leaning Electron; not decided.
-- **Web auth** (F2): Firebase Authentication as in surf-lend, or something else.
-- **Hosting** of the web app, and storage of original files there (DB BLOBs as surf-lend's photos
-  vs. a file store), plus OneDrive / Google Drive sync (F3.2).
-- **Rate sources** for crypto → CHF and the ESTV list (F7.4).
-- **Wallet data providers** per network (F6.3); API keys are user settings (F6.7).
-- **PDF and Excel libraries** (F10); Excel needs real formulas (F10.2).
+- **OneDrive / Google Drive** connection for the web app (F3.2): API approach and folder sync.
+- **Desktop packaging**: code signing / notarisation (Apple developer account, Windows
+  certificate) and auto-update.
 - **Frontend API types**: hand-mirrored vs. generated from OpenAPI (same open point as surf-lend).
 
 ## Conventions carried over from surf-lend
