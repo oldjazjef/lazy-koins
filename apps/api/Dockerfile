@@ -20,7 +20,11 @@ RUN pnpm install --frozen-lockfile
 
 # dist/apps/api: the webpack bundle plus a generated package.json and pruned lockfile, completed by
 # scripts/build/complete-api-package-json.mjs with what webpack cannot see (@prisma/client, prisma).
-RUN pnpm nx build api
+# The build's version (scripts/build/version.mjs → GET /api/version): the context has no .git, so
+# CI passes the version and commit (.github/workflows/_images.yml). Without them: 0.0.0-dev+unknown.
+ARG LK_VERSION=
+ARG LK_COMMIT=
+RUN LK_VERSION="$LK_VERSION" LK_COMMIT="$LK_COMMIT" pnpm nx build api
 
 # Install the runtime dependencies OUTSIDE the workspace, or pnpm walks up to /app's root.
 RUN mkdir /deploy && cp -r /app/dist/apps/api/. /deploy/ \
@@ -42,6 +46,11 @@ RUN printf 'allowBuilds:\n  better-sqlite3: true\n  prisma: true\n  "@prisma/eng
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM node:22.23.2-alpine AS production
+
+ARG LK_VERSION=
+ARG LK_COMMIT=
+LABEL org.opencontainers.image.version="${LK_VERSION}" \
+      org.opencontainers.image.revision="${LK_COMMIT}"
 
 # better-sqlite3's native binary links against libstdc++, which alpine's node image lacks. The
 # sqlite3 CLI is for consistent backups from inside the container:

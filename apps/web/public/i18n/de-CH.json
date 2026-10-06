@@ -1,6 +1,7 @@
 {
   "app": {
-    "name": "lazy-koins"
+    "name": "lazy-koins",
+    "version": "lazy-koins v{{version}} ({{commit}})"
   },
   "actions": {
     "undo": "Rückgängig"
@@ -450,6 +451,25 @@
   },
   "settings": {
     "title": "Einstellungen",
+    "storage": {
+      "title": "Speicherort",
+      "subtitle": "Wo lazy-koins deine Daten und Originaldateien ablegt",
+      "intro": "Alle Projekte, Dateien und Einstellungen liegen in einer Datenbank-Datei in diesem Ordner. Du kannst einen eigenen Ordner wählen, auch den Sync-Ordner von OneDrive, Google Drive oder Proton Drive.",
+      "default": "Standard",
+      "synced": "Synchronisiert mit {{provider}}",
+      "folder": "Ordner",
+      "database": "Datenbank",
+      "version": "App-Version",
+      "syncWarning": "Dieser Ordner wird von {{provider}} synchronisiert. Öffne lazy-koins nie gleichzeitig auf zwei Geräten und warte nach dem Beenden, bis die Synchronisation fertig ist. Beim Start warnt lazy-koins, wenn die Daten gerade auf einem anderen Gerät offen sind.",
+      "conflicts": "Im Ordner liegen Konfliktkopien der Datenbank (der Sync-Dienst hat sie angelegt). lazy-koins arbeitet mit lazykoins.db weiter; prüfe die Kopien und lösche sie danach:",
+      "hint": "Beim Wechsel fragt lazy-koins, ob die bisherigen Daten in den neuen Ordner kopiert oder vorhandene Daten dort geöffnet werden sollen, und startet danach neu.",
+      "choose": "Ordner wählen …",
+      "useDefault": "Standardordner verwenden",
+      "reveal": "Ordner öffnen",
+      "restarting": "lazy-koins startet mit dem neuen Speicherort neu …",
+      "failed": "Der Speicherort konnte nicht gewechselt werden.",
+      "loadFailed": "Der Speicherort konnte nicht gelesen werden."
+    },
     "ai": {
       "title": "AI-Plugin",
       "subtitle": "AI-Anbieter für Mappings und Kontoauszüge",
@@ -523,7 +543,8 @@
       "label": "Bereiche der Einstellungen",
       "rates": "Kurse",
       "wallets": "Wallets",
-      "ai": "AI-Plugin"
+      "ai": "AI-Plugin",
+      "storage": "Speicherort"
     },
     "rates": {
       "title": "Kursabfragen",

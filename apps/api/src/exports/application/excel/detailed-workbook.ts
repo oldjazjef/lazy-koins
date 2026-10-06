@@ -464,6 +464,7 @@ export function methodLines(data: ExportData): string[] {
     'Spam-/Scam-Token (z. B. mit „Claim“ im Namen) sind ausgeblendet; manuell überschreibbar.',
     'Annahmen (konservativ): Launchpool-/HODLer-Airdrops sind Ertrag; Kraken-Erträge netto nach Gebühr.',
     'Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (lazy-koins: Klick auf den Betrag).',
+    `Erstellt mit lazy-koins ${data.appVersion}.`,
     '',
     rules.labels.noTaxAdvice,
   ];

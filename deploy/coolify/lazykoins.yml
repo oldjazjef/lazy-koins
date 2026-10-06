@@ -1,0 +1,64 @@
+# lazy-koins on Coolify: web app + API for ONE environment (test or production).
+# Paste this into Coolify → Project → <environment> → + New → Docker Compose Empty
+# (deploy/coolify/SETUP.md, step 4).
+#
+# Per environment in Coolify (Environment Variables):
+#   IMAGE_TAG                 test | production (moving tags set by GitHub Actions, .github/workflows/_deploy.yml)
+#   FIREBASE_PROJECT_ID       the Firebase project whose ID tokens the API accepts
+#   LK_FIREBASE_*             the Firebase web app config of the same project
+#   SETTINGS_ENCRYPTION_KEY   secret: encrypts the AI API keys users save in their settings
+# Domain: set in Coolify on `web` only. The API has no domain of its own: the app reaches it under
+# /api through its nginx, so it is one origin and needs no CORS.
+services:
+  api:
+    image: ghcr.io/oldjazjef/lazykoins-api:${IMAGE_TAG:-test}
+    # Moving tags: always fetch the image the pipeline just tagged.
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      # SQLite on the volume below. Exactly ONE api container may use it — never scale this service.
+      - DATABASE_URL=file:/data/lazykoins.db
+      # The public site; the API lives under /api of the same origin (OpenAPI server entry).
+      - PUBLIC_API_URL=${SERVICE_URL_WEB}
+      - CORS_ORIGINS=${SERVICE_URL_WEB}
+      # Traefik (Coolify, TLS) + nginx in `web`: two hops, so the rate limiter sees visitors.
+      - TRUST_PROXY_HOPS=2
+      # Sign-in: Firebase ID tokens of this project. Dev sign-in is refused in production, and
+      # `local` (desktop app only) must never run on a server.
+      - AUTH_MODE=firebase
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-}
+      # Encrypts the AI provider keys users save (any long random string; a Coolify secret). Keep
+      # it: a new key makes the saved keys unreadable. Empty = keys cannot be saved.
+      - SETTINGS_ENCRYPTION_KEY=${SETTINGS_ENCRYPTION_KEY:-}
+      # API reference at /api/reference: off in production unless set to `true`.
+      - API_DOCS=${API_DOCS:-}
+    volumes:
+      # The database (/data/lazykoins.db, uploaded files included) and its backup copy.
+      # Deleting the volume deletes the data.
+      - lazykoins-data:/data
+
+  web:
+    image: ghcr.io/oldjazjef/lazykoins-web:${IMAGE_TAG:-test}
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      # Coolify routes the web domain to port 80 of this container.
+      - SERVICE_URL_WEB_80
+      # nginx forwards /api here, inside the Docker network.
+      - LK_API_UPSTREAM=http://api:3333
+      # Empty = the app calls /api on its own origin (through the nginx above).
+      - LK_API_BASE_URL=
+      - LK_AUTH_MODE=firebase
+      # Firebase web app config (Firebase console → Project settings → Your apps → Web). Public by
+      # design: it identifies the project, it grants nothing. Set per environment in Coolify.
+      - LK_FIREBASE_API_KEY=${LK_FIREBASE_API_KEY:-}
+      - LK_FIREBASE_AUTH_DOMAIN=${LK_FIREBASE_AUTH_DOMAIN:-}
+      - LK_FIREBASE_PROJECT_ID=${LK_FIREBASE_PROJECT_ID:-}
+      - LK_FIREBASE_APP_ID=${LK_FIREBASE_APP_ID:-}
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  lazykoins-data:

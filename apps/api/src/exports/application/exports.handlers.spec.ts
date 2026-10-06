@@ -160,6 +160,13 @@ describe('exports (F10)', () => {
 
     const names = workbook.definedNames.model.map((n) => n.name);
     expect(names).toEqual(expect.arrayContaining(['USDCHF', 'EURCHF']));
+
+    // The app version (X.Y.Z+<commit>) under Methodik.
+    const method: string[] = [];
+    sheetOf(workbook, SHEETS.method).eachRow((row) =>
+      method.push(String(row.getCell(1).value)),
+    );
+    expect(method).toContain('Erstellt mit lazy-koins 0.0.0-dev+unknown.');
   });
 
   it('writes the simple statement as Excel and PDF, lists and serves them (F10.1, F10.5)', async () => {
@@ -178,6 +185,7 @@ describe('exports (F10)', () => {
     expect(html).toContain('858.70');
     expect(html).toContain('Wertschriften- und Guthabenverzeichnis');
     expect(html).toContain('Keine Steuerberatung');
+    expect(html).toContain('lazy-koins 0.0.0-dev+unknown');
     expect(html).not.toContain('<script');
 
     const stored = await t.content.execute(

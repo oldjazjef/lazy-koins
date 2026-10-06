@@ -111,7 +111,7 @@ function openItemsTable(data: ExportData): string {
 }
 
 function footer(data: ExportData): string {
-  return `<footer>${e(data.rules.labels.formReference(data.canton))}<br>${e(data.rules.labels.noTaxAdvice)}</footer>`;
+  return `<footer>${e(data.rules.labels.formReference(data.canton))}<br>${e(data.rules.labels.noTaxAdvice)}<br>${e(`lazy-koins ${data.appVersion}`)}</footer>`;
 }
 
 /** F10.1: one to two pages. */
