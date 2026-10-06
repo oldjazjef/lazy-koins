@@ -524,7 +524,7 @@ prisma/schema.prisma` must still report **no difference**.
   latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
   (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
   the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
-- **Dashboard / carry-over** (migration `20261008100000_dashboard_carryover`): `user_rate` (unique
+- **Dashboard / carry-over** (migration `20261008110000_dashboard_carryover`): `user_rate` (unique
   `(user, kind, asset, currency, date, source)`; source only `binance|coingecko|ecb`, decimal/date
   CHECKs; cascade with the user) and `project_carryover` (kind CHECK, `json_valid(data)`; cascade
   with the project; `source_project_id` is no FK — the source may be deleted later, its name stays).
