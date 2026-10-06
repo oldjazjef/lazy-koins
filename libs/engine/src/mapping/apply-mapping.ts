@@ -286,6 +286,8 @@ function bookingFromRow(ctx: Context, row: TableRow): Booking {
     feeAsset,
     priceChf: optionalNumber(ctx, row, mapping.priceChf?.column),
     priceUsd: optionalNumber(ctx, row, mapping.priceUsd?.column),
+    valueUsd: optionalNumber(ctx, row, mapping.valueUsd?.column),
+    feeValueUsd: optionalNumber(ctx, row, mapping.feeValueUsd?.column),
     group: group || undefined,
     note: note || undefined,
     rawType,

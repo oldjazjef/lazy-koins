@@ -1,0 +1,277 @@
+import { config as loadEnv } from 'dotenv';
+import type { ConfigService } from '@nestjs/config';
+import type { StoredResult } from '../calculation/domain/calculation';
+import type { Env } from '../config/env';
+import { PrismaService } from './prisma/prisma.service';
+import {
+  CalculationSnapshotPrismaRepository,
+  CorrectionPrismaRepository,
+  OpenItemStatePrismaRepository,
+} from './prisma/repositories/calculation.prisma.repository';
+import { ProjectExportPrismaRepository } from './prisma/repositories/project-export.prisma.repository';
+import { ProjectRatePrismaRepository } from './prisma/repositories/project-rate.prisma.repository';
+import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
+import { UserSettingsPrismaRepository } from './prisma/repositories/user-settings.prisma.repository';
+import { UserPrismaRepository } from './prisma/repositories/user.prisma.repository';
+
+/**
+ * The adapters of the calculation migration against a real SQLite file: settings upsert, rate
+ * upserts by their unique key, snapshot retention and the list figures, correction undo, item
+ * states, stored exports, the cascade with the project and the hand-written CHECKs.
+ * `pnpm ci:integration` — never your dev database.
+ */
+loadEnv({
+  path: ['apps/api/.env.local', 'apps/api/.env', '.env'],
+  quiet: true,
+});
+
+const config = {
+  get: (key: string) =>
+    key === 'DATABASE_URL' ? process.env['DATABASE_URL'] : undefined,
+} as unknown as ConfigService<Env, true>;
+
+const prisma = new PrismaService(config);
+const users = new UserPrismaRepository(prisma);
+const projects = new ProjectPrismaRepository(prisma);
+const settings = new UserSettingsPrismaRepository(prisma);
+const rates = new ProjectRatePrismaRepository(prisma);
+const snapshots = new CalculationSnapshotPrismaRepository(prisma);
+const corrections = new CorrectionPrismaRepository(prisma);
+const states = new OpenItemStatePrismaRepository(prisma);
+const exportsRepo = new ProjectExportPrismaRepository(prisma);
+
+let seq = 0;
+async function newProject() {
+  seq += 1;
+  const user = await users.upsertFromIdentity(
+    {
+      uid: `it-calc:${Date.now()}:${seq}`,
+      email: `calc${seq}@it.dev`,
+      emailVerified: true,
+      name: 'Calc',
+      signInProvider: 'dev',
+    },
+    'Calc',
+  );
+  const project = await projects.create(user.id, {
+    name: 'Steuern 2025',
+    taxYear: 2025,
+    country: 'CH',
+    canton: 'ZH',
+    notes: '',
+  });
+  return { user, project };
+}
+
+function result(wealthChf: string): StoredResult {
+  return {
+    engineVersion: 1,
+    taxYear: 2025,
+    country: 'CH',
+    yearEnd: '2025-12-31',
+    totals: {
+      wealthChf,
+      incomeChf: '1.5',
+      positions: 0,
+      missingPrices: 0,
+      openItems: 0,
+    },
+    parameters: {
+      usdChf: null,
+      eurChf: null,
+      usdChfSource: null,
+      eurChfSource: null,
+    },
+    positions: [],
+    platforms: [],
+    income: [],
+    categories: [],
+    earnGaps: [],
+    oneOffEvents: [],
+    checks: [],
+    openItems: [],
+    corrections: [],
+    comparison: null,
+  };
+}
+
+beforeAll(async () => {
+  await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON');
+});
+
+afterAll(async () => {
+  await prisma.$disconnect();
+});
+
+describe('user settings', () => {
+  it('creates on first save, keeps absent fields, stores sealed keys', async () => {
+    const { user } = await newProject();
+    expect(await settings.find(user.id)).toBeUndefined();
+    const created = await settings.save(user.id, {
+      displayName: 'Anna',
+      sealedKeys: { coingecko: 'enc:v1:a:b:c' },
+      coingeckoIds: { POL: 'polygon-ecosystem-token' },
+    });
+    expect(created).toMatchObject({
+      displayName: 'Anna',
+      onlineRates: true,
+      sealedKeys: { coingecko: 'enc:v1:a:b:c', etherscan: null },
+      coingeckoIds: { POL: 'polygon-ecosystem-token' },
+    });
+    const updated = await settings.save(user.id, {
+      onlineRates: false,
+      sealedKeys: { coingecko: null },
+    });
+    expect(updated).toMatchObject({
+      displayName: 'Anna',
+      onlineRates: false,
+      sealedKeys: { coingecko: null },
+    });
+    await expect(
+      settings.save(user.id, { sealedKeys: { etherscan: 'plain-key' } }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('project rates', () => {
+  it('upserts by (kind, asset, currency, date, source) and deletes one', async () => {
+    const { project } = await newProject();
+    const entry = {
+      kind: 'price' as const,
+      asset: 'BTC',
+      currency: 'USD' as const,
+      date: '2025-12-31',
+      value: '90000.123456789012345678',
+      source: 'binance' as const,
+    };
+    await rates.upsertMany(project.id, [entry, { ...entry, source: 'manual' }]);
+    await rates.upsertMany(project.id, [{ ...entry, value: '91000' }]);
+    const stored = await rates.listByProject(project.id);
+    expect(stored.map((r) => [r.source, r.value])).toEqual([
+      ['binance', '91000'],
+      ['manual', '90000.123456789012345678'],
+    ]);
+    expect(await rates.delete(project.id, { ...entry, source: 'manual' })).toBe(
+      true,
+    );
+    expect(await rates.delete(project.id, { ...entry, source: 'manual' })).toBe(
+      false,
+    );
+    await expect(
+      rates.upsertMany(project.id, [{ ...entry, source: 'yahoo' as never }]),
+    ).rejects.toThrow(/CHECK constraint failed/);
+    await expect(
+      rates.upsertMany(project.id, [{ ...entry, value: '1e5' }]),
+    ).rejects.toThrow(/CHECK constraint failed/);
+  });
+});
+
+describe('snapshots, corrections, open items, exports', () => {
+  it('keeps the latest three snapshots and reads the list figures from the newest', async () => {
+    const { project } = await newProject();
+    for (const wealth of ['1', '2', '3', '4']) {
+      await snapshots.save(project.id, {
+        inputHash: 'b'.repeat(64),
+        engineVersion: 1,
+        result: result(wealth),
+        records: { r1: { id: 'r1' } as never },
+      });
+    }
+    const latest = await snapshots.latest(project.id);
+    expect(latest?.result.totals.wealthChf).toBe('4');
+    expect(await snapshots.records(latest?.id ?? '')).toEqual({
+      r1: { id: 'r1' },
+    });
+    expect(
+      await prisma.calculationSnapshot.count({
+        where: { projectId: project.id },
+      }),
+    ).toBe(3);
+    const figures = await snapshots.latestFigures([project.id, 'nope']);
+    expect(figures.get(project.id)).toMatchObject({
+      wealthChf: '4',
+      incomeChf: '1.5',
+    });
+    expect(figures.has('nope')).toBe(false);
+  });
+
+  it('undoes and redoes a correction, keeps item states, stores exports — and cascades', async () => {
+    const { project } = await newProject();
+    const correction = await corrections.create(project.id, {
+      data: {
+        type: 'price_override',
+        asset: 'ETH',
+        date: '2025-12-31',
+        priceChf: '2500',
+      },
+      reason: 'ESTV',
+    });
+    expect(
+      (await corrections.setUndone(correction.id, true))?.undoneAt,
+    ).not.toBeNull();
+    expect(
+      (await corrections.setUndone(correction.id, false))?.undoneAt,
+    ).toBeNull();
+    expect(await corrections.listByProject(project.id)).toEqual([
+      expect.objectContaining({ type: 'price_override', reason: 'ESTV' }),
+    ]);
+
+    await states.save(project.id, 'missingPrice:pos:x', { done: true });
+    await states.save(project.id, 'missingPrice:pos:x', { note: 'erledigt' });
+    expect(await states.listByProject(project.id)).toEqual([
+      expect.objectContaining({ done: true, note: 'erledigt' }),
+    ]);
+
+    const bytes = new TextEncoder().encode('%PDF-1.4 synthetic');
+    const meta = await exportsRepo.create(project.id, {
+      kind: 'simple_pdf',
+      fileName: 'a.pdf',
+      bytes,
+      snapshotId: null,
+      wealthChf: '1',
+      incomeChf: '2',
+    });
+    expect(meta).toMatchObject({
+      size: bytes.byteLength,
+      mediaType: 'application/pdf',
+    });
+    const content = await exportsRepo.findContent(meta.id);
+    expect(Buffer.from(content?.bytes ?? []).toString()).toBe(
+      '%PDF-1.4 synthetic',
+    );
+    expect(await exportsRepo.listByProject(project.id)).toHaveLength(1);
+
+    await projects.delete(project.id);
+    expect(await corrections.findById(correction.id)).toBeUndefined();
+    expect(await exportsRepo.findContent(meta.id)).toBeUndefined();
+    expect(await states.listByProject(project.id)).toEqual([]);
+  });
+
+  it('keeps the CHECK constraints of the calculation migration', async () => {
+    const { project } = await newProject();
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO correction (id, project_id, type, data, reason) VALUES ('x1', ?, 'delete_all', '{}', 'r')`,
+        project.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO correction (id, project_id, type, data, reason) VALUES ('x2', ?, 'reclassify', '{}', '  ')`,
+        project.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO calculation_snapshot (id, project_id, input_hash, engine_version, result, records, wealth_chf, income_chf) VALUES ('x3', ?, 'short', 1, '{}', '{}', '0', '0')`,
+        project.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO project_export (id, project_id, kind, file_name, media_type, bytes, size, wealth_chf, income_chf) VALUES ('x4', ?, 'zip', 'a', 'b', X'00', 1, '0', '0')`,
+        project.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
+  });
+});

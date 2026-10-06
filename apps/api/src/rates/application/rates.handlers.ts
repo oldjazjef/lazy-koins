@@ -1,0 +1,426 @@
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import {
+  CommandHandler,
+  type ICommandHandler,
+  type IQueryHandler,
+  QueryHandler,
+} from '@nestjs/cqrs';
+import {
+  assetsNeedingPrices,
+  calculate,
+  parseKursliste,
+  type RateEntry,
+  type RateKind,
+  RateTable,
+  tryParseDecimal,
+} from '@lazykoins/engine';
+import { assertProjectOpen } from '../../calculation/application/calculation.handlers';
+import { CalculationInputService } from '../../calculation/application/calculation-input.service';
+import type { Env } from '../../config/env';
+import { loadOwnProject } from '../../projects/application/project-access';
+import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
+import { SettingsReader } from '../../settings/application/settings.handlers';
+import {
+  COINGECKO_IDS,
+  type ProjectRate,
+  RATE_ALIASES,
+  type RateKey,
+} from '../domain/project-rate';
+import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
+import {
+  ChfPriceSourcePort,
+  FxRateSourcePort,
+  UsdPriceSourcePort,
+} from '../ports/rate-source.port';
+
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** One stored series (kind, asset, currency, source) in the rates overview. */
+export interface RateSeries {
+  readonly kind: RateKind;
+  readonly asset: string;
+  readonly currency: 'CHF' | 'USD';
+  readonly source: ProjectRate['source'];
+  readonly points: number;
+  readonly from: string;
+  readonly to: string;
+  /** The rate of this series used for 31.12. (within the tolerance), if any. */
+  readonly yearEnd: { readonly date: string; readonly value: string } | null;
+  readonly fetchedAt: string;
+}
+
+export interface RatesView {
+  readonly taxYear: number;
+  /** F11.3: whether "Kurse aktualisieren" may go to the internet. */
+  readonly online: boolean;
+  readonly series: readonly RateSeries[];
+  /** Overrides and ESTV values, one row each. */
+  readonly manual: readonly ProjectRate[];
+}
+
+/** The window fetched for a tax year: the 14-day tolerance on both sides, plus the opening date. */
+export function fetchWindow(taxYear: number): { from: string; to: string } {
+  return { from: `${taxYear - 1}-12-01`, to: `${taxYear + 1}-01-15` };
+}
+
+export class GetRatesQuery {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+    readonly asset?: string,
+  ) {}
+}
+
+/** F7.4: the stored rates, summarised per series; one asset's points when `asset` is given. */
+@QueryHandler(GetRatesQuery)
+export class GetRatesHandler implements IQueryHandler<
+  GetRatesQuery,
+  RatesView | ProjectRate[]
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly rates: ProjectRateRepositoryPort,
+    private readonly settings: SettingsReader,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+    asset,
+  }: GetRatesQuery): Promise<RatesView | ProjectRate[]> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    const all = await this.rates.listByProject(project.id);
+    if (asset !== undefined) {
+      const upper = asset.toUpperCase();
+      return all.filter((r) => r.asset === upper);
+    }
+    const yearEnd = `${project.taxYear}-12-31`;
+    const groups = new Map<string, ProjectRate[]>();
+    for (const rate of all) {
+      if (rate.source === 'manual' || rate.source === 'estv') continue;
+      const key = `${rate.kind}|${rate.asset}|${rate.currency}|${rate.source}`;
+      const list = groups.get(key) ?? [];
+      list.push(rate);
+      groups.set(key, list);
+    }
+    const series: RateSeries[] = [...groups.values()].map((list) => {
+      const first = list[0] as ProjectRate;
+      const table = new RateTable(list);
+      const point =
+        first.kind === 'fx'
+          ? table.fx(first.asset, yearEnd)
+          : table.lookup('price', first.asset, first.currency, yearEnd, 14);
+      return {
+        kind: first.kind,
+        asset: first.asset,
+        currency: first.currency,
+        source: first.source,
+        points: list.length,
+        from: list.reduce((m, r) => (r.date < m ? r.date : m), first.date),
+        to: list.reduce((m, r) => (r.date > m ? r.date : m), first.date),
+        yearEnd: point
+          ? { date: point.date, value: point.value.toFixed() }
+          : null,
+        fetchedAt: list.reduce(
+          (m, r) => (r.fetchedAt > m ? r.fetchedAt : m),
+          first.fetchedAt,
+        ),
+      };
+    });
+    series.sort(
+      (a, b) =>
+        compareText(a.kind, b.kind) ||
+        compareText(a.asset, b.asset) ||
+        compareText(a.currency, b.currency) ||
+        compareText(a.source, b.source),
+    );
+    const resolved = await this.settings.resolve(userId);
+    return {
+      taxYear: project.taxYear,
+      online:
+        resolved.onlineRates &&
+        this.config.get('RATES_ONLINE', { infer: true }) !== 'false',
+      series,
+      manual: all.filter((r) => r.source === 'manual' || r.source === 'estv'),
+    };
+  }
+}
+
+export type AssetFetchStatus = 'fetched' | 'cached' | 'notFound' | 'failed';
+
+export interface RefreshSummary {
+  readonly fx: number;
+  readonly assets: readonly {
+    readonly asset: string;
+    readonly status: AssetFetchStatus;
+    readonly source: string | null;
+    readonly points: number;
+  }[];
+}
+
+export class RefreshRatesCommand {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+    /** Fetch again even when a series is already stored. */
+    readonly force: boolean,
+  ) {}
+}
+
+/**
+ * "Kurse aktualisieren" (F7.4): USD/CHF and EUR/CHF from the ECB, then a daily price series for
+ * every asset the calculation needs a price for — Binance closes first (no key), CoinGecko CHF
+ * when Binance has none and a key is stored. One request at a time per source; a series already
+ * stored for the year is not fetched again (cache) unless `force`. Refused when rate lookups
+ * are off (F11.3).
+ */
+@CommandHandler(RefreshRatesCommand)
+export class RefreshRatesHandler implements ICommandHandler<
+  RefreshRatesCommand,
+  RefreshSummary
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly rates: ProjectRateRepositoryPort,
+    private readonly inputs: CalculationInputService,
+    private readonly settings: SettingsReader,
+    private readonly usd: UsdPriceSourcePort,
+    private readonly chf: ChfPriceSourcePort,
+    private readonly fx: FxRateSourcePort,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+    force,
+  }: RefreshRatesCommand): Promise<RefreshSummary> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    assertProjectOpen(project);
+    const settings = await this.settings.resolve(userId);
+    if (
+      !settings.onlineRates ||
+      this.config.get('RATES_ONLINE', { infer: true }) === 'false'
+    ) {
+      throw new ConflictException(
+        'Rate lookups on the internet are switched off (settings)',
+      );
+    }
+    const { from, to } = fetchWindow(project.taxYear);
+    const assembled = await this.inputs.build(project);
+    const assets = assetsNeedingPrices(
+      calculate(assembled.input),
+      assembled.input.rules,
+    );
+    const stored = await this.rates.listByProject(project.id);
+
+    let fx = 0;
+    for (const base of ['USD', 'EUR'] as const) {
+      if (!force && covered(stored, 'fx', base, project.taxYear)) continue;
+      const entries = await this.fx.dailyChf(base, from, to).catch(() => []);
+      fx += await this.rates.upsertMany(project.id, entries);
+    }
+
+    const results: RefreshSummary['assets'][number][] = [];
+    for (const asset of assets) {
+      if (!force && covered(stored, 'price', asset, project.taxYear)) {
+        results.push({ asset, status: 'cached', source: null, points: 0 });
+        continue;
+      }
+      try {
+        const symbols = [asset, ...(RATE_ALIASES[asset] ?? [])];
+        let entries: RateEntry[] = [];
+        let source: string | null = null;
+        for (const symbol of symbols) {
+          const found = await this.usd.dailyUsd({ asset, symbol, from, to });
+          entries = mergeByDate(entries, found);
+        }
+        if (entries.length > 0) source = this.usd.name;
+        const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
+        const apiKey = settings.keys.coingecko;
+        if (entries.length === 0 && coinId && apiKey) {
+          entries = await this.chf.dailyChf({
+            asset,
+            symbol: asset,
+            from,
+            to,
+            coinId,
+            apiKey,
+          });
+          if (entries.length > 0) source = this.chf.name;
+        }
+        await this.rates.upsertMany(project.id, entries);
+        results.push({
+          asset,
+          status: entries.length > 0 ? 'fetched' : 'notFound',
+          source,
+          points: entries.length,
+        });
+      } catch {
+        results.push({ asset, status: 'failed', source: null, points: 0 });
+      }
+    }
+    return { fx, assets: results };
+  }
+}
+
+/** A stored series covers the year when it has a point near both ends (the 14-day tolerance). */
+function covered(
+  stored: readonly ProjectRate[],
+  kind: RateKind,
+  asset: string,
+  taxYear: number,
+): boolean {
+  const fetched = stored.filter(
+    (r) =>
+      r.kind === kind &&
+      r.asset === asset &&
+      r.source !== 'manual' &&
+      r.source !== 'estv',
+  );
+  return (
+    fetched.some((r) => r.date <= `${taxYear}-01-14`) &&
+    fetched.some((r) => r.date >= `${taxYear}-12-17`)
+  );
+}
+
+/** Earlier symbols win per day (an asset's own name before its alias). */
+function mergeByDate(
+  existing: readonly RateEntry[],
+  more: readonly RateEntry[],
+): RateEntry[] {
+  const dates = new Set(existing.map((e) => e.date));
+  return [...existing, ...more.filter((e) => !dates.has(e.date))];
+}
+
+export interface ManualRateInput {
+  readonly kind: RateKind;
+  readonly asset: string;
+  readonly currency: 'CHF' | 'USD';
+  readonly date: string;
+  readonly value: string;
+}
+
+export class SetManualRateCommand {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+    readonly rate: ManualRateInput,
+  ) {}
+}
+
+/** F7.4: override a rate for one day (e.g. the ESTV value of USD/CHF at 31.12.). */
+@CommandHandler(SetManualRateCommand)
+export class SetManualRateHandler implements ICommandHandler<
+  SetManualRateCommand,
+  RateEntry
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly rates: ProjectRateRepositoryPort,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+    rate,
+  }: SetManualRateCommand): Promise<RateEntry> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    assertProjectOpen(project);
+    const value = tryParseDecimal(rate.value);
+    if (!value || value.isNegative() || value.isZero()) {
+      throw new BadRequestException('value must be a positive decimal');
+    }
+    if (rate.kind === 'fx' && rate.currency !== 'CHF') {
+      throw new BadRequestException('exchange rates are in CHF');
+    }
+    const entry: RateEntry = {
+      kind: rate.kind,
+      asset: rate.asset.trim().toUpperCase(),
+      currency: rate.currency,
+      date: rate.date,
+      value: value.toFixed(),
+      source: 'manual',
+    };
+    await this.rates.upsertMany(project.id, [entry]);
+    return entry;
+  }
+}
+
+export class DeleteManualRateCommand {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+    readonly key: Omit<RateKey, 'source'> & {
+      readonly source: 'manual' | 'estv';
+    },
+  ) {}
+}
+
+@CommandHandler(DeleteManualRateCommand)
+export class DeleteManualRateHandler implements ICommandHandler<
+  DeleteManualRateCommand,
+  void
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly rates: ProjectRateRepositoryPort,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+    key,
+  }: DeleteManualRateCommand): Promise<void> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    assertProjectOpen(project);
+    const removed = await this.rates.delete(project.id, {
+      ...key,
+      asset: key.asset.toUpperCase(),
+    });
+    if (!removed) throw new NotFoundException('No such rate');
+  }
+}
+
+export class ImportKurslisteCommand {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+    readonly content: string,
+  ) {}
+}
+
+/** The ESTV Kursliste the user downloaded (XML or the documented CSV), as `estv` rates. */
+@CommandHandler(ImportKurslisteCommand)
+export class ImportKurslisteHandler implements ICommandHandler<
+  ImportKurslisteCommand,
+  { imported: number; skipped: number }
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly rates: ProjectRateRepositoryPort,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+    content,
+  }: ImportKurslisteCommand): Promise<{ imported: number; skipped: number }> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    assertProjectOpen(project);
+    const { entries, skipped } = parseKursliste(content, project.taxYear);
+    if (entries.length === 0) {
+      throw new BadRequestException('No rate found in the Kursliste');
+    }
+    await this.rates.upsertMany(project.id, entries);
+    return { imported: entries.length, skipped };
+  }
+}

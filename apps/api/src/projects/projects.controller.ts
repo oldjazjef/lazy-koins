@@ -24,6 +24,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
 import {
   CreateProjectDto,
+  ProjectListItemDto,
   ProjectResponseDto,
   UpdateProjectDto,
 } from './dto/project.dto';
@@ -36,13 +37,16 @@ export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'My projects, newest tax year first (F4.2)' })
-  @ApiOkResponse({ type: [ProjectResponseDto] })
+  @ApiOperation({
+    summary:
+      'My projects, newest tax year first, with Vermögen and Ertrag of the latest calculation (F4.2)',
+  })
+  @ApiOkResponse({ type: [ProjectListItemDto] })
   async list(
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ProjectResponseDto[]> {
+  ): Promise<ProjectListItemDto[]> {
     return (await this.projects.listMine(user.userId)).map(
-      ProjectResponseDto.from,
+      ProjectListItemDto.fromEntry,
     );
   }
 

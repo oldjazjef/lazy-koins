@@ -9,18 +9,21 @@ Two ways to run it with the **same features** (F1): a multi-user **web app** and
 **desktop app** (macOS + Windows, no login, data stays on the machine). A project moves between the
 two as a package (F1.3).
 
-> **Status (07.10.2026): files + mappings + AI plugin.** Nx monorepo with the NestJS API
+> **Status (07.10.2026): files + mappings + AI plugin + calculation.** Nx monorepo with the NestJS API
 > (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
 > storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
-> mappings and PDF statements read into balances), the Angular web app (`apps/web`: login, project
-> list / form / detail with the files area, the project's mappings and the AI dialogs; the global
-> **Mappings** page = F11.0; settings → AI), the pure engine (`libs/engine`:
+> mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
+> F7–F11 on top of the engine), the Angular web app (`apps/web`: login, project
+> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Kurse · Ergebnis ·
+> Prüfungen · Korrekturen · Exporte; the global **Mappings** page = F11.0 in the main navigation;
+> Profil and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
-> **mapping spec** and its applier, F5.8 coverage hints, the golden test) and the infrastructure
+> **mapping spec** and its applier, F5.8 coverage hints, the **calculation** with rates, checks,
+> corrections and analyses over any date, the golden test) and the infrastructure
 > — ported from `surf-lend`. When in doubt about a convention, look at how surf-lend does it.
 > **No per-platform importer code** (decided 06.10.2026): every platform is a mapping spec (JSON,
 > stored per user). **Not built yet:** `apps/desktop` (Electron), bookings persisted as rows,
-> wallets, rates, checks, corrections, exports. Update this file whenever the code makes a section concrete or wrong.
+> wallet lookups (F6), the dashboard and the global mappings page (next phase). Update this file whenever the code makes a section concrete or wrong.
 
 ## Stack
 
@@ -90,6 +93,9 @@ pnpm db:seed       # anna@lazykoins.dev + two sample projects (local databases o
 pnpm db:studio     # prisma studio — browse the database
 
 pnpm private:inspect   # structure of private/ (paths, sizes, headers, row counts) — never rows
+pnpm private:load [ZH] # loads private/ into the RUNNING dev API: project "Steuern 2025", mappings,
+                       #   files (not private/reference/**), rates, calculation — prints totals only
+pnpm exec playwright-core install chromium   # once: the browser for PDF exports
 pnpm vitest run --project engine   # one project's tests (api, web, engine, eslint-rules)
 ```
 
@@ -117,6 +123,8 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
       prisma/               #     PrismaService, sqlite-url, mappers, repositories/*.prisma.repository.ts
     integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers
       ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
+      rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs
+      pdf/                  #     PlaywrightPdfRenderer (Chromium, lazily started)
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
     projects/               #   the reference feature slice — copy its shape
@@ -125,6 +133,11 @@ apps/api/                   # NestJS API — the web app's backend AND (later) t
     mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings, PDF statements
       domain/               #     pure: sample builder, prompts, repair logic, statement checks, SSRF guard
+    calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
+                            #   items, corrections (undo/redo); testing/calculation-fixture.ts
+    rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import
+    settings/               #   F11 profile data + CoinGecko/Etherscan keys (sealed), online rates on/off
+    exports/                #   F10: Excel (ExcelJS, formulas) + HTML → PDF, stored exports, mail draft
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
     common/http/            #   RawBodyMiddleware (uploads), contentDisposition()
     openapi/                #   document + Scalar
@@ -134,9 +147,12 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/, theme/
-    features/<feature>/     #   login, projects, mappings (F11.0: list + detail), settings (AI), files
-                            #   (components only: embedded in the project detail; ai-assist = the AI
-                            #   dialogs; mapping-editor = the editor body, also used by mappings)
+    features/<feature>/     #   login, projects, mappings (F11.0: list + detail), profile, settings
+                            #   (shell + rates/wallets/ai), files and calculation (components only:
+                            #   embedded in the project detail; project-workspace hosts the tabs, its
+                            #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
+                            #   the editor body, also used by mappings)
+    shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads
     shared/                 #   components/<c>/index.ts, forms/zod-validator
@@ -149,6 +165,10 @@ libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angul
   src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints
     fixtures/               #     SYNTHETIC exports + example mapping JSON (test data, not product code)
   src/coverage/             #   coverage per platform/account + F5.8 missing-file hints
+  src/rules/                #   CountryRules (F7.7): chRules — thresholds, pegged assets, labels (F10.3)
+  src/rates/                #   RateTable, unitPriceChf (price priority), yearlyAverageChf, Kursliste
+  src/corrections/          #   correction schema (zod) + applyCorrections (before/after)
+  src/calculation/          #   calculate() (F7/F8), balances.ts, analysis.ts (any date / range)
   src/golden/golden.spec.ts #   A1 against private/golden.json — skips when absent
 libs/ui/<component>/        # spartan helm components (GENERATED — vendored)
 tools/eslint-rules/         # workspace lint rules (Prisma boundary, no hardcoded text/design values)
@@ -157,7 +177,7 @@ private/                    # REAL tax data + golden.json — git-ignored, see P
 ```
 
 Planned, not built: `apps/desktop/` (Electron shell: starts the API in-process, loads the web
-build), `libs/engine/src/{ledger,valuation,rules/ch,checks}/`, `libs/exports/` (PDF + Excel, F10).
+build). Exports live in the API (`exports/`), not in a library.
 
 The engine is a library so the API, the desktop app and the tests run **the same calculation**.
 
@@ -284,6 +304,55 @@ keyUnreadable | privateUrl`. **Consent (F5.14)**: `GET …/ai/{mapping|statement
 - Live without an account: `node scripts/dev/fake-ai-server.mjs` (OpenAI-compatible stub on
   `http://localhost:11435/v1`; answers the synthetic fixtures' mappings and simple statements).
 
+## Calculation, rates, checks, corrections, exports (F7–F10)
+
+**Engine** (`libs/engine/src/calculation/calculate.ts`, pure): `calculate(input)` takes the
+standard records of all project files, the active corrections, the stored rates, the country
+rules, the tax year and (optionally) the previous year's closing positions, and returns a JSON
+result — amounts as decimal strings, every figure with the `recordIds` behind it (F7.5) and a
+`records` map that resolves them to file (SHA-256) + row.
+
+- **Positions at 31.12.** (F7.1) per platform/account/asset: an account with **statement**
+  holdings dated 31.12. takes them for the whole account (several rows of one asset add up — `DOT`
+  - `DOT.S`); otherwise the **ledger** Σ quantity − Σ fee (a fee in another asset reduces that
+    asset) over every booking before 01.01. of the next year. Holdings from a file that also has
+    bookings for that account are a ledger's **running balance** (mapping `lastPerAsset`): never
+    preferred, only checked. Manual holdings (corrections) replace their asset. |q| < 1e-7 dropped;
+    spam (name matches `claim`, or a `spam` booking) and negative positions stay listed but are not
+    in the total.
+- **Price priority** (`rates/rate-table.ts` `unitPriceChf`): CHF = 1 → override (`manual` rate,
+  F9.1/F7.4) → ESTV (same day) → the record's CHF price → the record's USD price × USD/CHF →
+  stablecoins/USD = 1 USD × USD/CHF, EUR via EUR/CHF → stored CHF price → stored USD price ×
+  USD/CHF; prices at most 14 days before, else at most 14 days after; FX forward-filled.
+- **Income** (F7.2) of the year at arrival (UTC day), **net** after a fee in the same asset, gross
+  as info. A booking with its own USD value (`valueUsd`/`feeValueUsd`, mapping fields — Kraken
+  `amountusd`/`feeusd`) is valued `(valueUsd − feeValueUsd) × USD/CHF of the day`.
+- **Earn gap** for every account with statement balances at both year ends and bookings in the
+  year: `(end − start) − Σ bookings without transfers`; positive → income at the yearly average
+  (daily USD × USD/CHF), negative → open item; EUR, USDT excluded (country rules).
+- **Checks** (F8.1) with lights + **open items** with a stable `key`, reason, params and CHF
+  impact (F8.2): ledger = statement (exact) + running-balance consistency + negative balances,
+  Earn gap, withdrawals ↔ deposits across own accounts (±2 %, −1 h … +7 d, fiat ignored), opening =
+  previous closing, missing prices, unclassified bookings, wallet networks (placeholder, yellow).
+- `analysis.ts`: `balancesAt`, `dailyBalances` (one sweep), `flowsBetween`, `dailyPricesChf` —
+  the same rules for any date/range (for the dashboard).
+
+**API**: `calculation/` assembles the input from storage (files are **read again** from their
+bytes with the standard importer or their mapping; bookings are not rows) and hashes what decides
+the result (file SHA-256s + mapping versions, corrections, rates, previous snapshot, engine
+version) → `stale` without reading files. `POST /projects/:id/calculate` stores a snapshot;
+`GET …/result`, `GET …/result/records?figure=<id>` (pos:, inc:, gap:, evt:, plat:, cat:, item
+key), `GET …/checks`, `PATCH …/open-items`, `GET|POST …/corrections`, `…/corrections/:id/undo|redo`.
+Closed projects: 409 for calculate, corrections, ticks, rate changes; exports stay allowed (the
+final statement) and use the last snapshot. `rates/`: `POST …/rates/refresh` (ECB via
+Frankfurter, Binance `<SYM>USDT`/`BUSD` daily closes, CoinGecko CHF with the user's key as
+fallback; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
+unless `force`), `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
+when the user switched rate lookups off or `RATES_ONLINE=false`. `exports/`: `POST …/exports`
+recalculates first when stale; detailed Excel = the FACHREGELN sheets with formulas (named cells
+`USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
+(`PdfRendererPort` → 503 without a browser); `GET …/mail-draft` (F10.6).
+
 ## Database (SQLite)
 
 One file, no database server. Prisma talks to it through `@prisma/adapter-better-sqlite3`, a
@@ -315,6 +384,13 @@ prisma/schema.prisma` must still report **no difference**.
 - **AI** (migration `20261007090000_ai_settings`): `ai_settings` (PK `user_id`, cascade with the
   user, CHECKs: provider, key sealed `enc:v1:%`, hint ≤ 8 chars). The same migration **redefines
   `project_file`** only to widen its origin CHECK to `derived_from:_%` — all other CHECKs copied.
+- **Calculation** (migration `20261007120000_calculation_rates_exports`, sorts after the AI one):
+  `user_settings` (PK `user_id`; keys sealed `enc:v1:%`, canton/format/JSON CHECKs),
+  `project_rate` (unique `(project, kind, asset, currency, date, source)`; kind/currency/source/
+  date/decimal CHECKs), `calculation_snapshot` (result + records as JSON, 64-char input hash; the
+  latest 3 per project are kept), `correction` (type CHECK, `undone_at` = undo), `open_item_state`
+  (PK `(project_id, item_key)`) and `project_export` (BLOB, kind + size CHECKs). All cascade with
+  the project; `calculation.persistence.integration.spec.ts` tests the CHECKs.
 - `pnpm install` runs `prisma generate`; `prisma.config.ts` falls back to an unconnectable
   placeholder URL so that works without an `.env`.
 
@@ -412,7 +488,11 @@ etx), so no `project.json` has a `test` target, deliberately.
   Kraken/Binance/Bitfinex/Revolut fixtures, coverage). The AI plugin is tested with a fake
   `fetch` (adapters) and a fake `AiCompletionPort` (handlers), PDFs are generated in the test with
   `pdf-lib` — never a real provider call. `files.handlers.spec.ts` runs the real
-  engine + exceljs against in-memory ports.
+  engine + exceljs against in-memory ports. The calculation slices share
+  `calculation/testing/calculation-fixture.ts` (synthetic standard-format files + every handler
+  over port doubles); rate sources are faked (`rates/testing/`), adapters get a fake `fetch`; the
+  exports spec opens the generated workbook with ExcelJS and checks the formulas. The real
+  Chromium print (`playwright-pdf.renderer.spec.ts`) skips itself when no browser is installed.
 - **Integration** (`*.integration.spec.ts`, excluded from `pnpm test`): the Prisma adapters
   against a real SQLite file with the real migrations — owner listing, empty updates, cascade,
   CHECK constraints. `scripts/dev/with-test-db.mjs` points them at `tmp/lazykoins-test.db`
@@ -607,3 +687,10 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
   widens the whole dialog; the height is handled globally (see "Dialog actions never scroll away").
 - `sqlite-url.spec.ts` compares against `path.resolve(...)`: surf-lend's copy hard-coded POSIX
   paths and only passed on Linux.
+- Tools that write files can turn a BOM escape (U+FEFF) into the real character; in source build it
+  with `String.fromCharCode(0xfeff)` (`rates/kursliste.ts`).
+- PDF exports need Chromium for `playwright-core` (`pnpm exec playwright-core install chromium`,
+  or `PDF_CHROMIUM_PATH`); without it the API answers 503 for PDFs, Excel still works.
+- Rate adapters parse JSON with the reviver's **source text** (`parseJsonKeepingNumbers`) so a
+  rate never becomes a JS number; Node ≥ 21 provides it.
+- Several agents may share the Browser pane: pass `tabId` explicitly when driving it.

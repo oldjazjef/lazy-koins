@@ -3,6 +3,20 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SETTINGS_SECTIONS } from '../../features/settings/settings-shell';
+import { WORKSPACE_TABS } from '../../features/calculation/components/project-workspace/project-workspace.service';
+import {
+  CHECK_KINDS,
+  CORRECTION_TYPES,
+  EXPORT_KINDS,
+  FETCH_STATUSES,
+  INCOME_CATEGORIES,
+  LIGHTS,
+  OPEN_ITEM_REASONS,
+  POSITION_STATUSES,
+  PRICE_ORIGINS,
+  QUANTITY_SOURCES,
+} from '../api/calculation.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -56,6 +70,23 @@ const DYNAMIC_KEYS = [
     'unknown',
   ].map((kind) => `bookings.kind.${kind}`),
   ...['ai', 'manual', 'copied'].map((origin) => `mappings.origin.${origin}`),
+  ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
+  ...POSITION_STATUSES.map((status) => `result.status.${status}`),
+  ...QUANTITY_SOURCES.map((source) => `result.quantitySource.${source}`),
+  ...PRICE_ORIGINS.map((origin) => `result.priceOrigin.${origin}`),
+  ...INCOME_CATEGORIES.map((category) => `result.category.${category}`),
+  ...['negative', 'missingPrice'].map((status) => `result.gapStatus.${status}`),
+  ...LIGHTS.map((light) => `checks.light.${light}`),
+  ...CHECK_KINDS.map((kind) => `checks.kind.${kind}`),
+  ...OPEN_ITEM_REASONS.map((reason) => `checks.reason.${reason}`),
+  ...CORRECTION_TYPES.map((type) => `corrections.type.${type}`),
+  ...['price', 'fx'].map((kind) => `rates.kind.${kind}`),
+  ...['manual', 'estv', 'binance', 'coingecko', 'ecb'].map(
+    (source) => `rates.source.${source}`,
+  ),
+  ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
+  ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
+  ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
   ...['name', 'platform', 'updated', 'files'].map(
     (sort) => `mappings.list.sortBy.${sort}`,
   ),

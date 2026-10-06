@@ -1,0 +1,129 @@
+<nav
+  class="mb-4 flex flex-wrap gap-1 border-b"
+  role="tablist"
+  [attr.aria-label]="'workspace.label' | translate"
+>
+  @for (tab of tabs; track tab) {
+  <button
+    type="button"
+    role="tab"
+    class="lk-tab"
+    [class.lk-tab-active]="service.tab() === tab"
+    [attr.aria-selected]="service.tab() === tab"
+    (click)="select(tab)"
+  >
+    {{ 'workspace.tabs.' + tab | translate }}
+  </button>
+  }
+</nav>
+
+<div role="tabpanel">
+  @switch (service.tab()) { @case ('files') {
+  <lk-project-files
+    class="flex flex-col gap-6"
+    [projectId]="projectId()"
+    [closed]="closed()"
+  />
+  } @case ('rates') {
+  <lk-project-rates [closed]="closed()" [taxYear]="taxYear()" />
+  } @case ('result') {
+  <lk-project-result [closed]="closed()" />
+  } @case ('checks') {
+  <lk-project-checks [closed]="closed()" />
+  } @case ('corrections') {
+  <lk-project-corrections [closed]="closed()" [taxYear]="taxYear()" />
+  } @case ('exports') {
+  <lk-project-exports />
+  } }
+</div>
+
+<!-- F7.5: the records behind a figure, with file and row -->
+<hlm-dialog [state]="recordsState()" (stateChanged)="recordsChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
+    @if (service.recordsOf(); as figure) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'records.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ figure.title }}</p>
+    </hlm-dialog-header>
+    @if (service.records(); as data) {
+    <p class="text-muted-foreground text-sm">
+      {{ 'records.count' | translate: { shown: data.records.length, total:
+      data.total } }}
+    </p>
+    <div hlmTableContainer class="lk-panel">
+      <table hlmTable>
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh>{{ 'records.file' | translate }}</th>
+            <th hlmTh class="text-right">{{ 'records.row' | translate }}</th>
+            <th hlmTh>{{ 'records.at' | translate }}</th>
+            <th hlmTh>{{ 'records.kind' | translate }}</th>
+            <th hlmTh>{{ 'records.asset' | translate }}</th>
+            <th hlmTh class="text-right">
+              {{ 'records.quantity' | translate }}
+            </th>
+            <th hlmTh class="text-right">{{ 'records.fee' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (record of data.records; track record.id) {
+          <tr hlmTr>
+            <td hlmTd class="max-w-64">
+              @if (record.correctionId) {
+              <span class="text-muted-foreground"
+                >{{ 'records.correction' | translate }}</span
+              >
+              } @else {
+              <span class="block truncate" [title]="record.fileName ?? ''"
+                >{{ record.fileName ?? ('records.unknownFile' | translate)
+                }}</span
+              >
+              }
+              <details class="text-muted-foreground text-xs">
+                <summary class="cursor-pointer">
+                  {{ 'records.raw' | translate }}
+                </summary>
+                <dl class="lk-facts mt-1">
+                  @for (entry of rawEntries(record.raw); track entry[0]) {
+                  <dt>{{ entry[0] }}</dt>
+                  <dd class="font-mono break-all">{{ entry[1] }}</dd>
+                  }
+                </dl>
+              </details>
+            </td>
+            <td hlmTd class="text-right tabular-nums">{{ record.row }}</td>
+            <td hlmTd class="whitespace-nowrap tabular-nums">
+              {{ record.type === 'holding' ? (record.at | date: 'dd.MM.yyyy') :
+              (record.at | date: 'dd.MM.yyyy HH:mm' : 'UTC') }}
+            </td>
+            <td hlmTd>
+              {{ record.kind ? ('bookings.kind.' + record.kind | translate) :
+              ('records.holding' | translate) }}
+              <span class="text-muted-foreground block text-xs"
+                >{{ record.rawType }}</span
+              >
+            </td>
+            <td hlmTd>{{ record.platform }} · {{ record.asset }}</td>
+            <td hlmTd class="text-right tabular-nums">
+              {{ record.quantity | lkQuantity: 18 }}
+            </td>
+            <td hlmTd class="text-right tabular-nums">
+              {{ record.fee ? (record.fee | lkQuantity: 18) : '' }} {{
+              record.fee ? record.feeAsset : '' }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    } @else {
+    <hlm-skeleton class="h-48 w-full" />
+    }
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.close' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

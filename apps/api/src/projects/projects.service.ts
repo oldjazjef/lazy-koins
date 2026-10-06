@@ -4,7 +4,10 @@ import { CreateProjectCommand } from './application/commands/create-project.comm
 import { DeleteProjectCommand } from './application/commands/delete-project.command';
 import { UpdateProjectCommand } from './application/commands/update-project.command';
 import { GetProjectQuery } from './application/queries/get-project.query';
-import { ListMyProjectsQuery } from './application/queries/list-my-projects.query';
+import {
+  ListMyProjectsQuery,
+  type ProjectListEntry,
+} from './application/queries/list-my-projects.query';
 import type {
   CreateProjectInput,
   Project,
@@ -19,7 +22,7 @@ export class ProjectsService {
     private readonly queries: QueryBus,
   ) {}
 
-  listMine(userId: string): Promise<Project[]> {
+  listMine(userId: string): Promise<ProjectListEntry[]> {
     return this.queries.execute(new ListMyProjectsQuery(userId));
   }
 
