@@ -56,6 +56,9 @@
   --light-yellow: #d9a514;
   --light-red: #c0392b;
   --light-grey: #a0a9b6;
+
+  /* Hints that need attention but are no error ("seit dem Versand geändert", F4.7). */
+  --warning-text: #8a5a00;
   /* Gains and losses as text (dashboard change), >= 4.5:1 on the card. */
   --positive: #1f7a4a;
   --negative: #b42318;
@@ -101,6 +104,7 @@
   --light-yellow: #e8bf4a;
   --light-red: #f07167;
   --light-grey: #6b7686;
+  --warning-text: #e8bf4a;
   --positive: #4fbf83;
   --negative: #f97066;
   --alloc-1: #3987e5;
@@ -209,6 +213,11 @@
 
   .lk-light-grey {
     background-color: var(--light-grey);
+  }
+
+  /* A hint that needs attention without being an error (F4.7 "seit dem Versand geändert"). */
+  .lk-warning-text {
+    color: var(--warning-text);
   }
 
   /*

@@ -1,7 +1,7 @@
 import type { Routes } from '@angular/router';
 import { desktopOnly } from '../../core/desktop/desktop-bridge';
 
-/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, System — each section a sub-route. */
+/** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail, System — each a sub-route. */
 const routes: Routes = [
   {
     path: '',
@@ -28,6 +28,13 @@ const routes: Routes = [
         loadComponent: () =>
           import('./pages/ai-settings-page/ai-settings-page').then(
             (m) => m.AiSettingsPage,
+          ),
+      },
+      {
+        path: 'mail',
+        loadComponent: () =>
+          import('./pages/mail-settings-page/mail-settings-page').then(
+            (m) => m.MailSettingsPage,
           ),
       },
       {

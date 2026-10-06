@@ -59,14 +59,16 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  projects    Project[]
-  storedFiles StoredFile[]
-  mappings    ImportMapping[]
-  settings    UserSettings?
-  aiSettings  AiSettings?
+  projects      Project[]
+  storedFiles   StoredFile[]
+  mappings      ImportMapping[]
+  settings      UserSettings?
+  aiSettings    AiSettings?
+  mailSettings  MailSettings?
+  mailTemplates MailTemplate[]
+  rates         UserRate[]
   wallets       Wallet[]
   chainSettings ChainSettings?
-  rates       UserRate[]
 
   @@map("user")
 }
@@ -96,6 +98,8 @@ model Project {
   exports     ProjectExport[]
   wallets        ProjectWallet[]
   walletBalances WalletManualBalance[]
+  mailLog     MailLog[]
+  sentState   ProjectSentState?
   carryovers  ProjectCarryover[]
 
   @@index([ownerId, taxYear])
@@ -193,24 +197,24 @@ model ProjectFile {
 /// Personal settings (F11.1–F11.3) and the API keys a user stores (F6.7). Keys are sealed with
 /// AES-256-GCM (`SETTINGS_ENCRYPTION_KEY`) and never returned — the API answers with a hint only.
 model UserSettings {
-  userId        String   @id @map("user_id")
+  userId       String   @id @map("user_id")
   /// Name on the exports (F10.4); empty = the account's display name.
-  displayName   String   @default("") @map("display_name")
+  displayName  String   @default("") @map("display_name")
   /// Canton of residence, two letters, or empty.
-  canton        String   @default("")
-  advisorName   String   @default("") @map("advisor_name")
-  advisorEmail  String   @default("") @map("advisor_email")
+  canton       String   @default("")
+  advisorName  String   @default("") @map("advisor_name")
+  advisorEmail String   @default("") @map("advisor_email")
   /// F11.2. Only `de-CH` / `dd.MM.yyyy` exist so far. CHECK in the migration.
-  numberFormat  String   @default("de-CH") @map("number_format")
-  dateFormat    String   @default("dd.MM.yyyy") @map("date_format")
+  numberFormat String   @default("de-CH") @map("number_format")
+  dateFormat   String   @default("dd.MM.yyyy") @map("date_format")
   /// F11.3: rate lookups on the internet allowed.
-  onlineRates   Boolean  @default(true) @map("online_rates")
+  onlineRates  Boolean  @default(true) @map("online_rates")
   /// `enc:v1:…` (secret-box.ts), or null.
-  coingeckoKey  String?  @map("coingecko_key")
-  etherscanKey  String?  @map("etherscan_key")
+  coingeckoKey String?  @map("coingecko_key")
+  etherscanKey String?  @map("etherscan_key")
   /// JSON object symbol → CoinGecko id, overriding the built-in table.
-  coingeckoIds  String   @default("{}") @map("coingecko_ids")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  coingeckoIds String   @default("{}") @map("coingecko_ids")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -470,6 +474,89 @@ model ChainSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chain_settings")
+}
+
+/// The mailer (SMTP) of one user (F11.10) — its own table, one row per user, created on first
+/// save. The password is stored only sealed (AES-256-GCM, `common/crypto/secret-box.ts`) and never
+/// returned; `password_hint` keeps its last four characters.
+model MailSettings {
+  userId         String   @id @map("user_id")
+  enabled        Boolean  @default(false)
+  host           String   @default("")
+  port           Int      @default(587)
+  /// tls (implicit, usually 465) | starttls (usually 587) | none. CHECK in the migration.
+  security       String   @default("starttls")
+  username       String   @default("")
+  /// `enc:v1:<iv>:<tag>:<ciphertext>`; null = no password stored.
+  passwordCipher String?  @map("password_cipher")
+  passwordHint   String?  @map("password_hint")
+  fromName       String   @default("") @map("from_name")
+  fromAddress    String   @default("") @map("from_address")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mail_settings")
+}
+
+/// A user's own text template for the mail to the Treuhänder (F11.10), per language. No row =
+/// the built-in default of that language (`mail/domain/mail-template.ts`).
+model MailTemplate {
+  userId    String   @map("user_id")
+  /// F11.2 language; only `de-CH` so far. CHECK in the migration.
+  language  String
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, language])
+  @@map("mail_template")
+}
+
+/// One mail sent (or tried) from a project to the Treuhänder (F10.6a): the protocol. Never a
+/// password; the body is not kept.
+model MailLog {
+  id          String   @id @default(uuid(7))
+  projectId   String   @map("project_id")
+  toAddress   String   @map("to_address")
+  ccAddress   String?  @map("cc_address")
+  subject     String
+  /// JSON array of `{ exportId, fileName, size }`. CHECK json_valid in the migration.
+  attachments String   @default("[]")
+  /// sent | failed. CHECK in the migration.
+  status      String
+  /// A short, redacted error summary when `failed`.
+  error       String?
+  messageId   String?  @map("message_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("mail_log")
+}
+
+/// F4.7: the documents went to the Treuhänder — set automatically by a successful send (F10.6a)
+/// or by hand ("als gesendet markieren"); deleting the row is "rückgängig".
+model ProjectSentState {
+  projectId       String   @id @map("project_id")
+  sentToAdvisorAt DateTime @map("sent_to_advisor_at")
+  sentTo          String   @default("") @map("sent_to")
+  /// mail | post | personal | other. CHECK in the migration.
+  sentVia         String   @map("sent_via")
+  sentNote        String   @default("") @map("sent_note")
+  /// JSON array of project_export ids that went out. CHECK json_valid in the migration.
+  sentExports     String   @default("[]") @map("sent_exports")
+  mailLogId       String?  @map("mail_log_id")
+  /// Input hash of the latest calculation when it was sent ("seit dem Versand geändert").
+  snapshotHash    String?  @map("snapshot_hash")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_sent_state")
 }
 
 /// A user's own rate cache (F11.4): daily series fetched for the dashboard over any period, shared

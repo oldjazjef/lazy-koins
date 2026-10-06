@@ -18,6 +18,7 @@ import { PackagesModule } from '../packages/packages.module';
 import { ExportsModule } from '../exports/exports.module';
 import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { MailModule } from '../mail/mail.module';
 import { MappingsModule } from '../mappings/mappings.module';
 import { PersistenceModule } from '../persistence/persistence.module';
 import { ProjectsModule } from '../projects/projects.module';
@@ -56,6 +57,7 @@ import { AppController } from './app.controller';
     ExportsModule,
     AiModule,
     WalletsModule,
+    MailModule,
     DashboardModule,
     CarryoverModule,
     PackagesModule,
