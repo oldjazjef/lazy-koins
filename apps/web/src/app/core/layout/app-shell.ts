@@ -24,6 +24,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { AuthService } from '../auth/auth.service';
 import { ThemeService } from '../theme/theme.service';
+import { AppVersionService } from '../version/app-version.service';
 import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
 
 /**
@@ -61,6 +62,10 @@ export class AppShell {
   private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
+  protected readonly version = inject(AppVersionService);
+  /** The app icon (generated from assets/brand/icon.svg, see `pnpm icons`), 24 px in the header. */
+  // A template literal: i18n-keys.spec.ts reads quoted dotted literals as translation keys.
+  protected readonly logo = `favicon.svg`;
   private readonly router = inject(Router);
 
   protected toggleMenu(): void {

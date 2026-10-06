@@ -36,6 +36,7 @@ import {
   MappingCandidateResponseDto,
   SaveAiSettingsDto,
   StatementCandidateResponseDto,
+  TestAiConnectionDto,
 } from './dto/ai.dto';
 
 /** Provider calls cost money and time: at most 30 per account in 10 minutes. */
@@ -83,15 +84,27 @@ export class AiSettingsController {
   @HttpCode(200)
   @Throttle(AI_BUDGET)
   @ApiOperation({
-    summary: 'One tiny request without user data, with the saved settings',
+    summary:
+      'One tiny request without user data — with the saved settings, or with the unsaved form values in the body',
   })
   @ApiOkResponse({ type: AiConnectionTestResponseDto })
   @ApiConflictResponse({ description: AI_CONFLICT })
   @ApiBadGatewayResponse({ description: AI_GATEWAY })
   test(
     @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: TestAiConnectionDto,
   ): Promise<AiConnectionTestResponseDto> {
-    return this.ai.testConnection(user.userId);
+    return this.ai.testConnection(
+      user.userId,
+      dto.provider === undefined
+        ? undefined
+        : {
+            provider: dto.provider,
+            baseUrl: dto.baseUrl ?? '',
+            model: dto.model ?? '',
+            ...(dto.apiKey === undefined ? {} : { apiKey: dto.apiKey }),
+          },
+    );
   }
 }
 

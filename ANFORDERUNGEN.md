@@ -168,16 +168,18 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 
 ## 10. Exporte
 
-- **F10.1** Einfacher Auszug als PDF (1–2 Seiten) und Excel: Steuerwert per 31.12., Ertrag, Wertschriftenverzeichnis mit einer Zeile pro Plattform/Wallet (Hauptpositionen, Anzahl Kleinpositionen, Steuerwert), Ertragstabelle, offene Punkte.
-- **F10.2** Ausführlicher Auszug als Excel und PDF: Übersicht, Parameter, Bestand je Position mit Kursquelle, Ertrag je Buchung, fehlende Earn-Erträge, Einmalereignisse, Prüfungen, offene Punkte, Methodik. Excel mit nachvollziehbaren Formeln; Eingaben und fehlende Werte farblich markiert; überschriebene Kurse rechnen im Excel weiter.
+- **Grundsatz:** Auszüge für die Steuerbehörde (F10.1, F10.2) enthalten keine offenen Punkte, Prüfhinweise oder Arbeitsanweisungen – nur, was deklariert wird, und wie es berechnet wurde. Positionen und Ereignisse ohne Kurs erscheinen mit ihrer Menge, ohne Wert, mit einer neutralen Fussnote („Kein Kurswert verfügbar; nicht im Total enthalten.“).
+- **F10.1** Einfacher Auszug als PDF (1–2 Seiten) und Excel: Kopfzeile (F10.4), Steuerwert per 31.12., Ertrag, Wertschriftenverzeichnis mit einer Zeile pro Plattform/Wallet (Hauptpositionen, Anzahl Kleinpositionen, Steuerwert), Ertragstabelle.
+- **F10.2** Ausführlicher Auszug als Excel und PDF: Übersicht (Vermögen, Ertrag), Parameter (Devisenkurse), Bestand per 31.12. je Position mit Kurs und Kursquelle, Ertrag (Zusammenfassung und je Buchung), fehlende Earn-Erträge (Earn-Lücke, als Erläuterung der Differenzmethode), Einmalereignisse, Methodik. Excel mit nachvollziehbaren Formeln; Eingaben (blau), Formeln (schwarz) und Verweise auf Parameter (grün) farblich unterschieden; überschriebene Kurse rechnen im Excel weiter.
+- **F10.2a** Interner Prüfbericht als PDF und Excel, deutlich betitelt „Interner Prüfbericht – nicht für die Steuerbehörde“: Prüfungen mit Ampel (F8.1), offene Punkte mit Erledigt-Status und Notiz (F8.2), Positionen/Erträge/Ereignisse ohne Kurs, Warnungen zur Earn-Lücke, Hinweise auf fehlende Dateien (F5.8). Wird im Tab Exporte separat erstellt, wie die Auszüge gespeichert (F10.5), aber in einer eigenen Gruppe „Intern“ gelistet und nie standardmässig an die Mail an den Treuhänder angehängt. Wird ein Auszug erstellt, solange nicht erledigte offene Punkte bestehen, fragt die App zuerst („Es gibt noch N offene Punkte. Trotzdem erstellen?“, mit Weg zu den Prüfungen).
 - **F10.3** Bezeichnungen und Formularverweise passend zum gewählten Land und Kanton.
 - **F10.4** Kopfzeile mit Name, Steuerjahr, Kanton, Erstellungsdatum und Hinweis „keine Steuerberatung“.
 - **F10.5** Alle Exporte werden im Projekt mit Datum gespeichert und bleiben abrufbar.
-- **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste und offenen Fachfragen; Text zum Kopieren.
+- **F10.6** Mail-Entwurf an den Treuhänder (Name hinterlegbar) mit den zwei Werten, Anhängen-Liste (nur Auszüge, nicht der interne Prüfbericht) und offenen Fachfragen (die gehören dem Treuhänder, nicht der Steuerbehörde); Text zum Kopieren.
 - **F10.6a** Mail direkt aus der App senden: Im Projekt (Exporte) „An Treuhänder senden“ öffnet
   einen Dialog mit Empfänger (aus dem Profil, änderbar), CC an mich, Betreff und Text aus der
   Vorlage (F11.10, im Dialog noch bearbeitbar), auswählbaren Anhängen (erstellte Auszüge PDF/Excel)
-  und Vorschau. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
+  und Vorschau; der interne Prüfbericht (F10.2a) ist nie vorausgewählt. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
   protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
   eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
 
@@ -295,7 +297,28 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Rechnung); fehlende Kurse werden als solche markiert, nicht als 0 dargestellt. Ohne
   Internet-Kurse (F11.3) zeigt das Dashboard nur gespeicherte Kurse.
 
-## 11b. Bedienung
+## 11b. Benachrichtigungen
+
+- **F11.11** Benachrichtigungs-Zentrale: Glocke in der Kopfzeile mit Zähler der ungelesenen
+  Meldungen; Klick öffnet eine Liste (neueste zuerst, gruppiert nach Projekt) mit Typ
+  (Fehler / Handlungsbedarf / Info / Erfolg), Zeit, kurzer Beschreibung und **direkter Aktion**
+  („Zum Hinweis“, „Erneut versuchen“, „Schlüssel prüfen“, „Auszug öffnen“). Einzeln oder alle als
+  gelesen markieren, erledigte ausblenden; Meldungen bleiben gespeichert (pro Benutzer, auch nach
+  Neustart) und verschwinden automatisch, wenn die Ursache behoben ist.
+- **F11.12** Was eine Meldung auslöst, mindestens:
+  - **Fehlgeschlagen**: Kursabruf (welche Assets), ESTV-Kursliste, AI-Aufruf (mit Fehlerdetails),
+    Mail-Versand, Export/Auszug, Paket-Import, Wallet-Abruf, Upload/Lesen einer Datei.
+  - **Handlungsbedarf**: Datei ohne Mapping, Zeilenfehler, neue offene Punkte/Hinweise nach einer
+    Neuberechnung, Positionen ohne Kurs, Daten seit dem Versand an den Treuhänder geändert (F4.7),
+    Einrichtung unvollständig (F11.0s), Schlüssel ungültig/abgelaufen, Sync-Konflikt (F3.4).
+  - **Info/Erfolg**: neue Fassung der ESTV-Kursliste verfügbar, lange Aufgabe fertig (aus der
+    Aktivitätsanzeige), Mail gesendet.
+- **F11.13** Fertige oder fehlgeschlagene Hintergrundaufgaben aus der Aktivitätsanzeige landen
+  automatisch als Meldung in der Zentrale. Desktop: optional zusätzlich als System-Benachrichtigung
+  (ein-/ausschaltbar in den Einstellungen); Web: nur in der App. Keine Meldung enthält Schlüssel,
+  Passwörter oder Buchungsdetails.
+
+## 11c. Bedienung
 
 - **F11.20 Aktivitätsanzeige**: Alles, was im Hintergrund läuft und länger als etwa eine Sekunde
   dauern kann (Kurse aktualisieren, ESTV-Kursliste, AI-Mapping und AI-Auszug, Uploads,
@@ -305,7 +328,8 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   blockiert nichts, bleibt beim Wechsel der Seite sichtbar, liegt über Dialogen und Meldungen,
   und wird am Ende zur Erfolgs- oder Fehlermeldung (wo sinnvoll mit Link, z. B. „Herunterladen“
   oder „Anzeigen“). Barrierefrei (Statusmeldung für Screenreader, Spinner ohne Bewegung bei
-  „Bewegung reduzieren“), hell und dunkel.
+  „Bewegung reduzieren“), hell und dunkel. Die Benachrichtigungs-Zentrale (F11.13) übernimmt
+  die fertigen Aufgaben später von hier.
 
 ## 12. Abnahme
 

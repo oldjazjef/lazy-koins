@@ -127,18 +127,25 @@
         {{ group.platform ?? ('files.group.unread' | translate) }}
       </h3>
       <div hlmTableContainer class="lk-panel">
-        <table hlmTable>
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col />
+            <col class="w-44" />
+            <col class="hidden w-52 lg:table-column" />
+            <col class="hidden w-36 md:table-column" />
+            <col class="w-48" />
+          </colgroup>
           <thead hlmTHead>
             <tr hlmTr>
               <th hlmTh>{{ 'files.fields.name' | translate }}</th>
               <th hlmTh>{{ 'files.fields.status' | translate }}</th>
-              <th hlmTh>{{ 'files.fields.period' | translate }}</th>
-              <th hlmTh class="text-right">
+              <th hlmTh class="hidden lg:table-cell">
+                {{ 'files.fields.period' | translate }}
+              </th>
+              <th hlmTh class="hidden text-right md:table-cell">
                 {{ 'files.fields.records' | translate }}
               </th>
-              <th hlmTh>{{ 'files.fields.added' | translate }}</th>
-              <th hlmTh>{{ 'files.fields.origin' | translate }}</th>
-              <th hlmTh class="text-right">
+              <th hlmTh class="lk-sticky-actions text-right">
                 <span class="sr-only"
                   >{{ 'files.fields.actions' | translate }}</span
                 >
@@ -153,30 +160,46 @@
               [id]="'file-' + file.id"
               [class.bg-muted]="highlighted() === file.id"
             >
-              <td hlmTd>
-                <span class="font-medium">{{ file.displayName }}</span>
-                <span class="text-muted-foreground ml-2 text-xs"
+              <td hlmTd class="max-w-0">
+                <span
+                  class="block truncate font-medium"
+                  [attr.title]="file.displayName"
+                  >{{ file.displayName }}</span
+                >
+                <span class="text-muted-foreground block truncate text-xs"
                   >{{ 'files.size' | translate: { kind: (file.kind | uppercase),
-                  kb: (file.size / 1024 | number: '1.0-1') } }}</span
+                  kb: (file.size / 1024 | number: '1.0-1') } }} · {{
+                  file.addedAt | date: 'dd.MM.yyyy' }} · @if (file.origin ===
+                  'from_project') { {{ 'files.origin.fromProject' | translate: {
+                  name: file.originProjectName ?? ('files.origin.unknownProject'
+                  | translate) } }} } @else if (file.origin === 'derived') { {{
+                  'files.origin.derived' | translate: { name:
+                  file.derivedFromName ?? ('files.origin.unknownFile' |
+                  translate) } }} } @else { {{ 'files.origin.uploaded' |
+                  translate }} }</span
                 >
               </td>
-              <td hlmTd>
+              <td hlmTd class="max-w-0">
                 <span hlmBadge [variant]="statusVariant(file.status)"
                   >{{ 'files.status.' + file.status | translate }}</span
                 >
                 @if (file.mappingName && file.mappingId) {
                 <a
-                  class="text-muted-foreground ml-1 text-xs hover:underline"
+                  class="text-muted-foreground block truncate text-xs hover:underline"
+                  [attr.title]="file.mappingName"
                   [routerLink]="['/app/mappings', file.mappingId]"
                   >{{ file.mappingName }}</a
                 >
                 }
               </td>
-              <td hlmTd class="tabular-nums">
+              <td hlmTd class="hidden tabular-nums lg:table-cell">
                 @if (file.period) { {{ file.period.from | date: 'dd.MM.yyyy' }}
                 – {{ file.period.to | date: 'dd.MM.yyyy' }} }
               </td>
-              <td hlmTd class="text-right tabular-nums">
+              <td
+                hlmTd
+                class="hidden text-right whitespace-normal tabular-nums md:table-cell"
+              >
                 {{ 'files.records' | translate: { bookings: file.bookingCount,
                 holdings: file.holdingCount } }} @if (file.errorCount > 0) {
                 <span class="text-destructive block text-xs"
@@ -185,19 +208,7 @@
                 >
                 }
               </td>
-              <td hlmTd class="tabular-nums">
-                {{ file.addedAt | date: 'dd.MM.yyyy' }}
-              </td>
-              <td hlmTd>
-                @if (file.origin === 'from_project') { {{
-                'files.origin.fromProject' | translate: { name:
-                file.originProjectName ?? ('files.origin.unknownProject' |
-                translate) } }} } @else if (file.origin === 'derived') { {{
-                'files.origin.derived' | translate: { name: file.derivedFromName
-                ?? ('files.origin.unknownFile' | translate) } }} } @else { {{
-                'files.origin.uploaded' | translate }} }
-              </td>
-              <td hlmTd class="text-right whitespace-nowrap">
+              <td hlmTd class="lk-sticky-actions text-right whitespace-nowrap">
                 <button
                   hlmBtn
                   variant="ghost"

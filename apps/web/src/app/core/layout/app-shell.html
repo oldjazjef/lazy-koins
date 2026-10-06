@@ -1,7 +1,10 @@
 <div class="flex min-h-dvh flex-col">
   <header class="bg-card border-b">
     <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
-      <a routerLink="/app" class="lk-brand">{{ 'app.name' | translate }}</a>
+      <a routerLink="/app" class="lk-brand flex items-center gap-2">
+        <img [src]="logo" alt="" class="size-6" />
+        {{ 'app.name' | translate }}
+      </a>
 
       <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
         <ul class="flex items-center gap-1">
@@ -46,7 +49,7 @@
           (click)="toggleMenu()"
         >
           <ng-icon name="lucideCircleUserRound" size="18" aria-hidden="true" />
-          @if (auth.email(); as email) {
+          @if (auth.hasAccount && auth.email(); as email) {
           <span class="hidden max-w-48 truncate md:inline">{{ email }}</span>
           }
           <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
@@ -64,7 +67,7 @@
             <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
             {{ item.labelKey | translate }}
           </a>
-          }
+          } @if (auth.hasAccount) {
           <button
             role="menuitem"
             type="button"
@@ -74,6 +77,7 @@
             <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
             {{ 'nav.signOut' | translate }}
           </button>
+          }
         </div>
         }
       </div>
@@ -83,4 +87,13 @@
   <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
     <router-outlet />
   </main>
+
+  @if (version.info(); as build) {
+  <footer
+    class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+  >
+    {{ 'app.version' | translate: { version: build.version, commit: build.commit
+    } }}
+  </footer>
+  }
 </div>
