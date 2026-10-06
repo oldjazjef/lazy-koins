@@ -133,6 +133,13 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
   heruntergeladen und gespeichert (nicht pro Benutzer), danach regelmässig auf neue Stände
   geprüft. Kryptowährungen ohne ESTV-Kurs fallen auf die übrigen Quellen zurück (F7.4).
   Respektiert „Kursabfragen aus dem Internet“ (F11.3); der manuelle Import bleibt als Ersatz.
+  Präzisiert (08.10.2026): Prüfung täglich und beim Start (Desktop), Download nur bei neuerem
+  Stand (anderer Datei-Hash, nicht älter); auf dem Server abschaltbar (`ESTV_AUTO=false`).
+  Zuordnung über Kürzel, bekannte Umbenennungen und Namen; passen mehrere Einträge, wird **kein**
+  ESTV-Wert übernommen (Hinweis: Kurs per 31.12. überschreiben). Die ESTV-Jahresendkurse USD und
+  EUR gelten per 31.12. ebenfalls vor den EZB-Kursen. Ein neuer Stand wird mit „Kurse
+  aktualisieren“ bzw. „Neuen Stand übernehmen“ ins Projekt übernommen; die Berechnung ist danach
+  veraltet. Status (Stand je Jahr, letzte Prüfung, Fehler) unter Einstellungen › Kurse.
 - **F7.5** Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (Klick auf Betrag → zugrunde liegende Buchungen → Quelldatei und Zeile).
 - **F7.6** Neuberechnung jederzeit per Knopfdruck; gleiche Daten ergeben gleiches Ergebnis.
 - **F7.7** Landesregeln sind austauschbar; zunächst nur Schweiz wählbar.

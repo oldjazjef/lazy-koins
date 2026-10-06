@@ -25,18 +25,25 @@ import type { Env } from '../../config/env';
 import { loadOwnProject } from '../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
 import { SettingsReader } from '../../settings/application/settings.handlers';
+import { ESTV_LABEL_PREFIX, estvSourceLabel } from '../domain/estv';
 import {
   COINGECKO_IDS,
   type ProjectRate,
   RATE_ALIASES,
   type RateKey,
 } from '../domain/project-rate';
+import { EstvKurslisteRepositoryPort } from '../ports/estv.port';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
 import {
   ChfPriceSourcePort,
   FxRateSourcePort,
   UsdPriceSourcePort,
 } from '../ports/rate-source.port';
+import {
+  type EstvApplySummary,
+  estvAssetsOf,
+  EstvProjectRatesService,
+} from './estv-project-rates.service';
 
 function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
@@ -63,6 +70,18 @@ export interface RatesView {
   readonly series: readonly RateSeries[];
   /** Overrides and ESTV values, one row each. */
   readonly manual: readonly ProjectRate[];
+  /** F7.4a: the stored Kursliste of the tax year and the version this project uses. */
+  readonly estv: {
+    /** Downloads allowed (`ESTV_AUTO`, `RATES_ONLINE`, the user's F11.3 switch). */
+    readonly autoEnabled: boolean;
+    /** The stored version's label, `null` when none is stored for the year. */
+    readonly available: string | null;
+    readonly cryptoCount: number;
+    /** The label of the automatic ESTV values in this project, `null` when none. */
+    readonly applied: string | null;
+    /** A stored version is not applied yet ("Kurse aktualisieren" / "übernehmen"). */
+    readonly outdated: boolean;
+  };
 }
 
 /** The window fetched for a tax year: the 14-day tolerance on both sides, plus the opening date. */
@@ -89,6 +108,7 @@ export class GetRatesHandler implements IQueryHandler<
     private readonly rates: ProjectRateRepositoryPort,
     private readonly settings: SettingsReader,
     private readonly config: ConfigService<Env, true>,
+    private readonly estv: EstvKurslisteRepositoryPort,
   ) {}
 
   async execute({
@@ -143,13 +163,30 @@ export class GetRatesHandler implements IQueryHandler<
         compareText(a.source, b.source),
     );
     const resolved = await this.settings.resolve(userId);
+    const online =
+      resolved.onlineRates &&
+      this.config.get('RATES_ONLINE', { infer: true }) !== 'false';
+    const version = await this.estv.findVersion(project.taxYear);
+    const available = version
+      ? estvSourceLabel(project.taxYear, version.exportDate)
+      : null;
+    const applied =
+      all.find(
+        (r) => r.source === 'estv' && r.note?.startsWith(ESTV_LABEL_PREFIX),
+      )?.note ?? null;
     return {
       taxYear: project.taxYear,
-      online:
-        resolved.onlineRates &&
-        this.config.get('RATES_ONLINE', { infer: true }) !== 'false',
+      online,
       series,
       manual: all.filter((r) => r.source === 'manual' || r.source === 'estv'),
+      estv: {
+        autoEnabled:
+          online && this.config.get('ESTV_AUTO', { infer: true }) !== 'false',
+        available,
+        cryptoCount: version?.cryptoCount ?? 0,
+        applied,
+        outdated: available !== null && available !== applied,
+      },
     };
   }
 }
@@ -158,6 +195,8 @@ export type AssetFetchStatus = 'fetched' | 'cached' | 'notFound' | 'failed';
 
 export interface RefreshSummary {
   readonly fx: number;
+  /** F7.4a: the stored Kursliste, applied first (ESTV wins at 31.12.). */
+  readonly estv: EstvApplySummary;
   readonly assets: readonly {
     readonly asset: string;
     readonly status: AssetFetchStatus;
@@ -196,6 +235,7 @@ export class RefreshRatesHandler implements ICommandHandler<
     private readonly chf: ChfPriceSourcePort,
     private readonly fx: FxRateSourcePort,
     private readonly config: ConfigService<Env, true>,
+    private readonly estv: EstvProjectRatesService,
   ) {}
 
   async execute({
@@ -216,10 +256,12 @@ export class RefreshRatesHandler implements ICommandHandler<
     }
     const { from, to } = fetchWindow(project.taxYear);
     const assembled = await this.inputs.build(project);
-    const assets = assetsNeedingPrices(
-      calculate(assembled.input),
-      assembled.input.rules,
-    );
+    const calculated = calculate(assembled.input);
+    const assets = assetsNeedingPrices(calculated, assembled.input.rules);
+    const estv = await this.estv.apply(project, {
+      assets: estvAssetsOf(calculated, assembled.input.rules),
+      coingeckoIds: settings.coingeckoIds,
+    });
     const stored = await this.rates.listByProject(project.id);
 
     let fx = 0;
@@ -268,7 +310,7 @@ export class RefreshRatesHandler implements ICommandHandler<
         results.push({ asset, status: 'failed', source: null, points: 0 });
       }
     }
-    return { fx, assets: results };
+    return { fx, estv, assets: results };
   }
 }
 

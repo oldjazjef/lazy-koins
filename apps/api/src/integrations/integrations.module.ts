@@ -8,6 +8,7 @@ import {
   FxRateSourcePort,
   UsdPriceSourcePort,
 } from '../rates/ports/rate-source.port';
+import { EstvKurslisteSourcePort } from '../rates/ports/estv.port';
 import { AiCompletionPort } from './ai/ai-completion.port';
 import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
@@ -18,6 +19,7 @@ import { selectPdfRenderer } from './pdf/select-pdf-renderer';
 import { BinanceKlinesSource } from './rates/binance-klines.source';
 import { CoinGeckoSource } from './rates/coingecko.source';
 import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
+import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
 
 /**
  * External services behind ports, the counterpart of `PersistenceModule` for everything that is
@@ -53,6 +55,16 @@ import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
     { provide: ChfPriceSourcePort, useFactory: () => new CoinGeckoSource() },
     { provide: FxRateSourcePort, useFactory: () => new FrankfurterFxSource() },
     {
+      provide: EstvKurslisteSourcePort,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) =>
+        new IctaxKurslisteSource({
+          baseUrl:
+            config.get('ESTV_BASE_URL', { infer: true }) ??
+            'https://www.ictax.admin.ch',
+        }),
+    },
+    {
       provide: PdfRendererPort,
       inject: [ConfigService],
       // Desktop: Electron's printToPDF (registered by bootstrap); server: Playwright Chromium.
@@ -73,6 +85,7 @@ import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
     UsdPriceSourcePort,
     ChfPriceSourcePort,
     FxRateSourcePort,
+    EstvKurslisteSourcePort,
     PdfRendererPort,
   ],
 })

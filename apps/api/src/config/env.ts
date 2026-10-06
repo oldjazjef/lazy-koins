@@ -152,6 +152,18 @@ export class Env {
   /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
   @IsIn(['true', 'false'])
   RATES_ONLINE = 'true';
+
+  /**
+   * F7.4a: download the ESTV Kursliste (ICTax) automatically — on demand and once a day when a
+   * newer version exists. `false` switches it off (the manual Kursliste import stays). Also off
+   * with `RATES_ONLINE=false`.
+   */
+  @IsIn(['true', 'false'])
+  ESTV_AUTO = 'true';
+
+  /** The ICTax API; only a local fake server (`scripts/dev/fake-ictax-server.mjs`) differs. */
+  @IsUrl({ require_tld: false, require_protocol: true })
+  ESTV_BASE_URL = 'https://www.ictax.admin.ch';
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */
