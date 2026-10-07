@@ -1,0 +1,51 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "KuCoin Spot Orders – Filled Orders (CSV)",
+  "platform": "kucoin",
+  "description": "KuCoin 'Spot Orders – Filled Orders' from the history export (kucoin.com: Orders > Spot Orders > Export, or Account > Export History > Spot Orders (Filled Orders); CSV from the ZIP). Header UID, Account Type, Order ID, Symbol, Side, Order Type, Avg. Filled Price, Filled Amount, Filled Volume, Filled Volume (USDT), Filled Time(UTC+08:00), Fee, Maker/Taker, Fee Currency (a Tax column may appear). The time header names the zone chosen at export ('Filled Time(UTC+02:00)') and is honoured. One row per order holds both legs: the base asset of the pair (Filled Amount, out on SELL) and the quote asset (Filled Volume, the other way); the fee is booked in Fee Currency. Known limits: deposits, withdrawals, transfers and Earn are in the account history (see the KuCoin account history mapping); Convert orders, margin and futures have their own files and are not covered.",
+  "match": {
+    "headers": [
+      "Order ID",
+      "Symbol",
+      "Side",
+      "Avg. Filled Price",
+      "Filled Amount",
+      "Filled Volume",
+      "Fee Currency"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "bookings": {
+    "timestamp": {
+      "column": "Filled Time(UTC)",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "headerPattern": "^Filled Time\\s*\\((UTC[^)]*)\\)$"
+    },
+    "account": { "column": "Account Type", "value": "trading" },
+    "asset": { "column": "Symbol", "pattern": "^([^-/]+)[-/]" },
+    "quantity": {
+      "mode": "side",
+      "column": "Filled Amount",
+      "sideColumn": "Side",
+      "outValues": ["SELL"]
+    },
+    "fee": { "column": "Fee", "assetColumn": "Fee Currency" },
+    "group": { "column": "Order ID" },
+    "kind": {
+      "columns": ["Side"],
+      "rules": [
+        { "equals": ["BUY"], "kind": "trade" },
+        { "equals": ["SELL"], "kind": "trade" }
+      ],
+      "default": "unknown"
+    },
+    "counter": {
+      "when": { "kinds": ["trade"] },
+      "asset": { "column": "Symbol", "pattern": "[-/]([^-/]+)$" },
+      "quantity": { "column": "Filled Volume", "sign": "opposite" }
+    }
+  }
+}

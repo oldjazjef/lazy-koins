@@ -1,0 +1,104 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Kraken Ledger (CSV)",
+  "platform": "kraken",
+  "description": "Kraken 'Ledgers' export (kraken.com: History > Export > Ledgers, all fields, CSV). Header txid, refid, time, type, subtype, aclass, (subclass), asset, (wallet), amount, fee, balance, and in newer exports amountusd, feeusd, balanceusd, feecurrency. Times are UTC ('2025-01-15 10:00:00.1234'). amount is signed; fee is charged on top. Rows with an empty txid are pending duplicates and are excluded. refid links the legs of a trade; wallet becomes the account. Kraken's asset codes are normalised (XXBT/XBT = BTC, X/Z prefixes, suffixes .S .M .F .B .P .HOLD and numbered bonding like DOT28.S, ETH2 = ETH); the raw name stays on the record. The running balance gives the balance per account and raw asset (lastPerAsset). Earn rewards are booked as interest, 'staking' as staking income, earn allocations and spot/staking/futures moves as transfers. Left unknown on purpose: transfer without subtype (fork/airdrop credit or OTC/futures move — decide per row), earn without subtype, NFT types, margin positions.",
+  "match": {
+    "headers": [
+      "txid",
+      "refid",
+      "time",
+      "type",
+      "subtype",
+      "aclass",
+      "asset",
+      "amount",
+      "fee",
+      "balance"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "filters": [{ "column": "txid", "empty": true }],
+  "assets": {
+    "rewrites": [
+      { "pattern": "(\\d{2})?\\.(S|M|F|B|P|HOLD|CORE|INK)$", "replace": "" }
+    ],
+    "aliases": {
+      "XXBT": "BTC",
+      "XBT": "BTC",
+      "XETH": "ETH",
+      "ETH2": "ETH",
+      "XETC": "ETC",
+      "XLTC": "LTC",
+      "XXRP": "XRP",
+      "XXLM": "XLM",
+      "XXMR": "XMR",
+      "XZEC": "ZEC",
+      "XXDG": "DOGE",
+      "XDG": "DOGE",
+      "XMLN": "MLN",
+      "XREP": "REP",
+      "ZEUR": "EUR",
+      "ZUSD": "USD",
+      "ZCHF": "CHF",
+      "ZGBP": "GBP",
+      "ZCAD": "CAD",
+      "ZJPY": "JPY",
+      "ZAUD": "AUD"
+    }
+  },
+  "bookings": {
+    "timestamp": { "column": "time", "format": "ymd", "timeZone": "UTC" },
+    "account": { "column": "wallet", "value": "spot" },
+    "asset": { "column": "asset" },
+    "quantity": { "mode": "signed", "column": "amount" },
+    "fee": { "column": "fee", "assetColumn": "feecurrency" },
+    "group": { "column": "refid" },
+    "valueUsd": { "column": "amountusd" },
+    "feeValueUsd": { "column": "feeusd" },
+    "kind": {
+      "columns": ["type", "subtype"],
+      "rules": [
+        { "equals": ["trade"], "kind": "trade" },
+        { "equals": ["spend"], "kind": "trade" },
+        { "equals": ["receive"], "kind": "trade" },
+        { "equals": ["sale"], "kind": "trade" },
+        { "equals": ["settled"], "kind": "trade" },
+        { "equals": ["adjustment"], "kind": "trade" },
+        { "equals": ["deposit"], "kind": "deposit" },
+        { "equals": ["withdrawal"], "kind": "withdrawal" },
+        { "equals": ["staking"], "kind": "income_staking" },
+        { "equals": ["earn", "reward"], "kind": "income_interest" },
+        { "equals": ["earn", "airdrop"], "kind": "income_airdrop" },
+        { "equals": ["earn", "migration"], "kind": "transfer" },
+        { "equals": ["earn", "allocation"], "kind": "transfer" },
+        { "equals": ["earn", "deallocation"], "kind": "transfer" },
+        { "equals": ["earn", "autoallocate"], "kind": "transfer" },
+        { "equals": ["earn", "autoallocation"], "kind": "transfer" },
+        { "equals": ["earn", "delistingconversion"], "kind": "trade" },
+        { "equals": ["transfer", "spottostaking"], "kind": "transfer" },
+        { "equals": ["transfer", "stakingfromspot"], "kind": "transfer" },
+        { "equals": ["transfer", "stakingtospot"], "kind": "transfer" },
+        { "equals": ["transfer", "spotfromstaking"], "kind": "transfer" },
+        { "equals": ["transfer", "spottofutures"], "kind": "transfer" },
+        { "equals": ["transfer", "spotfromfutures"], "kind": "transfer" },
+        { "equals": ["transfer", "airdrop"], "kind": "income_airdrop" },
+        { "equals": ["transfer", "delistingconversion"], "kind": "trade" },
+        { "equals": ["custodytransfer"], "kind": "transfer" },
+        { "equals": ["rollover"], "kind": "fee" },
+        { "equals": ["invite bonus"], "kind": "income_airdrop" },
+        { "equals": ["credit"], "kind": "income_airdrop" },
+        { "equals": ["dividend"], "kind": "income_interest" }
+      ],
+      "default": "unknown"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": { "column": "asset" },
+    "quantity": { "column": "balance" },
+    "account": { "column": "wallet", "value": "spot" }
+  }
+}

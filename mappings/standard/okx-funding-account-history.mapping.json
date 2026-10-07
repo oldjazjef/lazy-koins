@@ -1,0 +1,78 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "OKX Funding Account History (CSV)",
+  "platform": "okx",
+  "description": "OKX funding account bills (okx.com: Assets > Order center (or Bills) > Funding account > Download, CSV). Header id, Time, Type, Amount, Before Balance, After Balance, Fee, Symbol; a UID/notice line may stand above it. Deposits, withdrawals, transfers to/from the trading account, Earn/savings/staking moves and their yields. Amount is the signed balance change; the withdrawal fee (Fee) is booked on top; After Balance gives the balance per currency (lastPerAsset). Export in UTC (OKX asks for a time zone; a zone in the time header is honoured). Known limits: Type texts not listed here (OKX adds new products often) fall to unknown; 'Convert' rows are booked as trade without a paired leg; Earn balances held in the product (not the funding account) need a statement.",
+  "match": {
+    "headers": [
+      "id",
+      "Time",
+      "Type",
+      "Amount",
+      "Before Balance",
+      "After Balance",
+      "Fee",
+      "Symbol"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [], "nullValues": ["--"] },
+  "bookings": {
+    "timestamp": {
+      "column": "Time",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "headerPattern": "^Time\\s*(?:\\((UTC[^)]*)\\))?$"
+    },
+    "account": { "value": "funding" },
+    "asset": { "column": "Symbol" },
+    "quantity": { "mode": "signed", "column": "Amount" },
+    "fee": { "column": "Fee" },
+    "kind": {
+      "columns": ["Type"],
+      "rules": [
+        { "equals": ["Deposit"], "kind": "deposit", "direction": "in" },
+        { "equals": ["Withdrawal"], "kind": "withdrawal", "direction": "out" },
+        {
+          "equals": ["Cancel withdrawal"],
+          "kind": "withdrawal",
+          "direction": "in"
+        },
+        {
+          "pattern": "^(From|To) (unified )?trading account$",
+          "kind": "transfer"
+        },
+        { "pattern": "^(From|To) funding account$", "kind": "transfer" },
+        { "pattern": "^Transfer (in|out)$", "kind": "transfer" },
+        { "equals": ["Stake"], "kind": "transfer" },
+        { "equals": ["Redeem staking"], "kind": "transfer" },
+        { "equals": ["Savings subscription"], "kind": "transfer" },
+        { "equals": ["Savings redemption"], "kind": "transfer" },
+        {
+          "pattern": "^Simple Earn (subscription|redemption)",
+          "kind": "transfer"
+        },
+        { "equals": ["Staking Yield"], "kind": "income_staking" },
+        { "equals": ["ETH staking yield"], "kind": "income_staking" },
+        { "equals": ["Savings yield"], "kind": "income_interest" },
+        {
+          "pattern": "^Simple Earn (yield|interest)",
+          "kind": "income_interest"
+        },
+        { "equals": ["Airdrop"], "kind": "income_airdrop" },
+        { "equals": ["Fee rebate"], "kind": "income_airdrop" },
+        { "equals": ["Convert"], "kind": "trade" },
+        { "equals": ["Buy"], "kind": "trade" },
+        { "equals": ["Sell"], "kind": "trade" }
+      ],
+      "default": "unknown"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": { "column": "Symbol" },
+    "quantity": { "column": "After Balance" },
+    "account": { "value": "funding" }
+  }
+}

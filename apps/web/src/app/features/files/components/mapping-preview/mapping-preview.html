@@ -40,7 +40,7 @@
           </tr>
         </thead>
         <tbody hlmTBody>
-          @for (booking of pager.visible(); track booking.row) {
+          @for (booking of pager.visible(); track $index) {
           <tr hlmTr>
             <td hlmTd class="tabular-nums">{{ booking.row }}</td>
             <td hlmTd class="tabular-nums">

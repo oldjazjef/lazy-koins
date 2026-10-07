@@ -1,0 +1,58 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "OKX Trading Account History / Bills (CSV)",
+  "platform": "okx",
+  "description": "OKX trading account bills (okx.com: Assets > Order center (or Bills) > Trading account > Download, CSV; same columns as the order/trade history download). Header id, Order id, Time, Trade Type, Symbol, Action, Amount, Trading Unit, Filled Price, PnL, Fee, Fee Unit, Position Change, Position Balance (derivatives), Balance Change, Balance, Balance Unit; a UID/notice line may stand above it. One row per balance change: a spot trade writes a row per currency, linked by Order id. Balance Change (in Balance Unit) is signed and already includes the fee, so the fee is not booked again; Balance gives the balance per currency (lastPerAsset). OKX lets you pick the time zone when exporting — export in UTC (a zone written in the time header, e.g. 'Time(UTC+8)', is honoured). Known limits: the OKX funding account has its own export (okx-funding-account-history.mapping.json); derivatives PnL rows are booked as trade; Trade Type/Action values beyond Spot, Margin, Futures, Perpetual, Swap, Options, Convert and Transfer fall to unknown.",
+  "match": {
+    "headers": [
+      "Order id",
+      "Trade Type",
+      "Symbol",
+      "Action",
+      "Trading Unit",
+      "Balance Change",
+      "Balance",
+      "Balance Unit"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [], "nullValues": ["--"] },
+  "bookings": {
+    "timestamp": {
+      "column": "Time",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "headerPattern": "^Time\\s*(?:\\((UTC[^)]*)\\))?$"
+    },
+    "account": { "value": "trading" },
+    "asset": { "column": "Balance Unit" },
+    "quantity": { "mode": "signed", "column": "Balance Change" },
+    "group": { "column": "Order id" },
+    "kind": {
+      "columns": ["Trade Type", "Action"],
+      "rules": [
+        {
+          "pattern": "^\\w*\\|(Funding fee|Interest deduction)$",
+          "kind": "fee"
+        },
+        { "pattern": "^\\w*\\|Transfer (in|out)$", "kind": "transfer" },
+        { "equals": ["Spot"], "kind": "trade" },
+        { "equals": ["Margin"], "kind": "trade" },
+        { "equals": ["Futures"], "kind": "trade" },
+        { "equals": ["Perpetual"], "kind": "trade" },
+        { "equals": ["Swap"], "kind": "trade" },
+        { "equals": ["Options"], "kind": "trade" },
+        { "equals": ["Convert"], "kind": "trade" },
+        { "equals": ["Transfer"], "kind": "transfer" }
+      ],
+      "default": "unknown"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": { "column": "Balance Unit" },
+    "quantity": { "column": "Balance" },
+    "account": { "value": "trading" }
+  }
+}
