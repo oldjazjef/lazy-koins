@@ -3,7 +3,7 @@ import {
   PdfRendererPort,
   PdfUnavailableError,
 } from '../../exports/ports/project-export.repository.port';
-import { PDF_PRINT_OPTIONS } from './print-options';
+import { printOptionsFor } from './print-options';
 
 type Browser = import('playwright-core').Browser;
 
@@ -48,7 +48,7 @@ export class PlaywrightPdfRenderer
     try {
       const page = await context.newPage();
       await page.setContent(html, { waitUntil: 'load' });
-      const { marginMm: m, ...options } = PDF_PRINT_OPTIONS;
+      const { marginMm: m, ...options } = printOptionsFor(html);
       const pdf = await page.pdf({
         format: options.format,
         printBackground: options.printBackground,
