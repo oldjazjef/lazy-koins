@@ -122,13 +122,19 @@ export class DateRangePicker {
   /** Set once a hand-picked range exceeds `maxDays`; cleared by the next valid selection. */
   protected readonly limitExceeded = signal(false);
 
-  /** The days in the user's format: `01.01.2025 – 31.12.2025`, `März 2026`, `2025`. */
+  /**
+   * The days in the user's format. Without a matching preset a whole year or month is named
+   * (`2025`, `März 2026`); next to a preset's name the exact days are shown
+   * (`Steuerjahr 2025 01.01.2025 – 31.12.2025`, not `Steuerjahr 2025 2025`).
+   */
   protected readonly days = computed(() => {
     const range = this.range();
     const start = isoToDate(range.from);
     const end = isoToDate(range.to);
     const format = displayFormat();
     if (!start || !end) return '';
+    const span = `${formatDay(start, format.dateFormat)} – ${formatDay(end, format.dateFormat)}`;
+    if (this.activePreset()) return span;
     if (isWholeYear(range)) return String(start.getFullYear());
     if (isWholeMonth(range)) {
       return new Intl.DateTimeFormat(format.intlLocale, {
@@ -136,7 +142,7 @@ export class DateRangePicker {
         year: 'numeric',
       }).format(start);
     }
-    return `${formatDay(start, format.dateFormat)} – ${formatDay(end, format.dateFormat)}`;
+    return span;
   });
 
   /** The text of the button for screen readers: preset + days, or "Zeitraum wählen". */

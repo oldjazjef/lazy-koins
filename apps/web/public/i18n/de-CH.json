@@ -39,6 +39,8 @@
     "previousMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat",
     "outOfRange": "Das Datum muss zwischen {{min}} und {{max}} liegen.",
+    "notAfter": "Das Datum darf nicht nach dem {{max}} liegen.",
+    "notBefore": "Das Datum darf nicht vor dem {{min}} liegen.",
     "letter": {
       "day": "T",
       "month": "M",

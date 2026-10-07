@@ -20,15 +20,21 @@
   </button>
   }
 
-  <hlm-popover align="start" sideOffset="5" #rangePopover="brnPopover">
+  <hlm-popover
+    align="start"
+    sideOffset="5"
+    class="flex min-w-0 flex-1"
+    #rangePopover="brnPopover"
+  >
     <button
       hlmPopoverTrigger
       hlmBtn
       variant="outline"
       type="button"
-      class="min-w-0 flex-1 justify-start gap-2 font-normal"
+      class="min-w-0 flex-1 shrink justify-start gap-2 overflow-hidden font-normal"
       [id]="inputId()"
       [attr.aria-describedby]="inputId() + '-value'"
+      [attr.title]="label()"
     >
       <ng-icon
         name="lucideCalendar"

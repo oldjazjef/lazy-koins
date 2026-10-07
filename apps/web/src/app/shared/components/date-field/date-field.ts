@@ -74,7 +74,7 @@ import { displayFormat } from '../../format/locale-format';
     </hlm-date-picker>
     @if (outOfRange()) {
       <p class="text-destructive mt-1 text-xs" role="alert">
-        {{ 'dateField.outOfRange' | translate: bounds() }}
+        {{ boundsKey() | translate: bounds() }}
       </p>
     }
   `,
@@ -158,6 +158,18 @@ export class DateField implements ControlValueAccessor {
   private onChange: (value: string) => void = () => undefined;
   private onTouched: () => void = () => undefined;
 
+  /** Which sentence explains the bounds: both, only a latest or only an earliest day. */
+  protected readonly boundsKey = computed(() =>
+    this.min() && this.max()
+      ? 'dateField.outOfRange'
+      : this.max()
+        ? 'dateField.notAfter'
+        : 'dateField.notBefore',
+  );
+
+  /** The value last handed to the form / `changed` (re-seeded by the `value` input). */
+  private readonly committed = linkedSignal(() => this.value());
+
   protected onPicked(date: Date | null): void {
     const day = date ? dateToIso(date) : '';
     const outside =
@@ -165,17 +177,21 @@ export class DateField implements ControlValueAccessor {
       ((this.min() !== '' && day < this.min()) ||
         (this.max() !== '' && day > this.max()));
     this.outOfRange.set(outside);
+    // The field keeps showing what was typed, so a typo can be fixed; the form gets ''.
+    this.current.set(day);
     const next = outside ? '' : day;
-    if (next === this.current()) return;
-    this.current.set(next);
+    if (next === this.committed()) return;
+    this.committed.set(next);
     this.onChange(next);
     this.onTouched();
     this.changed.emit(next);
   }
 
   writeValue(value: unknown): void {
+    const next = typeof value === 'string' ? value : '';
     this.outOfRange.set(false);
-    this.current.set(typeof value === 'string' ? value : '');
+    this.committed.set(next);
+    this.current.set(next);
   }
 
   registerOnChange(fn: (value: string) => void): void {

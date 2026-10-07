@@ -98,6 +98,14 @@ describe('DateRangePicker', () => {
     expect(trigger().textContent).toContain('2026-01-01 – 2026-10-07');
   });
 
+  it('shows the exact days next to a year preset, not the year twice', () => {
+    const { fixture, host } = render();
+    host.range.set({ from: '2025-01-01', to: '2025-12-31' });
+    fixture.detectChanges();
+    expect(trigger().textContent).toContain('dashboard.period.taxYear');
+    expect(trigger().textContent).toContain('01.01.2025 – 31.12.2025');
+  });
+
   it('shows a whole year as the year and a whole month by its name in the language', () => {
     const { fixture, host } = render((h) => h.presets.set([]));
     host.range.set({ from: '2024-01-01', to: '2024-12-31' });

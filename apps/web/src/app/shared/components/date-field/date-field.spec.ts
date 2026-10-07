@@ -106,12 +106,26 @@ describe('DateField', () => {
     fixture.detectChanges();
     expect(host.control.value).toBe('');
     expect(f.outOfRange()).toBe(true);
+    // The typed day stays visible so it can be corrected.
+    expect(f.picked()?.getDate()).toBe(24);
     expect(
-      (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]'),
-    ).not.toBeNull();
+      (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')
+        ?.textContent,
+    ).toContain('dateField.outOfRange');
     f.onPicked(new Date(2026, 9, 7));
     expect(host.control.value).toBe('2026-10-07');
     expect(f.outOfRange()).toBe(false);
+
+    // Only a latest day: the sentence names just that bound.
+    host.min.set('');
+    fixture.detectChanges();
+    f.onPicked(new Date(2026, 9, 8));
+    fixture.detectChanges();
+    expect(host.control.value).toBe('');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')
+        ?.textContent,
+    ).toContain('dateField.notAfter');
   });
 
   it('spells the format in the language’s letters in the placeholder', () => {
