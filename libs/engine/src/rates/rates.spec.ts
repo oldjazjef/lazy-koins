@@ -3,6 +3,8 @@ import { chRules } from '../rules/country-rules';
 import { parseKursliste } from './kursliste';
 import {
   daysBetween,
+  preferFetchedSources,
+  type RateEntry,
   RateTable,
   unitPriceChf,
   yearlyAverageChf,
@@ -185,5 +187,79 @@ describe('correction validation', () => {
         'booking.quantity',
         'booking.timestamp',
       ]);
+  });
+});
+
+describe('preferFetchedSources (price sources phase 2: the provider order of the user)', () => {
+  const price = (
+    source: RateEntry['source'],
+    date: string,
+    value: string,
+    currency = 'USD',
+  ): RateEntry => ({
+    kind: 'price',
+    asset: 'BTC',
+    currency,
+    date,
+    value,
+    source,
+  });
+
+  it('keeps per asset and day only the best-ranked fetched source, across currencies', () => {
+    const rows = [
+      price('coingecko', '2025-12-31', '80000', 'CHF'),
+      price('binance', '2025-12-31', '100000'),
+      price('kraken', '2025-12-31', '99000'),
+    ];
+    expect(
+      preferFetchedSources(rows, ['kraken', 'binance']).map((r) => r.source),
+    ).toEqual(['kraken']);
+    expect(
+      preferFetchedSources(rows, ['coingecko', 'kraken']).map((r) => r.source),
+    ).toEqual(['coingecko']);
+  });
+
+  it('lets a lower-ranked source fill the days the preferred one lacks', () => {
+    const rows = [
+      price('binance', '2025-12-30', '1'),
+      price('defillama', '2025-12-30', '2'),
+      price('defillama', '2025-12-31', '3'),
+    ];
+    expect(
+      preferFetchedSources(rows, ['binance', 'defillama']).map(
+        (r) => `${r.source}:${r.date}`,
+      ),
+    ).toEqual(['binance:2025-12-30', 'defillama:2025-12-31']);
+  });
+
+  it('never touches overrides, ESTV values or exchange rates; unknown sources rank after the order', () => {
+    const rows: RateEntry[] = [
+      price('manual', '2025-12-31', '5', 'CHF'),
+      price('estv', '2025-12-31', '6', 'CHF'),
+      {
+        kind: 'fx',
+        asset: 'USD',
+        currency: 'CHF',
+        date: '2025-12-31',
+        value: '0.8',
+        source: 'ecb',
+      },
+      price('coinbase', '2025-12-31', '7'),
+      price('bitfinex', '2025-12-31', '8'),
+    ];
+    expect(
+      preferFetchedSources(rows, ['binance']).map((r) => r.source),
+    ).toEqual(['manual', 'estv', 'ecb', 'bitfinex']);
+  });
+
+  it('is deterministic for the same rows in another input order', () => {
+    const rows = [
+      price('coinpaprika', '2025-06-01', '1'),
+      price('coinmarketcap', '2025-06-01', '2'),
+    ];
+    const order = ['coinmarketcap', 'coinpaprika'];
+    expect(preferFetchedSources(rows, order)).toEqual(
+      preferFetchedSources([...rows].reverse(), order),
+    );
   });
 });

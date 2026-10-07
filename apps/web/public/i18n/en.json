@@ -864,7 +864,7 @@
     },
     "rates": {
       "title": "Rate lookups",
-      "subtitle": "Rates from the internet, CoinGecko key, ESTV rate list (Kursliste)",
+      "subtitle": "Price providers and their order, keys, ESTV rate list (Kursliste)",
       "hint": "When off, lazy-koins fetches no rates from the internet; stored and manually entered rates still apply.",
       "coingeckoHint": "For assets without a Binance rate (CoinGecko demo key). Stored encrypted.",
       "estvTitle": "Import ESTV rate list (Kursliste) manually",
@@ -1004,6 +1004,43 @@
         "network": "Check the internet connection, a firewall or a proxy on this computer or server.",
         "timeout": "Try again later.",
         "providerError": "The provider's message below may help; otherwise try again later."
+      }
+    },
+    "priceSources": {
+      "title": "Price providers",
+      "hint": "lazy-koins asks the enabled providers from top to bottom and takes the first with a price history. If one does not have a coin, does not reach that far back or does not price in your currency, the next one is asked. With several stored prices, the one higher up counts.",
+      "compactHint": "Default: Binance, then CoinGecko. You can switch on and order more free providers here.",
+      "enabled": "Use {{name}}",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "keyRequired": "key required",
+      "keyStored": "key {{hint}}",
+      "keyMissing": "no key",
+      "usdOnly": "USD only (× exchange rate)",
+      "history": "{{days}} days of history (free)",
+      "historyAll": "full history",
+      "byTicker": "by ticker",
+      "personalUse": "personal use only",
+      "attribution": "Attribution: \"{{text}}\"",
+      "save": "Save order",
+      "saved": "Price providers saved.",
+      "saveFailed": "The price providers could not be saved.",
+      "cmcKey": "CoinMarketCap API key",
+      "cmcHint": "Free \"Basic\" key (365 days of history). Stored encrypted.",
+      "chosenNote": "A chosen coin (\"Choose coin\") always comes from its provider first.",
+      "test": {
+        "button": "Test",
+        "label": "Test {{name}}",
+        "testing": "Checking …",
+        "ok": "Works ({{millis}} ms).",
+        "failed": "Error: {{error}}",
+        "plan": "Plan: {{plan}}",
+        "historyDays": "Daily history: {{days}} days",
+        "status": "HTTP {{status}}",
+        "detail": "Provider's answer: {{detail}}",
+        "noKey": "Enter a key first.",
+        "offline": "Rate lookups on the internet are switched off on this server.",
+        "error": "The test could not be run."
       }
     }
   },
@@ -1292,7 +1329,13 @@
       "estv": "ESTV rate list (Kursliste)",
       "binance": "Binance",
       "coingecko": "CoinGecko",
-      "ecb": "ECB"
+      "ecb": "ECB",
+      "coinmarketcap": "CoinMarketCap",
+      "defillama": "DefiLlama",
+      "coinpaprika": "CoinPaprika",
+      "kraken": "Kraken",
+      "bitfinex": "Bitfinex",
+      "coinbase": "Coinbase"
     },
     "status": {
       "fetched": "fetched",
@@ -1300,7 +1343,7 @@
       "notFound": "not found",
       "failed": "Error",
       "ambiguous": "ambiguous – choose the coin",
-      "noKey": "CoinGecko key missing"
+      "noKey": "provider's key missing"
     },
     "errors": {
       "asset": "Please enter an asset symbol.",
@@ -1332,6 +1375,22 @@
         "source": "Price source",
         "note": "Note"
       }
+    },
+    "failedVia": "{{provider}}: {{error}}",
+    "sourceErrors": {
+      "invalidKey": "key refused",
+      "planLacksHistory": "plan doesn't reach that far back",
+      "rateLimited": "provider's limit reached",
+      "notFound": "coin not found",
+      "unsupportedQuote": "currency not offered",
+      "network": "not reachable",
+      "timeout": "no timely answer",
+      "badResponse": "unexpected answer"
+    },
+    "attribution": {
+      "label": "Price data",
+      "coingecko": "Data provided by CoinGecko",
+      "coinmarketcap": "Data provided by CoinMarketCap.com"
     }
   },
   "exports": {
@@ -1898,7 +1957,8 @@
       "ai": "AI",
       "coingecko": "CoinGecko",
       "mail": "mail (SMTP)",
-      "chain": "network lookups"
+      "chain": "network lookups",
+      "coinmarketcap": "CoinMarketCap"
     }
   },
   "activity": {
@@ -2703,7 +2763,8 @@
       "duplicateMapping": "You already have exactly this mapping.",
       "libraryCopy": "A copy taken from the library cannot be published as a new entry.",
       "unknownCoin": "The price provider does not know this coin.",
-      "coinProviderFailed": "The price provider cannot be reached right now."
+      "coinProviderFailed": "The price provider cannot be reached right now.",
+      "noKey": "No key is stored for this provider – enter it under Settings › Rates."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -2928,7 +2989,8 @@
       "provider": "Provider"
     },
     "provider": {
-      "coingecko": "CoinGecko"
+      "coingecko": "CoinGecko",
+      "coinmarketcap": "CoinMarketCap"
     },
     "add": "Set a coin",
     "change": "Change coin",

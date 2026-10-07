@@ -1,9 +1,9 @@
 /**
  * F7.4 "Coin wählen": which coin a ticker means (`rates/domain/coin-choice.ts` in the API). A
  * ticker is not a coin — "OPN" is both OPEN Ticketing Ecosystem and Opinion. Provider-aware:
- * CoinMarketCap will be another provider.
+ * CoinMarketCap is the second provider (price sources phase 2, its numeric ids).
  */
-export const COIN_PROVIDERS = ['coingecko'] as const;
+export const COIN_PROVIDERS = ['coingecko', 'coinmarketcap'] as const;
 export type CoinProvider = (typeof COIN_PROVIDERS)[number];
 
 /** The coin the user chose for a ticker (name/symbol as the provider answered). */

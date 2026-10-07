@@ -1,3 +1,4 @@
+import { FakePriceHistorySources } from '../../rates/testing/fake-price-history';
 import {
   BadGatewayException,
   ConflictException,
@@ -19,7 +20,6 @@ import type { EstvVersion } from '../domain/estv';
 import { crypto, fx, InMemoryEstvRepository } from '../testing/in-memory-estv';
 import {
   FakeCoinDirectory,
-  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../testing/in-memory-project-rate.repository';
@@ -82,7 +82,7 @@ async function setup(online: 'true' | 'false' = 'true') {
   });
   // Binance's OPN is another coin (Opinion): a price far off the ticketing token's.
   const usd = new FakeUsdSource({ DOT: '5', OPN: '900' });
-  const fiat = new FakeFiatSource();
+  const fiat = new FakePriceHistorySources();
   const estvStore = new InMemoryEstvRepository();
   const estv = new EstvProjectRatesService(estvStore, t.rates, t.inputs);
   const userRates = new InMemoryUserRateRepository();
@@ -195,7 +195,9 @@ describe('OPN priced as another coin (regression, F7.4)', () => {
       points: 0,
     });
     expect(t.usd.calls.map((c) => c.symbol)).not.toContain('OPN');
-    expect(t.fiat.calls.map((c) => c.asset)).not.toContain('OPN');
+    expect(t.fiat.calls.map((c) => c.coin)).not.toContain(
+      'open-ticketing-ecosystem',
+    );
     expect(await opnRates(t)).toEqual([]);
     const after = await opnPosition(t);
     expect(after.position).toMatchObject({
@@ -241,11 +243,8 @@ describe('OPN priced as another coin (regression, F7.4)', () => {
     });
     expect(t.usd.calls.map((c) => c.symbol)).not.toContain('OPN');
     expect(t.usd.calls.map((c) => c.symbol)).not.toContain('DOT');
-    expect(t.fiat.calls.map((c) => [c.asset, c.coinId])).toEqual(
-      expect.arrayContaining([
-        ['OPN', 'open-ticketing-ecosystem'],
-        ['DOT', 'polkadot'],
-      ]),
+    expect(t.fiat.calls.map((c) => c.coin)).toEqual(
+      expect.arrayContaining(['open-ticketing-ecosystem', 'polkadot']),
     );
     expect(await opnRates(t)).toEqual([
       'coingecko:CHF:1.5',
@@ -287,6 +286,52 @@ describe('"Coin wählen" (F7.4)', () => {
       suggested: 'open-ticketing-ecosystem',
       ambiguous: true,
     });
+  });
+
+  it('CoinMarketCap as a coin provider: needs its key; a chosen CMC coin is priced by CMC only', async () => {
+    const t = await setup();
+    await expect(
+      t.search.execute(new SearchCoinsQuery('anna', 'coinmarketcap', 'OPN')),
+    ).rejects.toMatchObject({ response: { code: 'noKey' } });
+    expect(t.directory.calls).toEqual([]);
+    const box = new SettingsSecrets({
+      get: () => 'a-test-key-that-is-long-enough-for-aes-256-gcm',
+    } as unknown as ConfigService<Env, true>).box;
+    await t.userSettings.save('anna', {
+      sealedKeys: { coinmarketcap: box.seal('CMC-key') },
+    });
+    t.directory.coins.push({
+      provider: 'coinmarketcap',
+      id: '3001',
+      name: 'OPEN Ticketing Ecosystem',
+      symbol: 'OPN',
+      marketCapRank: 3301,
+    });
+    await t.setChoice.execute(
+      new SetCoinChoiceCommand('anna', 'OPN', {
+        provider: 'coinmarketcap',
+        id: '3001',
+      }),
+    );
+    t.fiat.fake('coinmarketcap').prices = { '3001': '0.03' };
+    const summary = await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, false),
+    );
+    expect(summary.assets.find((a) => a.asset === 'OPN')).toMatchObject({
+      status: 'fetched',
+      source: 'coinmarketcap',
+    });
+    expect(t.usd.calls.map((c) => c.symbol)).not.toContain('OPN');
+    expect(t.fiat.callsOf('coinmarketcap')).toEqual([
+      expect.objectContaining({
+        coin: '3001',
+        quote: 'CHF',
+        apiKey: 'CMC-key',
+      }),
+    ]);
+    expect([
+      ...new Set((await opnRates(t)).map((r) => r.split(':')[0])),
+    ]).toEqual(['coinmarketcap']);
   });
 
   it('validates an id: name + symbol, unknown = 422, offline = 409, provider down = 502', async () => {
@@ -358,7 +403,9 @@ describe('"Coin wählen" (F7.4)', () => {
     });
     // Only this asset was fetched (no FX, no other asset), from CoinGecko only.
     expect(t.usd.calls).toEqual([]);
-    expect(t.fiat.calls.map((c) => c.asset)).toEqual(['OPN']);
+    expect(t.fiat.calls.map((c) => c.coin)).toEqual([
+      'open-ticketing-ecosystem',
+    ]);
     // The override stays (one day); the Binance series is gone, CoinGecko's is there.
     expect((await opnRates(t)).sort()).toEqual([
       'coingecko:CHF:1.5',

@@ -143,7 +143,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
       ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
       rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs;
                             #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser;
-                            #     price-history/ = selectable daily-price providers behind one port (phase 1)
+                            #     price-history/ = selectable daily-price providers behind one port (F7.4b)
       pdf/                  #     PlaywrightPdfRenderer (Chromium, lazily started)
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
@@ -162,7 +162,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
                             #   items, corrections (undo/redo); testing/calculation-fixture.ts
     rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import;
                             #   F7.4a: automatic ESTV Kursliste (sync service + daily scheduler, matching)
-    settings/               #   F11 profile data + CoinGecko/Etherscan keys (sealed), online rates on/off
+    settings/               #   F11 profile data + CoinGecko/CoinMarketCap/Etherscan keys (sealed), price providers, online on/off
     exports/                #   F10: Excel (ExcelJS, formulas) + HTML → PDF, stored exports, mail draft,
                             #   data export in the standard format (F10.7, data-export.handlers.ts)
     dashboard/              #   F11.4–F11.9: input across all projects, cache per input hash, user rate cache
@@ -900,7 +900,8 @@ Treuhänder mail without mailer, the project's Kurse tab and the dashboard when 
   `features/settings/components/ai-settings-form` (`lk-ai-settings-form`), `mailer-form`,
   `rates-key-form` (online on/off + CoinGecko key + **Testen** = `POST
 /api/settings/keys/coingecko/test`, `KeyCheckResult` with code/status/provider message/URL →
-  `lk-key-check-result`), storage via `StorageSettingsPageService`. `embedded` hides their save
+  `lk-key-check-result`) + `lk-price-sources-form` compact (provider order, on/off, CMC key,
+  "Testen", F7.4b), storage via `StorageSettingsPageService`. `embedded` hides their save
   button and their success toast (it would sit on "Weiter"); the page's "Weiter" calls
   `submit()` of the step on screen (`SetupStepComponent` token, `provideSetupStep`). The AI step
   can give the F5.14 consent up front (`giveConsent` on `PUT /api/ai/settings`; the payload is
@@ -916,7 +917,7 @@ a time (`PinPolicy.serial`). Web: after 10 failures `reloginRequired` until a si
 moment (the identity's `authTime` = Firebase `auth_time`; the dev token carries it as
 `dev:<email>#<epoch ms>`). "PIN vergessen": desktop = `POST /api/pin/forgot {confirmClearKeys:
 true}` removes the PIN **and every sealed key** (AI key, mail password, CoinGecko, Etherscan,
-Helius, Subscan — `SealedKeysEraser`; a new sealed key elsewhere must be added there); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
+Helius, Subscan, CoinMarketCap — `SealedKeysEraser`; a new sealed key elsewhere must be added there); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
 it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (default 15).
 
 - **Enforced in the API**: `PinLockGuard` (global, after `AccessTokenGuard`) answers **423
@@ -976,25 +977,25 @@ filters kind / project / status). Slice `notifications/` (API), global module.
   correction). A hint marked done/ignored settles the matching file topic.
 - **Triggers** (F11.12):
 
-  | Topic                                             | Kind            | Raised by / resolved by                                                                                            |
-  | ------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
-  | `rates.fetchFailed:<p>` (assets)                  | error           | "Kurse aktualisieren" with failed assets / a clean refresh; `retry:rates`                                          |
-  | `key.invalid:coingecko`                           | action          | CoinGecko 401/403 in a refresh / key accepted or saved                                                             |
-  | `estv.fetchFailed:<year>`                         | error           | scheduler **and** manual check fails (owners of the year's open projects + requester) / next success; `retry:estv` |
-  | `estv.newVersion:<p>`                             | info            | a new Kursliste stored / the project applies it (`EstvProjectRatesService`)                                        |
-  | `ai.callFailed`, `key.invalid:ai`                 | error / action  | `AiGate.call` with a context (code + HTTP status only) / a successful call, saved key                              |
-  | `mail.sendFailed:<p>`, `key.invalid:mail`         | error / action  | failed send (kind; auth → key) / successful send, test with the saved password, settings saved                     |
-  | `mail.sent:<p>`                                   | success         | successful send                                                                                                    |
-  | `export.failed:<p>`                               | error           | statement creation failed / next one succeeds                                                                      |
-  | `package.importFailed`                            | error           | project/account package import (its code) / next import                                                            |
-  | `file.needsMapping:<pf>`, `file.rowErrors:<pf>`   | action          | `ProjectNotifications.fileTopics` / file mapped, hint settled, file gone                                           |
-  | `file.readFailed:<p>`                             | error           | upload that cannot be read (422; the name only)                                                                    |
-  | `hints.open:<p>`                                  | action          | open F5.8 coverage hints (warnings/errors) / none left                                                             |
-  | `checks.openItems:<p>`, `rates.missingPrices:<p>` | action          | after a calculation (count) / ticked off, recalculated without                                                     |
-  | `project.changedSinceSent:<p>`                    | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
-  | `desktop.syncConflict`                            | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
-  | `setup.incomplete`                                | action          | wizard finished with skipped/open optional steps still missing settings / all set up (below)                       |
-  | `task.done:<label>[:<p>]`, `task.failed:…`        | success / error | the app's activity report (below)                                                                                  |
+  | Topic                                                | Kind            | Raised by / resolved by                                                                                            |
+  | ---------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+  | `rates.fetchFailed:<p>` (assets)                     | error           | "Kurse aktualisieren" with failed assets / a clean refresh; `retry:rates`                                          |
+  | `key.invalid:coingecko`, `key.invalid:coinmarketcap` | action          | the provider's 401/403 in a refresh / key accepted or saved                                                        |
+  | `estv.fetchFailed:<year>`                            | error           | scheduler **and** manual check fails (owners of the year's open projects + requester) / next success; `retry:estv` |
+  | `estv.newVersion:<p>`                                | info            | a new Kursliste stored / the project applies it (`EstvProjectRatesService`)                                        |
+  | `ai.callFailed`, `key.invalid:ai`                    | error / action  | `AiGate.call` with a context (code + HTTP status only) / a successful call, saved key                              |
+  | `mail.sendFailed:<p>`, `key.invalid:mail`            | error / action  | failed send (kind; auth → key) / successful send, test with the saved password, settings saved                     |
+  | `mail.sent:<p>`                                      | success         | successful send                                                                                                    |
+  | `export.failed:<p>`                                  | error           | statement creation failed / next one succeeds                                                                      |
+  | `package.importFailed`                               | error           | project/account package import (its code) / next import                                                            |
+  | `file.needsMapping:<pf>`, `file.rowErrors:<pf>`      | action          | `ProjectNotifications.fileTopics` / file mapped, hint settled, file gone                                           |
+  | `file.readFailed:<p>`                                | error           | upload that cannot be read (422; the name only)                                                                    |
+  | `hints.open:<p>`                                     | action          | open F5.8 coverage hints (warnings/errors) / none left                                                             |
+  | `checks.openItems:<p>`, `rates.missingPrices:<p>`    | action          | after a calculation (count) / ticked off, recalculated without                                                     |
+  | `project.changedSinceSent:<p>`                       | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
+  | `desktop.syncConflict`                               | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
+  | `setup.incomplete`                                   | action          | wizard finished with skipped/open optional steps still missing settings / all set up (below)                       |
+  | `task.done:<label>[:<p>]`, `task.failed:…`           | success / error | the app's activity report (below)                                                                                  |
 
   Plus `wallet.fetchFailed:<wallet>` (error: label, failed networks, first code — never the
   address; resolved by a fetch without failures) and `key.invalid:chain` (a network's 401/403 →
@@ -1074,8 +1075,8 @@ version) → `stale` without reading files. `POST /projects/:id/calculate` store
 key), `GET …/checks`, `PATCH …/open-items`, `GET|POST …/corrections`, `…/corrections/:id/undo|redo`.
 Closed projects: 409 for calculate, corrections, ticks, rate changes; exports stay allowed (the
 final statement) and use the last snapshot. `rates/`: `POST …/rates/refresh` (ECB via
-Frankfurter, Binance `<SYM>USDT`/`BUSD` daily closes, CoinGecko CHF with the user's key as
-fallback; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
+Frankfurter, then per asset the user's price providers in order — default Binance
+`<SYM>USDT`/`BUSD` daily closes, CoinGecko in T with the user's key — see "Price sources"; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
 unless `force`; `GET …/rates/refresh/status` = progress of the refresh in flight, in memory —
 `RefreshProgress`; `RATES_DEV_DELAY_MS` slows each series down, development only),
 `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
@@ -1089,9 +1090,10 @@ and icons › PDFs); `GET …/mail-draft` (F10.6).
 Binance's `OPNUSDT`, another coin)** — `rates/domain/coin-choice.ts` (pure) decides per asset:
 
 - **Coin choice** (`user_settings.coin_choices`, provider-aware: symbol → `{ provider, id, name,
-symbol, contract? }`; `COIN_PROVIDERS` = `coingecko` today, CoinMarketCap = a new provider id
-  pattern + a `CoinDirectoryPort` adapter + a price source). A chosen coin → **only** its
-  provider (CoinGecko with the user's key; without a key `noKey`), **never** Binance by ticker.
+symbol, contract? }`; `COIN_PROVIDERS` = `coingecko`, `coinmarketcap` (F7.4b); a new provider = an id
+  pattern + a `CoinDirectoryPort` adapter + a price source). A chosen coin → its provider
+  first (with the user's key; without one `noKey`), then only providers that see the same coin
+  (F7.4b, "Price sources"), **never** Binance or another ticker source.
   The older `coingecko_ids` were migrated (`20261009090000_coin_choices`, and `parseCoinChoices`
   still reads the plain-string shape, e.g. from older account packages).
 - **Ambiguous tickers** = the hand-kept `AMBIGUOUS_SYMBOLS` (OPN, ONE — verified at CoinGecko)
@@ -1150,15 +1152,15 @@ the internal report in separate cards, the list grouped „Auszüge für die Ste
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
 
-## Price sources (phase 1: adapters)
+## Price sources (F7.4b)
 
 User request (07.10.2026): CoinMarketCap as a selectable price provider, plus other **free**
 providers with **historical daily** prices, so the user picks the order (e.g. CoinGecko or
-CoinMarketCap, with fallbacks). **Phase 1 = adapters only**, in
-`apps/api/src/integrations/rates/price-history/`: one port, seven adapters, bound in
-`IntegrationsModule` (`PriceHistorySourcesPort` → `PriceHistorySources.real()`, `useFactory`)
-and **used by no handler yet**. The existing Binance/CoinGecko/Frankfurter adapters and the
-refresh handlers are unchanged.
+CoinMarketCap, with fallbacks). **Phase 1** = the adapters in
+`apps/api/src/integrations/rates/price-history/` (one port, seven adapters, bound in
+`IntegrationsModule`: `PriceHistorySourcesPort` → `PriceHistorySources.real()`, `useFactory`).
+**Phase 2 (done, 07.10.2026)** = settings, wiring into both refreshes, read-time preference, UI —
+below the port contract.
 
 **Research** (official docs + a few manual calls, checked **07.10.2026**; re-check before relying
 on a limit — free tiers change, CoinDesk's disappeared this year):
@@ -1206,21 +1208,104 @@ badResponse`; `detail` = the provider's words or the system cause, **redacted**
 - `PriceHttp` (`price-history-http.ts`): per-provider `SerialGate` spacing (CMC 1.5 s, CoinGecko
   2.5 s, Bitfinex 2.1 s, Kraken 1 s, DefiLlama/CoinPaprika 0.5 s, Coinbase 0.35 s), 20 s timeout
   covering the body, 4 MB cap, `redirect: 'error'`, no credentials. **No request without an
-  explicit call** — the caller (phase 2) applies F11.3 (`RATES_ONLINE` + the user's switch);
-  building the adapters makes no request.
+  explicit call** — the callers (the refresh handlers, "Testen", "Coin wählen") apply F11.3
+  (`RATES_ONLINE` + the user's switch); building the adapters makes no request.
+- `findCoin?(id, key?)` (phase 2, CoinMarketCap: `/v2/cryptocurrency/info?id=`, 1 credit) —
+  validation in "Coin wählen".
 - Tests: one spec per adapter with a fake `fetch` (`testing/fake-fetch.ts`, recorded shapes:
   success, empty, plan error, 401, 429, malformed, timeout, size cap) and
   `expectDecimalStrings` on every series; no live calls.
 
-**Phase 2 (open)**: settings — provider order per user, keys **sealed with SecretBox** (CMC, a
-CoinGecko key on the new port; "Testen" via `test()`), a **per-provider coin mapping** (asset →
-CMC id / CoinGecko id / DefiLlama key / paprika id, seeded by `resolveCoin`/`searchCoins`,
-contracts from wallets); wiring into the project's "Kurse aktualisieren" and the dashboard refresh
-(fallback down the order on `notFound`/`planLacksHistory`/`unsupportedQuote`/empty; USD-only
-sources × USD/T); new `RateSource` values in the engine (`libs/engine/src/rates`) and the
-`project_rate`/`user_rate` source CHECKs (migration); `PriceSourceError` codes → API error codes
-and i18n; attribution shown where CMC/CoinGecko data appears; the UI (Einstellungen › Kurse,
-Kurse tab). Decide there whether `startOfDay` values count for day D or D − 1.
+**Phase 2 — what is wired** (`rates/domain/price-providers.ts` pure rules,
+`rates/application/price-fetch.ts` the ONE chain for project and dashboard):
+
+- **Settings per user** (migration `20261009110000_price_sources`, `ADD COLUMN`s with their own
+  CHECKs): `user_settings.price_sources` = JSON array `[{id, enabled}]` in the user's order
+  (`'[]'` = default; `normalisePriceProviders`: known ids in the stored order, duplicates/unknown
+  dropped, missing ones **appended off**), `coinmarketcap_key` sealed (`enc:v1:%`). The CoinGecko
+  key **stays** in `coingecko_key` (no migration of it). `API_KEY_NAMES` = coingecko, etherscan,
+  coinmarketcap; views carry a hint only; `SealedKeysEraser` ("PIN vergessen") clears the CMC key
+  too (`ErasedKeys.coinmarketcap`). `PUT /api/settings` takes `priceSources` (each id once, else 400) and `keys.coinmarketcap`; `GET /api/settings/price-sources` = the list in the user's order
+  with each provider's capabilities (label, key, quotes, `freeHistoryDays`, `dayPoint`, `coinRef`,
+  `personalUseOnly`, `attribution`) + `keyHint`; `POST /api/settings/price-sources/:provider/test
+{key?}` = the adapter's `test()` (typed key never stored, else the stored one; 409 `noKey` /
+  `offline`; the detail redacted once more; Binance: one recent BTC close). `get_settings`
+  (tool) stays an allow-list without keys — the tool fixture plants a CMC hint and
+  `tool-registry.spec.ts` asserts it never leaves a tool.
+- **Default order** = `binance → coingecko` on (exactly the sources and order before phase 2, so
+  an existing user's prices do not change and no new third party is contacted unasked), then
+  `coinmarketcap, defillama, coinpaprika, kraken, coinbase, bitfinex` **off** (CMC needs a key,
+  CoinPaprika's free tier is personal use only). CoinGecko is used **only with the user's Demo
+  key** in the chain, as before (`noKey` otherwise).
+- **The chain** (`fetchPrices`, per asset): an **ambiguous** ticker (hand-kept list or market
+  list without a clear leader, no chosen coin) → nothing is asked at **any** provider; a **chosen
+  coin** → its provider first (**even when switched off** — the choice is more specific), then only
+  enabled providers that see **the same coin** (`chosenCoinSources`: DefiLlama
+  `coingecko:<id>` for a CoinGecko coin; CoinGecko/CMC/DefiLlama by the choice's contract), never
+  a ticker source (Binance/Kraken/Bitfinex/Coinbase); otherwise the enabled providers in order —
+  ticker sources by the symbol (Binance + `RATE_ALIASES`), CoinGecko by `COINGECKO_IDS` → the
+  market list's leader (`CoinMarketService.leaders`: the only relevant coin or a clear leader) →
+  `resolveCoin({symbol})`, CMC/CoinPaprika by `resolveCoin({symbol})`, DefiLlama only by a known
+  CoinGecko id. **`pickBySymbol`** applies the OPN rule per provider: exact symbol; one → it;
+  several → the best rank only with a clear lead (second ≥ `LEADER_FACTOR` × first or unranked),
+  else that provider is `ambiguous` and the next one is asked — never a silent pick. Lookups are
+  cached a day (`CoinRefCache`, one per handler). **Fallback**: every answer but a series moves
+  on — `notFound`, `planLacksHistory`, `unsupportedQuote`, empty, `noKey`, `noCoin`,
+  `ambiguous` **and hard failures** (key refused, rate limit, network, timeout, bad answer;
+  decided: a broken provider must not block a price another has). Status `fetched` (source =
+  that provider), `failed` only when nobody delivered and someone failed hard (`error: {provider,
+code}` = the first hard failure), `noKey` when a chosen coin's provider lacks its key and
+  nobody else could price that coin, else `notFound`. Quote: the tax currency T where the
+  provider prices in it (`anyFiat`, Kraken CHF/EUR/…), else **USD** (DefiLlama, CoinPaprika,
+  Bitfinex/Coinbase for CHF) — stored as USD and valued × USD/T of the day by the engine as before.
+  CoinGecko prices now come through the price-history adapter (it maps CoinGecko's 10012 to
+  `planLacksHistory`); the legacy `FiatPriceSourcePort` remains only for the old
+  `POST /settings/keys/coingecko/test`.
+- **Day semantics (decided)**: the value stored for UTC day **D is the close of D** (≈ 23:59:59
+  UTC) — Binance's kline close, Kraken, Bitfinex, Coinbase, DefiLlama. `startOfDay` providers
+  (CoinGecko, CoinMarketCap `interval=daily`, CoinPaprika) are asked **one day later** and each
+  value is filed **one day earlier** (`dayShift`): the 00:00 snapshot of 01.01. is the close of
+  31.12., so a year-end value means the same moment at every provider. CoinGecko is always asked
+  for ≥ 91 days (only then one 00:00 point per day). Before phase 2 CoinGecko's 00:00 value was
+  filed under its own day; such stored rows stay until a forced refresh. `price-fetch.spec.ts`.
+- **Sources** (engine `RATE_SOURCES`): + `coinmarketcap | defillama | coinpaprika | kraken |
+bitfinex | coinbase` (`FETCHED_PRICE_SOURCES`); `project_rate`/`user_rate` **redefined** in the
+  same migration only to widen the source CHECK (every other CHECK + the unique index copied;
+  `price-sources.migration.integration.spec.ts`; `migrate diff` empty). Read-time filter
+  `priceSourceUsable`: `TICKER_SOURCES` = Binance, Kraken, Bitfinex, Coinbase, CMC, CoinPaprika,
+  DefiLlama (unusable for an ambiguous ticker; CoinGecko rows keep counting as before); a chosen
+  coin counts only `chosenCoinSources`. Packages validate sources with `RATE_SOURCES`.
+- **Preference among stored series** (point 3 of the request): the engine's price priority is
+  unchanged (override → ESTV → record prices → stored series); among **fetched** series
+  `preferFetchedSources(entries, order)` (engine, pure) keeps per asset and UTC day only the rows
+  of the best-ranked source in the user's **full** order (disabled ones keep their place; unknown
+  after, by the fixed rank) — a lower-ranked series still fills the days the preferred one lacks.
+  Applied before the input hash (`CalculationInputService.sources` → a new order that changes a
+  value makes the snapshot **stale**) and in the dashboard on the merged rates (`sourceOrder` is
+  part of its cache key). Edge decided: where an old CoinGecko series (in T) and a Binance one
+  (USD) share days, the default order now takes Binance's.
+- **Errors**: `rates.fetchFailed:<project>` carries `provider` + `priceError` (the web
+  translates them: `rates.source.*`, `rates.sourceErrors.*`); `key.invalid:coingecko` /
+  `key.invalid:coinmarketcap` (`notifyKeys`, project **and** dashboard refresh) when a keyed
+  provider refuses the key, resolved when it accepts one or a key is saved; refresh summaries have
+  `error` per failed asset; 409 `noKey` (`errors.api.noKey`) for CMC "Coin wählen" without a key.
+- **Coin choice at CoinMarketCap**: `COIN_PROVIDERS` = coingecko, coinmarketcap (ids `^[1-9]\d*$`);
+  `ProviderCoinDirectory` (integrations) = CoinGecko's directory + CMC through its adapter
+  (`searchCoins` = `/v1/cryptocurrency/map?symbol=`, no credits; `findCoin`); market list and
+  contract lookups stay CoinGecko's. `CoinChoiceService.keyFor` picks the provider's key.
+- **Web**: `core/api/price-sources.types.ts`; `PriceSourcesService` (root: list, save via
+  `UserSettingsService.save`, "Testen" state per provider); `lk-price-sources-form`
+  (`features/settings/components/price-sources-form`: numbered list, on/off, up/down, badges key /
+  free history / USD only / by ticker / personal use only, the attribution text, "Testen" with ok
+  - plan + history days or the error code text + HTTP status + the provider's words + URL, the CMC
+    key field; `compact` + `embedded` in the wizard's rates step, whose "Weiter" submits both
+    forms) in Einstellungen › Kurse ("Kursanbieter"). `lk-price-attribution`
+    (`shared/components/price-attribution`: "Kursdaten: Data provided by CoinGecko · Data provided
+    by CoinMarketCap.com", linked) under the Kurse tab's "Kursquelle je Asset" and series tables and
+    the dashboard holdings, whenever such data is shown. The coin picker has a provider select.
+    Refresh results list failed assets as "<provider>: <error>". `dataChangesInterceptor`:
+    `PUT /settings` = every project + `rates` + `settings` (the order ranks every project's
+    series); `…/price-sources/:id/test` is read-only.
 
 ## Tax currency (F4.1, F4.1a)
 
@@ -1517,7 +1602,7 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   CHECK). Deployment-wide: no user/project column. Prisma writes `AUTOINCREMENT` for the `Int @id`
   year keys — harmless, the year is always given. `estv.persistence.integration.spec.ts`.
 - **Dashboard / carry-over** (migration `20261008110000_dashboard_carryover`): `user_rate` (unique
-  `(user, kind, asset, currency, date, source)`; source only `binance|coingecko|ecb`, decimal/date
+  `(user, kind, asset, currency, date, source)`; source `ecb` + the fetched providers (F7.4b), decimal/date
   CHECKs; cascade with the user) and `project_carryover` (kind CHECK, `json_valid(data)`; cascade
   with the project; `source_project_id` is no FK — the source may be deleted later, its name stays).
   `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
@@ -1536,6 +1621,9 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
 - **Deactivated files** (migration `20261009100000_project_file_disabled`, F5.7a):
   `project_file.disabled_at` + `disabled_note` (`ADD COLUMN`, column CHECK: a note only with a
   date, ≤ 500 — no redefinition); `files.persistence.integration.spec.ts` tests them.
+- **Price sources** (migration `20261009110000_price_sources`, F7.4b): `user_settings` + 2 `ADD
+COLUMN`s (`coinmarketcap_key` sealed, `price_sources` JSON array); `project_rate`/`user_rate`
+  **redefined** only to widen the source CHECK. `price-sources.migration.integration.spec.ts`.
 - **Coin choices** (migration `20261009090000_coin_choices`, F7.4): `user_settings` **redefined**
   — `coingecko_ids` becomes `coin_choices` (JSON object, every stored id carried over as a
   CoinGecko choice) + `coin_dismissed` (JSON array); every other column/CHECK copied; new table

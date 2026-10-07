@@ -30,6 +30,26 @@
           <div class="lk-field">
             <label
               hlmLabel
+              for="coin-picker-provider"
+              [title]="'coins.fields.provider' | translate"
+              >{{ 'coins.fields.provider' | translate }}</label
+            >
+            <select
+              hlmInput
+              id="coin-picker-provider"
+              [value]="provider()"
+              (change)="setProvider($event)"
+            >
+              @for (id of providers; track id) {
+              <option [value]="id">
+                {{ 'coins.provider.' + id | translate }}
+              </option>
+              }
+            </select>
+          </div>
+          <div class="lk-field">
+            <label
+              hlmLabel
               for="coin-picker-query"
               [title]="'coins.picker.query' | translate"
               >{{ 'coins.picker.query' | translate }}</label

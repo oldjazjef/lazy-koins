@@ -14,7 +14,20 @@ import {
   type CoinChoices,
   parseCoinChoices,
 } from '../../../rates/domain/coin-choice';
+import {
+  normalisePriceProviders,
+  type PriceProviderSetting,
+} from '../../../rates/domain/price-providers';
 import { toIsoString } from '../mappers/scalar.mapper';
+
+/** The stored JSON array of `{ id, enabled }` (empty = the default order). */
+function parseProviders(text: string): PriceProviderSetting[] {
+  try {
+    return normalisePriceProviders(JSON.parse(text));
+  } catch {
+    return normalisePriceProviders([]);
+  }
+}
 import { PrismaService } from '../prisma.service';
 
 /** The stored JSON array of upper-case tickers. */
@@ -60,9 +73,14 @@ function toSettings(row: UserSettingsRow): UserSettings {
       ? (row.dateFormat as DateFormat)
       : 'dd.MM.yyyy',
     onlineRates: row.onlineRates,
-    sealedKeys: { coingecko: row.coingeckoKey, etherscan: row.etherscanKey },
+    sealedKeys: {
+      coingecko: row.coingeckoKey,
+      etherscan: row.etherscanKey,
+      coinmarketcap: row.coinmarketcapKey,
+    },
     coinChoices: parseChoices(row.coinChoices),
     coinDismissed: parseSymbols(row.coinDismissed),
+    priceSources: parseProviders(row.priceSources),
     updatedAt: toIsoString(row.updatedAt),
   };
 }
@@ -95,6 +113,13 @@ export class UserSettingsPrismaRepository extends UserSettingsRepositoryPort {
       onlineRates: input.onlineRates,
       coingeckoKey: input.sealedKeys?.coingecko,
       etherscanKey: input.sealedKeys?.etherscan,
+      coinmarketcapKey: input.sealedKeys?.coinmarketcap,
+      priceSources:
+        input.priceSources === undefined
+          ? undefined
+          : JSON.stringify(
+              input.priceSources.map((p) => ({ id: p.id, enabled: p.enabled })),
+            ),
       coinChoices:
         input.coinChoices === undefined
           ? undefined

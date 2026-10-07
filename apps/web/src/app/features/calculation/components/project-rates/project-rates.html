@@ -135,7 +135,13 @@
     </li>
     }
   </ul>
-  @if (summary.contracts?.length) {
+  @for (asset of failures(summary); track asset.asset) {
+  <p class="text-destructive mt-1 text-xs" role="note">
+    {{ asset.asset }} · {{ 'rates.failedVia' | translate: { provider:
+    ('rates.source.' + asset.provider | translate), error:
+    ('rates.sourceErrors.' + asset.code | translate) } }}
+  </p>
+  } @if (summary.contracts?.length) {
   <p class="text-muted-foreground mt-2 text-xs">
     {{ 'rates.contracts' | translate: { assets: contractAssets(summary) } }}
   </p>
@@ -241,6 +247,7 @@
     </table>
   </div>
   <lk-paginator [pager]="assetPager" />
+  <lk-price-attribution [sources]="pricingSources()" />
   }
 </section>
 
@@ -494,6 +501,7 @@
     </table>
   </div>
   <lk-paginator [pager]="seriesPager" />
+  <lk-price-attribution [sources]="seriesSources()" />
   }
 </section>
 } @else if (service.rates.error()) {

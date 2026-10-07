@@ -7,6 +7,10 @@ import {
   TestCoingeckoKeyHandler,
   UpdateSettingsHandler,
 } from './application/settings.handlers';
+import {
+  GetPriceSourcesHandler,
+  TestPriceSourceHandler,
+} from './application/price-sources.handlers';
 import { SettingsController } from './settings.controller';
 import { SettingsService } from './settings.service';
 
@@ -25,6 +29,8 @@ import { SettingsService } from './settings.service';
     GetSettingsHandler,
     UpdateSettingsHandler,
     TestCoingeckoKeyHandler,
+    GetPriceSourcesHandler,
+    TestPriceSourceHandler,
   ],
   exports: [SettingsReader, SettingsService],
 })

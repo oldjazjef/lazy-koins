@@ -135,6 +135,25 @@ export class CoinMarketCapSource extends PriceHistorySourcePort {
     return rankCandidates(data.flatMap(candidateOf), symbol);
   }
 
+  /** `GET /v2/cryptocurrency/info?id=` (1 credit): name and symbol of one CMC id. */
+  async findCoin(
+    id: string,
+    apiKey?: string,
+  ): Promise<CoinCandidate | undefined> {
+    const key = this.requireKey(apiKey);
+    if (!/^\d{1,12}$/.test(id)) return undefined;
+    const answer = await this.lookup(
+      `${BASE}/v2/cryptocurrency/info?id=${encodeURIComponent(id)}&skip_invalid=true`,
+      key,
+    );
+    if (!answer) return undefined;
+    const entry = asRecord(asRecord(answer.body)?.['data'])?.[id];
+    const found = Array.isArray(entry)
+      ? entry.flatMap(candidateOf)
+      : candidateOf(entry);
+    return found.find((c) => c.id === id);
+  }
+
   /**
    * `GET /v1/key/info` (free of credits: plan limits + usage), then one daily quote of Bitcoin
    * 360 days back (1 credit) and, if that works, 1090 days back — so the result tells Basic

@@ -1,3 +1,4 @@
+import { isFetchedPriceSource } from '@lazykoins/engine';
 import { COINGECKO_IDS } from './project-rate';
 
 /**
@@ -15,10 +16,11 @@ import { COINGECKO_IDS } from './project-rate';
  */
 
 /**
- * Price providers a coin can be chosen at. CoinMarketCap is planned (numeric ids); a new provider
- * = its id pattern here, an adapter behind `CoinDirectoryPort` and a price source.
+ * Price providers a coin can be chosen at (price sources phase 2: CoinMarketCap with its numeric
+ * ids). A new provider = its id pattern here, its branch in the `CoinDirectoryPort` adapter and a
+ * price source.
  */
-export const COIN_PROVIDERS = ['coingecko'] as const;
+export const COIN_PROVIDERS = ['coingecko', 'coinmarketcap'] as const;
 export type CoinProvider = (typeof COIN_PROVIDERS)[number];
 
 export function isCoinProvider(value: unknown): value is CoinProvider {
@@ -28,6 +30,7 @@ export function isCoinProvider(value: unknown): value is CoinProvider {
 /** A coin id as the provider writes it (CoinGecko: `open-ticketing-ecosystem`). */
 export const COIN_ID_PATTERNS: Readonly<Record<CoinProvider, RegExp>> = {
   coingecko: /^[a-z0-9-]{1,100}$/,
+  coinmarketcap: /^[1-9][0-9]{0,11}$/,
 };
 
 /** A ticker as the app stores assets (upper case; `DOT.S`, `ETH2`). */
@@ -105,8 +108,38 @@ export const AMBIGUOUS_SYMBOLS: Readonly<Record<string, readonly string[]>> = {
   ONE: ['harmony', 'cross-2'],
 };
 
-/** Price sources that look an asset up by its ticker (not by a chosen coin). */
-export const TICKER_SOURCES: readonly string[] = ['binance'];
+/**
+ * Price sources that find an asset by its **ticker** — on the exchange (Binance, Kraken, Bitfinex,
+ * Coinbase) or through a symbol lookup (CoinMarketCap, CoinPaprika, DefiLlama via the market
+ * list's leader): for a chosen coin or an ambiguous ticker such a series may belong to another
+ * coin. CoinGecko is not in the list: before phase 2 it was only ever asked by a fixed id, and its
+ * stored rows keep counting as they did.
+ */
+export const TICKER_SOURCES: readonly string[] = [
+  'binance',
+  'kraken',
+  'bitfinex',
+  'coinbase',
+  'coinmarketcap',
+  'coinpaprika',
+  'defillama',
+];
+
+/**
+ * The sources whose series belong to a **chosen** coin: its provider, DefiLlama for a CoinGecko
+ * coin (`coingecko:<id>` is exactly that coin) and, for a coin identified by its contract,
+ * CoinGecko, CoinMarketCap and DefiLlama (each looks the same contract up). Never a ticker
+ * exchange.
+ */
+export function chosenCoinSources(choice: CoinChoice): string[] {
+  const out = new Set<string>([choice.provider]);
+  if (choice.provider === 'coingecko' || choice.contract) out.add('defillama');
+  if (choice.contract) {
+    out.add('coingecko');
+    out.add('coinmarketcap');
+  }
+  return [...out].sort();
+}
 
 /** Where an asset's daily prices come from (rules 1–3 above). */
 export type PricePlan =
@@ -178,8 +211,13 @@ export function priceSourceUsable(
   choices: CoinChoices,
   marketAmbiguous?: ReadonlyMap<string, readonly string[]>,
 ): boolean {
-  if (!TICKER_SOURCES.includes(source)) return true;
-  return pricePlan(asset, choices, marketAmbiguous).kind === 'ticker';
+  if (!isFetchedPriceSource(source)) return true;
+  const plan = pricePlan(asset, choices, marketAmbiguous);
+  if (plan.kind === 'ticker') return true;
+  if (plan.kind === 'chosen') {
+    return chosenCoinSources(plan.choice).includes(source);
+  }
+  return !TICKER_SOURCES.includes(source);
 }
 
 /**

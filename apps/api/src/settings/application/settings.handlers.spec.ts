@@ -44,9 +44,20 @@ describe('settings (F11, F6.7)', () => {
       numberFormat: 'de-CH',
       dateFormat: 'dd.MM.yyyy',
       onlineRates: true,
-      keys: { coingecko: null, etherscan: null },
+      keys: { coingecko: null, etherscan: null, coinmarketcap: null },
       coinChoices: {},
       coinDismissed: [],
+      // Price sources: Binance → CoinGecko as before, the new providers appended off.
+      priceSources: [
+        { id: 'binance', enabled: true },
+        { id: 'coingecko', enabled: true },
+        { id: 'coinmarketcap', enabled: false },
+        { id: 'defillama', enabled: false },
+        { id: 'coinpaprika', enabled: false },
+        { id: 'kraken', enabled: false },
+        { id: 'coinbase', enabled: false },
+        { id: 'bitfinex', enabled: false },
+      ],
       keyStorageAvailable: true,
     });
   });
