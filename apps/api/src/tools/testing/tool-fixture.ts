@@ -95,6 +95,7 @@ export const PLANTED_SECRETS = {
   aiCipher: 'enc:v1:planted-ai-key-cipher',
   aiHint: '…AIK9',
   mailHint: '…PW42',
+  coinmarketcapHint: '…CMC7',
 } as const;
 
 /**
@@ -143,9 +144,14 @@ export async function toolSetup() {
           numberFormat: 'de-CH',
           dateFormat: 'dd.MM.yyyy',
           onlineRates: false,
-          keys: { coingecko: PLANTED_SECRETS.coingeckoHint, etherscan: null },
+          keys: {
+            coingecko: PLANTED_SECRETS.coingeckoHint,
+            etherscan: null,
+            coinmarketcap: PLANTED_SECRETS.coinmarketcapHint,
+          },
           coinChoices: {},
           coinDismissed: [],
+          priceSources: [{ id: 'coinmarketcap', enabled: true }],
           keyStorageAvailable: true,
         };
       },

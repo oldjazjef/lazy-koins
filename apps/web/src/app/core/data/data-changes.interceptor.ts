@@ -26,6 +26,8 @@ const READ_ONLY: readonly RegExp[] = [
   /^settings\/wallets\/test$/,
   // F5.18: "Verbindung testen" with the typed address of a web library stores nothing.
   /^settings\/library\/test$/,
+  // Price sources: "Testen" of one provider (typed or stored key) stores nothing.
+  /^settings\/price-sources\/[^/]+\/test$/,
   /^wallets\/inspect$/,
   /^chat\//,
   /^pin\//,
@@ -118,6 +120,12 @@ const RULES: readonly (readonly [
   // F5.18 (desktop): the link to a web library — the nav entry, the files tab's suggestions
   // and the library pages follow it (`LibraryAvailability` reloads on `settings`).
   [/^settings\/library$/, () => ({ scope: 'settings' })],
+  // Price sources: PUT /settings may change the provider order (or a key) — it ranks the stored
+  // series of every project and the dashboard, so their results (stale) and rates follow.
+  [
+    /^settings$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['rates', 'settings'] }),
+  ],
   [
     /^(settings|ai\/settings|assistant\/settings|mail|setup)(\/.*)?$/,
     () => ({

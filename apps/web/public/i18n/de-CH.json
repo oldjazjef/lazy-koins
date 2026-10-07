@@ -861,7 +861,7 @@
     },
     "rates": {
       "title": "Kursabfragen",
-      "subtitle": "Kurse aus dem Internet, CoinGecko-Schlüssel, ESTV-Kursliste",
+      "subtitle": "Kursanbieter und Reihenfolge, Schlüssel, ESTV-Kursliste",
       "hint": "Ausgeschaltet holt lazy-koins keine Kurse aus dem Internet; gespeicherte und manuell erfasste Kurse gelten weiter.",
       "coingeckoHint": "Für Assets ohne Binance-Kurs (CoinGecko Demo-Schlüssel). Wird verschlüsselt gespeichert.",
       "estvTitle": "ESTV-Kursliste manuell importieren",
@@ -1001,6 +1001,43 @@
         "network": "Prüfe die Internetverbindung, eine Firewall oder einen Proxy auf diesem Rechner bzw. Server.",
         "timeout": "Versuche es später noch einmal.",
         "providerError": "Die Meldung des Anbieters unten hilft weiter; sonst später erneut versuchen."
+      }
+    },
+    "priceSources": {
+      "title": "Kursanbieter",
+      "hint": "lazy-koins fragt die eingeschalteten Anbieter von oben nach unten und nimmt den ersten mit einem Kursverlauf. Hat einer einen Coin nicht, nicht so weit zurück oder nicht in deiner Währung, kommt der nächste. Bei mehreren gespeicherten Kursen zählt der weiter oben.",
+      "compactHint": "Standard: Binance, dann CoinGecko. Weitere kostenlose Anbieter kannst du hier zuschalten und ordnen.",
+      "enabled": "{{name}} verwenden",
+      "moveUp": "{{name}} nach oben",
+      "moveDown": "{{name}} nach unten",
+      "keyRequired": "Schlüssel nötig",
+      "keyStored": "Schlüssel {{hint}}",
+      "keyMissing": "kein Schlüssel",
+      "usdOnly": "nur USD (× Wechselkurs)",
+      "history": "{{days}} Tage Verlauf (gratis)",
+      "historyAll": "ganzer Verlauf",
+      "byTicker": "nach Kürzel",
+      "personalUse": "nur private Nutzung",
+      "attribution": "Quellenangabe: «{{text}}»",
+      "save": "Reihenfolge speichern",
+      "saved": "Kursanbieter gespeichert.",
+      "saveFailed": "Die Kursanbieter konnten nicht gespeichert werden.",
+      "cmcKey": "CoinMarketCap API-Schlüssel",
+      "cmcHint": "Kostenloser «Basic»-Schlüssel (365 Tage Verlauf). Wird verschlüsselt gespeichert.",
+      "chosenNote": "Ein gewählter Coin («Coin wählen») kommt immer zuerst von seinem Anbieter.",
+      "test": {
+        "button": "Testen",
+        "label": "{{name}} testen",
+        "testing": "Wird geprüft …",
+        "ok": "Funktioniert ({{millis}} ms).",
+        "failed": "Fehler: {{error}}",
+        "plan": "Tarif: {{plan}}",
+        "historyDays": "Tagesverlauf: {{days}} Tage",
+        "status": "HTTP {{status}}",
+        "detail": "Antwort des Anbieters: {{detail}}",
+        "noKey": "Gib zuerst einen Schlüssel ein.",
+        "offline": "Kursabfragen aus dem Internet sind auf diesem Server ausgeschaltet.",
+        "error": "Der Test konnte nicht ausgeführt werden."
       }
     }
   },
@@ -1289,7 +1326,13 @@
       "estv": "ESTV-Kursliste",
       "binance": "Binance",
       "coingecko": "CoinGecko",
-      "ecb": "EZB"
+      "ecb": "EZB",
+      "coinmarketcap": "CoinMarketCap",
+      "defillama": "DefiLlama",
+      "coinpaprika": "CoinPaprika",
+      "kraken": "Kraken",
+      "bitfinex": "Bitfinex",
+      "coinbase": "Coinbase"
     },
     "status": {
       "fetched": "abgerufen",
@@ -1297,7 +1340,7 @@
       "notFound": "nicht gefunden",
       "failed": "Fehler",
       "ambiguous": "mehrdeutig – Coin wählen",
-      "noKey": "CoinGecko-Schlüssel fehlt"
+      "noKey": "Schlüssel des Anbieters fehlt"
     },
     "errors": {
       "asset": "Bitte ein Asset-Kürzel eingeben.",
@@ -1329,6 +1372,22 @@
         "source": "Kursquelle",
         "note": "Hinweis"
       }
+    },
+    "failedVia": "{{provider}}: {{error}}",
+    "sourceErrors": {
+      "invalidKey": "Schlüssel abgelehnt",
+      "planLacksHistory": "Tarif reicht nicht so weit zurück",
+      "rateLimited": "Limit des Anbieters erreicht",
+      "notFound": "Coin nicht gefunden",
+      "unsupportedQuote": "Währung nicht angeboten",
+      "network": "nicht erreichbar",
+      "timeout": "keine rechtzeitige Antwort",
+      "badResponse": "unerwartete Antwort"
+    },
+    "attribution": {
+      "label": "Kursdaten",
+      "coingecko": "Data provided by CoinGecko",
+      "coinmarketcap": "Data provided by CoinMarketCap.com"
     }
   },
   "exports": {
@@ -1895,7 +1954,8 @@
       "ai": "AI",
       "coingecko": "CoinGecko",
       "mail": "Mail (SMTP)",
-      "chain": "Netzwerk-Abfragen"
+      "chain": "Netzwerk-Abfragen",
+      "coinmarketcap": "CoinMarketCap"
     }
   },
   "activity": {
@@ -2700,7 +2760,8 @@
       "duplicateMapping": "Genau dieses Mapping hast du schon.",
       "libraryCopy": "Eine Kopie aus der Bibliothek kann nicht als neuer Eintrag veröffentlicht werden.",
       "unknownCoin": "Diesen Coin kennt der Kursanbieter nicht.",
-      "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar."
+      "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar.",
+      "noKey": "Für diesen Anbieter ist kein Schlüssel gespeichert – trage ihn unter Einstellungen › Kurse ein."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -2925,7 +2986,8 @@
       "provider": "Anbieter"
     },
     "provider": {
-      "coingecko": "CoinGecko"
+      "coingecko": "CoinGecko",
+      "coinmarketcap": "CoinMarketCap"
     },
     "add": "Coin hinterlegen",
     "change": "Coin ändern",

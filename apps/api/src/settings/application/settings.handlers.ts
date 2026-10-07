@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Optional,
@@ -23,6 +24,10 @@ import {
   type UserSettings,
 } from '../domain/user-settings';
 import { UserSettingsRepositoryPort } from '../ports/user-settings.repository.port';
+import {
+  normalisePriceProviders,
+  type PriceProviderSetting,
+} from '../../rates/domain/price-providers';
 import { SecretBox } from '../../common/crypto/secret-box';
 import {
   FiatPriceSourcePort,
@@ -57,6 +62,8 @@ export interface SettingsView {
   readonly coinChoices: UserSettings['coinChoices'];
   /** Tickers whose shared-code warning was settled ("Passt so"). */
   readonly coinDismissed: readonly string[];
+  /** Price sources phase 2: every crypto price provider in the user's order, on or off. */
+  readonly priceSources: UserSettings['priceSources'];
   /** Whether keys can be stored at all (`SETTINGS_ENCRYPTION_KEY` set). */
   readonly keyStorageAvailable: boolean;
 }
@@ -100,9 +107,11 @@ export class SettingsReader {
       keys: {
         coingecko: keyHint(resolved.keys.coingecko),
         etherscan: keyHint(resolved.keys.etherscan),
+        coinmarketcap: keyHint(resolved.keys.coinmarketcap),
       },
       coinChoices: resolved.coinChoices,
       coinDismissed: resolved.coinDismissed,
+      priceSources: resolved.priceSources,
       keyStorageAvailable: this.secrets.box.available,
     };
   }
@@ -127,9 +136,11 @@ export class GetSettingsHandler implements IQueryHandler<
 /** Plain keys as entered: a string stores it, `''` or `null` removes it, absent keeps it. */
 export interface SettingsChanges extends Omit<
   UpdateSettingsInput,
-  'sealedKeys'
+  'sealedKeys' | 'priceSources'
 > {
   readonly keys?: Partial<Record<ApiKeyName, string | null>>;
+  /** The provider order as the user arranged it (each id once; missing ones are appended off). */
+  readonly priceSources?: readonly PriceProviderSetting[];
 }
 
 export class UpdateSettingsCommand {
@@ -205,7 +216,13 @@ export class UpdateSettingsHandler implements ICommandHandler<
     userId,
     changes,
   }: UpdateSettingsCommand): Promise<SettingsView> {
-    const { keys, ...rest } = changes;
+    const { keys, priceSources, ...rest } = changes;
+    if (priceSources !== undefined) {
+      const ids = priceSources.map((p) => p.id);
+      if (new Set(ids).size !== ids.length) {
+        throw new BadRequestException('priceSources: every provider once');
+      }
+    }
     const sealedKeys: Partial<Record<ApiKeyName, string | null>> = {};
     for (const name of API_KEY_NAMES) {
       const value = keys?.[name];
@@ -228,10 +245,19 @@ export class UpdateSettingsHandler implements ICommandHandler<
       advisorName: rest.advisorName?.trim(),
       advisorEmail: rest.advisorEmail?.trim(),
       sealedKeys,
+      ...(priceSources !== undefined
+        ? { priceSources: normalisePriceProviders(priceSources) }
+        : {}),
     });
-    // A new or removed CoinGecko key settles "Schlüssel prüfen" (F11.11).
+    // A new or removed CoinGecko / CoinMarketCap key settles "Schlüssel prüfen" (F11.11).
     if (sealedKeys.coingecko !== undefined) {
       await this.notifications?.resolve(userId, Topics.keyInvalid('coingecko'));
+    }
+    if (sealedKeys.coinmarketcap !== undefined) {
+      await this.notifications?.resolve(
+        userId,
+        Topics.keyInvalid('coinmarketcap'),
+      );
     }
     return this.reader.view(userId);
   }

@@ -7,6 +7,7 @@ import {
   type SharedTicker,
   sharedTicker,
 } from '../domain/coin-choice';
+import { marketLeader } from '../domain/price-providers';
 import { CoinDirectoryPort } from '../ports/coin-directory.port';
 import { CoinMarketRepositoryPort } from '../ports/coin-market.repository.port';
 
@@ -93,6 +94,22 @@ export class CoinMarketService {
     for (const symbol of symbols) {
       const found = sharedTicker(symbol, coins, choices, dismissed);
       if (found) out.set(symbol, found);
+    }
+    return out;
+  }
+
+  /**
+   * Per ticker the CoinGecko coin the stored market list means (the only relevant coin or the
+   * clear leader, `marketLeader`) — how CoinGecko and DefiLlama identify a coin that has no
+   * built-in id (price sources phase 2). Local data only.
+   */
+  async leaders(assets: readonly string[]): Promise<Map<string, string>> {
+    const symbols = [...new Set(assets.map((a) => a.toUpperCase()))].sort();
+    const coins = await this.market.listBySymbols(PROVIDER, symbols);
+    const out = new Map<string, string>();
+    for (const symbol of symbols) {
+      const id = marketLeader(symbol, coins);
+      if (id) out.set(symbol, id);
     }
     return out;
   }

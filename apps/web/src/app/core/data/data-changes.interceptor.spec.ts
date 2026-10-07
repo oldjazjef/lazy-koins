@@ -122,7 +122,8 @@ describe('changeOf — URL/method → scope and project', () => {
     ['PATCH', '/api/wallets/w1', { projectId: null, scope: 'wallets' }],
     ['POST', '/api/rates/estv/update', { projectId: null, scope: 'rates' }],
     // Settings and notifications.
-    ['PUT', '/api/settings', { scope: 'settings' }],
+    // Price sources: the provider order ranks every project's stored series.
+    ['PUT', '/api/settings', { projectId: null, scope: ['rates', 'settings'] }],
     ['PUT', '/api/settings/wallets', { scope: 'settings' }],
     ['PUT', '/api/ai/settings', { scope: 'settings' }],
     ['PUT', '/api/mail/template', { scope: 'settings' }],
@@ -142,6 +143,7 @@ describe('changeOf — URL/method → scope and project', () => {
     ['POST', '/api/mail/settings/test', null],
     ['POST', '/api/mail/template/preview', null],
     ['POST', '/api/settings/keys/coingecko/test', null],
+    ['POST', '/api/settings/price-sources/coinmarketcap/test', null],
     ['POST', '/api/settings/wallets/test', null],
     ['POST', '/api/wallets/inspect', null],
     ['POST', '/api/dashboard/rates/refresh', null],

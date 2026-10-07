@@ -41,6 +41,9 @@ const PARAM_TRANSLATIONS: readonly (readonly [string, string])[] = [
   ['kind', 'exports.kind.'],
   // F11.2: `ai | coingecko | mail | chain` (older rows carry a name — shown as it is).
   ['service', 'notifications.service.'],
+  // Price sources: the provider and its error code of a failed "Kurse aktualisieren".
+  ['provider', 'rates.source.'],
+  ['priceError', 'rates.sourceErrors.'],
 ];
 
 /** A notification ready to show: its text translated, its time relative. */

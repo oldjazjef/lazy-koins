@@ -9,20 +9,27 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { RatesKeyForm } from '../../../settings/components/rates-key-form/rates-key-form';
+import { PriceSourcesForm } from '../../../settings/components/price-sources-form/price-sources-form';
 import { provideSetupStep, SetupStepComponent } from '../setup-step';
 
 /**
  * Kurse (F11.3, F6.7, F7.4a, optional): rate lookups on/off and the CoinGecko key with "Testen"
- * (the settings' own form), and whether the ESTV Kursliste is fetched automatically — with
+ * (the settings' own form), the price providers compact (order, on/off, CoinMarketCap key), and whether the ESTV Kursliste is fetched automatically — with
  * "Jetzt aktualisieren".
  */
 @Component({
   selector: 'lk-setup-rates-step',
-  imports: [TranslatePipe, RatesKeyForm, ...HlmButtonImports],
+  imports: [TranslatePipe, RatesKeyForm, PriceSourcesForm, ...HlmButtonImports],
   providers: [provideSetupStep(() => RatesStep)],
   template: `
     <div class="flex flex-col gap-6">
       <lk-rates-key-form [embedded]="true" />
+      <div class="lk-panel flex flex-col gap-2 p-4">
+        <h3 class="text-sm font-semibold">
+          {{ 'settings.priceSources.title' | translate }}
+        </h3>
+        <lk-price-sources-form [embedded]="true" [compact]="true" />
+      </div>
       <div class="lk-panel flex flex-col gap-2 p-4">
         <h3 class="text-sm font-semibold">{{ 'estv.title' | translate }}</h3>
         <p class="text-muted-foreground text-sm">
@@ -73,6 +80,7 @@ import { provideSetupStep, SetupStepComponent } from '../setup-step';
 export class RatesStep extends SetupStepComponent {
   protected readonly estv = inject(EstvService);
   private readonly form = viewChild.required(RatesKeyForm);
+  private readonly sources = viewChild.required(PriceSourcesForm);
 
   /** The newest tax year with a downloaded Kursliste. */
   protected readonly latest = computed(() => {
@@ -91,7 +99,7 @@ export class RatesStep extends SetupStepComponent {
     void this.estv.update().catch(() => undefined);
   }
 
-  submit(): Promise<boolean> {
-    return this.form().submit();
+  async submit(): Promise<boolean> {
+    return (await this.form().submit()) && (await this.sources().submit());
   }
 }

@@ -10,6 +10,7 @@ import {
   dashboardRates,
   ENGINE_VERSION,
   type Holding,
+  preferFetchedSources,
   type ProjectCorrection,
   type RateEntry,
   withTaxCurrency,
@@ -31,6 +32,10 @@ import {
   type CoinChoices,
   priceSourceUsable,
 } from '../../rates/domain/coin-choice';
+import {
+  DEFAULT_PRICE_PROVIDERS,
+  providerOrder,
+} from '../../rates/domain/price-providers';
 import { CoinMarketRepositoryPort } from '../../rates/ports/coin-market.repository.port';
 import { ProjectRateRepositoryPort } from '../../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../../settings/ports/user-settings.repository.port';
@@ -66,6 +71,8 @@ export interface DashboardSources {
   readonly coinChoices: CoinChoices;
   /** Tickers the market list shows without a clear leader (their Binance rows are filtered). */
   readonly marketAmbiguous: readonly string[];
+  /** Price sources phase 2: the user's provider order — it ranks the fetched series per day. */
+  readonly sourceOrder: readonly string[];
 }
 
 export interface DashboardRecords {
@@ -142,8 +149,11 @@ export class DashboardInputService {
     // at read time, so old rows stop counting at once and the cache key changes with a choice).
     // Ambiguous tickers (hand-kept list or no clear leader in the market list) never get a
     // Binance price here either — such a cached series is filtered, never shown as a value.
-    const coinChoices: CoinChoices =
-      (await this.settings.find(userId))?.coinChoices ?? {};
+    const owner = await this.settings.find(userId);
+    const coinChoices: CoinChoices = owner?.coinChoices ?? {};
+    const sourceOrder = providerOrder(
+      owner?.priceSources ?? DEFAULT_PRICE_PROVIDERS,
+    );
     const marketAmbiguous = await marketAmbiguityOf(this.market, coinChoices);
     const usable = (r: RateEntry) =>
       r.kind !== 'price' ||
@@ -214,6 +224,7 @@ export class DashboardInputService {
       userRates: (await this.userRates.listByUser(userId)).filter(usable),
       coinChoices,
       marketAmbiguous: [...marketAmbiguous.keys()].sort(compareText),
+      sourceOrder,
     };
   }
 
@@ -265,6 +276,7 @@ export class DashboardInputService {
         .map(([symbol, c]) => `${symbol}|${c.provider}|${c.id}`)
         .sort(compareText),
       ambiguous: sources.marketAmbiguous,
+      sourceOrder: sources.sourceOrder,
     };
     return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
   }
@@ -309,7 +321,10 @@ export class DashboardInputService {
         sources.corrections,
         bookings,
       ),
-      rates: dashboardRates(projects, sources.projectRates, sources.userRates),
+      rates: preferFetchedSources(
+        dashboardRates(projects, sources.projectRates, sources.userRates),
+        sources.sourceOrder,
+      ),
       fileRefs,
       unreadable,
     };

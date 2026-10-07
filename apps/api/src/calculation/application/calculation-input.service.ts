@@ -10,6 +10,7 @@ import {
   ENGINE_VERSION,
   type Holding,
   parseStandardFile,
+  preferFetchedSources,
   type PreviousYear,
   type RateEntry,
   type WalletState,
@@ -37,6 +38,10 @@ import {
   type CoinChoices,
   priceSourceUsable,
 } from '../../rates/domain/coin-choice';
+import {
+  DEFAULT_PRICE_PROVIDERS,
+  providerOrder,
+} from '../../rates/domain/price-providers';
 import { CoinMarketRepositoryPort } from '../../rates/ports/coin-market.repository.port';
 import { ProjectRateRepositoryPort } from '../../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../../settings/ports/user-settings.repository.port';
@@ -198,23 +203,28 @@ export class CalculationInputService {
     // ticker may be another coin's and never counts (filtered here, so it is out of the hash too).
     // Ambiguous = the hand-kept list + tickers the stored market list shows without a clear
     // leader (local data, works offline).
-    const choices: CoinChoices =
-      (await this.settings.find(project.ownerId))?.coinChoices ?? {};
+    const owner = await this.settings.find(project.ownerId);
+    const choices: CoinChoices = owner?.coinChoices ?? {};
     const marketAmbiguous = await marketAmbiguityOf(this.market, choices);
-    const rates: RateEntry[] = (await this.rates.listByProject(project.id))
-      .filter(
-        (r) =>
-          r.kind !== 'price' ||
-          priceSourceUsable(r.asset, r.source, choices, marketAmbiguous),
-      )
-      .map((r) => ({
-        kind: r.kind,
-        asset: r.asset,
-        currency: r.currency,
-        date: r.date,
-        value: r.value,
-        source: r.source,
-      }));
+    // Price sources phase 2: among fetched series, the owner's provider order decides per day
+    // (`preferFetchedSources`) — before the hash, so a new order that changes a value is stale.
+    const rates: RateEntry[] = preferFetchedSources(
+      (await this.rates.listByProject(project.id))
+        .filter(
+          (r) =>
+            r.kind !== 'price' ||
+            priceSourceUsable(r.asset, r.source, choices, marketAmbiguous),
+        )
+        .map((r) => ({
+          kind: r.kind,
+          asset: r.asset,
+          currency: r.currency,
+          date: r.date,
+          value: r.value,
+          source: r.source,
+        })),
+      providerOrder(owner?.priceSources ?? DEFAULT_PRICE_PROVIDERS),
+    );
     const corrections = await this.corrections.listByProject(project.id);
     const { previous, ref } = await this.previousYear(project);
     return {

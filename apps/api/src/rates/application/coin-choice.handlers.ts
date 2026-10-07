@@ -63,10 +63,11 @@ export class SearchCoinsHandler implements IQueryHandler<
       throw new BadRequestException('q must be 1–60 characters');
     }
     const settings = await this.coins.online(userId);
+    const apiKey = this.coins.keyFor(settings, provider);
     const coins = await this.coins.ask(() =>
       // A typed id finds itself too (CoinGecko's search matches ids).
       this.coins.directory.search(provider, q, {
-        apiKey: settings.keys.coingecko,
+        apiKey,
         limit: SEARCH_LIMIT,
       }),
     );

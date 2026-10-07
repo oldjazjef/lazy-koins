@@ -10,6 +10,8 @@ export interface ErasedKeys {
   readonly mail: boolean;
   readonly coingecko: boolean;
   readonly etherscan: boolean;
+  /** Price sources: the CoinMarketCap key. */
+  readonly coinmarketcap: boolean;
   /** Helius / Subscan (Einstellungen › Wallets & Netzwerke). */
   readonly chains: boolean;
 }
@@ -17,7 +19,7 @@ export interface ErasedKeys {
 /**
  * "PIN vergessen" on the desktop (F11.0p): whoever resets the PIN must not inherit the secrets
  * stored behind it, so every sealed key of the user is removed — the AI key, the mail password,
- * the CoinGecko and Etherscan keys and the network keys (Helius, Subscan). Everything else
+ * the CoinGecko, CoinMarketCap and Etherscan keys and the network keys (Helius, Subscan). Everything else
  * (projects, files, settings, addresses) stays.
  */
 @Injectable()
@@ -33,9 +35,10 @@ export class SealedKeysEraser {
     const settings = await this.settings.find(userId);
     const coingecko = Boolean(settings?.sealedKeys.coingecko);
     const etherscan = Boolean(settings?.sealedKeys.etherscan);
-    if (coingecko || etherscan) {
+    const coinmarketcap = Boolean(settings?.sealedKeys.coinmarketcap);
+    if (coingecko || etherscan || coinmarketcap) {
       await this.settings.save(userId, {
-        sealedKeys: { coingecko: null, etherscan: null },
+        sealedKeys: { coingecko: null, etherscan: null, coinmarketcap: null },
       });
     }
 
@@ -73,6 +76,7 @@ export class SealedKeysEraser {
       mail: Boolean(mail?.passwordCipher),
       coingecko,
       etherscan,
+      coinmarketcap,
       chains,
     };
   }

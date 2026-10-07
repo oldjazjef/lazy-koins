@@ -37,6 +37,7 @@ import {
   type PickedCoin,
 } from '../../../../shared/coins';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { PriceAttribution } from '../../../../shared/components/price-attribution';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
@@ -82,6 +83,7 @@ const ManualRateSchema = z.object({
     QuantityPipe,
     EmptyState,
     CoinPicker,
+    PriceAttribution,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -113,6 +115,14 @@ export class ProjectRates {
   protected readonly currencies = computed(() => [
     ...new Set([this.currency(), 'USD']),
   ]);
+
+  /** Sources of the priced assets (attribution: CoinGecko / CoinMarketCap data shown). */
+  protected readonly pricingSources = computed(() =>
+    (this.view()?.assets ?? []).flatMap((a) => a.sources),
+  );
+  protected readonly seriesSources = computed(() =>
+    (this.view()?.series ?? []).map((s) => s.source),
+  );
 
   protected readonly series = computed(() => {
     const term = this.filter().trim().toUpperCase();
@@ -348,6 +358,19 @@ export class ProjectRates {
           ? this.sourceNames(row.sources)
           : this.translate.instant('rates.pricing.byTicker'),
     }) as string;
+  }
+
+  /** Assets nobody could price, with the first provider that failed and its code. */
+  protected failures(summary: RefreshSummary): {
+    asset: string;
+    provider: string;
+    code: string;
+  }[] {
+    return summary.assets.flatMap((a) =>
+      a.status === 'failed' && a.error
+        ? [{ asset: a.asset, provider: a.error.provider, code: a.error.code }]
+        : [],
+    );
   }
 
   protected contractAssets(summary: RefreshSummary): string {

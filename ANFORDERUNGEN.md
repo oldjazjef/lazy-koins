@@ -237,6 +237,17 @@ als abgeleitete Datei im Standardformat Teil des Projekts.
 - **F7.2** Ertrag des Jahres je Kategorie (Zinsen/Earn, Staking, Airdrop, Launchpool, Hardfork), bewertet zum Zuflusszeitpunkt in CHF.
 - **F7.3** Einmalereignisse (Hardforks, Airdrops, Verluste) separat ausweisen.
 - **F7.4** Kurse automatisch ermitteln mit Angabe der Quelle; Stichtags-Wechselkurse je Projekt einsehbar und überschreibbar (z. B. ESTV-Kursliste).
+- **F7.4b Kursanbieter wählbar** (Wunsch 07.10.2026: „CoinMarketCap als Kursanbieter, dazu
+  kostenlose Anbieter mit Kursverlauf, der Benutzer wählt, mit Fallback“): Einstellungen › Kurse
+  listet die Anbieter (Binance, CoinGecko, CoinMarketCap, DefiLlama, CoinPaprika, Kraken,
+  Coinbase, Bitfinex) – ein-/ausschaltbar, Reihenfolge frei; Standard wie bisher Binance →
+  CoinGecko, die neuen aus. „Kurse aktualisieren“ (Projekt und Dashboard) fragt sie der Reihe nach
+  und nimmt pro Asset den ersten mit Kursverlauf (sonst der nächste: Coin unbekannt, Tarif reicht
+  nicht zurück, Währung fehlt, leer oder Fehler). Schlüssel (CoinMarketCap) verschlüsselt, nie
+  zurückgegeben; „Testen“ zeigt Tarif, Verlaufstiefe oder den Fehler. Ein gewählter Coin kommt
+  zuerst von seinem Anbieter, mehrdeutige Kürzel bekommen bei keinem Anbieter einen Kurs. Jeder
+  Kurs behält seine Quelle; Quellenangabe für CoinGecko/CoinMarketCap überall, wo ihre Daten
+  erscheinen. Tageskurs = Schlusskurs des UTC-Tages.
 - **F7.4a ESTV-Kursliste automatisch**: Die Kursliste (ICTax) des Steuerjahres wird online
   bezogen (offizieller XML-Export, jeweils die neueste Fassung – die ESTV aktualisiert sie auch
   nach dem 31.03. noch) und daraus die Jahresendkurse für Kryptowährungen und Devisen
