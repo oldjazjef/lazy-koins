@@ -21,6 +21,7 @@ import { looksLikeMcpToken } from './mcp/domain/mcp-token';
 import { registerHostPdfPrinter } from './integrations/pdf/host-pdf.renderer';
 import type { HostPdfPrinter } from './integrations/pdf/print-options';
 import { OPENAPI_REFERENCE_PATH, setupOpenApi } from './openapi/setup-openapi';
+import { PinSessions } from './pin/application/pin-sessions';
 
 const GLOBAL_PREFIX = 'api';
 
@@ -65,6 +66,11 @@ export interface RunningApi {
   port: number;
   /** The address it listens on (`127.0.0.1` in local mode). */
   host: string;
+  /**
+   * Ends every unlocked PIN session (F11.0p): the next data request gets 423 until the PIN is
+   * entered again. The desktop shell calls it when the OS locks or suspends.
+   */
+  lockAll(): void;
 }
 
 /**
@@ -161,7 +167,13 @@ export async function bootstrap(
   }
   logger.log(`Auth mode: ${authMode}`);
 
-  return { app, port: address.port, host: address.address };
+  const sessions = app.get(PinSessions);
+  return {
+    app,
+    port: address.port,
+    host: address.address,
+    lockAll: () => sessions.revokeAll(),
+  };
 }
 
 /**

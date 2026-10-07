@@ -1,0 +1,190 @@
+<div
+  class="lk-lock-screen"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="lock-title"
+  aria-describedby="lock-hint"
+>
+  <div class="lk-lock-card">
+    <img [src]="logo" alt="" class="size-12" />
+    <h1 id="lock-title" class="flex items-center gap-2 text-xl font-semibold">
+      <ng-icon name="lucideLock" size="18" aria-hidden="true" />
+      {{ 'pin.lock.title' | translate }}
+    </h1>
+    <p id="lock-hint" class="text-muted-foreground text-center text-sm">
+      @if (screen.pin.lockReason(); as reason) { {{ 'pin.lock.reason.' + reason
+      | translate }} } @else { {{ 'pin.lock.hint' | translate }} }
+    </p>
+
+    @if (screen.forgotStep() === 'closed') {
+    <form
+      class="flex w-full flex-col items-center gap-4"
+      (submit)="$event.preventDefault(); submit()"
+    >
+      <label hlmLabel for="lock-pin" class="sr-only"
+        >{{ 'pin.lock.label' | translate }}</label
+      >
+      <input
+        #pinInput
+        hlmInput
+        id="lock-pin"
+        class="lk-pin-input"
+        type="password"
+        inputmode="numeric"
+        autocomplete="off"
+        maxlength="8"
+        [value]="screen.value()"
+        [attr.aria-invalid]="screen.problem() ? true : null"
+        [attr.aria-describedby]="screen.problem() ? 'lock-error' : null"
+        [placeholder]="'pin.lock.placeholder' | translate"
+        [disabled]="screen.reloginRequired()"
+        (input)="typed($event)"
+      />
+
+      <div
+        class="lk-pin-pad"
+        role="group"
+        [attr.aria-label]="'pin.lock.pad' | translate"
+      >
+        @for (digit of pad; track digit) {
+        <button
+          type="button"
+          class="lk-pin-key"
+          [disabled]="screen.reloginRequired()"
+          (click)="press(digit)"
+        >
+          {{ digit }}
+        </button>
+        }
+        <button
+          type="button"
+          class="lk-pin-key"
+          [attr.aria-label]="'pin.lock.delete' | translate"
+          [disabled]="screen.value() === ''"
+          (click)="backspace()"
+        >
+          <ng-icon name="lucideDelete" size="18" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="lk-pin-key"
+          [disabled]="screen.reloginRequired()"
+          (click)="press('0')"
+        >
+          0
+        </button>
+        <button
+          type="submit"
+          class="lk-pin-key lk-pin-key-primary"
+          [disabled]="!screen.canSubmit()"
+        >
+          {{ 'pin.lock.unlock' | translate }}
+        </button>
+      </div>
+
+      <div aria-live="assertive" class="min-h-10 text-center text-sm">
+        @if (screen.problem(); as problem) {
+        <p id="lock-error" class="text-destructive flex items-center gap-2">
+          <ng-icon name="lucideCircleAlert" size="16" aria-hidden="true" />
+          {{ 'pin.errors.' + problem.code | translate }} @if
+          (problem.attemptsLeft !== null && problem.code === 'wrongPin') { {{
+          'pin.lock.attemptsLeft' | translate: { count: problem.attemptsLeft }
+          }} }
+        </p>
+        } @if (screen.wait() > 0) {
+        <p class="text-muted-foreground">
+          {{ 'pin.lock.wait' | translate: { seconds: screen.wait() } }}
+        </p>
+        }
+      </div>
+    </form>
+
+    <div class="flex flex-wrap justify-center gap-2">
+      @if (screen.reloginRequired()) {
+      <button hlmBtn type="button" (click)="screen.signOut()">
+        <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
+        {{ 'pin.lock.relogin' | translate }}
+      </button>
+      } @else {
+      <button hlmBtn variant="link" type="button" (click)="screen.openForgot()">
+        {{ 'pin.lock.forgot' | translate }}
+      </button>
+      } @if (!screen.desktop() && !screen.reloginRequired()) {
+      <button hlmBtn variant="ghost" type="button" (click)="screen.signOut()">
+        <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
+        {{ 'nav.signOut' | translate }}
+      </button>
+      }
+    </div>
+    } @else {
+    <!-- PIN vergessen -->
+    <section class="flex w-full flex-col gap-4" aria-labelledby="forgot-title">
+      <h2 id="forgot-title" class="font-semibold">
+        {{ 'pin.forgot.title' | translate }}
+      </h2>
+      @if (screen.desktop()) {
+      <p class="text-sm">{{ 'pin.forgot.desktopBody' | translate }}</p>
+      <ul class="text-muted-foreground list-disc pl-5 text-sm">
+        <li>{{ 'pin.forgot.keys.ai' | translate }}</li>
+        <li>{{ 'pin.forgot.keys.mail' | translate }}</li>
+        <li>{{ 'pin.forgot.keys.coingecko' | translate }}</li>
+        <li>{{ 'pin.forgot.keys.etherscan' | translate }}</li>
+        <li>{{ 'pin.forgot.keys.chains' | translate }}</li>
+      </ul>
+      <label class="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          class="mt-1"
+          [checked]="screen.understood()"
+          (change)="screen.understood.set($any($event.target).checked)"
+        />
+        {{ 'pin.forgot.confirm' | translate }}
+      </label>
+      <div class="flex flex-wrap justify-end gap-2">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          (click)="screen.closeForgot()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="destructive"
+          type="button"
+          [disabled]="!screen.understood() || screen.forgotStep() === 'working'"
+          (click)="screen.resetDesktop()"
+        >
+          {{ 'pin.forgot.reset' | translate }}
+        </button>
+      </div>
+      } @else {
+      <p class="text-sm">{{ 'pin.forgot.webBody' | translate }}</p>
+      <div class="flex flex-wrap justify-end gap-2">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          (click)="screen.closeForgot()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          hlmBtn
+          type="button"
+          [disabled]="screen.forgotStep() === 'working'"
+          (click)="screen.resetWeb()"
+        >
+          {{ 'pin.forgot.relogin' | translate }}
+        </button>
+      </div>
+      } @if (screen.problem(); as problem) {
+      <p class="text-destructive text-sm" role="alert">
+        {{ 'pin.errors.' + problem.code | translate }}
+      </p>
+      }
+    </section>
+    }
+  </div>
+</div>

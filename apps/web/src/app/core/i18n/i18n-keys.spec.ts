@@ -62,6 +62,12 @@ import {
   TOKEN_EXPIRIES,
   TOOL_EFFECTS,
 } from '../api/assistant.types';
+import {
+  KEY_CHECK_CODES,
+  PIN_ERROR_CODES,
+  SETUP_STEPS,
+  STEP_STATES,
+} from '../api/setup.types';
 
 /**
  * Every i18n key the app references exists in every message file. A missing key renders as its
@@ -246,6 +252,35 @@ const DYNAMIC_KEYS = [
     'ollama',
     'lmstudio',
   ].map((preset) => `settings.ai.presets.${preset}`),
+  // F11.0s / F11.0p: the setup wizard and the PIN lock.
+  ...['noKey', 'offline'].map((code) => `settings.keyTest.${code}`),
+  ...KEY_CHECK_CODES.flatMap((code) => [
+    `settings.keyTest.codes.${code}`,
+    `settings.keyTest.hints.${code}`,
+  ]),
+  ...SETUP_STEPS.flatMap((step) => [
+    `setup.steps.${step}.title`,
+    `setup.steps.${step}.intro`,
+  ]),
+  ...STEP_STATES.map((state) => `setup.state.${state}`),
+  ...[
+    'profile',
+    'advisor',
+    'ai',
+    'onlineRates',
+    'coingeckoKey',
+    'etherscanKey',
+    'mail',
+    'pin',
+  ].flatMap((item) =>
+    ['title', 'ok', 'missing'].map(
+      (part) => `setup.summary.items.${item}.${part}`,
+    ),
+  ),
+  ...[...PIN_ERROR_CODES, 'failed'].map((code) => `pin.errors.${code}`),
+  ...['idle', 'lock-screen', 'suspend', 'unknown'].map(
+    (reason) => `pin.lock.reason.${reason}`,
+  ),
 ];
 
 /** Keys that only exist in specs (fixtures of the copied ActionRunner spec). */

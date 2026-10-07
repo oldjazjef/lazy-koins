@@ -120,6 +120,7 @@ export const Topics = {
   changedSinceSent: (projectId: string) =>
     `project.changedSinceSent:${projectId}`,
   syncConflict: () => 'desktop.syncConflict',
+  setupIncomplete: () => 'setup.incomplete',
   taskDone: (label: string, projectId: string | null) =>
     `task.done:${label}${projectId ? `:${projectId}` : ''}`,
   taskFailed: (label: string, projectId: string | null) =>
@@ -146,6 +147,7 @@ export const TITLE_BASES = [
   'checks.openItems',
   'project.changedSinceSent',
   'desktop.syncConflict',
+  'setup.incomplete',
   'task.done',
   'task.failed',
 ] as const;

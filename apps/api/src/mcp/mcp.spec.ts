@@ -5,6 +5,13 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import express from 'express';
 import { defaultAssistantSettings } from '../assistant/domain/assistant-settings';
 import { InMemoryAssistantSettingsRepository } from '../assistant/testing/in-memory-assistant.repositories';
+import {
+  PinLockState,
+  PinRuntime,
+  PinSessions,
+} from '../pin/application/pin-sessions';
+import { InMemoryUserPinRepository } from '../pin/testing/in-memory-user-pin.repository';
+import { fakeConfig, ManualClock } from '../pin/testing/pin-fixture';
 import { TOOL_AREAS } from '../tools/domain/tool';
 import { toolSetup } from '../tools/testing/tool-fixture';
 import { McpAccess } from './application/mcp-access';
@@ -255,6 +262,63 @@ describe('MCP server (F11.16)', () => {
     await expect(
       access.authenticate(`Bearer ${token}`, new Date('2026-01-01T00:01:01Z')),
     ).resolves.toEqual(expect.objectContaining({ userId: 'anna' }));
+  });
+});
+
+describe('MCP and the PIN lock (F11.0p)', () => {
+  async function lockSetup(mode: 'desktop' | 'web') {
+    const tokens = new InMemoryMcpTokenRepository();
+    const settings = new InMemoryAssistantSettingsRepository();
+    await settings.save('anna', {
+      ...defaultAssistantSettings('anna'),
+      mcpEnabled: true,
+    });
+    const pins = new InMemoryUserPinRepository();
+    await pins.save('anna', {
+      pinHash: 'scrypt$15$8$1$salt$hash',
+      failedAttempts: 0,
+      nextAttemptAt: null,
+      reloginRequiredAt: null,
+      autoLockMinutes: 15,
+    });
+    const clock = new ManualClock();
+    const sessions = new PinSessions(clock);
+    const access = new McpAccess(
+      tokens,
+      settings,
+      new PinRuntime(
+        fakeConfig({ AUTH_MODE: mode === 'desktop' ? 'local' : 'dev' }),
+      ),
+      new PinLockState(pins),
+      sessions,
+    );
+    const { token } = await new CreateMcpTokenHandler(tokens).execute(
+      new CreateMcpTokenCommand('anna', 'Claude', null),
+    );
+    return { access, sessions, clock, token };
+  }
+
+  it('desktop: refuses MCP while the app is locked, accepts it while unlocked, never renews', async () => {
+    const { access, sessions, clock, token } = await lockSetup('desktop');
+    const now = () => new Date(clock.now());
+    await expect(
+      access.authenticate(`Bearer ${token}`, now()),
+    ).rejects.toMatchObject({ status: 423, code: 'pinLocked' });
+    sessions.issue('anna', 15);
+    await expect(
+      access.authenticate(`Bearer ${token}`, now()),
+    ).resolves.toMatchObject({ userId: 'anna' });
+    clock.advance(16 * 60);
+    await expect(
+      access.authenticate(`Bearer ${token}`, now()),
+    ).rejects.toMatchObject({ status: 423 });
+  });
+
+  it('web: the token is its own credential — the PIN lock does not apply', async () => {
+    const { access, clock, token } = await lockSetup('web');
+    await expect(
+      access.authenticate(`Bearer ${token}`, new Date(clock.now())),
+    ).resolves.toMatchObject({ userId: 'anna' });
   });
 });
 

@@ -82,6 +82,12 @@
     @if (!service.view.value().online) {
     <p class="text-muted-foreground text-xs">
       {{ 'dashboard.rates.offlineHint' | translate }}
+      <a
+        class="text-primary hover:underline"
+        routerLink="/app/setup"
+        [queryParams]="{ step: 'rates' }"
+        >{{ 'setup.deepLink.rates' | translate }}</a
+      >
     </p>
     }
   </div>

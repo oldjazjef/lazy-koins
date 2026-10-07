@@ -33,6 +33,7 @@ export const NOTIFICATION_TITLE_BASES = [
   `checks.openItems`,
   `project.changedSinceSent`,
   `desktop.syncConflict`,
+  `setup.incomplete`,
   `task.done`,
   `task.failed`,
 ] as const;
@@ -50,6 +51,7 @@ export const NOTIFICATION_ACTION_LABELS = [
   'toRates',
   'toExports',
   'toStorage',
+  'toSetup',
 ] as const;
 
 /** `notifications.reason.<code>` — ESTV, mail and package failure codes. */

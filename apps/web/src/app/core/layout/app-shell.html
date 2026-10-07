@@ -12,7 +12,7 @@
 
       <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
         <ul class="flex items-center gap-1">
-          @for (item of items; track item.path) {
+          @if (!setup.incomplete()) { @for (item of items; track item.path) {
           <li>
             <a
               [routerLink]="item.path"
@@ -24,7 +24,7 @@
               <span>{{ item.labelKey | translate }}</span>
             </a>
           </li>
-          }
+          } }
         </ul>
       </nav>
 
@@ -86,6 +86,16 @@
             <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
             {{ item.labelKey | translate }}
           </a>
+          } @if (pin.status()?.hasPin) {
+          <button
+            role="menuitem"
+            type="button"
+            class="lk-menu-item border-t"
+            (click)="lockNow()"
+          >
+            <ng-icon name="lucideLock" size="16" aria-hidden="true" />
+            {{ 'pin.lockNow' | translate }}
+          </button>
           } @if (auth.hasAccount) {
           <button
             role="menuitem"

@@ -20,7 +20,8 @@ two as a package (F1.3).
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
 > Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
-> Profil and Einstellungen › Kurse/Wallets/AI behind the user menu), the pure engine (`libs/engine`:
+> Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
+> the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
 > **mapping spec** and its applier, F5.8 coverage hints, the **calculation** with rates, checks,
 > corrections and analyses over any date, the golden test) and the infrastructure
@@ -104,7 +105,8 @@ pnpm db:studio     # prisma studio — browse the database
 
 pnpm private:inspect   # structure of private/ (paths, sizes, headers, row counts) — never rows
 pnpm private:load [ZH] # loads private/ into the RUNNING dev API: project "Steuern 2025", mappings,
-                       #   files (not private/reference/**), rates, calculation — prints totals only
+                       #   files (not private/reference/**), rates, calculation — prints totals only;
+                       #   LK_UNLOCK_PIN=<pin> when the dev user has a PIN (F11.0p)
 pnpm exec playwright-core install chromium   # once: the browser for PDF exports
 pnpm vitest run --project engine   # one project's tests (api, web, engine, eslint-rules)
 ```
@@ -162,6 +164,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     tools/                  #   F11.14/F11.16: the ONE tool layer — registry, executor (policy + audit), definitions/
     assistant/              #   F11.14/F11.15: chat conversations, ChatEngine (tool loop, proposals), prompt
     mcp/                    #   F11.16: /api/mcp (SDK, stateless), PATs, MCP settings + audit endpoints
+    setup/                  #   F11.0s: setup wizard progress + facts (what is configured)
+    pin/                    #   F11.0p: PIN (scrypt), unlock sessions, PinLockGuard (423), forgot
     notifications/          #   F11.11–F11.13: NotificationService (raise/resolve by topic), ProjectNotifications,
                             #   list/count/read/dismiss, activity + sync-conflict reports (global module)
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
@@ -173,10 +177,12 @@ apps/web/                   # Angular app
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/ (toasts),
-                            #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/
+                            #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
+                            #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
     features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
                             #   mappings (F11.0: list + detail), profile (+ account package), settings
-                            #   (shell + rates/wallets/ai), files and calculation (components only:
+                            #   (shell + rates/wallets/ai/mail; components/ = the forms shared with
+                            #   the wizard), setup (F11.0s wizard), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
                             #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
                             #   the editor body of a project's new mapping; the mappings feature uses its own
@@ -190,7 +196,7 @@ apps/web/                   # Angular app
 apps/desktop/               # Electron shell (see Desktop)
   src/main/                 #   main.ts (lifecycle, window, IPC, storage switch), api-host.ts, protocol.ts (app://)
     lib/                    #   PURE helpers, unit-tested without Electron: migrations, storage, lock-file,
-                            #   sync-folder, web-protocol (routing, CSP, env.js), api-env
+                            #   sync-folder, web-protocol (routing, CSP, env.js), api-env, lock-watch (PIN)
   src/preload/preload.ts    #   window.lazykoinsDesktop (contextBridge) — types in src/shared/bridge.ts
   scripts/                  #   stage.mjs (assemble dist/apps/desktop-app), native-deps.cjs
   electron-builder.config.cjs, build/icon.png
@@ -422,7 +428,9 @@ mail`, plus `ui` = chat-only), `effect` (`readOnly | write | destructive`), opti
   Results carry relative app links (`/app/projects/:id?tab=result&figure=<figureId>`,
   `?tab=files#file-<id>`, `/app/mappings/:id`) and are capped (`limit`, `truncated`) —
   data minimisation: the model fetches details with read tools, the prompt holds only the page
-  context.
+  context. **Amounts carry their currency** (F4.1a): project, result, positions, income, checks,
+  calculate, exports and rates outputs have `currency` (the snapshot's or the project's tax
+  currency) — the `…Chf` field names are historical; price overrides are in that currency.
 - **`ToolRegistry`** (catalogue, `jsonSchemaOf` = `z.toJSONSchema`, `io` input/output, `$schema`
   removed; `forChat()`, `forMcp({ areas, allowWrite })`) and **`ToolExecutor.call(context, name,
 args, { policy?, confirmed? })`**: validate (zod issues → `invalidArguments`), policy (MCP: area
@@ -447,7 +455,7 @@ tools run at once (results ≤ 12 000 chars to the model), **write/destructive t
 proposals** (`chat_proposal`, preview with before/after, audit `proposed`; the model is told it
 was proposed) → final answer with `attachments` (upload drop zone, links), `proposalIds`,
 `toolsUsed`, usage. The turn is stored only when it completed — an AI error (the gate's 502 with
-details) leaves the chat as it was. History to the model: last 40 messages from a user message,
+details; `gate.call(…, { userId })` raises `ai.callFailed` like every AI call) leaves the chat as it was. History to the model: last 40 messages from a user message,
 older tool results ≤ 2000 chars, `event` rows as `[App] …` user notes. `POST …/proposals/:id/confirm`
 claims the proposal atomically (`pending` → decided, a second click = 409), runs the tool with
 `confirmed: true` (closed projects still 409 → card `failed`) and appends an `event`;
@@ -468,7 +476,12 @@ resources `lazykoins://projects/<id>` (facts + result totals). **Off by default*
 `lkmcp_<base64url 32 bytes>` (`mcp_token`: SHA-256 only, hint, expiry ≤ 365 d or none, last
 used, revoked; ≤ 20 active), `McpAccess` → 401 `missingToken|invalidToken|tokenRevoked|
 tokenExpired`, 403 `mcpDisabled`, 429 `rateLimited` (120 requests/min per token, in memory).
-The route is `@Public()` and skips the per-account write budget; `AccessTokenGuard` never verifies
+**PIN lock (F11.0p, decided 08.10.2026)**: the chat's endpoints are ordinary data routes, so
+`PinLockGuard` locks them like everything else. MCP has no browser session: on the **desktop** a
+token is refused with **423 `pinLocked`** while the user has a PIN and no unlocked session
+(`PinSessions.isUnlocked`, which does not renew — MCP traffic never keeps the app open); on the
+**web** the PAT is its own credential (MCP-only, hashed, expiry, revocable), so the browser's PIN
+lock does not apply to it. The route is `@Public()` and skips the per-account write budget; `AccessTokenGuard` never verifies
 a `lkmcp_` token as an ID token and refuses it on every other route (also in local mode — no
 ambient fallback). `bootstrap.ts` gives `/api/mcp` an 8 MB JSON limit (`mcpBodyParser`, see
 gotchas). Settings: `GET|PUT /api/settings/mcp` (+ endpoint, mode web/desktop, tool list),
@@ -489,7 +502,7 @@ the packaged app's data folder). Run as `ELECTRON_RUN_AS_NODE=1 <lazy-koins.exe>
 **Web**: `core/assistant/` — `ChatService` (root: status, conversations, ask/confirm/cancel,
 consent notice, AI error panel state), `chat-sidebar` in the app shell (header toggle, open state
 in localStorage; beside the page from `lg`, an overlay with backdrop below; only the message list
-scrolls), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
+scrolls; without a usable AI plugin a hint links to the wizard's AI step `/app/setup?step=ai`), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
 `textContent`, only relative `/app/…` links become router links), `proposal-card`
 (before → after, "Ausführen" / "Abbrechen", outcome), `chat-upload` (drop zone → the normal
 upload endpoint), `ChatContextService` (the workspace publishes project + tab) and
@@ -558,6 +571,67 @@ response, command, code }`, **redacted** (`redact.ts`: password, its base64, the
   Tests: fake transport (`mail/testing/mail-doubles.ts`) for handlers, the real nodemailer adapter
   against an in-process `smtp-server` sink — never a real mail.
 
+## Setup wizard and PIN lock (F11.0s, F11.0p)
+
+**Wizard** (`/app/setup`, `features/setup`; API slice `setup/`, table `setup_progress`): steps
+Profil (required) · Treuhänder · AI-Plugin · Kurse · Wallets & Netzwerke · Mail · Speicherort
+(desktop only) · PIN (required on the desktop, optional on the web) · Zusammenfassung. Progress per
+user (`steps` JSON: `open|done|skipped|error`, `current_step`, `completed_at`) → `GET|PATCH
+/api/setup`, `POST /api/setup/complete` ("App starten" / "Erstes Projekt anlegen"). The API refuses
+`skipped` for a required step and `done` without its settings (profile: name + Wohnkanton; PIN: a
+PIN) — 422 `stepRequired|stepIncomplete`; `complete` = `completed_at` set **and** nothing required
+missing (the desktop's PIN after "PIN vergessen" reopens it). `facts` (what is configured) are read
+from the slices' own ports (`SetupFactsReader`, never opens a key) and drive the summary's "what a
+gap means". `setupGuard` (`core/setup/setup-state.service.ts`, `canActivateChild` on `/app`)
+sends every page there until finished (API unreachable → the app opens); the shell hides the main
+navigation meanwhile. Re-open: Einstellungen › System "Einrichtung erneut durchlaufen".
+Deep links `/app/setup?step=ai|rates|mail` from the AI "nicht eingerichtet" dialogs, the
+Treuhänder mail without mailer, the project's Kurse tab and the dashboard when lookups are off.
+
+- **The steps reuse the settings**: the forms are extracted components used by both —
+  `features/settings/components/ai-settings-form` (`lk-ai-settings-form`), `mailer-form`,
+  `rates-key-form` (online on/off + CoinGecko key + **Testen** = `POST
+/api/settings/keys/coingecko/test`, `KeyCheckResult` with code/status/provider message/URL →
+  `lk-key-check-result`), storage via `StorageSettingsPageService`. `embedded` hides their save
+  button and their success toast (it would sit on "Weiter"); the page's "Weiter" calls
+  `submit()` of the step on screen (`SetupStepComponent` token, `provideSetupStep`). The AI step
+  can give the F5.14 consent up front (`giveConsent` on `PUT /api/ai/settings`; the payload is
+  still shown before every request). Wallets: the Etherscan and Helius keys with "Testen" through
+  `WalletSettingsPageService` (`/api/settings/wallets`, `…/test`); the other networks stay in
+  Einstellungen › Wallets & Netzwerke.
+
+**PIN** (API slice `pin/`, table `user_pin`): 4–8 digits, stored only as **scrypt**
+(`pin/domain/pin-hash.ts`: N = 2^15, r = 8, p = 1, 16-byte salt, 32-byte key, parameters inside the
+hash `scrypt$15$8$1$<salt>$<hash>`, `needsRehash`), never logged. Wrong attempts are persisted
+(`failed_attempts`, `next_attempt_at`): wait 0, 1, 2, 5, 10, 30, 60 … 900 s; one check per user at
+a time (`PinPolicy.serial`). Web: after 10 failures `reloginRequired` until a sign-in **after** that
+moment (the identity's `authTime` = Firebase `auth_time`; the dev token carries it as
+`dev:<email>#<epoch ms>`). "PIN vergessen": desktop = `POST /api/pin/forgot {confirmClearKeys:
+true}` removes the PIN **and every sealed key** (AI key, mail password, CoinGecko, Etherscan,
+Helius, Subscan — `SealedKeysEraser`; a new sealed key elsewhere must be added there); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
+it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (default 15).
+
+- **Enforced in the API**: `PinLockGuard` (global, after `AccessTokenGuard`) answers **423
+  `pinLocked`** to every request of a user with a PIN that lacks a valid `x-lazykoins-unlock`
+  token. `@AllowWhileLocked()`: `GET /pin/status`, `POST /pin/unlock|lock|forgot`, `GET /me`.
+  Unlock tokens live **in memory** (`PinSessions`, only their SHA-256, sliding expiry = the
+  auto-lock time, ≤ 20 per user) — every API (re)start locks everyone, which is the desktop's
+  "PIN on every start". Changing the PIN ends the user's other sessions.
+- **Web**: `PinLockService` (`core/pin`) keeps the token in **sessionStorage** (a new tab after
+  the app was closed has none → locked; an open tab shares its token over a BroadcastChannel), an
+  idle timer (DOM input) locks and activity renews (`POST /pin/renew`, ≤ 1/min).
+  `unlockInterceptor` adds the header, **holds** data requests while locked and re-sends a
+  request that got 423 after the PIN was entered. `lk-lock-screen` (root, app behind it
+  `inert`): PIN field + pad, error with countdown/attempts left, "PIN vergessen", sign-out (web).
+  User menu "Jetzt sperren"; Profil › PIN-Sperre (change with the current PIN, auto-lock, remove on
+  the web).
+- **Desktop**: `RunningApi.lockAll()` (bootstrap) revokes every session; `lib/lock-watch.ts`
+  (pure, unit-tested) locks on `powerMonitor` `lock-screen`/`suspend` and on system idle ≥ the
+  user's auto-lock time (the window reports it via `lazykoinsDesktop.lock.setIdleMinutes`), and
+  main.ts tells the window (`lock.onLocked`).
+- The PIN guards an open app, not the files: whoever copies the data folder (database + key file)
+  can try all PINs offline.
+
 ## Notifications (F11.11–F11.13)
 
 The bell in the header (`core/notification-centre/notification-bell`, next to the theme toggle)
@@ -610,12 +684,17 @@ filters kind / project / status). Slice `notifications/` (API), global module.
   | `checks.openItems:<p>`, `rates.missingPrices:<p>` | action          | after a calculation (count) / ticked off, recalculated without                                                     |
   | `project.changedSinceSent:<p>`                    | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
   | `desktop.syncConflict`                            | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
+  | `setup.incomplete`                                | action          | wizard finished with skipped/open optional steps still missing settings / all set up (below)                       |
   | `task.done:<label>[:<p>]`, `task.failed:…`        | success / error | the app's activity report (below)                                                                                  |
 
   Plus `wallet.fetchFailed:<wallet>` (error: label, failed networks, first code — never the
   address; resolved by a fetch without failures) and `key.invalid:chain` (a network's 401/403 →
-  Einstellungen › Wallets) from `FetchWalletHandler`. Not wired yet: "Einrichtung unvollständig"
-  (F11.0s, not in `dev`) — add a topic + trigger when it lands.
+  Einstellungen › Wallets) from `FetchWalletHandler`. And `setup.incomplete` (action, condition,
+  F11.0s): `SetupViews.present` re-derives it whenever the wizard is read or changed — raised
+  once "App starten" was pressed while optional steps were skipped/left open **and** their
+  settings are still missing (`setupGaps`: Treuhänder, AI, CoinGecko, Etherscan, Mailer, web PIN;
+  params `count` + `steps`, button "Einrichten" → `/app/setup?step=<first gap>`), resolved when
+  none is left.
 
 - **API**: `GET /api/notifications?status=unread|all&includeResolved&kind&projectId&offset&limit`
   (newest first, ≤ 500, `{ items, total, unread }`), `GET …/count`, `POST …/:id/read`,
@@ -1001,6 +1080,10 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
 - **Assistant / MCP** (migration `20261008180000_ai_chat_mcp`): see "Tool layer, AI assistant,
   MCP server".
+- **Setup / PIN** (migration `20261008150000_setup_pin`, new tables only): `setup_progress` (PK
+  `user_id`; `steps` must be a JSON object, `current_step` CHECK) and `user_pin` (PK `user_id`;
+  `pin_hash LIKE 'scrypt$%'`, counters ≥ 0, auto-lock 1–240) — both cascade with the user;
+  `setup.persistence.integration.spec.ts`.
 - **Notifications** (migration `20261008160000_notifications`, new table only): `notification`
   (unique `(user_id, topic)`, index `(user_id, occurred_at)`; CHECKs: kind, topic 1–300,
   `title_key LIKE 'notifications.%'`, params a JSON object ≤ 4000, action null or a JSON object;
@@ -1019,7 +1102,9 @@ server.** Three modes, `AUTH_MODE` in the API (validated in `config/env.ts`):
   `FIREBASE_PROJECT_ID`. The SDK is `import()`ed on first use, so dev mode never loads it.
 - **`dev`** (API) + **`authMode: 'dev'`** (app, `env.js`): the token `dev:<email>` signs in as
   that address, no Firebase project needed. `validateEnv` refuses it unless
-  `NODE_ENV=development|test`. In Scalar, paste `dev:anna@lazykoins.dev`.
+  `NODE_ENV=development|test`. In Scalar, paste `dev:anna@lazykoins.dev`. The app's dev sign-in
+  appends the sign-in time (`dev:<email>#<epoch ms>`, same uid) — the PIN lock's "fresh sign-in"
+  (`authTime`, F11.0p); a plain token has no sign-in time.
 - **`local`** (the desktop app, F1.2): **no token at all** — every request acts as one
   fixed user (`LOCAL_USER_EMAIL`, uid `local:owner`) via `LocalIdentityVerifier.ambient()`.
   Allowed in any `NODE_ENV`, but only with the explicit second switch **`LOCAL_MODE=true`**
@@ -1032,6 +1117,7 @@ server.** Three modes, `AUTH_MODE` in the API (validated in `config/env.ts`):
 
 `AccessTokenGuard` (global) verifies the token through `IdentityTokenVerifierPort` (or takes the
 ambient identity when none is sent); `PrincipalService` creates the user row on first sight.
+`PinLockGuard` runs right after it (F11.0p, see Setup wizard and PIN lock).
 `@Public()` opts a route out (health). No roles: "you may act on what you own", checked in
 handlers.
 
@@ -1259,6 +1345,11 @@ etx), so no `project.json` has a `test` target, deliberately.
   against a real SQLite file with the real migrations — owner listing, empty updates, cascade,
   CHECK constraints. `scripts/dev/with-test-db.mjs` points them at `tmp/lazykoins-test.db`
   (never your dev database) unless `DATABASE_URL` is already set.
+- Setup / PIN: `pin/testing/pin-fixture.ts` (every PIN handler over port doubles + a
+  `ManualClock`), `pin-lock.http.spec.ts` (a real Nest app with the guard on a port: 423 without
+  token, `lockAll`, wrong PIN, one user's token never unlocks another); web: `PinLockService` +
+  interceptor with `HttpTestingController` (BroadcastChannel stubbed out), `LockScreenService`
+  with fake timers, `SetupPageService` + `setupGuard`; desktop: `lock-watch.spec.ts`.
 - Dashboard / carry-over / packages: `bundleSetup()` (`carryover/testing/bundle-fixture.ts`) adds
   the bundle, carry-over, export and user-rate doubles to the calculation fixture; package specs
   build tampered / zip-slip ZIPs with fflate; the data-export spec re-uploads its own CSV.
@@ -1492,7 +1583,14 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
   or `PDF_CHROMIUM_PATH`); without it the API answers 503 for PDFs, Excel still works.
 - Rate adapters parse JSON with the reviver's **source text** (`parseJsonKeepingNumbers`) so a
   rate never becomes a JS number; Node ≥ 21 provides it.
-- Several agents may share the Browser pane: pass `tabId` explicitly when driving it.
+- Several agents may share the Browser pane: pass `tabId` explicitly when driving it. A live check
+  can also drive the dev server headless with `playwright-core` (already a dependency); a
+  component host like `lk-lock-screen` has no box of its own — wait for `.lk-lock-screen`.
+- A user with a PIN gets **423** from every data endpoint without the unlock token: scripts and
+  Scalar calls against such an account need `x-lazykoins-unlock` (`POST /api/pin/unlock`), or use
+  an account without a PIN. `pnpm private:load` does it with `LK_UNLOCK_PIN=<pin>` (sent to the
+  API only, never printed). Deleting `user_pin` rows behind a running API leaves its per-user PIN
+  cache stale — restart it.
 - **Desktop native module**: better-sqlite3 must have a **prebuilt binary for Electron's ABI**
   (GitHub release assets `better-sqlite3-v<x>-electron-v<abi>-<os>-<arch>.tar.gz`). 12.11.1 has
   them up to ABI 146 = **Electron 42**, which is why `electron` is pinned there (44 = ABI 149 has

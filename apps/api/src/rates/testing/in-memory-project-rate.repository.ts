@@ -8,6 +8,7 @@ import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port
 import {
   FiatPriceSourcePort,
   FxRateSourcePort,
+  type KeyCheckResult,
   type SeriesRequest,
   UsdPriceSourcePort,
 } from '../ports/rate-source.port';
@@ -115,6 +116,18 @@ export class FakeFiatSource extends FiatPriceSourcePort {
       value: '1.5',
       source: 'coingecko',
     }));
+  }
+
+  async checkKey(apiKey: string): Promise<KeyCheckResult> {
+    const ok = apiKey.startsWith('CG-');
+    return {
+      ok,
+      ...(ok ? {} : { code: 'invalidKey' as const }),
+      status: ok ? 200 : 401,
+      providerMessage: ok ? null : 'invalid key',
+      url: 'https://api.coingecko.com/api/v3/ping',
+      millis: 1,
+    };
   }
 }
 

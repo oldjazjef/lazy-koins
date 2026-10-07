@@ -33,14 +33,18 @@ export class WalletSettingsPageService {
   readonly testing = signal<ChainService | null>(null);
   readonly results = signal<Partial<Record<ChainService, TestOutcome>>>({});
 
-  async save(request: ChainSettingsRequest): Promise<boolean> {
+  /** `quiet`: no "Gespeichert" toast (the setup wizard moves on instead). */
+  async save(
+    request: ChainSettingsRequest,
+    options: { quiet?: boolean } = {},
+  ): Promise<boolean> {
     this.saving.set(true);
     try {
       const saved = await firstValueFrom(
         this.http.put<ChainSettings>(apiUrl('/settings/wallets'), request),
       );
       this.settings.set(saved);
-      this.notifications.success('settings.saved');
+      if (!options.quiet) this.notifications.success('settings.saved');
       return true;
     } catch (error) {
       const { key, detail } = walletError(error);

@@ -56,6 +56,13 @@ export interface DesktopBridge {
     /** Opens the data folder in Explorer / Finder. */
     reveal(): Promise<void>;
   };
+  /** F11.0p: the PIN lock driven by the OS (lock screen, suspend, system idle). */
+  readonly lock: {
+    /** Called when the shell locked the app; returns an unsubscribe function. */
+    onLocked(listener: (reason: string) => void): () => void;
+    /** The user's auto-lock time, so the shell's system-idle check uses it. */
+    setIdleMinutes(minutes: number): Promise<void>;
+  };
   readonly notifications: {
     /** Einstellungen › System › "System-Benachrichtigungen" (default on). */
     enabled(): Promise<boolean>;
@@ -72,6 +79,9 @@ export const IPC = {
   storageUseDefault: 'lk:storage:use-default',
   storageReveal: 'lk:storage:reveal',
   mcpStdio: 'lk:mcp:stdio',
+  /** main → window: the app was locked (reason). */
+  locked: 'lk:lock:locked',
+  lockIdleMinutes: 'lk:lock:idle-minutes',
   notificationsEnabled: 'lk:notifications:enabled',
   notificationsSetEnabled: 'lk:notifications:set-enabled',
   notificationsShow: 'lk:notifications:show',

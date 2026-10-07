@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import {
+  PinLockState,
+  PinRuntime,
+  PinSessions,
+} from '../../pin/application/pin-sessions';
 import { defaultAssistantSettings } from '../../assistant/domain/assistant-settings';
 import { AssistantSettingsRepositoryPort } from '../../assistant/ports/assistant.repository.port';
 import {
@@ -12,8 +17,9 @@ import type { McpPrincipal } from './mcp-server';
 /** Why a request to `/api/mcp` is refused — HTTP status + a stable code. */
 export class McpAccessError extends Error {
   constructor(
-    readonly status: 401 | 403 | 429,
+    readonly status: 401 | 403 | 423 | 429,
     readonly code:
+      | 'pinLocked'
       | 'missingToken'
       | 'invalidToken'
       | 'tokenRevoked'
@@ -48,6 +54,10 @@ export class McpAccess {
   constructor(
     private readonly tokens: McpTokenRepositoryPort,
     private readonly settings: AssistantSettingsRepositoryPort,
+    // F11.0p: absent in specs that do not care about the PIN lock.
+    @Optional() private readonly pinRuntime?: PinRuntime,
+    @Optional() private readonly pinState?: PinLockState,
+    @Optional() private readonly pinSessions?: PinSessions,
   ) {}
 
   async authenticate(
@@ -84,6 +94,7 @@ export class McpAccess {
         'The MCP server is switched off for this account (Einstellungen › MCP)',
       );
     }
+    await this.checkPinLock(stored.userId);
     this.take(stored.id, now.getTime());
     if (
       !stored.lastUsedAt ||
@@ -99,6 +110,31 @@ export class McpAccess {
         allowWrite: settings.mcpAllowWrite,
       },
     };
+  }
+
+  /**
+   * F11.0p × F11.16 (decided 08.10.2026): on the **desktop** an MCP token is refused (423
+   * `pinLocked`) while the app is locked — a user with a PIN must have the app unlocked, and MCP
+   * traffic never renews the unlock (the auto-lock still runs). On the **web** the token is its
+   * own credential (scoped to MCP, hashed, with expiry, revocable), so the PIN lock of the
+   * browser sessions does not apply to it.
+   */
+  private async checkPinLock(userId: string): Promise<void> {
+    if (
+      !this.pinRuntime ||
+      this.pinRuntime.mode !== 'desktop' ||
+      !this.pinState ||
+      !this.pinSessions
+    ) {
+      return;
+    }
+    if (!(await this.pinState.pinOf(userId))) return;
+    if (this.pinSessions.isUnlocked(userId)) return;
+    throw new McpAccessError(
+      423,
+      'pinLocked',
+      'lazy-koins is locked: unlock it with the PIN in the desktop app first',
+    );
   }
 
   private take(tokenId: string, now: number): void {

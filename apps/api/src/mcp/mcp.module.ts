@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 import type { Env } from '../config/env';
+import { PinModule } from '../pin/pin.module';
 import { ToolsModule } from '../tools/tools.module';
 import { McpAccess } from './application/mcp-access';
 import {
@@ -21,7 +22,7 @@ import { McpService } from './mcp.service';
  * access tokens, per-token rate limit) and Einstellungen › MCP (switches, tokens, audit log).
  */
 @Module({
-  imports: [CqrsModule, ToolsModule],
+  imports: [CqrsModule, ToolsModule, PinModule],
   controllers: [McpController, McpSettingsController],
   providers: [
     McpService,

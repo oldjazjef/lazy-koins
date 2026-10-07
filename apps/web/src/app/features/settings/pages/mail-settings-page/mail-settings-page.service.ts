@@ -75,9 +75,10 @@ export class MailSettingsPageService {
   private readonly status = this.actions.status<unknown>(KEY);
   readonly isSaving = computed(() => this.status()?.state === 'pending');
 
+  /** `message` = the success toast; `null` = none (the setup wizard moves on instead). */
   async save(
     request: SaveMailSettingsRequest,
-    message = 'settings.mail.saved',
+    message: string | null = 'settings.mail.saved',
   ): Promise<boolean> {
     try {
       const saved = await this.actions.run(this.saveAction, request, {
@@ -85,7 +86,7 @@ export class MailSettingsPageService {
         silent: true,
       });
       this.settings.set(saved);
-      this.notifications.success(message);
+      if (message) this.notifications.success(message);
       return true;
     } catch (error) {
       this.notifications.error(mailErrorKey(error));

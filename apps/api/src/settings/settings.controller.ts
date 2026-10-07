@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiOkResponse,
   ApiOperation,
   ApiServiceUnavailableResponse,
@@ -9,7 +10,12 @@ import {
 import type { AuthenticatedUser } from '../auth/authenticated-user';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
-import { SettingsResponseDto, UpdateSettingsDto } from './dto/settings.dto';
+import {
+  KeyCheckResponseDto,
+  SettingsResponseDto,
+  TestKeyDto,
+  UpdateSettingsDto,
+} from './dto/settings.dto';
 import { SettingsService } from './settings.service';
 
 const SYMBOL = /^[A-Za-z0-9.]{1,40}$/;
@@ -67,5 +73,20 @@ export class SettingsController {
         coingeckoIds,
       }),
     );
+  }
+
+  @Post('keys/coingecko/test')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Test the CoinGecko key — the typed one (never stored) or the stored one',
+  })
+  @ApiOkResponse({ type: KeyCheckResponseDto })
+  @ApiConflictResponse({ description: '`noKey` or `offline`' })
+  async testCoingeckoKey(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: TestKeyDto,
+  ): Promise<KeyCheckResponseDto> {
+    return { ...(await this.settings.testCoingeckoKey(user.userId, dto.key)) };
   }
 }

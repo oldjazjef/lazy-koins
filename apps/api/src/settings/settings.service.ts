@@ -4,8 +4,10 @@ import {
   GetSettingsQuery,
   type SettingsChanges,
   type SettingsView,
+  TestCoingeckoKeyCommand,
   UpdateSettingsCommand,
 } from './application/settings.handlers';
+import type { KeyCheckResult } from '../rates/ports/rate-source.port';
 
 /** Thin façade over the buses — no logic here; it lives in the handlers. */
 @Injectable()
@@ -21,5 +23,9 @@ export class SettingsService {
 
   update(userId: string, changes: SettingsChanges): Promise<SettingsView> {
     return this.commands.execute(new UpdateSettingsCommand(userId, changes));
+  }
+
+  testCoingeckoKey(userId: string, key?: string): Promise<KeyCheckResult> {
+    return this.commands.execute(new TestCoingeckoKeyCommand(userId, key));
   }
 }

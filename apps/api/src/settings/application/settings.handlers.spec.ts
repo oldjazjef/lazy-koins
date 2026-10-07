@@ -8,9 +8,12 @@ import {
   GetSettingsQuery,
   SettingsReader,
   SettingsSecrets,
+  TestCoingeckoKeyCommand,
+  TestCoingeckoKeyHandler,
   UpdateSettingsCommand,
   UpdateSettingsHandler,
 } from './settings.handlers';
+import { FakeFiatSource } from '../../rates/testing/in-memory-project-rate.repository';
 
 const KEY = 'a-test-key-that-is-long-enough-for-aes-256-gcm';
 
@@ -95,5 +98,40 @@ describe('settings (F11, F6.7)', () => {
       advisorEmail: 'tr@example.ch',
       keyStorageAvailable: false,
     });
+  });
+});
+
+describe('CoinGecko key test (F6.7, F11.0s "Testen")', () => {
+  function testSetup(ratesOnline = 'true') {
+    const t = setup();
+    const chf = new FakeFiatSource();
+    const config = {
+      get: (key: string) => (key === 'RATES_ONLINE' ? ratesOnline : undefined),
+    } as unknown as ConfigService<Env, true>;
+    return { ...t, test: new TestCoingeckoKeyHandler(t.reader, chf, config) };
+  }
+
+  it('tests the typed key (unsaved), else the stored one', async () => {
+    const t = testSetup();
+    expect(
+      await t.test.execute(new TestCoingeckoKeyCommand('anna', ' CG-typed ')),
+    ).toMatchObject({ ok: true });
+    await t.update.execute(
+      new UpdateSettingsCommand('anna', { keys: { coingecko: 'bad-stored' } }),
+    );
+    expect(
+      await t.test.execute(new TestCoingeckoKeyCommand('anna')),
+    ).toMatchObject({ ok: false, code: 'invalidKey', status: 401 });
+  });
+
+  it('409 without a key, and when the server is offline', async () => {
+    await expect(
+      testSetup().test.execute(new TestCoingeckoKeyCommand('anna')),
+    ).rejects.toMatchObject({ response: { code: 'noKey' } });
+    await expect(
+      testSetup('false').test.execute(
+        new TestCoingeckoKeyCommand('anna', 'CG-x'),
+      ),
+    ).rejects.toMatchObject({ response: { code: 'offline' } });
   });
 });

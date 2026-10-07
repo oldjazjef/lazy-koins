@@ -101,9 +101,10 @@ export class AiSettingsPageService {
   private readonly status = this.actions.status<AiSettings>(KEY);
   readonly isSaving = computed(() => this.status()?.state === 'pending');
 
+  /** `message` = the success toast; `null` = none (the setup wizard moves on instead). */
   async save(
     request: SaveAiSettingsRequest,
-    message = 'settings.ai.saved',
+    message: string | null = 'settings.ai.saved',
   ): Promise<boolean> {
     try {
       const saved = await this.actions.run(this.saveAction, request, {
@@ -114,7 +115,7 @@ export class AiSettingsPageService {
       this.events.settingsChanged();
       this.testResult.set(null);
       this.testError.set(null);
-      this.notifications.success(message);
+      if (message) this.notifications.success(message);
       return true;
     } catch (error) {
       this.notifications.error(aiErrorKey(error));

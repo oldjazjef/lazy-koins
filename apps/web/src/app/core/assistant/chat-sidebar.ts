@@ -82,6 +82,8 @@ export class ChatSidebar {
   protected readonly chat = inject(ChatService);
   private readonly injector = inject(Injector);
   protected readonly maxLength = MAX_QUESTION;
+  /** F11.0s: "AI not set up" leads to the setup wizard's AI step. */
+  protected readonly setupQuery = { step: 'ai' };
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
   protected readonly confirm = signal<Confirm | null>(null);

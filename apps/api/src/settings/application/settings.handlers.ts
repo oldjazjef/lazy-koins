@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   Optional,
   ServiceUnavailableException,
@@ -23,6 +24,10 @@ import {
 } from '../domain/user-settings';
 import { UserSettingsRepositoryPort } from '../ports/user-settings.repository.port';
 import { SecretBox } from '../../common/crypto/secret-box';
+import {
+  FiatPriceSourcePort,
+  type KeyCheckResult,
+} from '../../rates/ports/rate-source.port';
 
 /** The SecretBox keyed by `SETTINGS_ENCRYPTION_KEY` (empty = keys cannot be stored). */
 @Injectable()
@@ -125,6 +130,55 @@ export class UpdateSettingsCommand {
     readonly userId: string,
     readonly changes: SettingsChanges,
   ) {}
+}
+
+export class TestCoingeckoKeyCommand {
+  constructor(
+    readonly userId: string,
+    /** A key typed into the form (unsaved, never stored); absent = the stored key. */
+    readonly key?: string,
+  ) {}
+}
+
+/**
+ * "Testen" for the CoinGecko key (F6.7, F11.0s): one cheap request with the typed or the stored
+ * key — no prices, no user data. 409 `noKey` without a key, `offline` with `RATES_ONLINE=false`.
+ */
+@CommandHandler(TestCoingeckoKeyCommand)
+export class TestCoingeckoKeyHandler implements ICommandHandler<
+  TestCoingeckoKeyCommand,
+  KeyCheckResult
+> {
+  constructor(
+    private readonly reader: SettingsReader,
+    private readonly chf: FiatPriceSourcePort,
+    private readonly config: ConfigService<Env, true>,
+  ) {}
+
+  async execute({
+    userId,
+    key,
+  }: TestCoingeckoKeyCommand): Promise<KeyCheckResult> {
+    if (this.config.get('RATES_ONLINE', { infer: true }) === 'false') {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'Rate lookups on the internet are off on this server',
+        code: 'offline',
+      });
+    }
+    const typed = key?.trim();
+    const apiKey = typed || (await this.reader.resolve(userId)).keys.coingecko;
+    if (!apiKey) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'No CoinGecko key entered or stored',
+        code: 'noKey',
+      });
+    }
+    return this.chf.checkKey(apiKey);
+  }
 }
 
 /** F11.1–F11.3, F6.7: keys are sealed before they reach the database. */

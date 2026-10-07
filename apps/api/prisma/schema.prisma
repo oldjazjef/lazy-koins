@@ -73,6 +73,8 @@ model User {
   mcpTokens     McpToken[]
   conversations ChatConversation[]
   toolAudits    ToolAudit[]
+  setupProgress SetupProgress?
+  pin           UserPin?
   notifications Notification[]
 
   @@map("user")
@@ -673,6 +675,43 @@ model EstvCheck {
   error     String?
 
   @@map("estv_check")
+}
+
+/// F11.0s: where a user is in the setup wizard. One row per user, created on the first step
+/// change. `steps` = JSON object step id → open | done | skipped | error (CHECK json_valid);
+/// `completed_at` is set by "App starten" — until then the app sends the user to /app/setup.
+model SetupProgress {
+  userId      String    @id @map("user_id")
+  steps       String    @default("{}")
+  /// The step shown last, so a resumed wizard opens there.
+  currentStep String    @default("profile") @map("current_step")
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("setup_progress")
+}
+
+/// F11.0p: the PIN of one user — only a slow salted hash (scrypt, `pin/domain/pin-hash.ts`), never
+/// the PIN. Wrong attempts are counted here so the waiting time survives a restart.
+model UserPin {
+  userId            String    @id @map("user_id")
+  /// `scrypt$<logN>$<r>$<p>$<salt b64>$<hash b64>`. CHECK in the migration.
+  pinHash           String    @map("pin_hash")
+  failedAttempts    Int       @default(0) @map("failed_attempts")
+  /// No unlock attempt before this moment (the growing delay); null = right away.
+  nextAttemptAt     DateTime? @map("next_attempt_at")
+  /// Web: too many failures — unlocking needs a sign-in after this moment.
+  reloginRequiredAt DateTime? @map("relogin_required_at")
+  /// Lock after this many minutes without activity (1–240).
+  autoLockMinutes   Int       @default(15) @map("auto_lock_minutes")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_pin")
 }
 
 /// A dismissed F5.8 hint ("Als in Ordnung markieren" / "Ignorieren"), keyed by the hint's stable

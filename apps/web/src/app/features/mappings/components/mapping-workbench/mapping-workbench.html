@@ -426,8 +426,13 @@
       <button hlmBtn variant="outline" type="button" hlmDialogClose>
         {{ 'common.cancel' | translate }}
       </button>
-      <a hlmBtn routerLink="/app/settings/ai" (click)="state.closeAi()">
-        {{ 'ai.notReady.openSettings' | translate }}
+      <a
+        hlmBtn
+        routerLink="/app/setup"
+        [queryParams]="{ step: 'ai' }"
+        (click)="state.closeAi()"
+      >
+        {{ 'ai.notReady.openSetup' | translate }}
       </a>
     </hlm-dialog-footer>
     } @if (step === 'consent' || step === 'working') { @if (state.aiRequest();

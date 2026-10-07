@@ -45,6 +45,11 @@ export interface DesktopBridge {
   readonly mcp?: {
     stdio(): Promise<McpStdioConfig>;
   };
+  /** F11.0p: the shell locks the app on OS lock / suspend / system idle. */
+  readonly lock?: {
+    onLocked(listener: (reason: string) => void): () => void;
+    setIdleMinutes(minutes: number): Promise<void>;
+  };
   /** Absent in desktop builds older than the notification centre. */
   readonly notifications?: {
     /** Einstellungen › System › "System-Benachrichtigungen" (default on). */

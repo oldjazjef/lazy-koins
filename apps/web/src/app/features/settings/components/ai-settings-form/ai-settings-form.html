@@ -1,0 +1,166 @@
+@if (current(); as settings) {
+<form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="save()">
+  <label class="flex items-center gap-2 text-sm font-medium">
+    <input type="checkbox" formControlName="enabled" />
+    {{ 'settings.ai.enabled' | translate }}
+  </label>
+
+  <div class="flex flex-col gap-2">
+    <span class="text-sm font-medium"
+      >{{ 'settings.ai.presets.label' | translate }}</span
+    >
+    <div class="flex flex-wrap gap-2">
+      @for (preset of presets(); track preset.id) {
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        (click)="applyPreset(preset.id)"
+      >
+        {{ 'settings.ai.presets.' + preset.id | translate }}
+      </button>
+      }
+    </div>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="ai-provider"
+        >{{ 'settings.ai.provider' | translate }}</label
+      >
+      <select hlmInput id="ai-provider" formControlName="provider">
+        @for (provider of providers; track provider) {
+        <option [value]="provider">
+          {{ 'settings.ai.providers.' + provider | translate }}
+        </option>
+        }
+      </select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="ai-model"
+        >{{ 'settings.ai.model' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="ai-model"
+        type="text"
+        formControlName="model"
+        [placeholder]="'settings.ai.modelPlaceholder' | translate"
+      />
+      @if (form.controls.model.errors?.['zod']; as error) {
+      <p class="text-destructive text-sm">{{ error | translate }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="ai-base-url"
+      >{{ 'settings.ai.baseUrl' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="ai-base-url"
+      type="url"
+      formControlName="baseUrl"
+      [placeholder]="'settings.ai.baseUrlPlaceholder' | translate"
+    />
+    <p class="text-muted-foreground text-xs">
+      {{ 'settings.ai.baseUrlHint' | translate }} @if
+      (!settings.privateUrlsAllowed) { {{ 'settings.ai.privateUrlsHint' |
+      translate }} }
+    </p>
+    @if ( form.controls.baseUrl.touched &&
+    form.controls.baseUrl.errors?.['zod']; as error ) {
+    <p class="text-destructive text-sm">{{ error | translate }}</p>
+    }
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="ai-key">{{ 'settings.ai.apiKey' | translate }}</label>
+    <input
+      hlmInput
+      id="ai-key"
+      type="password"
+      autocomplete="off"
+      formControlName="apiKey"
+      [attr.disabled]="settings.canStoreKey ? null : true"
+      [placeholder]="(settings.hasApiKey ? 'settings.ai.apiKeyKeep' : 'settings.ai.apiKeyPlaceholder') | translate"
+    />
+    <p class="text-muted-foreground text-xs">
+      @if (!settings.canStoreKey) { {{ 'settings.ai.noEncryption' | translate }}
+      } @else if (settings.hasApiKey) { {{ 'settings.ai.apiKeyStored' |
+      translate: { hint: settings.apiKeyHint } }} } @else { {{
+      'settings.ai.apiKeyNone' | translate }} }
+    </p>
+    <details class="text-xs">
+      <summary class="text-primary cursor-pointer hover:underline">
+        {{ 'setup.whereKey' | translate }}
+      </summary>
+      <ul class="mt-2 flex flex-col gap-1">
+        @for (preset of presets(); track preset.id) {
+        <li>
+          <a
+            class="text-primary hover:underline"
+            [href]="keyPages[preset.id]"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ 'settings.ai.presets.' + preset.id | translate }}</a
+          >
+        </li>
+        }
+      </ul>
+    </details>
+  </div>
+
+  <div class="flex flex-wrap justify-end gap-2">
+    @if (settings.hasApiKey) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.isSaving()"
+      (click)="removeKey(settings)"
+    >
+      {{ 'settings.ai.apiKeyRemove' | translate }}
+    </button>
+    }
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.testing()"
+      (click)="test()"
+    >
+      {{ 'settings.ai.test' | translate }}
+    </button>
+    @if (!embedded()) {
+    <button hlmBtn type="submit" [disabled]="service.isSaving()">
+      {{ 'common.save' | translate }}
+    </button>
+    }
+  </div>
+  @if (service.testing()) {
+  <p class="text-muted-foreground text-sm" aria-live="polite">
+    {{ 'settings.ai.testing' | translate }}
+  </p>
+  } @if (service.testResult(); as result) {
+  <p
+    class="lk-panel flex items-center gap-2 p-3 text-sm"
+    role="status"
+    aria-live="polite"
+  >
+    <ng-icon
+      name="lucideCircleCheck"
+      size="16"
+      class="text-primary shrink-0"
+      aria-hidden="true"
+    />
+    {{ 'settings.ai.testOk' | translate: { model: result.model, millis:
+    result.millis } }}
+  </p>
+  } @if (service.testError(); as error) {
+  <lk-ai-error-panel [error]="error" />
+  }
+</form>
+}

@@ -36,6 +36,10 @@ import {
 } from '../assistant/ports/assistant.repository.port';
 import { McpTokenRepositoryPort } from '../mcp/ports/mcp-token.repository.port';
 import { ToolAuditRepositoryPort } from '../tools/ports/tool-audit.repository.port';
+import { UserPinRepositoryPort } from '../pin/ports/user-pin.repository.port';
+import { SetupProgressRepositoryPort } from '../setup/ports/setup-progress.repository.port';
+import { SetupProgressPrismaRepository } from './prisma/repositories/setup-progress.prisma.repository';
+import { UserPinPrismaRepository } from './prisma/repositories/user-pin.prisma.repository';
 import { PrismaService } from './prisma/prisma.service';
 import {
   AssistantSettingsPrismaRepository,
@@ -153,6 +157,11 @@ import {
     { provide: McpTokenRepositoryPort, useClass: McpTokenPrismaRepository },
     { provide: ToolAuditRepositoryPort, useClass: ToolAuditPrismaRepository },
     {
+      provide: SetupProgressRepositoryPort,
+      useClass: SetupProgressPrismaRepository,
+    },
+    { provide: UserPinRepositoryPort, useClass: UserPinPrismaRepository },
+    {
       provide: NotificationRepositoryPort,
       useClass: NotificationPrismaRepository,
     },
@@ -184,6 +193,8 @@ import {
     ChatRepositoryPort,
     McpTokenRepositoryPort,
     ToolAuditRepositoryPort,
+    SetupProgressRepositoryPort,
+    UserPinRepositoryPort,
     NotificationRepositoryPort,
   ],
 })

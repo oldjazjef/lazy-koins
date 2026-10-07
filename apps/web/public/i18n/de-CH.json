@@ -520,7 +520,8 @@
       "disabled": "Das AI-Plugin ist ausgeschaltet. Schalte es in den Einstellungen ein und wähle einen Anbieter.",
       "notConfigured": "Das AI-Plugin ist eingeschaltet, aber noch nicht vollständig eingerichtet: Es fehlt der API-Schlüssel oder die Adresse eines lokalen Modells.",
       "withoutAi": "Ohne AI funktioniert alles weiter: Lade die Vorlage im Standardformat herunter oder schreibe ein Mapping von Hand.",
-      "openSettings": "Zu den Einstellungen"
+      "openSettings": "Zu den Einstellungen",
+      "openSetup": "AI einrichten"
     },
     "consent": {
       "mappingBody": "Für das Mapping wird dieser Ausschnitt der Datei an {{provider}} gesendet (Modell {{model}}, Adresse {{address}}). Die AI schreibt nur das Mapping, nicht die Buchungen; nichts wird ohne deine Bestätigung gespeichert.",
@@ -744,6 +745,9 @@
       "repository": "Quellcode",
       "support": "Unterstützen",
       "supportLink": "Buy me a coffee",
+      "setupTitle": "Einrichtung",
+      "setupHint": "Der Assistent vom ersten Start: Profil, Treuhänder, AI, Kurse, Wallets, Mail und PIN Schritt für Schritt. Alles bleibt auch hier in Profil und Einstellungen einzeln änderbar.",
+      "setupAgain": "Einrichtung erneut durchlaufen",
       "osNotifications": "System-Benachrichtigungen",
       "osNotificationsHint": "Fehler und Handlungsbedarf zusätzlich als Benachrichtigung des Betriebssystems anzeigen. Sie enthalten nie Schlüssel, Passwörter oder Buchungen."
     },
@@ -864,6 +868,31 @@
         "subjectTooLong": "Betreff zu lang (max. 300 Zeichen)",
         "bodyRequired": "Text fehlt",
         "bodyTooLong": "Text zu lang (max. 20 000 Zeichen)"
+      }
+    },
+    "keyTest": {
+      "button": "Testen",
+      "testing": "Schlüssel wird geprüft …",
+      "ok": "Der Schlüssel funktioniert ({{millis}} ms).",
+      "failed": "Der Test konnte nicht ausgeführt werden.",
+      "noKey": "Gib zuerst einen Schlüssel ein.",
+      "offline": "Kursabfragen aus dem Internet sind auf diesem Server ausgeschaltet – der Schlüssel kann nicht geprüft werden.",
+      "status": "HTTP-Status",
+      "message": "Antwort des Anbieters",
+      "url": "Adresse",
+      "codes": {
+        "invalidKey": "Der Schlüssel wurde abgelehnt.",
+        "rateLimited": "Zu viele Anfragen – das Limit des Anbieters ist erreicht.",
+        "network": "Der Anbieter ist nicht erreichbar.",
+        "timeout": "Der Anbieter hat nicht rechtzeitig geantwortet.",
+        "providerError": "Der Anbieter hat einen Fehler gemeldet."
+      },
+      "hints": {
+        "invalidKey": "Prüfe, ob du den ganzen Schlüssel kopiert hast und ob er zum Tarif passt (CoinGecko: ein «Demo»-Schlüssel).",
+        "rateLimited": "Warte eine Minute und teste dann noch einmal.",
+        "network": "Prüfe die Internetverbindung, eine Firewall oder einen Proxy auf diesem Rechner bzw. Server.",
+        "timeout": "Versuche es später noch einmal.",
+        "providerError": "Die Meldung des Anbieters unten hilft weiter; sonst später erneut versuchen."
       }
     }
   },
@@ -1609,7 +1638,8 @@
       "toChecks": "Zu den Prüfungen",
       "toRates": "Zu den Kursen",
       "toExports": "Zu den Auszügen",
-      "toStorage": "Speicherort prüfen"
+      "toStorage": "Speicherort prüfen",
+      "toSetup": "Einrichten"
     },
     "title": {
       "rates": {
@@ -1659,6 +1689,9 @@
       "task": {
         "done": "Fertig: {{task}}",
         "failed": "Fehlgeschlagen: {{task}}"
+      },
+      "setup": {
+        "incomplete": "Einrichtung unvollständig: {{count}} Punkt(e) fehlen noch (z. B. Schlüssel oder Mailer)"
       }
     },
     "reason": {
@@ -1954,6 +1987,224 @@
       "failed": "fehlgeschlagen"
     }
   },
+  "setup": {
+    "title": "Einrichtung",
+    "subtitle": "Ein paar Schritte, damit lazy-koins alles hat, was es zum Arbeiten braucht. Optionale Schritte kannst du auf später verschieben.",
+    "loadFailed": "Der Stand der Einrichtung konnte nicht geladen werden.",
+    "stepsLabel": "Schritte der Einrichtung",
+    "stepNumber": "Schritt {{number}}",
+    "stepOf": "Schritt {{number}} von {{total}}",
+    "required": "Pflicht",
+    "optional": "optional",
+    "back": "Zurück",
+    "next": "Weiter",
+    "later": "Später",
+    "withoutAi": "Ohne AI fortfahren",
+    "startApp": "App starten",
+    "firstProject": "Erstes Projekt anlegen",
+    "finishFailed": "Die Einrichtung ist noch nicht vollständig.",
+    "saveFailed": "Der Stand konnte nicht gespeichert werden.",
+    "stepIncomplete": "Dieser Schritt ist noch nicht vollständig eingerichtet.",
+    "whereKey": "Wo bekomme ich den Schlüssel?",
+    "state": {
+      "open": "offen",
+      "done": "erledigt",
+      "skipped": "übersprungen",
+      "error": "Fehler"
+    },
+    "deepLink": {
+      "rates": "Kurse einrichten"
+    },
+    "steps": {
+      "profile": {
+        "title": "Profil",
+        "intro": "Dein Name und dein Wohnkanton erscheinen auf den Auszügen für die Steuerbehörde; der Kanton bestimmt die Formularverweise. Sprache sowie Zahlen- und Datumsformat gelten für die ganze App."
+      },
+      "advisor": {
+        "title": "Treuhänder",
+        "intro": "Wenn dir jemand bei der Steuererklärung hilft: Name und E-Mail-Adresse. «An Treuhänder senden» schickt die Auszüge dann direkt dorthin."
+      },
+      "ai": {
+        "title": "AI-Plugin",
+        "intro": "Eine AI schreibt Mappings für Dateien, die lazy-koins noch nicht kennt, und liest PDF-Auszüge. Sie bekommt nur die Kopfzeile und wenige Beispielzeilen – vor jedem Senden siehst du genau, was hinausgeht. Ohne AI erstellst du Mappings von Hand."
+      },
+      "rates": {
+        "title": "Kurse",
+        "intro": "Für die Bewertung braucht lazy-koins Kurse: Wechselkurse (EZB), Tagesschlusskurse (Binance) und mit einem kostenlosen CoinGecko-Schlüssel auch Coins, die Binance nicht führt. Die ESTV-Kursliste mit den Steuerwerten per 31.12. wird automatisch bezogen."
+      },
+      "wallets": {
+        "title": "Wallets & Netzwerke",
+        "intro": "Mit einem Etherscan-Schlüssel (einer für alle EVM-Chains wie Ethereum, Arbitrum oder Polygon) und einem Helius-Schlüssel (Solana) ruft lazy-koins Bestände und Erträge deiner Wallet-Adressen ab. Bitcoin und Cardano brauchen keinen Schlüssel."
+      },
+      "mail": {
+        "title": "Mail",
+        "intro": "Mit einem Mailer (SMTP) schickt lazy-koins die Auszüge direkt an deinen Treuhänder. Ohne Mailer kopierst du den Text in dein eigenes Mailprogramm."
+      },
+      "storage": {
+        "title": "Speicherort",
+        "intro": "Wo die Datenbank und deine Originaldateien liegen – im Ordner der App oder in einem Ordner deiner Wahl, auch im Sync-Ordner von OneDrive, Google Drive oder Proton Drive."
+      },
+      "pin": {
+        "title": "PIN",
+        "intro": "Ein PIN aus 4 bis 8 Ziffern sperrt die App beim Öffnen und nach einer Pause. Gespeichert wird nur ein langsamer Hash, nie der PIN selbst."
+      },
+      "summary": {
+        "title": "Zusammenfassung",
+        "intro": "Was eingerichtet ist und was fehlt – mit dem, was eine Lücke bedeutet. Alles lässt sich später in Profil und Einstellungen ändern."
+      }
+    },
+    "profile": {
+      "nameRequired": "Gib deinen Namen ein.",
+      "cantonRequired": "Wähle deinen Wohnkanton.",
+      "language": "Sprache",
+      "languageDeCH": "Deutsch (Schweiz)",
+      "languageHint": "Weitere Sprachen folgen.",
+      "format": "Zahlen- und Datumsformat"
+    },
+    "ai": {
+      "consent": "Ich bin einverstanden, dass Kopfzeile und wenige Beispielzeilen einer Datei an den gewählten Anbieter gesendet werden, wenn ich «Mit AI erstellen» wähle.",
+      "consentGiven": "Deine Zustimmung ist erteilt (in Einstellungen › AI widerrufbar)."
+    },
+    "rates": {
+      "estvAuto": "Die ESTV-Kursliste wird automatisch bezogen, sobald ein Projekt sie braucht.",
+      "estvLoaded": "Die ESTV-Kursliste {{year}} ist geladen."
+    },
+    "wallets": {
+      "note": "Weitere Netzwerke (Polkadot/Subscan) und eigene Adressen von Esplora, Koios oder Cosmos richtest du in Einstellungen › Wallets & Netzwerke ein.",
+      "addresses": "Erste Wallet-Adressen erfassen"
+    },
+    "mail": {
+      "template": "Die Mail an deinen Treuhänder beginnt mit der Standardvorlage (Betreff, Text mit den Zahlen und den offenen Punkten).",
+      "templateLink": "Vorlage anpassen"
+    },
+    "storage": {
+      "syncHint": "Öffne lazy-koins nie gleichzeitig auf zwei Geräten mit diesem Ordner und warte nach dem Beenden, bis die Synchronisation fertig ist.",
+      "restartHint": "Nach dem Wechsel startet die App neu. Wähle «Kopieren», damit deine bisherigen Eingaben mitkommen; die Einrichtung geht danach hier weiter.",
+      "webOnly": "Der Speicherort lässt sich nur in der Desktop-App wählen."
+    },
+    "pin": {
+      "alreadySet": "Ein PIN ist gesetzt. Ändern kannst du ihn im Profil.",
+      "desktopHint": "In der Desktop-App ist der PIN Pflicht: Er schützt deine Daten auf diesem Rechner. Vergessen? Dann lässt er sich zurücksetzen – die gespeicherten Schlüssel musst du danach neu eingeben.",
+      "webHint": "Optional: Zusätzlich zur Anmeldung fragt die App nach dem PIN, wenn du sie neu öffnest oder eine Weile nichts tust."
+    },
+    "summary": {
+      "ok": "eingerichtet",
+      "missing": "fehlt",
+      "setUp": "Einrichten",
+      "items": {
+        "profile": {
+          "title": "Profil",
+          "ok": "Name und Wohnkanton erscheinen auf den Auszügen.",
+          "missing": "Ohne Name und Wohnkanton fehlen die Angaben auf den Auszügen."
+        },
+        "advisor": {
+          "title": "Treuhänder",
+          "ok": "«An Treuhänder senden» kennt die Adresse.",
+          "missing": "Ohne Treuhänder gibst du die Empfänger-Adresse beim Senden selbst ein."
+        },
+        "ai": {
+          "title": "AI-Plugin",
+          "ok": "Unbekannte Dateien und PDF-Auszüge kann die AI einlesen.",
+          "missing": "Ohne AI-Plugin erstellst du Mappings für unbekannte Dateien von Hand."
+        },
+        "onlineRates": {
+          "title": "Kurse aus dem Internet",
+          "ok": "Kurse werden bei «Kurse aktualisieren» abgerufen.",
+          "missing": "Kursabfragen sind aus: Es gelten nur gespeicherte und von Hand erfasste Kurse."
+        },
+        "coingeckoKey": {
+          "title": "CoinGecko-Schlüssel",
+          "ok": "Auch Coins, die Binance nicht führt, bekommen einen Kurs.",
+          "missing": "Ohne CoinGecko-Schlüssel fehlen Kurse für Coins, die Binance nicht führt (z. B. FLR, SGB)."
+        },
+        "etherscanKey": {
+          "title": "Etherscan-Schlüssel",
+          "ok": "EVM-Wallets können abgefragt werden.",
+          "missing": "Ohne Etherscan-Schlüssel erfasst du Bestände von EVM-Wallets von Hand."
+        },
+        "mail": {
+          "title": "Mailer",
+          "ok": "Die Auszüge gehen direkt an deinen Treuhänder.",
+          "missing": "Ohne Mailer schickst du die Auszüge über dein eigenes Mailprogramm."
+        },
+        "pin": {
+          "title": "PIN",
+          "ok": "Die App ist beim Öffnen und nach einer Pause gesperrt.",
+          "missing": "Ohne PIN schützt nur die Anmeldung deine Daten."
+        }
+      }
+    }
+  },
+  "pin": {
+    "lockNow": "Jetzt sperren",
+    "changed": "Der PIN wurde geändert.",
+    "removed": "Der PIN wurde entfernt.",
+    "autoLockSaved": "Die automatische Sperre wurde gespeichert.",
+    "lock": {
+      "title": "lazy-koins ist gesperrt",
+      "hint": "Gib deinen PIN ein, um weiterzuarbeiten.",
+      "label": "PIN",
+      "placeholder": "PIN",
+      "pad": "Ziffernblock",
+      "delete": "Letzte Ziffer löschen",
+      "unlock": "Entsperren",
+      "wait": "Nächster Versuch in {{seconds}} s.",
+      "attemptsLeft": "Noch {{count}} Versuche bis zur neuen Anmeldung.",
+      "forgot": "PIN vergessen?",
+      "relogin": "Abmelden und neu anmelden",
+      "reason": {
+        "idle": "Gesperrt nach einer Pause. Gib deinen PIN ein, um weiterzuarbeiten.",
+        "lock-screen": "Gesperrt, weil der Bildschirm gesperrt wurde.",
+        "suspend": "Gesperrt, weil der Rechner im Ruhezustand war.",
+        "unknown": "Gib deinen PIN ein, um weiterzuarbeiten."
+      }
+    },
+    "forgot": {
+      "title": "PIN vergessen",
+      "desktopBody": "Du kannst den PIN zurücksetzen. Weil er die gespeicherten Schlüssel schützt, werden diese dabei gelöscht und müssen neu eingegeben werden:",
+      "keys": {
+        "ai": "der API-Schlüssel des AI-Plugins",
+        "mail": "das Passwort des Mailers",
+        "coingecko": "der CoinGecko-Schlüssel",
+        "etherscan": "der Etherscan-Schlüssel",
+        "chains": "die Schlüssel für weitere Netzwerke (Helius, Subscan)"
+      },
+      "confirm": "Ich habe verstanden, dass diese Schlüssel gelöscht werden. Projekte, Dateien und Einstellungen bleiben.",
+      "reset": "PIN zurücksetzen",
+      "webBody": "Melde dich mit deinem Konto neu an – danach wird der PIN entfernt und du kannst einen neuen festlegen.",
+      "relogin": "Neu anmelden und PIN zurücksetzen"
+    },
+    "form": {
+      "pin": "PIN (4–8 Ziffern)",
+      "repeat": "PIN wiederholen",
+      "current": "Aktueller PIN",
+      "new": "Neuer PIN",
+      "autoLock": "Automatisch sperren nach",
+      "minutes": "{{count}} Minuten ohne Aktivität",
+      "invalid": "Der PIN besteht aus 4 bis 8 Ziffern.",
+      "mismatch": "Die beiden PINs stimmen nicht überein."
+    },
+    "settings": {
+      "title": "PIN-Sperre",
+      "hintDesktop": "Die App fragt bei jedem Start, nach einer Pause und nach dem Sperren des Bildschirms nach dem PIN.",
+      "hintWeb": "Optional: Zusätzlich zur Anmeldung fragt die App nach dem PIN, wenn du sie neu öffnest oder eine Weile nichts tust.",
+      "none": "Kein PIN gesetzt.",
+      "set": "PIN festlegen",
+      "change": "PIN ändern",
+      "remove": "PIN entfernen"
+    },
+    "errors": {
+      "wrongPin": "Falscher PIN.",
+      "pinThrottled": "Zu viele Versuche – bitte warten.",
+      "reloginRequired": "Zu viele Fehlversuche: Melde dich neu an.",
+      "invalidPin": "Der PIN besteht aus 4 bis 8 Ziffern.",
+      "currentPinRequired": "Gib den aktuellen PIN ein.",
+      "pinRequired": "In der Desktop-App ist ein PIN Pflicht.",
+      "confirmationRequired": "Bestätige zuerst, dass die Schlüssel gelöscht werden.",
+      "noPin": "Es ist kein PIN gesetzt.",
+      "failed": "Das hat nicht geklappt. Versuche es noch einmal."
+    }
+  },
   "chat": {
     "title": "Assistent",
     "new": "Neuer Chat",
@@ -1980,8 +2231,8 @@
     "loadFailed": "Die Unterhaltung konnte nicht geladen werden",
     "askFailed": "Die Frage konnte nicht gesendet werden",
     "unavailable": "Der Assistent ist gerade nicht verfügbar.",
-    "setupHint": "Der Assistent nutzt das AI-Plugin. Richte es in den Einstellungen ein.",
-    "openSettings": "AI-Einstellungen öffnen",
+    "setupHint": "Der Assistent nutzt das AI-Plugin. Richte es im Einrichtungs-Assistenten ein.",
+    "openSettings": "AI einrichten",
     "consent": {
       "title": "Bevor du fragst",
       "body": "Deine Chat-Nachrichten und was die Werkzeuge dafür lesen (Projekte, Zahlen, Dateizeilen) gehen an {{provider}} ({{model}}). Die Zustimmung kannst du in den Einstellungen widerrufen.",

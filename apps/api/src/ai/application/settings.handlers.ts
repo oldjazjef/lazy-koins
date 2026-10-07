@@ -81,6 +81,11 @@ export interface SaveAiSettingsInput {
   readonly apiKey?: string;
   /** `true` withdraws the consent (F5.14): the next request asks again. */
   readonly revokeConsent?: boolean;
+  /**
+   * `true` gives the consent up front (F5.14, setup wizard F11.0s) — the app still shows what is
+   * sent before every request. Ignored when a consent exists or `revokeConsent` is set.
+   */
+  readonly giveConsent?: boolean;
 }
 
 export class SaveAiSettingsCommand {
@@ -147,7 +152,10 @@ export class SaveAiSettingsHandler implements ICommandHandler<
       model: input.model.trim(),
       apiKeyCipher,
       apiKeyHint,
-      consentAt: input.revokeConsent ? null : current.consentAt,
+      consentAt: input.revokeConsent
+        ? null
+        : (current.consentAt ??
+          (input.giveConsent ? new Date().toISOString() : null)),
     });
     // A new or removed key settles "Schlüssel prüfen" until the next failure (F11.11).
     if (key !== undefined) {

@@ -95,6 +95,28 @@ export class UpdateSettingsDto {
   coingeckoIds?: Record<string, string>;
 }
 
+/** Body of a key test: the typed key (unsaved, never stored); omitted = the stored key. */
+export class TestKeyDto {
+  @ApiPropertyOptional({ description: 'Write-only, never stored' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  key?: string;
+}
+
+export class KeyCheckResponseDto {
+  @ApiProperty() ok!: boolean;
+  @ApiPropertyOptional({
+    enum: ['invalidKey', 'rateLimited', 'network', 'timeout', 'providerError'],
+  })
+  code?: 'invalidKey' | 'rateLimited' | 'network' | 'timeout' | 'providerError';
+  @ApiProperty({ nullable: true, type: Number }) status!: number | null;
+  @ApiProperty({ nullable: true, type: String })
+  providerMessage!: string | null;
+  @ApiProperty() url!: string;
+  @ApiProperty() millis!: number;
+}
+
 export class SettingsResponseDto {
   @ApiProperty() displayName!: string;
   @ApiProperty() canton!: string;

@@ -468,6 +468,8 @@ export interface SaveAiSettingsRequest {
   model: string;
   apiKey?: string;
   revokeConsent?: boolean;
+  /** Give the consent up front (F5.14, setup wizard). */
+  giveConsent?: boolean;
 }
 
 export interface AiUsage {

@@ -144,6 +144,52 @@ describe('CoinGecko market chart', () => {
   });
 });
 
+describe('CoinGecko key check (F11.0s "Testen")', () => {
+  it('pings with the key: ok', async () => {
+    const { fetcher, calls } = fakeFetch({
+      '/ping': { status: 200, body: '{"gecko_says":"(V3) To the Moon!"}' },
+    });
+    const result = await new CoinGeckoSource(fetcher).checkKey('CG-good');
+    expect(result).toMatchObject({ ok: true, status: 200 });
+    expect(calls[0]?.headers['x-cg-demo-api-key']).toBe('CG-good');
+  });
+
+  it('a refused key: invalidKey with the provider message, never the key', async () => {
+    const { fetcher } = fakeFetch({
+      '/ping': {
+        status: 401,
+        body: '{"status":{"error_code":10010,"error_message":"Invalid API Key CG-secret-key-1234"}}',
+      },
+    });
+    const result = await new CoinGeckoSource(fetcher).checkKey(
+      'CG-secret-key-1234',
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      code: 'invalidKey',
+      status: 401,
+      url: 'https://api.coingecko.com/api/v3/ping',
+    });
+    expect(result.providerMessage).toContain('Invalid API Key');
+    expect(JSON.stringify(result)).not.toContain('CG-secret-key-1234');
+  });
+
+  it('429 = rateLimited, a network error = network', async () => {
+    const limited = fakeFetch({ '/ping': { status: 429, body: 'slow down' } });
+    expect(
+      await new CoinGeckoSource(limited.fetcher).checkKey('k-1234'),
+    ).toMatchObject({ ok: false, code: 'rateLimited' });
+    const broken: Fetcher = async () => {
+      throw new TypeError('fetch failed');
+    };
+    expect(await new CoinGeckoSource(broken).checkKey('k-1234')).toMatchObject({
+      ok: false,
+      code: 'network',
+      status: null,
+    });
+  });
+});
+
 describe('Frankfurter (ECB)', () => {
   it('reads USD/CHF per working day with the exact digits', async () => {
     const { fetcher, calls } = fakeFetch({

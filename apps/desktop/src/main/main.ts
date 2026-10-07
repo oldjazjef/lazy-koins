@@ -10,6 +10,7 @@ import {
   ipcMain,
   Menu,
   type MenuItemConstructorOptions,
+  powerMonitor,
   Notification,
   session,
   shell,
@@ -42,6 +43,12 @@ import {
   writeConfig,
 } from './lib/storage';
 import { removeMcpEndpoint, writeMcpEndpoint } from './lib/mcp-endpoint';
+import {
+  LOCK_TICK_MS,
+  LOCKING_EVENTS,
+  type LockReason,
+  LockWatch,
+} from './lib/lock-watch';
 import {
   parseOsNotification,
   systemNotificationsEnabled,
@@ -88,6 +95,7 @@ let mainWindow: BrowserWindow | null = null;
 let api: RunningApi | null = null;
 let dataDir = '';
 let heartbeat: NodeJS.Timeout | undefined;
+let lockTicker: NodeJS.Timeout | undefined;
 let shutdownDone = false;
 let shuttingDown: Promise<void> | null = null;
 
@@ -169,6 +177,7 @@ async function start(): Promise<void> {
     (_wc, _permission, callback) => callback(false),
   );
   registerIpc(userData);
+  startLockWatch();
   // macOS "About lazy-koins" (appMenu); Windows uses the Hilfe menu below.
   app.setAboutPanelOptions({
     applicationName: 'lazy-koins',
@@ -202,6 +211,36 @@ function createWindow(): void {
     mainWindow = null;
   });
   void mainWindow.loadURL(`${APP_ORIGIN}/`);
+}
+
+/**
+ * F11.0p: the PIN lock follows the OS — locking the screen or suspending locks the app, and so
+ * does system-wide inactivity for the user's auto-lock time. Locking ends every unlocked session
+ * in the API (data requests get 423) and tells the window to show the lock screen.
+ */
+function startLockWatch(): void {
+  const lockWatch = new LockWatch({
+    lock: (reason: LockReason) => {
+      api?.lockAll();
+      if (reason !== 'start') mainWindow?.webContents.send(IPC.locked, reason);
+    },
+    systemIdleSeconds: () => powerMonitor.getSystemIdleTime(),
+  });
+  lockWatch.start();
+  for (const event of LOCKING_EVENTS) {
+    // `suspend` / `lock-screen` are typed separately on PowerMonitor.
+    (powerMonitor as unknown as NodeJS.EventEmitter).on(event, () =>
+      lockWatch.onSystemEvent(event),
+    );
+  }
+  lockTicker = setInterval(() => lockWatch.tick(), LOCK_TICK_MS);
+  lockTicker.unref();
+  ipcMain.handle(IPC.lockIdleMinutes, (event, minutes: unknown) => {
+    if (event.senderFrame?.url.startsWith(`${APP_ORIGIN}/`) !== true) {
+      throw new Error('IPC refused: not the app window');
+    }
+    lockWatch.setIdleMinutes(minutes);
+  });
 }
 
 /** F3.4: refuse silently to share a folder with another running device; ask instead. */
@@ -259,6 +298,7 @@ function warnAboutConflictCopies(): void {
 function shutdown(): Promise<void> {
   shuttingDown ??= (async () => {
     if (heartbeat) clearInterval(heartbeat);
+    if (lockTicker) clearInterval(lockTicker);
     const running = api;
     api = null;
     if (running) {
