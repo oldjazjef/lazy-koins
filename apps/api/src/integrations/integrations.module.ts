@@ -26,13 +26,16 @@ import { BinanceKlinesSource } from './rates/binance-klines.source';
 import { CoinGeckoSource } from './rates/coingecko.source';
 import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
 import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
+import { PriceHistorySourcesPort } from './rates/price-history/price-history-source.port';
+import { PriceHistorySources } from './rates/price-history/price-history-sources';
 
 /**
  * External services behind ports, the counterpart of `PersistenceModule` for everything that is
  * not the database. The only place that decides *which* adapter backs a port — and the only code
  * that imports firebase-admin. The AI plugin's `AiCompletionPort` (F5.13) dispatches per call to
  * the OpenAI-compatible or the Anthropic adapter, from the user's settings. Rate sources
- * (Binance, CoinGecko, ECB/Frankfurter) and the PDF renderer (Chromium) live here too, and so does
+ * (Binance, CoinGecko, ECB/Frankfurter; the selectable price-history adapters behind
+ * `PriceHistorySourcesPort`, not wired yet) and the PDF renderer (Chromium) live here too, and so does
  * the mailer (`MailTransportPort` → nodemailer, F11.10). Later: one `ChainDataPort` adapter per
  * wallet network.
  */
@@ -61,6 +64,11 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     },
     { provide: FiatPriceSourcePort, useFactory: () => new CoinGeckoSource() },
     { provide: FxRateSourcePort, useFactory: () => new FrankfurterFxSource() },
+    {
+      // Price sources phase 1: the adapters exist and are injectable; no handler uses them yet.
+      provide: PriceHistorySourcesPort,
+      useFactory: () => PriceHistorySources.real(),
+    },
     {
       provide: EstvKurslisteSourcePort,
       inject: [ConfigService],
@@ -105,6 +113,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     UsdPriceSourcePort,
     FiatPriceSourcePort,
     FxRateSourcePort,
+    PriceHistorySourcesPort,
     EstvKurslisteSourcePort,
     PdfRendererPort,
     ChainDataSourcesPort,

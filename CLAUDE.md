@@ -142,7 +142,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
                             #     library/ = RemoteLibraryPort + HttpRemoteLibrary (F5.18, desktop → web)
       ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
       rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs;
-                            #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser
+                            #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser;
+                            #     price-history/ = selectable daily-price providers behind one port (phase 1)
       pdf/                  #     PlaywrightPdfRenderer (Chromium, lazily started)
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
@@ -1099,6 +1100,78 @@ scans every cell/HTML of the statements for forbidden words. Web (Exporte tab): 
 the internal report in separate cards, the list grouped „Auszüge für die Steuerbehörde“ /
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
+
+## Price sources (phase 1: adapters)
+
+User request (07.10.2026): CoinMarketCap as a selectable price provider, plus other **free**
+providers with **historical daily** prices, so the user picks the order (e.g. CoinGecko or
+CoinMarketCap, with fallbacks). **Phase 1 = adapters only**, in
+`apps/api/src/integrations/rates/price-history/`: one port, seven adapters, bound in
+`IntegrationsModule` (`PriceHistorySourcesPort` → `PriceHistorySources.real()`, `useFactory`)
+and **used by no handler yet**. The existing Binance/CoinGecko/Frankfurter adapters and the
+refresh handlers are unchanged.
+
+**Research** (official docs + a few manual calls, checked **07.10.2026**; re-check before relying
+on a limit — free tiers change, CoinDesk's disappeared this year):
+
+| Provider                          | Key                                 | Daily history on the free tier                                                     | Limits (free)                                       | Quotes                      | Coin identification                                                               | Licence / attribution                                             | Sources                                                                                                                                                                                                                                            |
+| --------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CoinMarketCap**                 | required (free Basic), header       | **365 days** (`/v3/cryptocurrency/quotes/historical`); Builder 3 y, Startup+ 2010– | 15 000 credits/month, 50/min, 1 `convert` per call  | any fiat via `convert`      | CMC id; `/v1/cryptocurrency/map?symbol=` (no credits), `/v2/…/info?address=`      | commercial for one product ≤ 100k users; **attribution required** | coinmarketcap.com/api/pricing, …/api/documentation/pro-api-reference/cryptocurrency, …/guides/errors-and-rate-limits, …/academy/article/best-free-crypto-api-in-2026-free-tier-comparison                                                          |
+| **CoinGecko**                     | optional (Demo key or none)         | **365 days** (older → 401 `error_code` 10012, verified)                            | Demo 10 000 calls/month, ~30–100/min; keyless lower | any `vs_currency`           | CoinGecko id; `/search`, `/coins/{platform}/contract/{address}`                   | Demo: attribution required, no commercial licence                 | docs.coingecko.com, live call 07.10.2026                                                                                                                                                                                                           |
+| **DefiLlama**                     | none                                | **full** (`coins.llama.fi/chart`)                                                  | not published (Pro $300/mo = "higher")              | **USD only**                | `coingecko:<id>` or `<chain>:<address>` (`/prices/current/…` to check a contract) | free API, no attribution clause in the docs                       | api-docs.defillama.com (+ llms-free.txt), live call 07.10.2026                                                                                                                                                                                     |
+| **CoinPaprika**                   | none (free); paid via api-pro + key | **365 days** (rolling; older `start` → **402**, verified); OHLCV only 1 day        | 20 000 calls/month, 10 req/s per IP                 | **USD only** (or BTC)       | paprika id (`btc-bitcoin`); `/search?c=currencies`                                | **personal use only**, no redistribution                          | docs.coinpaprika.com/api-plans.md, …/faq.md, …/api-reference/tickers/get-historical-ticks-for-a-specific-coin.md, live call                                                                                                                        |
+| **Kraken**                        | none                                | **last 720 daily candles only** (fixed, not a plan)                                | public ~1 req/s                                     | USD, EUR, **CHF**, GBP, …   | pair `<BASE><QUOTE>` (BTC = `XBT`, DOGE = `XDG`)                                  | exchange ToS; no attribution clause in the API docs               | docs.kraken.com/api/docs/rest-api/get-ohlc-data, live call (XBTCHF starts 720 days back)                                                                                                                                                           |
+| **Bitfinex**                      | none                                | full                                                                               | candles 30 req/min, ≤ 10 000 per call               | USD, EUR, GBP, JPY — no CHF | `t<BASE><QUOTE>` / `t<BASE>:<QUOTE>` (USDT = `UST`)                               | exchange ToS; no attribution clause in the API docs               | docs.bitfinex.com/reference/rest-public-candles, live call (tBTCCHF empty)                                                                                                                                                                         |
+| **Coinbase Exchange**             | none (User-Agent required)          | full since listing                                                                 | ≤ 300 candles per call; public ~10 req/s            | USD, EUR, GBP — no CHF      | product `<BASE>-<QUOTE>`                                                          | exchange ToS; no attribution clause in the API docs               | docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductcandles, live call (BTC-CHF NotFound)                                                                                                                                           |
+| ~~CryptoCompare / CoinDesk Data~~ | —                                   | —                                                                                  | —                                                   | —                           | —                                                                                 | —                                                                 | **Dropped**: CoinDesk retired the free API tier on 21.05.2026 ("accounts without a subscription will no longer have API access"; data.coindesk.com/blogs/changes-to-coindesk-data-indices-api-free-tier-access); paid plans are sales-quoted only. |
+
+**Port contract** (`price-history-source.port.ts`):
+
+- `PriceHistorySourcePort { id; capabilities; searchCoins?(query, key?); resolveCoin?({symbol? |
+contract?: {network, address}}, key?); daily({coin, quote, from, to, apiKey?}) →
+DailyPrice[]; test(key?) → PriceSourceTestResult }`. `PriceHistorySourcesPort` = `all()` +
+  `byId(id)`; ids `coinmarketcap | coingecko | defillama | coinpaprika | kraken | bitfinex |
+coinbase`.
+- `capabilities`: `key` (required/optional/none), `quotes` (`anyFiat` or a list),
+  `freeHistoryDays` (`null` = all), `coinRef` (`cmcId | coingeckoId | llamaCoin | paprikaId |
+ticker`), **`dayPoint`** (`close` = end of day D: DefiLlama, Kraken, Bitfinex, Coinbase;
+  `startOfDay` = first snapshot ≈ 00:00 UTC of D: CoinMarketCap `interval=daily`, CoinGecko,
+  CoinPaprika — phase 2 decides whether that matters), `search`, `contractLookup`,
+  `personalUseOnly`, `attribution`.
+- `daily` returns `{date, value}` per **UTC day** inside `[from, to]`, sorted, one per day,
+  **plain decimal strings > 0** (`priceText`: source text via `parseJsonKeepingNumbers` →
+  `tryParseDecimal` → `toDecimalString`; exponents expanded; a JS number, 0 or junk is a missing
+  day). Close-based adapters drop today (unfinished). Ranges are chunked per provider (CMC 366
+  days, CoinGecko/DefiLlama/CoinPaprika 365, Coinbase 300, Bitfinex 10 000 candles).
+- Errors: `PriceSourceError(source, code, status, detail)` with code `invalidKey |
+planLacksHistory | rateLimited | notFound | unsupportedQuote | network | timeout |
+badResponse`; `detail` = the provider's words or the system cause, **redacted**
+  (`redactSecrets` with the key; URLs as `safeUrl`). CMC `error_code` 1006 / a 400 naming the
+  plan, CoinGecko 10012, CoinPaprika 402, Kraken's 720-day depth → `planLacksHistory`.
+  DefiLlama's `{"coins":{}}` and Bitfinex's `[]` are an empty series (they do not tell an
+  unknown coin from no data).
+- `test(key?)` never throws: CMC = `/v1/key/info` (plan credits + rate) + 1-credit probes 360 and
+  1090 days back → `historyDays` 365 or 1095, `ok: false` + `planLacksHistory` when no history;
+  CoinGecko `/ping`; CoinPaprika a tick 360 days back; DefiLlama a current price; Kraken
+  `/Time`; Bitfinex `/platform/status`; Coinbase `/time`.
+- `PriceHttp` (`price-history-http.ts`): per-provider `SerialGate` spacing (CMC 1.5 s, CoinGecko
+  2.5 s, Bitfinex 2.1 s, Kraken 1 s, DefiLlama/CoinPaprika 0.5 s, Coinbase 0.35 s), 20 s timeout
+  covering the body, 4 MB cap, `redirect: 'error'`, no credentials. **No request without an
+  explicit call** — the caller (phase 2) applies F11.3 (`RATES_ONLINE` + the user's switch);
+  building the adapters makes no request.
+- Tests: one spec per adapter with a fake `fetch` (`testing/fake-fetch.ts`, recorded shapes:
+  success, empty, plan error, 401, 429, malformed, timeout, size cap) and
+  `expectDecimalStrings` on every series; no live calls.
+
+**Phase 2 (open)**: settings — provider order per user, keys **sealed with SecretBox** (CMC, a
+CoinGecko key on the new port; "Testen" via `test()`), a **per-provider coin mapping** (asset →
+CMC id / CoinGecko id / DefiLlama key / paprika id, seeded by `resolveCoin`/`searchCoins`,
+contracts from wallets); wiring into the project's "Kurse aktualisieren" and the dashboard refresh
+(fallback down the order on `notFound`/`planLacksHistory`/`unsupportedQuote`/empty; USD-only
+sources × USD/T); new `RateSource` values in the engine (`libs/engine/src/rates`) and the
+`project_rate`/`user_rate` source CHECKs (migration); `PriceSourceError` codes → API error codes
+and i18n; attribution shown where CMC/CoinGecko data appears; the UI (Einstellungen › Kurse,
+Kurse tab). Decide there whether `startOfDay` values count for day D or D − 1.
 
 ## Tax currency (F4.1, F4.1a)
 
