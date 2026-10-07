@@ -9,7 +9,14 @@ import {
   AiProviderError,
   type AiUsage,
 } from './ai-completion.port';
-import { type FetchLike, joinUrl, plainSchema, postJson } from './ai-http';
+import { Logger } from '@nestjs/common';
+import {
+  extractJson,
+  type FetchLike,
+  joinUrl,
+  plainSchema,
+  postJson,
+} from './ai-http';
 import { safeUrl } from './redact';
 
 export const ANTHROPIC_DEFAULT_BASE_URL = 'https://api.anthropic.com';
@@ -94,11 +101,13 @@ export function structuredOutputSchema(schema: unknown): unknown {
   return out;
 }
 
-/** A 400 saying the model or gateway does not know `output_config` / its `format`. */
-function structuredOutputsUnsupported(error: unknown): boolean {
-  if (!(error instanceof AiProviderError) || error.status !== 400) return false;
-  const message = (error.details.providerMessage ?? '').toLowerCase();
-  return message.includes('output_config') || message.includes('output_format');
+/** The structured call was refused as a request (400/422): unknown parameter or schema it cannot compile. */
+function structuredOutputsRefused(error: unknown): error is AiProviderError {
+  return (
+    error instanceof AiProviderError &&
+    error.code === 'providerError' &&
+    (error.status === 400 || error.status === 422)
+  );
 }
 
 /**
@@ -107,10 +116,15 @@ function structuredOutputsUnsupported(error: unknown): boolean {
  * Structured output through **structured outputs** (`output_config.format` = `json_schema`): the
  * answer is a text block holding JSON that matches the schema. Forced tool use
  * (`tool_choice: {type: "tool"}`) is refused with a 400 by the current models (Claude Sonnet 5.5,
- * Opus 5.5, Fable 5.1), so it is only the fallback for a model or an Anthropic-compatible gateway
- * that does not know `output_config.format`.
+ * Opus 5.5, Fable 5.1) and is never used. When the structured call is refused with a 400 (an
+ * endpoint without `output_config`, or a schema structured outputs cannot compile), the adapter
+ * asks for **JSON in the text** with the schema in the prompt — works on every model; the caller
+ * validates the answer with zod and has a repair round. The first refusal is kept in the error
+ * details if the fallback fails too.
  */
 export class AnthropicAdapter extends AiCompletionPort {
+  private readonly logger = new Logger(AnthropicAdapter.name);
+
   constructor(private readonly fetchImpl: FetchLike = fetch) {
     super();
   }
@@ -122,10 +136,27 @@ export class AnthropicAdapter extends AiCompletionPort {
     try {
       return await this.completeStructured(connection, request);
     } catch (error) {
-      if (structuredOutputsUnsupported(error)) {
-        return this.completeWithForcedTool(connection, request);
+      if (!structuredOutputsRefused(error)) throw error;
+      this.logger.warn(
+        `structured outputs refused, retrying with JSON in the text: ${error.message}`,
+      );
+      try {
+        return await this.completeAsTextJson(connection, request);
+      } catch (fallbackError) {
+        // Both failed: report the fallback's failure, with the structured call's reason attached.
+        if (fallbackError instanceof AiProviderError) {
+          throw new AiProviderError(fallbackError.code, {
+            ...fallbackError.details,
+            cause: [
+              fallbackError.details.cause,
+              `structured outputs: ${error.details.providerMessage ?? error.message}`,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          });
+        }
+        throw fallbackError;
       }
-      throw error;
     }
   }
 
@@ -183,8 +214,8 @@ export class AnthropicAdapter extends AiCompletionPort {
     };
   }
 
-  /** Fallback for models/gateways without structured outputs: one tool, forced. */
-  private async completeWithForcedTool(
+  /** Fallback: JSON in the text, the schema in the system prompt (no tool_choice). */
+  private async completeAsTextJson(
     connection: AiConnection,
     request: AiCompletionRequest,
   ): Promise<AiCompletion> {
@@ -196,40 +227,38 @@ export class AnthropicAdapter extends AiCompletionPort {
       {
         model,
         max_tokens: maxTokensOf(request),
-        system: request.system,
+        system: `${request.system}\n\nAnswer with exactly one JSON object and nothing else — no prose, no code fence. It must conform to this JSON Schema (${request.output.name}: ${request.output.description}):\n${JSON.stringify(plainSchema(request.output.schema))}`,
         messages: request.messages.map((m) => ({
           role: m.role,
           content: m.content,
         })),
-        tools: [
-          {
-            name: request.output.name,
-            description: request.output.description,
-            input_schema: {
-              type: 'object',
-              ...plainSchema(request.output.schema),
-            },
-          },
-        ],
-        tool_choice: { type: 'tool', name: request.output.name },
       },
       request.timeoutMs,
     );
     const response = body as MessagesResponse;
-    const call = response.content?.find(
-      (block) =>
-        block.type === 'tool_use' && block.name === request.output.name,
-    );
-    if (!call || call.input === undefined) {
+    const context = { url: safeUrl(url), model: response.model ?? model };
+    const text = (response.content ?? [])
+      .filter((block) => block.type === 'text' && block.text)
+      .map((block) => block.text)
+      .join('');
+    if (text.trim() === '') {
       throw new AiProviderError('badResponse', {
-        url: safeUrl(url),
-        model: response.model ?? model,
-        cause: 'the model answered without the requested tool call',
+        ...context,
+        cause:
+          response.stop_reason === 'refusal'
+            ? 'the model declined the request'
+            : 'the answer has no text',
       });
     }
+    let json: unknown;
+    try {
+      json = extractJson(text);
+    } catch (error) {
+      throw error instanceof AiProviderError ? error.with(context) : error;
+    }
     return {
-      json: call.input,
-      text: JSON.stringify(call.input),
+      json,
+      text,
       model: response.model ?? model,
       usage: usageOf(response.usage),
     };

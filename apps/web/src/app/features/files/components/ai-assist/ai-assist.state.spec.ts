@@ -1,3 +1,5 @@
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
+import { aiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -101,6 +103,11 @@ const BASE = '/api/projects/p1/files/f1/ai';
 
 async function setup(files: ProjectFile[] = [file()]) {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+  const aiErrors = {
+    notify: vi.fn((error: unknown) => aiErrorInfo(error)),
+    open: vi.fn(),
+    close: vi.fn(),
+  };
   TestBed.configureTestingModule({
     providers: [
       ProjectFilesService,
@@ -109,6 +116,7 @@ async function setup(files: ProjectFile[] = [file()]) {
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
+      { provide: AiErrorNotifier, useValue: aiErrors },
     ],
   });
   const filesService = TestBed.inject(ProjectFilesService);
@@ -125,7 +133,7 @@ async function setup(files: ProjectFile[] = [file()]) {
   http.expectOne('/api/projects/p1/mappings').flush([]);
   http.expectOne('/api/mappings').flush([]);
   await settle();
-  return { state, http, notifications };
+  return { state, http, notifications, aiErrors };
 }
 
 async function flushReloads(http: HttpTestingController) {
@@ -251,7 +259,7 @@ describe('AiAssistState', () => {
   });
 
   it('translates provider failures and stays on the consent step', async () => {
-    const { state, http, notifications } = await setup();
+    const { state, http, notifications, aiErrors } = await setup();
     state.file.set(file());
     state.request.set({
       payload: {},
@@ -268,7 +276,11 @@ describe('AiAssistState', () => {
         { status: 502, statusText: 'Bad Gateway' },
       );
     await sent;
-    expect(notifications.error).toHaveBeenCalledWith('ai.errors.invalidKey');
+    expect(aiErrors.notify).toHaveBeenCalledTimes(1);
+    expect(aiErrors.notify.mock.results[0]?.value).toMatchObject({
+      key: 'ai.errors.invalidKey',
+    });
+    expect(notifications.error).not.toHaveBeenCalled();
     expect(state.step()).toBe('consent');
     expect(state.error()).toMatchObject({
       key: 'ai.errors.invalidKey',
@@ -277,7 +289,7 @@ describe('AiAssistState', () => {
   });
 
   it('keeps the provider details of a failure and puts the one-liner into the toast', async () => {
-    const { state, http, notifications } = await setup();
+    const { state, http, notifications, aiErrors } = await setup();
     state.file.set(file());
     state.request.set({
       payload: {},
@@ -302,7 +314,11 @@ describe('AiAssistState', () => {
     );
     await sent;
     // F11.2: the toast is translated; the API's English one-liner stays in the error panel.
-    expect(notifications.error).toHaveBeenCalledWith('ai.errors.modelNotFound');
+    expect(aiErrors.notify).toHaveBeenCalledTimes(1);
+    expect(aiErrors.notify.mock.results[0]?.value).toMatchObject({
+      key: 'ai.errors.modelNotFound',
+    });
+    expect(notifications.error).not.toHaveBeenCalled();
     expect(state.error()?.detail).toBe('modelNotFound: HTTP 404 · …');
     expect(state.error()).toMatchObject({
       status: 404,

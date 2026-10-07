@@ -631,6 +631,10 @@
       "timeout": "The provider didn't respond in time – a local model takes a long time to load the first time; try again.",
       "address": "Check the address: a public http(s) address without user, query or fragment.",
       "unreachable": "The lazy-koins API is not reachable – is the server running?"
+    },
+    "errorDetails": {
+      "show": "Details",
+      "title": "AI provider error details"
     }
   },
   "settings": {

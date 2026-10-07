@@ -1,3 +1,4 @@
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -13,10 +14,7 @@ import type {
 } from '../../../../core/api/api.types';
 import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import {
-  aiErrorInfo,
-  type AiErrorInfo,
-} from '../../../../shared/ai/ai-error-details';
+import { type AiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
 
 /** A provider the user can pick in one click; the rest is editable. */
@@ -80,6 +78,7 @@ export class AiSettingsPageService {
   private readonly http = inject(HttpClient);
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
+  private readonly aiErrors = inject(AiErrorNotifier);
   /** The chat's status (available, consent) follows these settings. */
   private readonly events = inject(AssistantEvents);
 
@@ -157,9 +156,7 @@ export class AiSettingsPageService {
         ),
       );
     } catch (error) {
-      const info = aiErrorInfo(error);
-      this.testError.set(info);
-      this.notifications.error(info.key);
+      this.testError.set(this.aiErrors.notify(error));
     } finally {
       this.testing.set(false);
     }

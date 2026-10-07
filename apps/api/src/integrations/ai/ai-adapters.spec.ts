@@ -235,19 +235,17 @@ describe('AnthropicAdapter', () => {
     expect(call?.body['max_tokens']).toBeGreaterThanOrEqual(2048);
   });
 
-  it('falls back to a forced tool call when the endpoint does not know output_config', async () => {
+  it('falls back to JSON in the text (never forced tool use) when structured outputs are refused', async () => {
     const { fetchImpl, calls } = fakeFetch(
       json(400, {
         type: 'error',
         error: {
           type: 'invalid_request_error',
-          message: 'output_config: Extra inputs are not permitted',
+          message: 'output_config.format.schema: unsupported construct',
         },
       }),
       json(200, {
-        content: [
-          { type: 'tool_use', name: 'mapping_spec', input: { name: 'Kraken' } },
-        ],
+        content: [{ type: 'text', text: '```json\n{"name":"Kraken"}\n```' }],
       }),
     );
     const answer = await new AnthropicAdapter(fetchImpl).complete(
@@ -255,25 +253,39 @@ describe('AnthropicAdapter', () => {
       request,
     );
     expect(answer.json).toEqual({ name: 'Kraken' });
-    expect(calls[1]?.body).toMatchObject({
-      tool_choice: { type: 'tool', name: 'mapping_spec' },
-    });
+    // Regression (07.10.2026): the old fallback forced a tool, which Sonnet 5.5 refuses with 400.
+    for (const call of calls) {
+      expect(call.body).not.toHaveProperty('tool_choice');
+      expect(call.body).not.toHaveProperty('tools');
+    }
+    expect(calls[1]?.body).not.toHaveProperty('output_config');
+    expect(String(calls[1]?.body['system'])).toContain('JSON Schema');
   });
 
-  it('does not fall back on other 400s (e.g. forced tool use refused)', async () => {
-    const { fetchImpl, calls } = fakeFetch(
+  it('keeps the structured refusal in the details when the fallback fails too', async () => {
+    const { fetchImpl } = fakeFetch(
       json(400, {
         type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message:
-            'tool_choice: type "tool" and "any" are not supported for this model.',
-        },
+        error: { type: 'invalid_request_error', message: 'schema too complex' },
       }),
+      json(200, { content: [{ type: 'text', text: 'not json' }] }),
+    );
+    const error = await new AnthropicAdapter(fetchImpl)
+      .complete(anthropic, request)
+      .catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'badResponse' });
+    expect(
+      String((error as { details: { cause?: string } }).details.cause),
+    ).toContain('schema too complex');
+  });
+
+  it('does not fall back on 401/429/5xx', async () => {
+    const { fetchImpl, calls } = fakeFetch(
+      json(429, { type: 'error', error: { message: 'rate limited' } }),
     );
     await expect(
       new AnthropicAdapter(fetchImpl).complete(anthropic, request),
-    ).rejects.toMatchObject({ code: 'providerError' });
+    ).rejects.toMatchObject({ code: 'rateLimited' });
     expect(calls).toHaveLength(1);
   });
 

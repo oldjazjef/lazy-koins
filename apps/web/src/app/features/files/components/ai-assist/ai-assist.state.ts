@@ -1,3 +1,4 @@
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
@@ -18,10 +19,7 @@ import type {
   StatementCandidate,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import {
-  aiErrorInfo,
-  type AiErrorInfo,
-} from '../../../../shared/ai/ai-error-details';
+import { type AiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { ProjectFilesService } from '../project-files/project-files.service';
 
 export type AiMode = 'mapping' | 'statement';
@@ -53,6 +51,7 @@ export class AiAssistState {
   private readonly http = inject(HttpClient);
   private readonly files = inject(ProjectFilesService);
   private readonly notifications = inject(NotificationService);
+  private readonly aiErrors = inject(AiErrorNotifier);
   private readonly router = inject(Router);
   private readonly activity = inject(ActivityService);
 
@@ -326,9 +325,7 @@ export class AiAssistState {
    * technical details (the API's English one-line detail, the provider's own words — F11.2).
    */
   private fail(error: unknown): void {
-    const info = aiErrorInfo(error);
-    this.error.set(info);
-    this.notifications.error(info.key);
+    this.error.set(this.aiErrors.notify(error));
   }
 
   private reset(): void {

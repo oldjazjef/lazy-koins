@@ -631,6 +631,10 @@
       "timeout": "Der Anbieter hat nicht rechtzeitig geantwortet – ein lokales Modell lädt beim ersten Mal lange; versuche es nochmals.",
       "address": "Prüfe die Adresse: eine öffentliche http(s)-Adresse ohne Benutzer, Query oder Fragment.",
       "unreachable": "Die lazy-koins-API ist nicht erreichbar – läuft der Server?"
+    },
+    "errorDetails": {
+      "show": "Details",
+      "title": "Fehlerdetails des AI-Anbieters"
     }
   },
   "settings": {
