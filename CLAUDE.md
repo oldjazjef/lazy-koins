@@ -18,8 +18,8 @@ two as a package (F1.3).
 > **packages** = F10.8/F10.9, data export F10.7, **tools / assistant / mcp** = F11.14–F11.16: one
 > tool layer for the chat sidebar and the MCP server), the Angular web app (`apps/web`: login, the
 > **Dashboard** (start page, first in the main navigation), project
-> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
-> Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
+> list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
+> Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -1284,6 +1284,13 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`login-page.spec.ts` guards it).
 - Mutations go through `defineAction` + `ActionRunner` in the page service; messages are i18n keys.
 - Dialogs for decisions (reopen a closed project, delete), pages for forms.
+- **Page header** (user rule, 08.10.2026): `lk-page-header` is sticky and spans the full width of
+  the scroll area (`.lk-scroll-content` is the inline-size container, so `100cqw` excludes the
+  scrollbar). An element marked `lkPageHeaderBelow` goes under the title inside the sticky part —
+  the project detail puts its tab bar there (`lk-project-workspace-tabs`). The workspace services
+  are provided by the detail page (`provideProjectWorkspace()`) so header and tabs share them;
+  the first tab "Allgemein" (data, facts, chart, carry-overs) is the page's own content, and
+  `#file-<id>` without `?tab=` opens "Dateien".
 - **Form rows** (user rule, 08.10.2026): fields side by side always line up — one-line labels
   (truncated, full text as `title`), inputs on the same line even when a label is long or a field
   shows an error, a usable minimum width per field. Use `lk-form-row` + `lk-field` (styles.css);

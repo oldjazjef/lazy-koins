@@ -34,6 +34,7 @@ const REFRESH_POLL_MS = 1000;
 
 /** The tabs of a project's workspace, in order. */
 export const WORKSPACE_TABS = [
+  'general',
   'files',
   'hints',
   'wallets',
@@ -84,7 +85,8 @@ export class ProjectWorkspaceService {
   readonly projectId = signal<string | undefined>(undefined);
   /** F4.1a: the project's tax currency (set by the workspace from the project). */
   readonly projectCurrency = signal('CHF');
-  readonly tab = signal<WorkspaceTab>('files');
+  /** "Allgemein" (project data, facts, chart) first (user rule, 08.10.2026). */
+  readonly tab = signal<WorkspaceTab>('general');
 
   private url(path: string): string | undefined {
     const id = this.projectId();

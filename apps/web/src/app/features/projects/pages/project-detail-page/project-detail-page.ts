@@ -30,7 +30,12 @@ import type { Carryover } from '../../../../core/api/dashboard.types';
 import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ProjectDashboardCard } from '../../../dashboard/components/project-dashboard-card';
-import { ProjectWorkspace } from '../../../calculation/components/project-workspace/project-workspace';
+import {
+  ProjectWorkspace,
+  provideProjectWorkspace,
+} from '../../../calculation/components/project-workspace/project-workspace';
+import { ProjectWorkspaceTabs } from '../../../calculation/components/project-workspace/project-workspace-tabs';
+import { ProjectWorkspaceService } from '../../../calculation/components/project-workspace/project-workspace.service';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { ProjectSentBadge } from '../../components/project-sent-badge';
@@ -52,8 +57,9 @@ type ProjectEdit = z.infer<typeof ProjectEditSchema>;
 type Confirm = 'reopen' | 'delete' | 'currency';
 
 /**
- * The project's data (name, notes, status) and its workspace: files and mappings (F5), rates,
- * result, checks, corrections and exports (F7–F10).
+ * The project's workspace as tabs under the sticky header: "Allgemein" (data, facts, chart,
+ * carry-overs — this page's own), files and mappings (F5), rates, result, checks, corrections and
+ * exports (F7–F10).
  */
 @Component({
   selector: 'lk-project-detail-page',
@@ -67,6 +73,7 @@ type Confirm = 'reopen' | 'delete' | 'currency';
     ProjectStatusBadge,
     ProjectSentBadge,
     ProjectWorkspace,
+    ProjectWorkspaceTabs,
     ProjectDashboardCard,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -76,12 +83,13 @@ type Confirm = 'reopen' | 'delete' | 'currency';
     ...HlmSkeletonImports,
     ...HlmTextareaImports,
   ],
-  providers: [ProjectDetailPageService],
+  providers: [ProjectDetailPageService, ...provideProjectWorkspace()],
   templateUrl: './project-detail-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectDetailPage {
   protected readonly service = inject(ProjectDetailPageService);
+  protected readonly workspace = inject(ProjectWorkspaceService);
   protected readonly statuses = PROJECT_STATUSES;
 
   /** Route param `:id` — no default, absent params bind as `undefined` (see CLAUDE.md). */

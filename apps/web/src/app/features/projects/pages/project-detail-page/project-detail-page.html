@@ -14,9 +14,11 @@
   <a hlmBtn variant="outline" routerLink="follow-up">
     {{ 'projects.followUp.open' | translate }}
   </a>
+  <lk-project-workspace-tabs lkPageHeaderBelow />
 </lk-page-header>
 
-<div class="grid gap-6 lg:grid-cols-3">
+@if (workspace.tab() === 'general') {
+<div class="grid gap-6 lg:grid-cols-3" role="tabpanel">
   <section hlmCard class="lg:col-span-2">
     <div hlmCardHeader>
       <h2 hlmCardTitle>{{ 'projects.detail.editTitle' | translate }}</h2>
@@ -191,9 +193,10 @@
   </section>
   }
 </div>
+}
 
 <lk-project-workspace
-  class="mt-6 block"
+  class="block"
   [projectId]="project.id"
   [closed]="service.isClosed()"
   [taxYear]="project.taxYear"

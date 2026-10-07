@@ -2,6 +2,7 @@
 
 /** The workspace tabs the chat may name as context (same list as the project workspace). */
 export const CHAT_CONTEXT_TABS = [
+  'general',
   'files',
   'hints',
   'wallets',

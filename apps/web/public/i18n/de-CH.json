@@ -903,6 +903,7 @@
   "workspace": {
     "label": "Bereiche des Projekts",
     "tabs": {
+      "general": "Allgemein",
       "files": "Dateien",
       "hints": "Hinweise",
       "wallets": "Wallets",

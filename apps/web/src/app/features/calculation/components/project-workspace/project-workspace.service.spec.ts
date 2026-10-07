@@ -91,6 +91,8 @@ describe('ProjectWorkspaceService', () => {
 
   it('loads the result, and each tab only when it is shown', async () => {
     const { service, http } = await setup();
+    // User rule (08.10.2026): a project opens on "Allgemein" (data, facts, chart).
+    expect(service.tab()).toBe('general');
     expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
     service.tab.set('rates');
     await settle();

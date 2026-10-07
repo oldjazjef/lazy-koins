@@ -15,6 +15,7 @@ import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { ChatContextService } from '../../../../core/assistant/chat-context.service';
 import { RecordsDialog } from '../../../../shared/components/records-dialog';
 import { AiAssist, AiAssistState } from '../../../files/components/ai-assist';
+import { MappingEditorState } from '../../../files/components/project-mappings/mapping-editor.state';
 import { ProjectFiles } from '../../../files/components/project-files';
 import { ProjectWallets } from '../../../wallets/components/project-wallets';
 import { ProjectFilesService } from '../../../files/components/project-files/project-files.service';
@@ -22,7 +23,6 @@ import {
   type ManualHoldingRequest,
   ProjectHints,
 } from '../../../files/components/project-hints';
-import { MappingEditorState } from '../../../files/components/project-mappings/mapping-editor.state';
 import { ProjectChecks } from '../project-checks/project-checks';
 import { ProjectCorrections } from '../project-corrections/project-corrections';
 import { ProjectExports } from '../project-exports/project-exports';
@@ -36,8 +36,9 @@ import {
 
 /**
  * The project detail's working area as tabs: Dateien (+ Mappings), Kurse, Ergebnis, Prüfungen,
- * Korrekturen, Exporte. Owns the workspace service the tabs share, and the drill-down dialog
- * (F7.5: amount → records → file and row) every tab opens.
+ * Korrekturen, Exporte ("Allgemein" is the detail page's own content). The services the tabs share
+ * are provided by the host page (`provideProjectWorkspace()`), so the tab bar can sit in the page
+ * header; this component owns the drill-down dialog (F7.5) every tab opens.
  */
 @Component({
   selector: 'lk-project-workspace',
@@ -54,13 +55,6 @@ import {
     ProjectCorrections,
     ProjectExports,
   ],
-  // The files area's state is shared with the Hinweise tab, whose actions open its dialogs.
-  providers: [
-    ProjectWorkspaceService,
-    ProjectFilesService,
-    MappingEditorState,
-    AiAssistState,
-  ],
   templateUrl: './project-workspace.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -72,6 +66,7 @@ export class ProjectWorkspace {
   private readonly assistant = inject(AssistantEvents);
   /** `?tab=<tab>&figure=<figure id>` — links from the assistant (F11.14). */
   private readonly queryParams = toSignal(inject(ActivatedRoute).queryParamMap);
+  private readonly fragment = toSignal(inject(ActivatedRoute).fragment);
 
   readonly projectId = input.required<string>();
   readonly closed = input(false);
@@ -119,6 +114,9 @@ export class ProjectWorkspace {
       untracked(() => {
         if (tab && (WORKSPACE_TABS as readonly string[]).includes(tab)) {
           this.service.tab.set(tab as WorkspaceTab);
+        } else if (this.fragment()?.startsWith('file-')) {
+          // `#file-<id>` without a tab (mapping usage, notifications): the file is in "Dateien".
+          this.service.tab.set('files');
         }
         if (figure) void this.service.showRecords(figure, figure);
       });
@@ -170,4 +168,14 @@ export class ProjectWorkspace {
   protected select(tab: WorkspaceTab): void {
     this.service.tab.set(tab);
   }
+}
+
+/** The services the workspace's tabs (and its tab bar in the page header) share. */
+export function provideProjectWorkspace() {
+  return [
+    ProjectWorkspaceService,
+    ProjectFilesService,
+    MappingEditorState,
+    AiAssistState,
+  ];
 }

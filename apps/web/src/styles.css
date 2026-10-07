@@ -216,6 +216,27 @@
    */
   .lk-page-header {
     @apply bg-background sticky top-0 z-30 -mt-8 mb-6 border-b pt-8 pb-4;
+    /*
+     * Full width (user rule): background and border reach the edges of the scroll area while the
+     * title and actions stay aligned with the content column. 100cqw = the width of the scroll
+     * area's content without its scrollbar (`.lk-scroll-content`, an inline-size container);
+     * 100% = the content column.
+     */
+    margin-inline: calc((100% - 100cqw) / 2);
+    padding-inline: calc((100cqw - 100%) / 2);
+  }
+
+  /* A tab bar in the header (project workspace) sits on its bottom border. */
+  .lk-page-header:has(.lk-page-tabs) {
+    @apply pb-0;
+  }
+
+  .lk-page-tabs {
+    @apply mt-4;
+  }
+
+  .lk-scroll-content {
+    container-type: inline-size;
   }
 
   /*

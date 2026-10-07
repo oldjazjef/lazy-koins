@@ -31,6 +31,7 @@ export class SaveAssistantSettingsDto {
 }
 
 export const WORKSPACE_TAB_NAMES = [
+  'general',
   'files',
   'hints',
   'wallets',
