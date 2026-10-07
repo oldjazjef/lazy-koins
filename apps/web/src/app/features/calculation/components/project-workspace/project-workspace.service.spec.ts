@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -65,7 +65,7 @@ async function setup() {
   TestBed.configureTestingModule({
     providers: [
       ProjectWorkspaceService,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
@@ -91,6 +91,8 @@ describe('ProjectWorkspaceService', () => {
 
   it('loads the result, and each tab only when it is shown', async () => {
     const { service, http } = await setup();
+    // User rule (08.10.2026): a project opens on "Allgemein" (data, facts, chart).
+    expect(service.tab()).toBe('general');
     expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
     service.tab.set('rates');
     await settle();
@@ -112,6 +114,12 @@ describe('ProjectWorkspaceService', () => {
     expect(request.request.method).toBe('POST');
     request.flush(view('200'));
     await done;
+    // The calculation is reported (DataChanges): the result reloads — the old one stays on
+    // screen meanwhile.
+    await settle();
+    expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
+    http.expectOne('/api/projects/p1/result').flush(view('200'));
+    await settle();
     expect(service.result.value()?.snapshot?.wealthChf).toBe('200');
     expect(notifications.success).toHaveBeenCalledWith(
       'calculation.calculated',
@@ -169,6 +177,7 @@ describe('ProjectWorkspaceService', () => {
     await saved;
     await settle();
     http.expectOne('/api/projects/p1/checks').flush(checks);
+    http.expectOne('/api/projects/p1/result').flush(view());
 
     service.startCorrection({
       type: 'price_override',

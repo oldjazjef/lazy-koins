@@ -93,7 +93,7 @@ export class WalletsPage {
   );
 
   constructor() {
-    this.service.refresh();
+    this.service.follow();
   }
 
   protected open(id: string): void {

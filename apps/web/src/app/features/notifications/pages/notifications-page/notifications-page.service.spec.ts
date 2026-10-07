@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -7,6 +7,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import type { AppNotification } from '../../../../core/api/notifications.types';
+import { dataChangesInterceptor } from '../../../../core/data/data-changes.interceptor';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { NotificationsPageService } from './notifications-page.service';
 
@@ -35,7 +36,8 @@ const row = (id: string): AppNotification => ({
 function setup() {
   TestBed.configureTestingModule({
     providers: [
-      provideHttpClient(),
+      // The app's DataChanges interceptor: the dismiss reports itself, the list follows.
+      provideHttpClient(withInterceptors([dataChangesInterceptor])),
       provideHttpClientTesting(),
       provideRouter([]),
       provideTranslateService(),
@@ -45,8 +47,10 @@ function setup() {
       },
     ],
   });
+  const service = TestBed.inject(NotificationsPageService);
+  TestBed.runInInjectionContext(() => service.follow());
   return {
-    service: TestBed.inject(NotificationsPageService),
+    service,
     http: TestBed.inject(HttpTestingController),
   };
 }

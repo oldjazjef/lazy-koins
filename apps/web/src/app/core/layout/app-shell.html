@@ -118,18 +118,21 @@
     <div
       class="lk-scroll-area flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
     >
-      <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
-        <router-outlet />
-      </main>
+      <!-- The container for full-width page headers: its width excludes the scrollbar. -->
+      <div class="lk-scroll-content flex flex-1 flex-col">
+        <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+          <router-outlet />
+        </main>
 
-      @if (version.info(); as build) {
-      <footer
-        class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
-      >
-        {{ 'app.version' | translate: { version: build.version, commit:
-        build.commit } }}
-      </footer>
-      }
+        @if (version.info(); as build) {
+        <footer
+          class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+        >
+          {{ 'app.version' | translate: { version: build.version, commit:
+          build.commit } }}
+        </footer>
+        }
+      </div>
     </div>
 
     <!-- The assistant (F11.14): beside the page on wide screens, an overlay on narrow ones -->

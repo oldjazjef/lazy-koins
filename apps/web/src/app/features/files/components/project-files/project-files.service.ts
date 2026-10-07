@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import { LanguageService } from '../../../../core/i18n/language.service';
 import {
   type ActivityProgress,
@@ -95,6 +96,17 @@ export class ProjectFilesService {
   readonly myMappings = httpResource<Mapping[]>(() =>
     this.projectId() ? apiUrl('/mappings') : undefined,
   );
+
+  constructor() {
+    // A file added/removed/reassigned, a mapping edited or re-applied (here or on the mappings
+    // page), a wallet fetched, a hint settled, the assistant: the files area and the hints follow.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () => changes.projectVersion(this.projectId()),
+      [this.overview, this.hints, this.projectMappings],
+    );
+    reloadOn(() => changes.globalVersion('mappings'), [this.myMappings]);
+  }
 
   readonly files = computed<ProjectFile[]>(() =>
     this.overview.hasValue()
@@ -220,7 +232,6 @@ export class ProjectFilesService {
     }
     if (added > 0) {
       this.notifications.info('files.upload.added', { count: added });
-      this.reload();
     }
   }
 
@@ -266,7 +277,6 @@ export class ProjectFilesService {
 
   async remove(file: ProjectFile): Promise<void> {
     await this.actions.run(this.removeAction, file, { key: 'project-files' });
-    this.reload();
   }
 
   async assign(
@@ -278,7 +288,6 @@ export class ProjectFilesService {
       { file, assignment },
       { key: 'project-files' },
     );
-    this.reload();
   }
 
   /** What a stored or unsaved mapping would read from a file; schema issues instead of a 400 toast. */
@@ -324,7 +333,6 @@ export class ProjectFilesService {
         labelKey: 'mappings.openPage',
         onClick: () => void this.router.navigate(['/app/mappings', created.id]),
       });
-      this.reloadMappings();
       return { ok: true, mapping: created };
     } catch (error) {
       const issues = specIssues(error);
@@ -397,12 +405,6 @@ export class ProjectFilesService {
     }
   }
 
-  reload(): void {
-    this.overview.reload();
-    this.hints.reload();
-    this.reloadMappings();
-  }
-
   // --- Hinweise (F5.8) ---
 
   /** "Als in Ordnung markieren" / "Ignorieren" (with a note) and "Wieder öffnen". */
@@ -416,7 +418,6 @@ export class ProjectFilesService {
       { key: hint.key, status, note },
       { key: `hint:${hint.key}` },
     );
-    this.hints.reload();
   }
 
   /** "Zeilenfehler ansehen": the rows the file's own reader could not read. */
@@ -432,11 +433,6 @@ export class ProjectFilesService {
   /** Asks the files area to open the mapping assignment of this file (from a hint). */
   requestAssign(fileId: string): void {
     this.pendingAssign.set(fileId);
-  }
-
-  private reloadMappings(): void {
-    this.projectMappings.reload();
-    this.myMappings.reload();
   }
 
   private fetchBlob(path: `/${string}`): Promise<HttpResponse<Blob>> {

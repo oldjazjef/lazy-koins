@@ -1,7 +1,7 @@
 {
   "name": "@lazykoins/source",
   "version": "0.0.0",
-  "license": "UNLICENSED",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "private": true,
   "packageManager": "pnpm@11.21.0",
   "volta": {

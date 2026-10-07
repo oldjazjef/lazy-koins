@@ -40,6 +40,9 @@ export interface ProjectFigures {
   readonly wealthChf: string;
   readonly incomeChf: string;
   readonly calculatedAt: string;
+  /** What the snapshot was computed from — compared with today's input to tell "stale". */
+  readonly inputHash: string;
+  readonly engineVersion: number;
 }
 
 /** Mirrored by a CHECK in the migration. */

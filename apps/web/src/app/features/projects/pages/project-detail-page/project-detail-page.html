@@ -14,9 +14,24 @@
   <a hlmBtn variant="outline" routerLink="follow-up">
     {{ 'projects.followUp.open' | translate }}
   </a>
+  <lk-project-workspace-tabs lkPageHeaderBelow />
 </lk-page-header>
 
-<div class="grid gap-6 lg:grid-cols-3">
+@if (service.isStale() && !service.isClosed()) {
+<div class="lk-stale-banner" role="status">
+  <span class="min-w-0 flex-1">{{ 'projects.detail.stale' | translate }}</span>
+  <button
+    hlmBtn
+    size="sm"
+    type="button"
+    [disabled]="service.isCalculating()"
+    (click)="calculate()"
+  >
+    {{ 'result.calculate' | translate }}
+  </button>
+</div>
+} @if (workspace.tab() === 'general') {
+<div class="grid gap-6 lg:grid-cols-3" role="tabpanel">
   <section hlmCard class="lg:col-span-2">
     <div hlmCardHeader>
       <h2 hlmCardTitle>{{ 'projects.detail.editTitle' | translate }}</h2>
@@ -191,9 +206,10 @@
   </section>
   }
 </div>
+}
 
 <lk-project-workspace
-  class="mt-6 block"
+  class="block"
   [projectId]="project.id"
   [closed]="service.isClosed()"
   [taxYear]="project.taxYear"

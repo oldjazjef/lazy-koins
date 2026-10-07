@@ -1,13 +1,12 @@
 # Deployment
 
 lazy-koins' web app and API run on the Hostinger VPS with **Coolify** (Traefik + Let's Encrypt), next
-to surf-lend and hello-eme. Two environments share the same images (the domains below are the
-planned ones — replace them everywhere if you pick others):
+to surf-lend and hello-eme. Two environments share the same images:
 
-| Environment    | Deployed when                                 | Address                       |
-| -------------- | --------------------------------------------- | ----------------------------- |
-| **test**       | every merge to `main` (after CI is green)     | `lazykoins-test.hello-eme.ch` |
-| **production** | a GitHub **release** `vX.Y.Z` (see Releasing) | `lazykoins.hello-eme.ch`      |
+| Environment    | Deployed when                                 | Address                        |
+| -------------- | --------------------------------------------- | ------------------------------ |
+| **test**       | every merge to `main` (after CI is green)     | `lazy-koins-test.hello-eme.ch` |
+| **production** | a GitHub **release** `vX.Y.Z` (see Releasing) | `lazy-koins.hello-eme.ch`      |
 
 ```
 PR ──► CI (pnpm ci:verify, pnpm ci:integration)
@@ -74,12 +73,12 @@ Names only — values never go into the repository.
 
 **Per GitHub Environment** (`test`, `production`; GitHub → Settings → Environments → `<env>`):
 
-| Kind     | Name                     | What                                                                                                   |
-| -------- | ------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Variable | `COOLIFY_URL`            | the Coolify dashboard, e.g. `https://coolify.hello-eme.ch`                                             |
-| Variable | `COOLIFY_RESOURCE_UUIDS` | UUID of that environment's Coolify resource (`…/service/<UUID>`)                                       |
-| Variable | `LAZYKOINS_SITE_URL`     | the environment's public address, e.g. `https://lazykoins.hello-eme.ch` (smoke test, environment link) |
-| Secret   | `COOLIFY_TOKEN`          | Coolify API token with the _deploy_ permission                                                         |
+| Kind     | Name                     | What                                                                                                    |
+| -------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| Variable | `COOLIFY_URL`            | the Coolify dashboard, e.g. `https://coolify.hello-eme.ch`                                              |
+| Variable | `COOLIFY_RESOURCE_UUIDS` | UUID of that environment's Coolify resource (`…/service/<UUID>`)                                        |
+| Variable | `LAZYKOINS_SITE_URL`     | the environment's public address, e.g. `https://lazy-koins.hello-eme.ch` (smoke test, environment link) |
+| Secret   | `COOLIFY_TOKEN`          | Coolify API token with the _deploy_ permission                                                          |
 
 **Repository secrets for desktop signing — reserved, not used yet** (GitHub → Settings → Secrets and
 variables → Actions). They are only named, commented out, in `.github/workflows/_desktop.yml`:

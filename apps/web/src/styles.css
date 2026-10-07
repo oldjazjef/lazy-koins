@@ -216,6 +216,27 @@
    */
   .lk-page-header {
     @apply bg-background sticky top-0 z-30 -mt-8 mb-6 border-b pt-8 pb-4;
+    /*
+     * Full width (user rule): background and border reach the edges of the scroll area while the
+     * title and actions stay aligned with the content column. 100cqw = the width of the scroll
+     * area's content without its scrollbar (`.lk-scroll-content`, an inline-size container);
+     * 100% = the content column.
+     */
+    margin-inline: calc((100% - 100cqw) / 2);
+    padding-inline: calc((100cqw - 100%) / 2);
+  }
+
+  /* A tab bar in the header (project workspace) sits on its bottom border. */
+  .lk-page-header:has(.lk-page-tabs) {
+    @apply pb-0;
+  }
+
+  .lk-page-tabs {
+    @apply mt-4;
+  }
+
+  .lk-scroll-content {
+    container-type: inline-size;
   }
 
   /*
@@ -442,6 +463,14 @@
     background-color: color-mix(in oklab, var(--destructive) 12%, transparent);
     border-color: color-mix(in oklab, var(--destructive) 45%, transparent);
     color: var(--destructive);
+  }
+
+  /* "Daten geändert – neu berechnen" under the project header (F7.6). */
+  .lk-stale-banner {
+    @apply mb-6 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm;
+    background-color: color-mix(in oklab, var(--light-yellow) 18%, transparent);
+    border-color: color-mix(in oklab, var(--light-yellow) 55%, transparent);
+    color: var(--foreground);
   }
 
   /* A bordered surface for tables and lists. */

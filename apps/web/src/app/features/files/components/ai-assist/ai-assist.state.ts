@@ -241,7 +241,6 @@ export class AiAssistState {
           void this.router.navigate(['/app/mappings', saved.mapping.id]),
       });
       this.close();
-      this.files.reload();
     } catch (error) {
       const issues = specIssuesOf(error);
       if (issues) {
@@ -284,7 +283,6 @@ export class AiAssistState {
       );
       this.notifications.success('ai.statement.saved');
       this.close();
-      this.files.reload();
     } catch (error) {
       if (
         error instanceof HttpErrorResponse &&

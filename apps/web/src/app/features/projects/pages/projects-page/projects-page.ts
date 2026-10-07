@@ -53,7 +53,7 @@ export class ProjectsPage {
   );
 
   constructor() {
-    this.service.refresh();
+    this.service.follow();
   }
 
   protected importPackage(input: HTMLInputElement): void {

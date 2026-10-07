@@ -162,4 +162,11 @@ If lazy-koins saves you an afternoon of spreadsheets, you can
 
 ## License
 
-[MIT](LICENSE) © Emanuel Mistretta
+[PolyForm Noncommercial 1.0.0](LICENSE) © Emanuel Mistretta
+
+You may use, change and share the code for any **noncommercial** purpose: personal use, your own
+tax return, study, hobby projects, and use by charities, schools and public institutions. You may
+**not** use it to make money: no selling it, no paid hosting or service built on it, no use in a
+commercial product. For a commercial license, ask via
+[GitHub](https://github.com/oldjazjef/lazy-koins/issues). This makes lazy-koins source-available,
+not open source in the OSI sense.

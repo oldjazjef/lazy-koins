@@ -19,7 +19,6 @@ import {
   MAX_FILE_BYTES,
   uploadErrorKey,
 } from '../../features/files/components/project-files/project-files.service';
-import { AssistantEvents } from './assistant-events';
 import { ChatService } from './chat.service';
 
 interface UploadResult {
@@ -46,7 +45,6 @@ interface UploadResult {
 export class ChatUpload {
   private readonly http = inject(HttpClient);
   private readonly activity = inject(ActivityService);
-  private readonly events = inject(AssistantEvents);
   protected readonly chat = inject(ChatService);
 
   readonly projectId = input.required<string>();
@@ -89,7 +87,7 @@ export class ChatUpload {
 
   private async uploadAll(files: readonly File[]): Promise<void> {
     const projectId = this.projectId();
-    let added = 0;
+    // Every stored file is reported to DataChanges by the interceptor (the upload endpoint).
     for (const file of files) {
       const id = ++this.seq;
       this.results.update((list) => [
@@ -117,7 +115,6 @@ export class ChatUpload {
             },
           ),
         );
-        added += 1;
         this.patch(id, {
           state: 'done',
           messageKey: `files.status.${stored.status}`,
@@ -127,7 +124,6 @@ export class ChatUpload {
         this.patch(id, { state: 'failed', messageKey: uploadErrorKey(error) });
       }
     }
-    if (added > 0) this.events.changed(projectId);
   }
 
   private patch(id: number, changes: Partial<UploadResult>): void {
