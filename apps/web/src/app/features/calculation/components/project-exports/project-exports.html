@@ -105,28 +105,16 @@
           }
         </select>
       </div>
-      <div class="flex min-w-0 flex-col gap-1">
-        <label hlmLabel for="data-from"
-          >{{ 'exports.data.from' | translate }}</label
+      <div class="flex min-w-0 flex-col gap-1 sm:col-span-3 lg:col-span-2">
+        <label hlmLabel for="data-period"
+          >{{ 'exports.data.period' | translate }}</label
         >
-        <input
-          hlmInput
-          id="data-from"
-          type="date"
-          [value]="filter().from ?? ''"
-          (change)="setFilter('from', $any($event.target).value)"
-        />
-      </div>
-      <div class="flex min-w-0 flex-col gap-1">
-        <label hlmLabel for="data-to"
-          >{{ 'exports.data.to' | translate }}</label
-        >
-        <input
-          hlmInput
-          id="data-to"
-          type="date"
-          [value]="filter().to ?? ''"
-          (change)="setFilter('to', $any($event.target).value)"
+        <lk-date-range-picker
+          inputId="data-period"
+          [range]="period()"
+          [presets]="periodPresets()"
+          [clearable]="true"
+          (rangeChange)="setPeriod($event)"
         />
       </div>
     </div>

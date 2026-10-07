@@ -7,6 +7,7 @@ import {
   untracked,
 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
+import { BrnCalendarI18nService } from '@spartan-ng/brain/calendar';
 import {
   type DateFormat,
   type DisplayFormat,
@@ -14,6 +15,7 @@ import {
   setDisplayFormat,
 } from '../../shared/format/locale-format';
 import { desktopBridge } from '../desktop/desktop-bridge';
+import { calendarI18n } from './calendar-i18n';
 import {
   initialLocale,
   isSupportedLocale,
@@ -49,6 +51,8 @@ export interface LanguageSettings {
 export class LanguageService {
   private readonly translate = inject(TranslateService);
   private readonly document = inject(DOCUMENT);
+  /** The date pickers' month/weekday names and week start (spartan's root service). */
+  private readonly calendar = inject(BrnCalendarI18nService);
 
   private readonly current = signal<SupportedLocale>(initialLocale());
   /** The profile's explicit formats; `null` = the language's own. */
@@ -113,6 +117,11 @@ export class LanguageService {
       dateFormat: formats.dateFormat,
     };
     setDisplayFormat(display);
+    this.calendar.use(
+      calendarI18n(locale, formats.dateFormat, (key) =>
+        this.translate.instant(key),
+      ),
+    );
     if (this.translate.getCurrentLang() !== locale) this.translate.use(locale);
     this.document.documentElement.lang = locale;
     try {

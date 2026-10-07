@@ -1354,9 +1354,35 @@ are provided by the component (`providers: [...]`), list/form services are root.
 
 - spartan components are generated, never hand-written: `npx nx g @spartan-ng/cli:ui
 --name=<c> --no-interactive` (skill `add-ui-component`). `libs/ui/**` is vendored — don't edit
-  or format it. `ls libs/ui/` for what exists (badge, button, card, dialog, dropdown-menu,
-  input, label, separator, skeleton, sonner, table, textarea, tooltip, utils). Selects are
-  native `<select hlmInput>`, as in surf-lend.
+  or format it. `ls libs/ui/` for what exists (badge, button, calendar, card, date-picker,
+  dialog, dropdown-menu, input, input-group, label, popover, select, separator, skeleton, sonner,
+  table, textarea, tooltip, utils). Selects are native `<select hlmInput>`, as in surf-lend
+  (`select` came with the calendar's month/year dropdowns).
+- **Date inputs** (user rule, 07.10.2026: "den gleichen Date Selector wie im
+  etx-work-time-manager") — every date looks and behaves the same, ported from etx:
+  - a **single day** = `<lk-date-field inputId="…" formControlName="date" />`
+    (`shared/components/date-field`; or `[value]` + `(changed)`; `[min]`/`[max]`, `clearable`,
+    `readonly`): the spartan date picker with a typed input in the user's date format (any
+    profile format, ISO always understood), calendar button, ↓ opens; a day outside min/max is not
+    committed and says so.
+  - a **period** = `<lk-date-range-picker inputId="…" [range]="{ from, to }" [presets]="…"
+(rangeChange)="…" />` (`shared/components/date-range-picker`, etx's WTA-307 shape): button
+    with the active preset + the days, a panel with the caller's presets (`DateRangePreset`:
+    id, `labelKey` + params, range) beside a range calendar, arrows that move the period by its
+    own size (year / month / day count), `min`/`max` (presets outside are hidden, arrows stop),
+    `maxDays`, `clearable` (filters). Emits once, when both ends are in. Dashboard: running year,
+    last 12 months, the tax years of my projects (`DashboardPageService.presets`, max = today);
+    data export: the project's tax year and the one before, clearable.
+  - **Values stay `yyyy-MM-dd` strings** in forms, services and the API; the `Date` exists only
+    between the wrapper and the calendar (`shared/format/date-only.ts`: local midnight, never
+    `toISOString()` — `date-only.spec.ts` round-trips every day in Zurich and Santiago in a
+    child process). Month/weekday names and the week start (Monday; Sunday only with
+    `MM/dd/yyyy`) are set app-wide on spartan's `BrnCalendarI18nService` by the
+    `LanguageService` (`core/i18n/calendar-i18n.ts`) and follow a language switch.
+  - The popover lives in the CDK overlay container, so it opens above dialogs; inside
+    `lk-form-row`/`lk-field` the field fills its column. **No native `type="date"`** —
+    `native-date-inputs.spec.ts` fails on one (allow-list: the manual booking's
+    `datetime-local`, which needs a time).
 - **Tables** (user rule, 07.10.2026: "cutte zu lange Texte, fixiere den Interaktionsbereich",
   Pagination überall, wo es gross werden kann). Every `hlmTable` follows one pattern — copy
   `project-files.html` or `project-rates.html`:

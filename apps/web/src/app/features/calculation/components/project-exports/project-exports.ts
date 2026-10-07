@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { lucideDownload } from '@ng-icons/lucide';
@@ -36,6 +37,11 @@ import {
   RowActions,
 } from '../../../../shared/components/row-actions';
 import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
+import {
+  type DateRange,
+  DateRangePicker,
+  type DateRangePreset,
+} from '../../../../shared/components/date-range-picker';
 
 /**
  * Exporte (F10): create the simple and the detailed statement as PDF or Excel — asking first while
@@ -55,6 +61,7 @@ import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
     ChfPipe,
     EmptyState,
     SendToAdvisor,
+    DateRangePicker,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,
@@ -94,8 +101,36 @@ export class ProjectExports {
   protected readonly bookingKinds = BOOKING_KINDS;
   protected readonly filter = signal<DataExportFilter>({});
 
+  /** The project's tax year: offered as the period preset (and its neighbours). */
+  readonly taxYear = input<number | null>(null);
+
+  protected readonly period = computed<DateRange>(() => ({
+    from: this.filter().from ?? '',
+    to: this.filter().to ?? '',
+  }));
+
+  protected readonly periodPresets = computed<DateRangePreset[]>(() => {
+    const year = this.taxYear();
+    if (year === null) return [];
+    return [year, year - 1].map((y) => ({
+      id: `year:${y}`,
+      labelKey: 'dateRange.taxYear',
+      labelParams: { year: y },
+      range: { from: `${y}-01-01`, to: `${y}-12-31` },
+    }));
+  });
+
   protected setFilter(key: keyof DataExportFilter, value: string): void {
     this.filter.update((current) => ({ ...current, [key]: value }));
+  }
+
+  /** One period, set at once (`''` both = no date filter). */
+  protected setPeriod(range: DateRange): void {
+    this.filter.update((current) => ({
+      ...current,
+      from: range.from,
+      to: range.to,
+    }));
   }
 
   protected data(format: 'csv' | 'xlsx', type: 'bookings' | 'holdings'): void {

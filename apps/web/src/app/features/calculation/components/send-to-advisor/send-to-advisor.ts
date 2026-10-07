@@ -28,6 +28,7 @@ import { NotificationService } from '../../../../core/notifications/notification
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { SmtpError } from '../../../../shared/components/smtp-error';
 import { Truncate } from '../../../../shared/components/truncate';
+import { DateField } from '../../../../shared/components/date-field';
 import { formatBytes } from '../../../../shared/mail/mail-error';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
 import {
@@ -56,6 +57,7 @@ function today(): string {
   selector: 'lk-send-to-advisor',
   imports: [
     LkDatePipe,
+    DateField,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,

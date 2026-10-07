@@ -34,11 +34,7 @@ import {
   isNegative,
   QuantityPipe,
 } from '../../../../shared/format/number-format';
-import {
-  type PeriodPreset,
-  presetFrom,
-  presetValue,
-} from '../../dashboard-period';
+import { DateRangePicker } from '../../../../shared/components/date-range-picker';
 import {
   DashboardPageService,
   type HoldingSort,
@@ -65,6 +61,7 @@ import {
     LineChart,
     Sparkline,
     AllocationBar,
+    DateRangePicker,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmInputImports,
@@ -85,10 +82,6 @@ export class DashboardPage {
   protected readonly kpiKinds = KPI_KINDS;
   protected readonly isNegative = isNegative;
 
-  protected readonly presetValue = computed(() =>
-    presetValue(this.service.preset()),
-  );
-
   protected readonly points = computed(() =>
     this.service.view.hasValue()
       ? this.service.view.value().series.map((p) => ({
@@ -103,24 +96,6 @@ export class DashboardPage {
     return this.service.view.hasValue()
       ? this.service.view.value().kpis.find((k) => k.kind === kind)
       : undefined;
-  }
-
-  protected choosePreset(value: string): void {
-    const preset: PeriodPreset = presetFrom(value);
-    if (preset.key === 'custom') {
-      this.service.preset.set(preset);
-      return;
-    }
-    this.service.setPreset(preset);
-  }
-
-  protected setFrom(value: string): void {
-    if (value)
-      this.service.setCustom({ ...this.service.period(), from: value });
-  }
-
-  protected setTo(value: string): void {
-    if (value) this.service.setCustom({ ...this.service.period(), to: value });
   }
 
   protected openKpi(kind: KpiKind): void {

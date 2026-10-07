@@ -26,7 +26,7 @@
   } @case ('corrections') {
   <lk-project-corrections [closed]="closed()" [taxYear]="taxYear()" />
   } @case ('exports') {
-  <lk-project-exports />
+  <lk-project-exports [taxYear]="taxYear()" />
   } }
 </div>
 
