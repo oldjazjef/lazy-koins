@@ -195,7 +195,8 @@ export class LibraryPublishService {
           : 'library.publish.done',
         {
           labelKey: 'library.publish.open',
-          onClick: () => void this.router.navigate(['/app/mappings/library', entry.id]),
+          onClick: () =>
+            void this.router.navigate(['/app/mappings/library', entry.id]),
         },
         { version: entry.version },
       );
