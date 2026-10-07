@@ -1,0 +1,62 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "KuCoin Account History (CSV)",
+  "platform": "kucoin",
+  "description": "KuCoin 'Account History' from the history export (kucoin.com: Account > Export History > Account History (Funding Account) / (Trading Account); CSV from the ZIP). Header UID, Account Type, Currency, Side, Amount, Fee, Time(UTC+08:00), Remark, Type. The time header names the export zone and is honoured. Amount is unsigned; Side (Deposit = in, Withdrawal = out) gives the direction; Fee is charged in the same currency. The Account Type (Funding/Main, Trading, …) becomes the account. The kind is read from Type and Remark with patterns, because KuCoin's wording varies. Known limits: import the FUNDING account file for deposits, withdrawals, transfers and Earn; the TRADING account file repeats every spot trade of the 'Spot Orders – Filled Orders' file, so do not import both (its trade rows also have no order id to pair them). Type/Remark wording is unconfirmed — check the preview for unknown values.",
+  "match": {
+    "headers": [
+      "UID",
+      "Account Type",
+      "Currency",
+      "Side",
+      "Amount",
+      "Fee",
+      "Remark",
+      "Type"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "bookings": {
+    "timestamp": {
+      "column": "Time(UTC)",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "headerPattern": "^Time\\s*\\((UTC[^)]*)\\)$"
+    },
+    "account": { "column": "Account Type", "value": "main" },
+    "asset": { "column": "Currency" },
+    "quantity": {
+      "mode": "side",
+      "column": "Amount",
+      "sideColumn": "Side",
+      "outValues": ["Withdrawal", "Out"]
+    },
+    "fee": { "column": "Fee" },
+    "note": { "column": "Remark" },
+    "kind": {
+      "columns": ["Type", "Remark"],
+      "rules": [
+        { "pattern": "^Deposit", "kind": "deposit" },
+        { "pattern": "^Withdraw", "kind": "withdrawal" },
+        { "pattern": "^Transfer", "kind": "transfer" },
+        {
+          "pattern": "^(Spot|Trade|Exchange|Convert|Margin|Futures)",
+          "kind": "trade"
+        },
+        { "pattern": "Staking", "kind": "income_staking" },
+        {
+          "pattern": "Lending|Earn|Interest|Savings|Profit",
+          "kind": "income_interest"
+        },
+        {
+          "pattern": "Airdrop|Distribution|Bonus|Reward|Gift|Rebate|Cashback",
+          "kind": "income_airdrop"
+        },
+        { "pattern": "Fee|Deduction", "kind": "fee" }
+      ],
+      "default": "unknown"
+    }
+  }
+}

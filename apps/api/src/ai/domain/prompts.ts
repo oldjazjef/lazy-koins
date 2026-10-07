@@ -15,7 +15,10 @@ export const CLASSIFICATION_RULES = `Classification rules (Swiss private wealth;
 - Kraken asset suffixes .S .F .B .M .P (staking/earn variants) map to the base asset; ETH2 -> ETH; EUR.HOLD -> EUR; XXBT/XBT -> BTC; leading X/Z of 4-letter Kraken codes (XETH, ZEUR) are legacy prefixes.
 - Times must be converted to UTC: state the export's zone. Binance names its zone in the file name ("…_UTC_2_…" = UTC+2), use timeZoneFromFileName for that.
 - Quantities: a signed amount column → mode "signed"; separate in/out columns → "inOut"; an unsigned amount plus a buy/sell or in/out column → "side". Fees leave the account in addition to the quantity.
-- A ledger with a running balance column can also produce holdings (mode "lastPerAsset"); a statement listing balances per asset produces holdings with mode "rows".`;
+- A ledger with a running balance column can also produce holdings (mode "lastPerAsset"); a statement listing balances per asset produces holdings with mode "rows".
+- An unsigned amount whose direction follows from the type (e.g. "Send", "Sell", "Withdrawal" leave): give those kind rules "direction": "out" (or "in").
+- ONE row holding both sides of a trade (e.g. Quantity + Asset and Subtotal + Price Currency, or Amount + Currency and To Amount + To Currency): map the main side normally and the other side with "bookings.counter" (asset, quantity with sign "opposite" or "signed", optional fee) so the spent/received asset — often fiat, which is wealth at 31.12. — is not lost. Do not add a counter when the export writes each side on its own row.
+- A time column whose header names the zone ("Time(UTC+08:00)"): use "timestamp.headerPattern". Placeholder cells like "-" in number columns: "numbers.nullValues".`;
 
 export const MAPPING_SYSTEM_PROMPT = `You write mapping specs for lazy-koins, a Swiss crypto tax tool. A mapping spec is declarative JSON that turns one exchange/wallet export (CSV or XLSX) into the standard format "lazy-koins Buchungen v1". You never convert the rows yourself — the app applies your spec deterministically to every row of the file.
 

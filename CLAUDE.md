@@ -229,6 +229,8 @@ scripts/                    # lint budget, private-inspect, dev/ (test-db wrappe
 assets/brand/icon.svg       # THE app icon source (pnpm icons → desktop + web icons)
 deploy/                     # Coolify: README (secrets + variables by name), coolify/SETUP.md + lazykoins.yml,
                             #   deploy.sh, smoke-test.sh
+mappings/standard/          # ready-to-import mapping specs for 10 platforms (upload on the Mappings page /
+                            #   publish to the library), samples/ = SYNTHETIC exports, README = the formats
 private/                    # REAL tax data + golden.json — git-ignored, see Private data
 ```
 
@@ -283,6 +285,21 @@ fee + fee asset, kind lookup rules (first match wins, default `unknown` — rows
 asset rewrites + aliases, exclude filters, balances (`rows` or `lastPerAsset` from a running
 balance column). `applyMapping` is pure and deterministic; every record keeps `sourceFileId` (the
 SHA-256), the 1-based row and the raw row (F7.5). Bad rows become `errors` with row + column.
+Optional extras (all backwards compatible — a spec without them reads exactly as before): a kind
+rule's `direction` (`in`/`out`, for unsigned amounts), `asset.pattern` (base of a pair),
+`numbers.nullValues` (`-` = empty), `quantity.fallbackColumn` (side mode), `timestamp.headerPattern`
+(zone from a header like `Time(UTC+08:00)`) and **`bookings.counter`**: a second leg from the same
+row (the money/quote side of a one-row trade, or the other account of an Earn/staking move) — same
+row, kind and group (the group column, else `<file>:<row>`), id `<file>:<row>:counter`, emitted
+right after its main leg; `lastPerAsset` reads the main leg only. Tests: `apply-mapping-counter.spec.ts`.
+
+**Standard mappings** (`mappings/standard/`, repo root): hand-researched specs for Binance,
+Coinbase, Kraken, Bitfinex, Bybit, OKX (2), KuCoin (2), Crypto.com App, Bitstamp, Bitpanda, each
+with a synthetic sample; `README.md` documents every export format (headers, dates, signs, type
+→ kind, sources, confidence). `libs/engine/src/mapping/standard-mappings.spec.ts` applies each to
+its sample (no errors/unknowns, kind counts, trade pairing, privacy scan, no fingerprint overlap
+with each other or the standard templates). They are product data, not test fixtures — the
+synthetic `libs/engine/src/mapping/fixtures/` stay as they are.
 
 Upload flow (`files/application/commands/upload-project-file.command.ts`): kind from the bytes
 (`%PDF-`, ZIP with `xl/`, text) → SHA-256 → duplicate in the same project = **409** with

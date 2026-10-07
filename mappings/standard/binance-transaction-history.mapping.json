@@ -1,0 +1,143 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Binance Transaction History (CSV)",
+  "platform": "binance",
+  "description": "Binance 'Transaction History' / 'Generate all statements' export (binance.com: Orders > Transaction History > Export, or Wallet > Overview > Transaction History > Export Transaction Records; CSV). One row per balance change: User_ID, UTC_Time, Account, Operation, Coin, Change, Remark. Times are in the time zone chosen in the export dialog; Binance writes it into the file name ('..._UTC_2_...' = UTC+2) — without such a name UTC is assumed and a note is recorded. Change is signed. Account (Spot, Funding, Earn, Futures, Margin, Pool, ...) becomes the account. The legs of a trade have no common id: rows of the same second share a group. Known limits: Earn income booked inside Earn without a ledger row is missing (use the Account Statement + Earn gap); margin loans are booked as transfers (the debt is not tracked); futures PnL is booked as trade (capital gain/loss); 'Crypto Box' is left unknown (gift in or out). No running balance column.",
+  "match": {
+    "headers": ["UTC_Time", "Account", "Operation", "Coin", "Change", "Remark"]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "bookings": {
+    "timestamp": {
+      "column": "UTC_Time",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "timeZoneFromFileName": "UTC_?([+-]?\\d{1,2})(?=[_.\\s]|$)"
+    },
+    "account": { "column": "Account", "value": "Spot" },
+    "asset": { "column": "Coin" },
+    "quantity": { "mode": "signed", "column": "Change" },
+    "group": { "column": "UTC_Time" },
+    "note": { "column": "Remark" },
+    "kind": {
+      "columns": ["Operation"],
+      "rules": [
+        { "equals": ["Deposit"], "kind": "deposit" },
+        { "equals": ["Fiat Deposit"], "kind": "deposit" },
+        { "equals": ["Fiat OCBS - Add Fiat and Fees"], "kind": "deposit" },
+        { "equals": ["Withdraw"], "kind": "withdrawal" },
+        { "equals": ["Fiat Withdraw"], "kind": "withdrawal" },
+        { "equals": ["Fiat Withdrawal"], "kind": "withdrawal" },
+        { "equals": ["Send"], "kind": "withdrawal" },
+        { "equals": ["Binance Card Spending"], "kind": "withdrawal" },
+        { "equals": ["Buy"], "kind": "trade" },
+        { "equals": ["Sell"], "kind": "trade" },
+        { "equals": ["Transaction Related"], "kind": "trade" },
+        { "equals": ["Transaction Buy"], "kind": "trade" },
+        { "equals": ["Transaction Spend"], "kind": "trade" },
+        { "equals": ["Transaction Sold"], "kind": "trade" },
+        { "equals": ["Transaction Revenue"], "kind": "trade" },
+        { "equals": ["Binance Convert"], "kind": "trade" },
+        { "equals": ["Large OTC trading"], "kind": "trade" },
+        { "equals": ["Small Assets Exchange BNB"], "kind": "trade" },
+        { "equals": ["Auto-Invest Transaction"], "kind": "trade" },
+        { "equals": ["Buy Crypto With Card"], "kind": "trade" },
+        { "equals": ["P2P Trading"], "kind": "trade" },
+        { "equals": ["Stablecoins Auto-Conversion"], "kind": "trade" },
+        { "equals": ["ETH 2.0 Staking"], "kind": "trade" },
+        { "equals": ["Leverage Token Redemption"], "kind": "trade" },
+        { "equals": ["Leveraged Coin Consolidation"], "kind": "trade" },
+        { "equals": ["Swap Farming Transaction"], "kind": "trade" },
+        { "equals": ["Liquid Swap Sell"], "kind": "trade" },
+        { "equals": ["Asset Conversion Transfer"], "kind": "trade" },
+        { "equals": ["Futures Convert"], "kind": "trade" },
+        { "equals": ["Realized Profit and Loss"], "kind": "trade" },
+        { "equals": ["Realize profit and loss"], "kind": "trade" },
+        { "equals": ["Fee"], "kind": "fee" },
+        { "equals": ["Transaction Fee"], "kind": "fee" },
+        { "equals": ["BNB Fee Deduction"], "kind": "fee" },
+        { "equals": ["Funding Fee"], "kind": "fee" },
+        { "equals": ["Insurance Fund Compensation"], "kind": "fee" },
+        { "equals": ["transfer_in"], "kind": "transfer" },
+        { "equals": ["transfer_out"], "kind": "transfer" },
+        { "pattern": "^Transfer Between ", "kind": "transfer" },
+        { "equals": ["Simple Earn Flexible Subscription"], "kind": "transfer" },
+        { "equals": ["Simple Earn Flexible Redemption"], "kind": "transfer" },
+        { "equals": ["Simple Earn Locked Subscription"], "kind": "transfer" },
+        { "equals": ["Simple Earn Locked Redemption"], "kind": "transfer" },
+        { "equals": ["Savings purchase"], "kind": "transfer" },
+        { "equals": ["Savings Principal redemption"], "kind": "transfer" },
+        { "equals": ["POS savings purchase"], "kind": "transfer" },
+        { "equals": ["POS savings redemption"], "kind": "transfer" },
+        { "equals": ["Staking Purchase"], "kind": "transfer" },
+        { "equals": ["Staking Redemption"], "kind": "transfer" },
+        {
+          "equals": ["Launchpool Subscription/Redemption"],
+          "kind": "transfer"
+        },
+        { "equals": ["Launchpad Subscribe"], "kind": "transfer" },
+        { "equals": ["Liquid Swap Add"], "kind": "transfer" },
+        { "equals": ["Liquid Swap Add/Sell"], "kind": "transfer" },
+        { "equals": ["Liquidity Farming Remove"], "kind": "transfer" },
+        {
+          "equals": ["Token Swap - Redenomination/Rebranding"],
+          "kind": "transfer"
+        },
+        { "equals": ["Asset Recovery"], "kind": "transfer" },
+        { "equals": ["Margin Loan"], "kind": "transfer" },
+        { "equals": ["Isolated Margin Loan"], "kind": "transfer" },
+        { "equals": ["Margin Repayment"], "kind": "transfer" },
+        { "equals": ["Isolated Margin Repayment"], "kind": "transfer" },
+        {
+          "equals": ["Cross Margin Liquidation - Repayment"],
+          "kind": "transfer"
+        },
+        {
+          "equals": ["Simple Earn Flexible Interest"],
+          "kind": "income_interest"
+        },
+        { "equals": ["Simple Earn Locked Rewards"], "kind": "income_interest" },
+        { "equals": ["BNB Vault Rewards"], "kind": "income_interest" },
+        { "equals": ["Savings Interest"], "kind": "income_interest" },
+        { "equals": ["Savings Distribution"], "kind": "income_interest" },
+        { "equals": ["Pool Distribution"], "kind": "income_interest" },
+        { "equals": ["Super BNB Mining"], "kind": "income_interest" },
+        { "equals": ["Liquid Swap Rewards"], "kind": "income_interest" },
+        { "equals": ["Swap Farming Rewards"], "kind": "income_interest" },
+        { "equals": ["Staking Rewards"], "kind": "income_staking" },
+        { "equals": ["ETH 2.0 Staking Rewards"], "kind": "income_staking" },
+        { "equals": ["POS savings interest"], "kind": "income_staking" },
+        { "equals": ["DOT Slot Auction Rewards"], "kind": "income_staking" },
+        { "pattern": "^Launchpool ", "kind": "income_launchpool" },
+        { "equals": ["Airdrop Assets"], "kind": "income_airdrop" },
+        { "equals": ["Distribution"], "kind": "income_airdrop" },
+        {
+          "equals": ["HODLer Airdrops Distribution"],
+          "kind": "income_airdrop"
+        },
+        {
+          "equals": ["Simple Earn Flexible Airdrop"],
+          "kind": "income_airdrop"
+        },
+        { "equals": ["Megadrop Rewards"], "kind": "income_airdrop" },
+        { "equals": ["Campaign Related Reward"], "kind": "income_airdrop" },
+        { "equals": ["Mission Reward Distribution"], "kind": "income_airdrop" },
+        { "equals": ["Token Swap - Distribution"], "kind": "income_airdrop" },
+        { "equals": ["Cash Voucher Distribution"], "kind": "income_airdrop" },
+        { "equals": ["Binance Card Cashback"], "kind": "income_airdrop" },
+        { "equals": ["Referral Kickback"], "kind": "income_airdrop" },
+        { "equals": ["Referral Commission"], "kind": "income_airdrop" },
+        { "equals": ["Commission History"], "kind": "income_airdrop" },
+        { "equals": ["Commission Rebate"], "kind": "income_airdrop" },
+        {
+          "equals": ["Commission Fee Shared With You"],
+          "kind": "income_airdrop"
+        },
+        { "equals": ["Referrer rebates"], "kind": "income_airdrop" }
+      ],
+      "default": "unknown"
+    }
+  }
+}

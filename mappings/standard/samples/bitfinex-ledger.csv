@@ -1,0 +1,25 @@
+#,DESCRIPTION,CURRENCY,AMOUNT,BALANCE,DATE,WALLET
+900001,Deposit (BITCOIN) #11223344 on wallet exchange,BTC,0.50000000,0.50000000,01-04-2025 08:00:00,exchange
+900002,Deposit (USD) #11223345 on wallet exchange,USD,1000.00000000,1000.00000000,01-04-2025 09:00:00,exchange
+900003,Deposit Fee (BTC) 11223344 on wallet exchange,BTC,-0.00010000,0.49990000,01-04-2025 10:00:00,exchange
+900004,Exchange 0.1 BTC for USD @ 64000 on BFX (0.2%) on wallet exchange,BTC,-0.10000000,0.39990000,01-04-2025 11:00:00,exchange
+900005,Exchange 0.1 BTC for USD @ 64000 on BFX (0.2%) on wallet exchange,USD,6400.00000000,7400.00000000,01-04-2025 11:00:00,exchange
+900006,Trading fees for 0.1 BTC (BTCUSD) @ 64000 on BFX (0.2%) on wallet exchange,USD,-12.80000000,7387.20000000,01-04-2025 11:00:00,exchange
+900007,Exchange 2.0 ETH for USD @ 3200 on wallet exchange,ETH,2.00000000,2.00000000,01-04-2025 12:00:00,exchange
+900008,Exchange 2.0 ETH for USD @ 3200 on wallet exchange,USD,-6400.00000000,987.20000000,01-04-2025 12:00:00,exchange
+900009,Trading fee for 2.0 ETH (ETHUSD) @ 3200 on BFX (0.1%) on wallet exchange,ETH,-0.00200000,1.99800000,01-04-2025 12:00:00,exchange
+900010,Bitcoin Withdrawal #22334455 on wallet exchange,BTC,-0.20000000,0.19990000,01-04-2025 13:00:00,exchange
+900011,Crypto Withdrawal fee on wallet exchange,BTC,-0.00040000,0.19950000,01-04-2025 14:00:00,exchange
+900012,Canceled withdrawal request #22334456 on wallet exchange,BTC,0.05000000,0.24950000,01-04-2025 15:00:00,exchange
+900013,Transfer of 500.0 USD from wallet Exchange to Margin on wallet exchange,USD,-500.00000000,487.20000000,01-04-2025 16:00:00,exchange
+900014,Transfer of 500.0 USD from wallet Exchange to Margin on wallet margin,USD,500.00000000,500.00000000,01-04-2025 17:00:00,margin
+900015,Settlement @ 3150.0 on wallet margin,USD,-12.50000000,487.50000000,01-04-2025 18:00:00,margin
+900016,Position closed @ 3180.0 on wallet margin,USD,8.20000000,495.70000000,01-04-2025 19:00:00,margin
+900017,Used Margin Funding Charge on wallet margin,USD,-0.42000000,495.28000000,01-04-2025 20:00:00,margin
+900018,Transfer of 300.0 USD from wallet Exchange to Funding on wallet funding,USD,300.00000000,300.00000000,01-04-2025 21:00:00,funding
+900019,Margin Funding Payment on wallet funding,USD,0.73000000,300.73000000,01-04-2025 22:00:00,funding
+900020,Staking Reward 0.0021 ETH on wallet exchange,ETH,0.00210000,2.00010000,01-04-2025 23:00:00,exchange
+900021,Earned fees from user 1234567 on wallet exchange,USD,0.05000000,487.25000000,02-04-2025 00:00:00,exchange
+900022,Affiliate Rebate 0.02 USD on wallet exchange,USD,0.02000000,487.27000000,02-04-2025 01:00:00,exchange
+900023,BSV Hard fork credit on wallet exchange,BSV,0.10000000,0.10000000,02-04-2025 02:00:00,exchange
+900024,Airdrop of EOS tokens on wallet exchange,EOS,3.00000000,3.00000000,02-04-2025 03:00:00,exchange
