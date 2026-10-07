@@ -7,6 +7,10 @@ import {
 import { InMemoryUserRateRepository } from '../../carryover/testing/in-memory-carryover.repositories';
 import type { Env } from '../../config/env';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
@@ -146,6 +150,63 @@ describe('dashboard (F11.4–F11.9)', () => {
       new GetDashboardQuery('anna', '2025-01-01', '2025-12-31'),
     );
     expect(t.readFiles).not.toHaveBeenCalled();
+  });
+
+  it('ignores a deactivated entry; the same file still counts through an active one (F5.7a, rule 1)', async () => {
+    const t = await setup();
+    const toggle = new SetFileActiveHandler(t.projects, t.files);
+    const deposits = () =>
+      t.records.execute(
+        new GetDashboardRecordsQuery(
+          'anna',
+          '2025-01-01',
+          '2025-12-31',
+          'deposits',
+        ),
+      );
+    expect((await deposits()).records).toHaveLength(1);
+
+    // Only entry deactivated → its bookings are gone from the dashboard.
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, t.bookingsFile.id, false),
+    );
+    expect((await deposits()).records).toEqual([]);
+
+    // The same stored file, active in an older project: rule 1 reads that entry instead of
+    // the newest project's deactivated one.
+    const older = await t.projects.create('anna', {
+      name: 'Steuern 2024',
+      taxYear: 2024,
+      country: 'CH',
+      canton: 'ZH',
+      notes: '',
+    });
+    await new UploadProjectFileHandler(
+      t.projects,
+      t.files,
+      new FileAnalysisService(
+        new SourceFileReader(),
+        new InMemoryImportMappingRepository(t.files),
+      ),
+    ).execute(
+      new UploadProjectFileCommand(
+        'anna',
+        older.id,
+        'buchungen.csv',
+        new TextEncoder().encode(BOOKINGS_CSV),
+      ),
+    );
+    expect((await deposits()).records).toEqual([
+      expect.objectContaining({ asset: 'CHF', projectId: older.id }),
+    ]);
+
+    // Active again in the newest project: back to that entry (cache key changed with it).
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, t.bookingsFile.id, true),
+    );
+    expect((await deposits()).records).toEqual([
+      expect.objectContaining({ projectId: t.project.id }),
+    ]);
   });
 
   it('drills a KPI down to its bookings with file and row', async () => {

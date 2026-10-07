@@ -71,7 +71,8 @@ export class DataExportQuery {
  * F10.7: the project's bookings and holdings in the **standard format** (re-importable as is),
  * with the applied corrections, the CHF price used and its source, and file + row of every
  * record — filtered by platform/account, asset, kind and period. Read from the stored files
- * like the calculation; nothing is stored.
+ * like the calculation — **only the active ones** (a deactivated file, F5.7a, is left out by
+ * `CalculationInputService.build`, decided 09.10.2026); nothing is stored.
  */
 @QueryHandler(DataExportQuery)
 export class DataExportHandler implements IQueryHandler<

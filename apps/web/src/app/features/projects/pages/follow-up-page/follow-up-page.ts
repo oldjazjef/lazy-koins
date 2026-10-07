@@ -10,6 +10,7 @@ import {
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Truncate } from '../../../../shared/components/truncate';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
 import { HlmInputImports } from '@lazykoins/ui/input';
@@ -60,6 +61,7 @@ const FollowUpSchema = z.object({
     ChfPipe,
     PageHeader,
     EmptyState,
+    ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmInputImports,

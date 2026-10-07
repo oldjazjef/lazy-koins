@@ -9,6 +9,7 @@ import {
   type ReapplyResult,
 } from './application/commands/reapply-mapping.command';
 import { RemoveProjectFileCommand } from './application/commands/remove-project-file.command';
+import { SetFileActiveCommand } from './application/commands/set-file-active.command';
 import { UploadProjectFileCommand } from './application/commands/upload-project-file.command';
 import { FileViews, type ProjectFileView } from './application/file-views';
 import {
@@ -107,6 +108,20 @@ export class FilesService {
   ): Promise<ProjectFileView> {
     const file: ProjectFile = await this.commands.execute(
       new ChangeProjectFileCommand(userId, projectId, fileId, assignment),
+    );
+    return this.views.one(userId, file);
+  }
+
+  /** F5.7a: deactivate (`active: false`, optional note) or activate a file of the project. */
+  async setActive(
+    userId: string,
+    projectId: string,
+    fileId: string,
+    active: boolean,
+    note = '',
+  ): Promise<ProjectFileView> {
+    const file: ProjectFile = await this.commands.execute(
+      new SetFileActiveCommand(userId, projectId, fileId, active, note),
     );
     return this.views.one(userId, file);
   }

@@ -117,6 +117,8 @@ export interface FileOption {
   readonly periodFrom: string | null;
   readonly periodTo: string | null;
   readonly preselected: boolean;
+  /** F5.7a: false = deactivated in its project — offered unticked; ticked, it is linked active. */
+  readonly active?: boolean;
 }
 
 export interface CorrectionOption {

@@ -460,6 +460,19 @@ const CASES: Record<string, (a: Seeded, b: Seeded) => Attack[]> = {
       },
     },
   ],
+  // F5.7a: B can neither deactivate A's file in A's project nor through B's own project id.
+  set_file_active: (a, b) => [
+    {
+      args: {
+        projectId: a.projectId,
+        fileId: a.krakenFileId,
+        active: false,
+        note: 'planted',
+      },
+    },
+    { args: { projectId: b.projectId, fileId: a.krakenFileId, active: false } },
+    { args: { projectId: a.projectId, fileId: b.krakenFileId, active: true } },
+  ],
   remove_file: (a, b) => [
     { args: { projectId: a.projectId, fileId: a.krakenFileId } },
     { args: { projectId: b.projectId, fileId: a.fileIds[1] } },

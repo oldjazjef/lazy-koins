@@ -50,6 +50,12 @@ const RULES: readonly (readonly [
     }),
   ],
   [/^projects\/import-package$/, () => ({ scope: 'projects' })],
+  // F5.7a: a file (de)activated — the project's files, hints, result status and the dashboard
+  // follow; its "ohne Mapping"/"Zeilenfehler" notifications are resolved or raised again.
+  [
+    /^projects\/([^/]+)\/files\/[^/]+\/active$/,
+    (m) => ({ projectId: m[1], scope: 'notifications' }),
+  ],
   [/^projects$/, () => ({ scope: 'projects' })],
   // A mapping saved from a project's file: the mappings page shows it, too.
   [

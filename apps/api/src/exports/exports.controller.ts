@@ -53,6 +53,8 @@ export class ExportsController {
   @ApiOperation({
     summary:
       'Bookings and holdings in the standard format, CSV or XLSX, with corrections, price used and origin (F10.7)',
+    description:
+      'Only the active files of the project — a deactivated file (F5.7a) is not in it, exactly as in the calculation.',
   })
   @ApiProduces(
     'text/csv',

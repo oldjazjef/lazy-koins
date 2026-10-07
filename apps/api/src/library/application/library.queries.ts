@@ -2,6 +2,7 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { normaliseHeader } from '@lazykoins/engine';
 import { readableOf } from '../../files/application/file-access';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
+import { isActive } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import { loadOwnProject } from '../../projects/application/project-access';
@@ -217,7 +218,7 @@ export class ProjectLibraryMatchesHandler implements IQueryHandler<
     this.runtime.assertEnabled();
     const project = await loadOwnProject(this.projects, userId, projectId);
     const waiting = (await this.files.listByProject(project.id)).filter(
-      (file) => file.status === 'needs_mapping',
+      (file) => file.status === 'needs_mapping' && isActive(file),
     );
     if (waiting.length === 0) return [];
     const entries = await this.library.listActive();

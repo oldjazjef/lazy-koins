@@ -176,6 +176,19 @@ export interface ProjectFile {
   derivedFromFileId: string | null;
   derivedFromName: string | null;
   addedAt: string;
+  /**
+   * F5.7a: false = deactivated in this project — calculation, dashboard, hints, checks and
+   * exports ignore it; it stays downloadable/previewable. Optional for older answers (= active).
+   */
+  active?: boolean;
+  disabledAt?: string | null;
+  disabledNote?: string | null;
+}
+
+/** `PATCH /api/projects/:id/files/:fileId/active` (F5.7a). */
+export interface SetFileActiveRequest {
+  active: boolean;
+  note?: string;
 }
 
 export const MISSING_FILE_KINDS = [
@@ -227,6 +240,8 @@ export interface ProjectHint {
   fileId: string | null;
   fileName: string | null;
   count: number | null;
+  /** F5.7a: deactivated files that would cover this platform/account — they cover nothing. */
+  disabledFiles?: { id: string; name: string }[];
   status: HintStatus;
   note: string;
 }

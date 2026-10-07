@@ -220,6 +220,57 @@ describe('ProjectFilesService', () => {
     await flushReloads(http);
   });
 
+  it('deactivates a file with a note and activates it again, then reloads (F5.7a)', async () => {
+    const read = file({ status: 'mapped', mappingId: 'm1' });
+    const { service, http, notifications } = await setup([read]);
+    expect(service.disabledCount()).toBe(0);
+
+    const deactivated = service.setActive(read, false, '  doppelt  ');
+    const off = http.expectOne('/api/projects/p1/files/f1/active');
+    expect(off.request.method).toBe('PATCH');
+    expect(off.request.body).toEqual({ active: false, note: 'doppelt' });
+    const disabled = {
+      ...read,
+      active: false,
+      disabledAt: '2026-02-01T00:00:00.000Z',
+      disabledNote: 'doppelt',
+    };
+    off.flush(disabled);
+    await deactivated;
+    expect(notifications.success).toHaveBeenCalledWith(
+      'files.disabled.deactivated',
+    );
+    await flushReloads(http, [disabled]);
+    expect(service.disabledCount()).toBe(1);
+
+    const activated = service.setActive(disabled, true, 'ignored');
+    const on = http.expectOne('/api/projects/p1/files/f1/active');
+    // Activating sends no note.
+    expect(on.request.body).toEqual({ active: true });
+    on.flush({ ...read, active: true, disabledAt: null, disabledNote: null });
+    await activated;
+    expect(notifications.success).toHaveBeenCalledWith(
+      'files.disabled.activated',
+    );
+    await flushReloads(http, [read]);
+    expect(service.disabledCount()).toBe(0);
+  });
+
+  it('a refused (de)activation says so (closed project → 409)', async () => {
+    const { service, http, notifications } = await setup();
+    const attempt = service.setActive(file(), false);
+    http
+      .expectOne('/api/projects/p1/files/f1/active')
+      .flush(
+        { code: 'projectClosed', message: 'closed' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    await expect(attempt).rejects.toBeDefined();
+    expect(notifications.error.mock.calls[0]?.[0]).toBe(
+      'files.disabled.failed',
+    );
+  });
+
   it('checks a spec: schema issues come back as data, a preview as the result', async () => {
     const { service, http } = await setup();
     const bad = service.checkMapping(file(), { spec: { format: 'x' } });

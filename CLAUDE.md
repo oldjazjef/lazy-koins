@@ -377,6 +377,30 @@ badge = open count; the files area only shows "N Hinweise → anzeigen"); `Proje
 tab; `<lk-ai-assist>` lives there too). Checks link to the hints of a platform and back; file
 issues are never open items.
 
+**Deactivated files (F5.7a, user request 09.10.2026: „Dateien deaktivieren … bei Rechnung /
+Neuberechnung ignoriert“)** — per **project file**, not per stored file: `project_file.disabled_at`
+(+ `disabled_note` ≤ 500, CHECK: only with a date; migration `20261009100000_project_file_disabled`,
+`ADD COLUMN` only). `PATCH /api/projects/:id/files/:fileId/active {active, note?}`
+(`SetFileActiveCommand`, `loadOwnProjectFile` → someone else's = 404, closed = 409; deactivating
+again keeps the first date) → `ProjectNotifications.filesChanged`. **One rule**: `readsRecords(file)`
+(`files/domain/project-file.ts`) = status standard|mapped **and** active — used by
+`CalculationInputService.sources` (so the file leaves the input hash → the snapshot is **stale**;
+its records are in no result, so no F7.5 drill-down shows them), `DashboardInputService` (rule 1
+below), the F5.8 coverage (hints query, files overview `missing`, internal report,
+`ProjectNotifications.openHints`); `isActive(file)` skips a deactivated file in the file hints
+(`unrecognisedFile`/`rowErrors`), the file notification topics (resolved), the F5.19 suggestions
+and the library matches. A coverage hint names the deactivated files with records for its
+platform/account (`disabledFiles`, web: "Deaktiviert und deshalb nicht berücksichtigt: …");
+a platform whose files are **all** deactivated has no coverage at all, so it gets no hint either
+(deactivated on purpose — decided, nothing to remind of). The
+file itself stays stored, downloadable, previewable and assignable; its status/mapping are
+unchanged. The data export (F10.7) holds only active files (it reads `CalculationInputService.build`,
+decided). Web: files table — badge "Deaktiviert" next to the status badge (tooltip with the
+date), the row muted, the note as a second line, row actions "Deaktivieren" (dialog with an
+optional note) / "Aktivieren" (hidden on a closed project), "N deaktiviert" with Ausblenden/Anzeigen
+(`hideDisabled`, a `#file-<id>` link to a hidden file shows them again). Tool `set_file_active`
+(write → a proposal in the chat, isolation CASE), `list_files` has `active`/`disabledAt`/`disabledNote`.
+
 Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
@@ -945,7 +969,8 @@ filters kind / project / status). Slice `notifications/` (API), global module.
   specs that do not care construct them as before.
 - **`ProjectNotifications`** re-derives a project's conditions from stored state after every change
   that can affect them, raising what is true and resolving the rest: `filesChanged` (upload,
-  derived file, assignment, remove, re-apply, mapping deleted, carry-over, package import),
+  derived file, assignment, (de)activation, remove, re-apply, mapping deleted, carry-over, package
+  import — a deactivated file raises no file topic, F5.7a),
   `hintsChanged`, `calculated`, `openItemsChanged`, `sentChanged` (send, mark, undo, export,
   correction). A hint marked done/ignored settles the matching file topic.
 - **Triggers** (F11.12):
@@ -1129,7 +1154,9 @@ corrections, rates, period, engine version — same hash, no file read). Rules a
 
 1. **One record set**: a stored file used in several projects (same SHA-256 → same record ids)
    is read once, from the entry of the project with the newest tax year; `uniqueRecords` also
-   dedupes by id in the engine.
+   dedupes by id in the engine. Only **active** entries take part (F5.7a): a deactivated entry
+   never wins, so the same file still counts through an active entry of another project; the
+   chosen entry's id is part of the cache hash.
 2. **Corrections belong to the year of their project**: a correction counts only when the date it
    concerns (reclassified booking's time, manual booking's time, manual holding's date, override
    date) lies in a year its project _owns_ — `yearOwner`: the project of that tax year, else the
@@ -1166,7 +1193,9 @@ linked in the same transaction via `ProjectBundle.walletIds`, carry-over kind `w
 wallets migration widens that CHECK; their derived files are made anew by `WalletDerivedFiles.sync`
 after the write, files with origin `wallet:` are never offered or linked; manual balances stay with
 their year); `GET|POST /projects/:id/take-over` (F4.4: files
-of other projects, already-linked ones skipped). Every item is recorded in `project_carryover`
+of other projects, already-linked ones skipped). A **deactivated** file (F5.7a) is offered with
+`active: false` and never preselected (the web says why); ticked anyway, it is linked **active**
+(the new project decides for itself). Every item is recorded in `project_carryover`
 ("aus Projekt X", `GET …/carryovers`); a carried open item is ticked via `open_item_state` with
 the key `carried:<carryover id>`. A closed source project is fine (only read). Writes go through
 `ProjectBundleRepositoryPort.write` — ONE interactive transaction (project, mappings, files,
@@ -1178,13 +1207,16 @@ own items by `key`. The previous year's closing positions reach the new project'
 `standardExport` in the engine → the template's columns (re-importable as is; corrections
 applied) + `Typ (Original)`, `Korrekturen`, `Kurs CHF verwendet`, `Kursquelle`, `Wert CHF`,
 `Quelldatei`, `Zeile`. CSV = one record type with a UTF-8 BOM; XLSX = both sheets, every cell
-text. Lost on a round trip: `rawType` (becomes the kind), `valueUsd`/`feeValueUsd`.
+text. Lost on a round trip: `rawType` (becomes the kind), `valueUsd`/`feeValueUsd`. **Only active
+files** (F5.7a, decided: no option for deactivated ones — the export is what the calculation reads;
+the card's hint says so).
 
 **Packages** (`packages/`, fflate): `GET /projects/:id/package` → `<name>-<year>.lkproj.zip`;
 `POST /projects/import-package` (raw body) → a new project; `GET /account/package`,
 `POST /account/import-package` (Profil). `manifest.json` = format + version, app version
 (`APP_VERSION`), created, project facts, files (SHA-256, size, role original/derived, analysis,
-mapping key), mappings, exports, counts, and `entries` = **every** other ZIP entry with SHA-256 +
+mapping key, `disabled` = `{at, note}` or null — F5.7a, zod default null: older packages import
+every file active; the bundle writes it as `deactivation`), mappings, exports, counts, and `entries` = **every** other ZIP entry with SHA-256 +
 size. Import verifies before writing: ZIP directory limits (package ≤ 200 MB, inflated ≤ 1 GB,
 entry ≤ 200 MB, ≤ 20 000 entries; nginx in front allows 50 MB), safe paths only (no `..`,
 absolute, backslash, drive — zip-slip), entries exactly as listed with matching hashes (else 422
@@ -1290,7 +1322,10 @@ unsaved values, the precise error: code, HTTP status, provider words).
   `fee`) and `<label>.wallet-bestaende.csv` (F6.5 manual balances = statement holdings for that
   wallet/network, Beleg = the PDF's name) with origin **`wallet:<walletId>`** (migration
   `20261008140000_wallets` widens the `project_file.origin` CHECK). Same bytes → same file; new
-  bytes → added, the old one removed (F5.7). Closed projects are never touched; deleting a wallet
+  bytes → added, the old one removed (F5.7). A **deactivated** derived file (F5.7a) stays so: same
+  bytes keep the file untouched, and new bytes replacing a deactivated file of the same kind
+  (`.wallet-buchungen.csv` / `.wallet-bestaende.csv`, `derivedKind`) inherit its date + note — a
+  sync never re-enables a file. Closed projects are never touched; deleting a wallet
   used by a closed project → 409 `usedByClosedProject`. Synced on fetch, add/remove, label/network
   change, "kein Spam" and balance changes.
 - **F6.6 spam** (`tokenVerdicts`): scam names ("Claim", URLs), zero-value only, address poisoning
@@ -1373,6 +1408,9 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `setup.persistence.integration.spec.ts`.
 - **Mapping library** (migration `20261008200000_mapping_library`): see "Mapping library" —
   two new tables with triggers, `import_mapping` redefined (origin `library` + reference).
+- **Deactivated files** (migration `20261009100000_project_file_disabled`, F5.7a):
+  `project_file.disabled_at` + `disabled_note` (`ADD COLUMN`, column CHECK: a note only with a
+  date, ≤ 500 — no redefinition); `files.persistence.integration.spec.ts` tests them.
 - **Remote library** (migration `20261008210000_remote_library`, F5.18): `remote_library_settings`
   (new table, CHECKs inside the CREATE TABLE) and `import_mapping.library_server` (`ADD COLUMN`
   with a column CHECK — no redefinition); `remote-library.persistence.integration.spec.ts`.
@@ -1600,8 +1638,10 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`notifications` + `projects`). Forms are not reloaded under the user's typing (the project
   form resets only when its facts really changed; the mapping editor and wallet form are set from
   their own answers).
+- F5.7a: `PATCH projects/:id/files/:fileId/active` = that project + scope `notifications` (its
+  file topics are resolved / raised again).
 - **Stale**: `CalculationInputService.isStale` is the one rule (engine version or input hash —
-  files, mapping versions, corrections, rates, wallets, currency, previous year); `GET
+  files (only active ones, F5.7a), mapping versions, corrections, rates, wallets, currency, previous year); `GET
 /projects/:id/result` (`stale`), `GET /projects/:id/result/status` (`{ calculatedAt, stale }`,
   cheap) and the list (`stale`) use it. The project page shows "Daten geändert – neu berechnen"
   with a button under its header; the list marks the figures "veraltet". No silent

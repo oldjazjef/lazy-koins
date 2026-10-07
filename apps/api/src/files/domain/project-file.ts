@@ -94,6 +94,40 @@ export interface ProjectFile extends FileAnalysis {
   /** `uploaded`, `from_project:<id>` or `derived_from:<project file id>` (F5.5 "Herkunft"). */
   readonly origin: string;
   readonly addedAt: string;
+  /**
+   * F5.7a: when the file was deactivated in this project (null = active). A deactivated file is
+   * ignored by the calculation, the dashboard, the F5.8 hints, the checks and the exports; it
+   * stays stored, downloadable and previewable, its mapping status is unchanged.
+   */
+  readonly disabledAt: string | null;
+  /** Optional reason for the deactivation (≤ `FILE_NOTE_MAX`); null when active. */
+  readonly disabledNote: string | null;
+}
+
+/** F5.7a: the longest deactivation note (mirrored by a CHECK in the migration). */
+export const FILE_NOTE_MAX = 500;
+
+/** F5.7a: a deactivation (when + optional note); `null` = active. */
+export interface FileDeactivation {
+  readonly at: string;
+  readonly note: string | null;
+}
+
+/** The project file is active (not deactivated, F5.7a). */
+export function isActive(file: Pick<ProjectFile, 'disabledAt'>): boolean {
+  return file.disabledAt === null;
+}
+
+/**
+ * The file contributes records to the project: read (standard format or a mapping) **and**
+ * active (F5.7a). The one rule for calculation, dashboard, coverage hints, checks and exports.
+ */
+export function readsRecords(
+  file: Pick<ProjectFile, 'status' | 'disabledAt'>,
+): boolean {
+  return (
+    (file.status === 'standard' || file.status === 'mapped') && isActive(file)
+  );
 }
 
 /** The project id inside a `from_project:<id>` origin, else `undefined`. */

@@ -3,6 +3,10 @@ import { CreateCorrectionCommand } from '../../calculation/application/calculati
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
@@ -46,6 +50,22 @@ describe('data export (F10.7)', () => {
     expect(airdrop).toContain('income_airdrop');
     expect(airdrop).toContain('reclassify');
     expect(airdrop).toContain('buchungen.csv');
+  });
+
+  it('holds only the active files — a deactivated file is not in it (F5.7a)', async () => {
+    const t = await setup();
+    await new SetFileActiveHandler(t.projects, t.files).execute(
+      new SetFileActiveCommand('anna', t.project.id, t.bookingsFile.id, false),
+    );
+    const bookings = await t.dataExport.execute(
+      new DataExportQuery('anna', t.project.id, 'csv', 'bookings', {}),
+    );
+    expect(bookings.rows).toBe(0);
+    // The other (active) file is still exported.
+    const holdings = await t.dataExport.execute(
+      new DataExportQuery('anna', t.project.id, 'csv', 'holdings', {}),
+    );
+    expect(holdings.rows).toBe(4);
   });
 
   it('round trip: the CSV re-imports as the standard format with the same records', async () => {

@@ -24,6 +24,12 @@ describe('changeOf — URL/method → scope and project', () => {
     ['POST', `/api/projects/${P}/files`, { projectId: P }],
     ['DELETE', `/api/projects/${P}/files/f1`, { projectId: P }],
     ['PATCH', `/api/projects/${P}/files/f1`, { projectId: P }],
+    // F5.7a: (de)activating a file also settles/raises its notifications.
+    [
+      'PATCH',
+      `/api/projects/${P}/files/f1/active`,
+      { projectId: P, scope: 'notifications' },
+    ],
     ['POST', `/api/projects/${P}/calculate`, { projectId: P }],
     ['POST', `/api/projects/${P}/corrections`, { projectId: P }],
     ['POST', `/api/projects/${P}/corrections/c1/undo`, { projectId: P }],

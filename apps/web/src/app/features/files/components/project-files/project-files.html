@@ -149,10 +149,35 @@
       >
       <ng-icon name="lucideChevronRight" size="16" aria-hidden="true" />
     </button>
+    } @if (service.disabledCount() > 0) {
+    <!-- F5.7a: deactivated files are ignored by calculation, dashboard, hints and exports -->
+    <div
+      class="text-muted-foreground flex flex-wrap items-center gap-2 text-sm"
+      aria-live="polite"
+    >
+      <span hlmBadge variant="outline"
+        >{{ 'files.disabled.count' | translate: { count: service.disabledCount()
+        } }}</span
+      >
+      <span class="min-w-0 flex-1"
+        >{{ 'files.disabled.explain' | translate }}</span
+      >
+      <button
+        hlmBtn
+        variant="ghost"
+        size="sm"
+        type="button"
+        [attr.aria-pressed]="hideDisabled()"
+        (click)="hideDisabled.set(!hideDisabled())"
+      >
+        {{ (hideDisabled() ? 'files.disabled.show' : 'files.disabled.hide') |
+        translate }}
+      </button>
+    </div>
     } @if (service.overview.hasValue()) { @let overview =
     service.overview.value(); @if (overview.groups.length === 0) {
     <lk-empty-state [message]="'files.empty' | translate" />
-    } @else { @for (group of overview.groups; track group.platform) {
+    } @else { @for (group of groups(); track group.platform) {
     <div class="flex flex-col gap-2">
       <h3 class="font-medium">
         {{ group.platform ?? ('files.group.unread' | translate) }}
@@ -189,11 +214,21 @@
               class="scroll-mt-24"
               [id]="'file-' + file.id"
               [class.bg-muted]="highlighted() === file.id"
+              [class.text-muted-foreground]="file.active === false"
             >
               <td hlmTd class="max-w-0">
-                <span class="font-medium" [lkTruncate]="file.displayName"
+                <span
+                  [class.font-medium]="file.active !== false"
+                  [lkTruncate]="file.displayName"
                   >{{ file.displayName }}</span
                 >
+                @if (file.active === false && file.disabledNote) {
+                <span
+                  class="text-muted-foreground block text-xs italic"
+                  [lkTruncate]="file.disabledNote"
+                  >{{ file.disabledNote }}</span
+                >
+                }
                 <span class="text-muted-foreground block truncate text-xs"
                   >{{ 'files.size' | translate: { kind: (file.kind | uppercase),
                   kb: (file.size / 1024 | lkNumber) } }} · {{ file.addedAt |
@@ -209,9 +244,20 @@
                 >
               </td>
               <td hlmTd class="max-w-0">
-                <span hlmBadge [variant]="statusVariant(file.status)"
-                  >{{ 'files.status.' + file.status | translate }}</span
-                >
+                <span class="flex flex-wrap items-center gap-1">
+                  @if (file.active === false) {
+                  <!-- F5.7a: the mapping status stays as it is, next to the badge -->
+                  <span
+                    hlmBadge
+                    variant="outline"
+                    [title]="'files.disabled.tooltip' | translate: { date: (file.disabledAt ?? '' | lkDate) }"
+                    >{{ 'files.disabled.badge' | translate }}</span
+                  >
+                  }
+                  <span hlmBadge [variant]="statusVariant(file.status)"
+                    >{{ 'files.status.' + file.status | translate }}</span
+                  >
+                </span>
                 @if (file.mappingName && file.mappingId) {
                 <a
                   class="text-muted-foreground text-xs hover:underline"
@@ -353,6 +399,49 @@
         (click)="confirmRemove(current.file)"
       >
         {{ 'files.actions.remove' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Deactivate (F5.7a): optional note -->
+<hlm-dialog
+  [state]="dialogState('deactivate')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'files.disabled.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'files.disabled.body' | translate: { name: current.file.displayName }
+        }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium" for="file-disable-note"
+          >{{ 'files.disabled.note' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="file-disable-note"
+          rows="3"
+          class="w-full"
+          [attr.maxlength]="noteMax"
+          [placeholder]="'files.disabled.notePlaceholder' | translate"
+          [value]="disableNote()"
+          (input)="disableNote.set($any($event.target).value)"
+        ></textarea>
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="button" (click)="confirmDeactivate(current.file)">
+        {{ 'files.actions.deactivate' | translate }}
       </button>
     </hlm-dialog-footer>
     }

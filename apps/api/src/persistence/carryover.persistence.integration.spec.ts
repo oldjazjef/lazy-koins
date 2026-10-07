@@ -182,6 +182,23 @@ describe('carry-over persistence', () => {
       where: { projectId: first.projectId },
     });
     expect(state?.itemKey).toBe(`carried:${rows[0]?.id}`);
+    // Written active unless the bundle says otherwise (F5.7a).
+    expect(entry?.disabledAt).toBeNull();
+  });
+
+  it('writes a file deactivated when the bundle says so (a package, F5.7a)', async () => {
+    const user = await newUser();
+    const base = bundle('Paket', 'new');
+    const at = '2026-03-01T08:00:00.000Z';
+    const written = await bundles.write(user.id, {
+      ...base,
+      files: base.files.map((f) => ({
+        ...f,
+        deactivation: { at, note: 'doppelt' },
+      })),
+    });
+    const [entry] = await files.listByProject(written.projectId);
+    expect(entry).toMatchObject({ disabledAt: at, disabledNote: 'doppelt' });
   });
 
   it('leaves nothing behind when a part fails', async () => {

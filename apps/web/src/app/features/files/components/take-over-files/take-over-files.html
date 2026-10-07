@@ -65,6 +65,15 @@
             <span class="min-w-0 flex-1" [lkTruncate]="file.displayName"
               >{{ file.displayName }}</span
             >
+            @if (file.active === false) {
+            <span
+              hlmBadge
+              variant="outline"
+              class="shrink-0"
+              [title]="'files.takeOver.disabledFile' | translate"
+              >{{ 'files.disabled.badge' | translate }}</span
+            >
+            }
             <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
               @if (file.inTarget) { {{ 'files.takeOver.already' | translate }} }
               @else if (file.periodFrom && file.periodTo) { {{ file.periodFrom |

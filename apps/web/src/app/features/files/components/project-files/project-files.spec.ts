@@ -30,11 +30,12 @@ const visible = (f: ProjectFile, closed = false) =>
     .map((action) => action.labelKey);
 
 describe('fileActions (the row menu of the files table)', () => {
-  it('offers preview, download, assign and remove for a read file', () => {
+  it('offers preview, download, assign, deactivate and remove for a read file', () => {
     expect(visible(file())).toEqual([
       'files.actions.preview',
       'files.actions.download',
       'files.actions.assign',
+      'files.actions.deactivate',
       'files.actions.remove',
     ]);
     expect(fileActions(file(), false).find((a) => a.id === 'remove')).toEqual(
@@ -52,6 +53,28 @@ describe('fileActions (the row menu of the files table)', () => {
     expect(visible(file({ kind: 'pdf', status: 'evidence_only' }))).toContain(
       'files.actions.aiStatement',
     );
+  });
+
+  it('offers "Aktivieren" instead of "Deaktivieren" for a deactivated file (F5.7a)', () => {
+    const actions = visible(
+      file({ active: false, disabledAt: '2026-02-01T00:00:00.000Z' }),
+    );
+    expect(actions).toContain('files.actions.activate');
+    expect(actions).not.toContain('files.actions.deactivate');
+    // Still downloadable and previewable.
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        'files.actions.preview',
+        'files.actions.download',
+      ]),
+    );
+  });
+
+  it('hides (de)activation on a closed project (F4.5)', () => {
+    expect(visible(file({ active: false }), true)).toEqual([
+      'files.actions.preview',
+      'files.actions.download',
+    ]);
   });
 
   it('keeps only preview and download while the project is closed (F4.5)', () => {

@@ -20,6 +20,7 @@ import {
 import type { StoredCorrection } from '../../calculation/domain/calculation';
 import {
   FROM_PROJECT,
+  isActive,
   type ProjectFile,
 } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
@@ -56,6 +57,11 @@ export interface FileOption {
   readonly periodFrom: string | null;
   readonly periodTo: string | null;
   readonly preselected: boolean;
+  /**
+   * F5.7a: false = deactivated in its project — offered, never preselected. Ticked anyway, it is
+   * linked **active** into the target (the new year decides for itself).
+   */
+  readonly active: boolean;
 }
 
 export interface WalletOption {
@@ -241,7 +247,9 @@ export class GetFollowUpOptionsHandler implements IQueryHandler<
           status: f.status,
           periodFrom: f.period?.from ?? null,
           periodTo: f.period?.to ?? null,
-          preselected: (f.period?.to ?? '') >= newYearStart,
+          // F5.7a: a deactivated file is offered unticked.
+          preselected: isActive(f) && (f.period?.to ?? '') >= newYearStart,
+          active: isActive(f),
         }))
         .sort(
           (a, b) =>
@@ -532,6 +540,7 @@ export class GetTakeOverSourcesHandler implements IQueryHandler<
             periodFrom: f.period?.from ?? null,
             periodTo: f.period?.to ?? null,
             preselected: false,
+            active: isActive(f),
             inTarget: inTarget.has(f.fileId),
           }))
           .sort(

@@ -26,6 +26,7 @@ import {
   CalculationSnapshotRepositoryPort,
   OpenItemStateRepositoryPort,
 } from '../../calculation/ports/calculation.repository.port';
+import { readsRecords } from '../../files/domain/project-file';
 import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { NotificationService } from '../../notifications/application/notification.service';
@@ -119,8 +120,9 @@ export class ExportDataService {
     const states = new Map(
       (await this.states.listByProject(project.id)).map((s) => [s.itemKey, s]),
     );
+    // F5.7a: a deactivated file covers nothing (its records are not in the snapshot either).
     const coverage = (await this.files.listByProject(project.id))
-      .filter((file) => file.status === 'standard' || file.status === 'mapped')
+      .filter(readsRecords)
       .flatMap((file) => file.coverage);
     // Hints marked "in Ordnung" or ignored (F5.8) are settled: not in the internal report.
     const dismissed = new Set(

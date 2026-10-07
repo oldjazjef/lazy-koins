@@ -245,6 +245,52 @@ describe('tool registry (F11.14, F11.16)', () => {
     });
   });
 
+  it('deactivates a file only after the confirmation; list_files shows the state (F5.7a)', async () => {
+    const { executor, registry, files, project, bookingsFile } =
+      await toolSetup();
+    expect(registry.get('set_file_active')?.effect).toBe('write');
+    const args = {
+      projectId: project.id,
+      fileId: bookingsFile.id,
+      active: false,
+      note: 'doppelt',
+    };
+    const proposed = await executor.call(
+      { userId: 'anna', source: 'chat' },
+      'set_file_active',
+      args,
+    );
+    expect(proposed.ok ? null : proposed.error.code).toBe('refused');
+    expect((await files.findById(bookingsFile.id))?.disabledAt).toBeNull();
+
+    const done = await executor.call(
+      { userId: 'anna', source: 'chat' },
+      'set_file_active',
+      args,
+      { confirmed: true },
+    );
+    expect(done.ok && done.output).toMatchObject({
+      id: bookingsFile.id,
+      active: false,
+      disabledNote: 'doppelt',
+    });
+    const listed = await executor.call(
+      { userId: 'anna', source: 'mcp' },
+      'list_files',
+      { projectId: project.id },
+      { policy: READ_ONLY },
+    );
+    const output = (
+      listed as { output: { files: { id: string; active: boolean }[] } }
+    ).output;
+    expect(
+      output.files.map((f) => [f.id === bookingsFile.id, f.active]),
+    ).toEqual([
+      [true, false],
+      [false, true],
+    ]);
+  });
+
   it('keeps closed projects read-only (the service’s 409 becomes a conflict)', async () => {
     const { executor, projects, project } = await toolSetup();
     await projects.update(project.id, { status: 'closed' });

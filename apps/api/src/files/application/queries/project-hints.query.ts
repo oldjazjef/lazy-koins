@@ -17,6 +17,7 @@ import {
   type HintStatus,
   type ProjectHint,
 } from '../../domain/project-hint';
+import { readsRecords } from '../../domain/project-file';
 import { HintStateRepositoryPort } from '../../ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
 
@@ -58,14 +59,17 @@ export class ListProjectHintsHandler implements IQueryHandler<
   }: ListProjectHintsQuery): Promise<ProjectHints> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     const files = await this.files.listByProject(project.id);
+    // F5.7a: a deactivated file covers nothing; a hint names it when it would have.
     const coverage = files
-      .filter((file) => file.status === 'standard' || file.status === 'mapped')
+      .filter(readsRecords)
       .flatMap((file) => file.coverage);
     const stored = new Map(
       (await this.states.listByProject(project.id)).map((s) => [s.hintKey, s]),
     );
     const hints = [
-      ...missingFileHints(project.taxYear, coverage).map(fromCoverage),
+      ...missingFileHints(project.taxYear, coverage).map((hint) =>
+        fromCoverage(hint, files),
+      ),
       ...fileHints(files),
     ]
       .map((hint): ProjectHint => {
