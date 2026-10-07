@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "lazy-koins",
-    "version": "lazy-koins v{{version}} ({{commit}})"
+    "version": "lazy-koins v{{version}} ({{commit}})",
+    "versionBadge": "v{{version}}"
   },
   "actions": {
     "undo": "Undo"
@@ -63,7 +64,9 @@
     "dashboard": "Dashboard",
     "chat": "Assistant",
     "library": "Library",
-    "myMappings": "My mappings"
+    "myMappings": "My mappings",
+    "toggleSidebar": "Show or hide the sidebar",
+    "toggleSection": "{{section}}: expand or collapse the sub-items"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",

@@ -21,7 +21,7 @@ two as a package (F1.3).
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
 > Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
-> the **Bibliothek** (mapping library; on the desktop a linked web server's, F5.18) as its sub-item (`/app/mappings/library`; the nav entry opens a menu Meine Mappings · Bibliothek, `NavItem.children`);
+> the **Bibliothek** (mapping library; on the desktop a linked web server's, F5.18) as its sub-item (`/app/mappings/library`; in the sidebar the entry expands to Meine Mappings · Bibliothek, `NavItem.children`);
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -808,7 +808,7 @@ limited to the authenticated user:
   data read before and after must be equal.
 
 **Web**: `core/assistant/` — `ChatService` (root: status, conversations, ask/confirm/cancel,
-consent notice, AI error panel state), `chat-sidebar` in the app shell (header toggle, open state
+consent notice, AI error panel state), `chat-sidebar` in the app shell (toggle in the top bar, open state
 in localStorage; beside the page from `lg`, an overlay with backdrop below; only the message list
 scrolls; without a usable AI plugin a hint links to the wizard's AI step `/app/setup?step=ai`), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
 `textContent`, only relative `/app/…` links become router links), `proposal-card`
@@ -942,7 +942,7 @@ it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (def
 
 ## Notifications (F11.11–F11.13)
 
-The bell in the header (`core/notification-centre/notification-bell`, next to the theme toggle)
+The bell in the top bar (`core/notification-centre/notification-bell`, next to the theme toggle)
 with the unread badge; its panel (dialog layout: header with "Erledigte ausblenden", the only
 scrolling list grouped by project, footer "Alle als gelesen" / "Alle anzeigen"; Escape and a
 click outside close it, focus back on the bell) and the page `/app/notifications`
@@ -1674,7 +1674,8 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
   `src/app/build-info.ts` → `GET /api/health` (`version`) and public **`GET /api/version`**
   (`{ version, commit, full, builtAt }`). Unbundled (Vitest): `0.0.0-dev+unknown`.
 - **Web**: reads `/api/version` (`core/version/app-version.service.ts`) and shows "lazy-koins
-  vX.Y.Z (abc1234)" in the shell's footer — web and API always come from the same commit.
+  vX.Y.Z (abc1234)" as the title of the `vX.Y.Z` badge next to the name in the sidebar header
+  (`app.versionBadge`, as in etx) — web and API always come from the same commit.
 - **Images**: `_images.yml` passes `LK_VERSION`/`LK_COMMIT` build args (nearest tag at build time —
   test images are promoted unchanged to production, so the commit is what identifies them) and
   sets `org.opencontainers.image.version` (full) + `.revision`.
@@ -1695,7 +1696,7 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
 **Icons**: one source, `assets/brand/icon.svg`. `pnpm icons` (`scripts/build/icons.cjs`, rendered
 by Electron's Chromium — no image library) writes `apps/desktop/build/icon.png` (1024) +
 `icon.ico` (16–256) and `apps/web/public/favicon.svg|.ico` + `apple-touch-icon.png` (180); outputs
-are committed. The header shows `favicon.svg` at 24 px next to the word mark.
+are committed. The sidebar header shows `favicon.svg` at 24 px next to the word mark.
 
 ## Feature structure (app)
 
@@ -1726,7 +1727,23 @@ are provided by the component (`providers: [...]`), list/form services are root.
   with every action button across the full width at the bottom. All three are **direct children**
   of `<hlm-dialog-content>`; a footer inside an `@if` is fine as long as it stays a direct child.
   Styled globally in `styles.css`. The same goes for any other overlay with actions.
-- Desktop first: the shell is a header with the navigation (`core/layout/app-shell`), no tab bar.
+- **The shell is a left sidebar** (user rule, 09.10.2026: "Menü links wie bei Work Time Manager";
+  `core/layout/app-shell`, ported from etx-working-time-manager): the generated spartan
+  `hlm-sidebar collapsible="icon"` inside `hlmSidebarWrapper` — header = `favicon.svg` + name +
+  version badge; content = `<nav aria-label>` with the main navigation from `nav-config.ts` (the
+  single source: `NAV_ITEMS`, `children` = an expandable sub-list like etx's, `navItemsFor` =
+  the library rule, `isNavActive`/`isNavRowActive` = the most specific entry carries
+  `aria-current`; a parent row only while its sub-items cannot be seen); footer = the user menu
+  (spartan dropdown: Profil, Einstellungen, Jetzt sperren with a PIN, Abmelden with an account;
+  the e-mail only with an account). From `md` (768 px wide is still mobile) it collapses to icons
+  (tooltips) — remembered in the cookie `lk_sidebar` (`core/layout/sidebar-config.ts`,
+  `provideAppSidebar()` in `app.config.ts`), Ctrl/Cmd+B toggles; below it is an off-canvas
+  sheet (Escape closes it, focus returns to the trigger; it closes after a navigation). The
+  content (`main[hlmSidebarInset]`) has a slim top bar (`hlmSidebarTrigger` at the left;
+  bell, assistant, theme at the right), then `.lk-scroll-area` (the only scrolling part) beside
+  the chat panel. The setup wizard hides the `<nav>` (header and user menu stay). Sidebar
+  colours: the `--sidebar*` tokens in `styles.css`. `app-shell.spec.ts` guards nav-in-sidebar,
+  the trigger, collapse, the mobile sheet, `aria-current` and the wizard rule. No tab bar.
 - **Every action that can take more than ~1 s goes through the `ActivityService`** (user rule,
   F11.20): `core/activity/activity.service.ts` (root, signals) shows it in the app-wide
   indicator (`lk-activity-indicator` in `app.html`, bottom right, above dialogs and toasts —
@@ -1783,8 +1800,8 @@ are provided by the component (`providers: [...]`), list/form services are root.
 - spartan components are generated, never hand-written: `npx nx g @spartan-ng/cli:ui
 --name=<c> --no-interactive` (skill `add-ui-component`). `libs/ui/**` is vendored — don't edit
   or format it. `ls libs/ui/` for what exists (badge, button, calendar, card, date-picker,
-  dialog, dropdown-menu, input, input-group, label, popover, select, separator, skeleton, sonner,
-  table, textarea, tooltip, utils). Selects are native `<select hlmInput>`, as in surf-lend
+  dialog, dropdown-menu, input, input-group, label, popover, select, separator, sheet, sidebar,
+  skeleton, sonner, table, textarea, tooltip, utils). Selects are native `<select hlmInput>`, as in surf-lend
   (`select` came with the calendar's month/year dropdowns).
 - **Date inputs** (user rule, 07.10.2026: "den gleichen Date Selector wie im
   etx-work-time-manager") — every date looks and behaves the same, ported from etx:
@@ -1850,7 +1867,7 @@ disabled?, hidden? }`. Exactly one visible action → a plain icon button with t
 - Colours live **only** in `apps/web/src/styles.css` (light + `:root.dark`). Templates use
   semantic classes; `no-hardcoded-design-values` rejects hex, arbitrary px and inline styles.
 - The look: calm and neutral for reading figures — cool slate greys, an ink-blue primary, Inter,
-  radius 0.5rem; component classes `lk-brand`, `lk-nav-link`, `lk-panel`, `lk-facts`.
+  radius 0.5rem; component classes `lk-brand`, `lk-panel`, `lk-facts`.
 - Every visible string is a key in `public/i18n/de-CH.json` (German/Swiss, du-form) **and**
   `public/i18n/en.json` (English, F11.2); `no-hardcoded-text` rejects literal text in templates
   and `core/i18n/i18n-keys.spec.ts` fails when a referenced key is missing in either file, when

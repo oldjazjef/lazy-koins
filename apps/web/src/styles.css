@@ -51,6 +51,16 @@
   --chart-3: #b7791f;
   --chart-4: #7a5aa6;
   --chart-5: #8a96a8;
+  /* The navigation sidebar (spartan `hlm-sidebar`): the card surface, the active entry like a
+     secondary button. */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #16202c;
+  --sidebar-primary: #1f3a5f;
+  --sidebar-primary-foreground: #f5f8fc;
+  --sidebar-accent: #e8edf3;
+  --sidebar-accent-foreground: #1f3a5f;
+  --sidebar-border: #dde2e9;
+  --sidebar-ring: #4a6fa5;
   /* Traffic lights of the checks (F8.1). */
   --light-green: #2f8f5b;
   --light-yellow: #d9a514;
@@ -100,6 +110,14 @@
   --chart-3: #e0b25a;
   --chart-4: #b49be0;
   --chart-5: #8f9bad;
+  --sidebar: #161d27;
+  --sidebar-foreground: #e4e9f0;
+  --sidebar-primary: #9db8dc;
+  --sidebar-primary-foreground: #0f1a2a;
+  --sidebar-accent: #222c39;
+  --sidebar-accent-foreground: #d5dfec;
+  --sidebar-border: #2a3441;
+  --sidebar-ring: #7d9cc8;
   --light-green: #4fbf83;
   --light-yellow: #e8bf4a;
   --light-red: #f07167;
@@ -261,15 +279,6 @@
     }
   }
 
-  /* The user menu at the top right. */
-  .lk-menu {
-    @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex w-56 flex-col overflow-hidden rounded-md border py-1 shadow-md;
-  }
-
-  .lk-menu-item {
-    @apply hover:bg-muted flex w-full items-center gap-2 px-3 py-2 text-left text-sm;
-  }
-
   /*
    * The assistant's sidebar (F11.14): beside the page from `lg`, an overlay with a backdrop
    * below it. Only its message list scrolls; header and question box stay put.
@@ -384,16 +393,12 @@
     );
   }
 
-  /* The word mark in the header and on the login card. */
+  /* The word mark in the sidebar and on the login card. */
   .lk-brand {
     @apply text-primary text-lg font-semibold tracking-tight;
   }
 
-  /* Header navigation. */
-  .lk-nav-link {
-    @apply text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors;
-  }
-
+  /* A pressed toggle in the top bar (the assistant while its panel is open). */
   .lk-nav-active {
     @apply bg-secondary text-secondary-foreground;
   }
@@ -690,7 +695,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lk-nav-link,
   .lk-step,
   .lk-pin-key {
     transition: none;

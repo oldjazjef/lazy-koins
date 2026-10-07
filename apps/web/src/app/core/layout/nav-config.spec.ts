@@ -1,4 +1,10 @@
-import { isNavActive, NAV_ICONS, NAV_ITEMS, navItemsFor } from './nav-config';
+import {
+  isNavActive,
+  isNavRowActive,
+  NAV_ICONS,
+  NAV_ITEMS,
+  navItemsFor,
+} from './nav-config';
 
 const mappings = (libraryAvailable: boolean) =>
   navItemsFor(libraryAvailable).find((item) => item.path === '/app/mappings');
@@ -24,6 +30,23 @@ describe('main navigation', () => {
       isNavActive('/app/mappings/library?q=kraken', library, children),
     ).toBe(true);
     expect(isNavActive('/app/mappingsX', mine, children)).toBe(false);
+  });
+
+  it('highlights a parent row only while its sub-items are not visible', () => {
+    const parent = mappings(true);
+    const projects = navItemsFor(true).find(
+      (item) => item.path === '/app/projects',
+    );
+    if (!parent || !projects) throw new Error('missing entries');
+    expect(isNavRowActive('/app/mappings/library', parent, true)).toBe(false);
+    // Group closed or sidebar collapsed to icons: the parent says where the user is.
+    expect(isNavRowActive('/app/mappings/library', parent, false)).toBe(true);
+    expect(isNavRowActive('/app/projects/p1', projects, true)).toBe(true);
+    expect(isNavRowActive('/app/dashboard', projects, false)).toBe(false);
+    // Desktop without a library: Mappings has no sub-items and is a plain row.
+    const plain = mappings(false);
+    if (!plain) throw new Error('missing Mappings');
+    expect(isNavRowActive('/app/mappings/abc', plain, true)).toBe(true);
   });
 
   it('registers every icon it uses', () => {

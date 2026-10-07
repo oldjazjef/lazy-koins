@@ -13,6 +13,7 @@ import { appRoutes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { dataChangesInterceptor } from './core/data/data-changes.interceptor';
 import { provideI18n } from './core/i18n/i18n.config';
+import { provideAppSidebar } from './core/layout/sidebar-config';
 import { unlockInterceptor } from './core/pin/unlock.interceptor';
 
 /**
@@ -35,5 +36,6 @@ export const appConfig: ApplicationConfig = {
     ),
     provideI18n(),
     provideSpartanHlm(),
+    provideAppSidebar(),
   ],
 };

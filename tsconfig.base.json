@@ -31,7 +31,9 @@
       "@lazykoins/ui/calendar": ["./libs/ui/calendar/src/index.ts"],
       "@lazykoins/ui/select": ["./libs/ui/select/src/index.ts"],
       "@lazykoins/ui/date-picker": ["./libs/ui/date-picker/src/index.ts"],
-      "@lazykoins/ui/input-group": ["./libs/ui/input-group/src/index.ts"]
+      "@lazykoins/ui/input-group": ["./libs/ui/input-group/src/index.ts"],
+      "@lazykoins/ui/sidebar": ["./libs/ui/sidebar/src/index.ts"],
+      "@lazykoins/ui/sheet": ["./libs/ui/sheet/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "private"]
