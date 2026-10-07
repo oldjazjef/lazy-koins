@@ -2054,6 +2054,12 @@
       "priceSource": {
         "record": "price from the file",
         "fixed": "tax currency"
+      },
+      "filter": {
+        "label": "Filter holdings",
+        "all": "All holdings",
+        "review": "To check ({{count}})",
+        "none": "Nothing to check: every holding has an unambiguous price."
       }
     },
     "card": {

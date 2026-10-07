@@ -224,6 +224,39 @@ describe('DashboardPageService', () => {
     expect(service.expanded().has('ETH')).toBe(true);
   });
 
+  it('filters the holdings that need a look: no price, ambiguous or shared ticker', async () => {
+    const { service, http } = await setup();
+    const base = view();
+    const [btc, eth, xyz] = base.holdings;
+    if (!btc || !eth || !xyz) throw new Error('fixture');
+    http
+      .expectOne((r) => r.url === '/api/dashboard')
+      .flush({
+        ...base,
+        holdings: [
+          btc,
+          {
+            ...eth,
+            shared: {
+              symbol: 'ETH',
+              level: 'warning',
+              candidates: [],
+            } as unknown as typeof eth.shared,
+          },
+          xyz,
+        ],
+      });
+    await settle();
+    expect(service.reviewCount()).toBe(2);
+    service.reviewOnly.set(true);
+    expect(service.holdings().map((h) => h.asset)).toEqual(['ETH', 'XYZ']);
+    service.search.set('xyz');
+    expect(service.holdings().map((h) => h.asset)).toEqual(['XYZ']);
+    service.reviewOnly.set(false);
+    service.search.set('');
+    expect(service.holdings()).toHaveLength(3);
+  });
+
   it('asks for one tax currency at a time once one is chosen (F4.1a)', async () => {
     const { service, http } = await setup();
     const first = http.expectOne((r) => r.url === '/api/dashboard');

@@ -2054,6 +2054,12 @@
       "priceSource": {
         "record": "Preis aus der Datei",
         "fixed": "Steuerwährung"
+      },
+      "filter": {
+        "label": "Bestände filtern",
+        "all": "Alle Bestände",
+        "review": "Zu prüfen ({{count}})",
+        "none": "Nichts zu prüfen: Alle Bestände haben einen eindeutigen Kurs."
       }
     },
     "card": {

@@ -134,6 +134,12 @@ export class DashboardPage {
     return sort.descending ? 'descending' : 'ascending';
   }
 
+  protected filter(event: Event): void {
+    this.service.reviewOnly.set(
+      (event.target as HTMLSelectElement).value === 'review',
+    );
+  }
+
   protected search(event: Event): void {
     this.service.search.set((event.target as HTMLInputElement).value);
   }

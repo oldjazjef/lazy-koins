@@ -156,6 +156,14 @@ export class DashboardPageService {
   // --- Holdings table (F11.8) ---
 
   readonly search = signal('');
+  /** "Zu prüfen": only the holdings whose price needs a look (user request 07.10.2026). */
+  readonly reviewOnly = signal(false);
+  /** How many holdings need a look — the filter's label. */
+  readonly reviewCount = computed(() =>
+    this.view.hasValue()
+      ? this.view.value().holdings.filter(needsReview).length
+      : 0,
+  );
   readonly sort = signal<{ column: HoldingSort; descending: boolean }>({
     column: 'value',
     descending: true,
@@ -166,9 +174,11 @@ export class DashboardPageService {
     if (!this.view.hasValue()) return [];
     const query = this.search().trim().toUpperCase();
     const { column, descending } = this.sort();
+    const reviewOnly = this.reviewOnly();
     const rows = this.view
       .value()
-      .holdings.filter(
+      .holdings.filter((h) => !reviewOnly || needsReview(h))
+      .filter(
         (h) =>
           query === '' ||
           h.asset.toUpperCase().includes(query) ||
@@ -356,4 +366,16 @@ export class DashboardPageService {
   async dismissShared(asset: string): Promise<void> {
     await this.coins.dismiss(asset);
   }
+}
+
+/**
+ * A holding whose price needs a look: no price, an ambiguous ticker (no price until a coin is
+ * chosen), a ticker shared by several coins, or a negative balance.
+ */
+export function needsReview(holding: DashboardHolding): boolean {
+  return (
+    holding.status !== 'ok' ||
+    holding.pricing === 'ambiguous' ||
+    Boolean(holding.shared)
+  );
 }

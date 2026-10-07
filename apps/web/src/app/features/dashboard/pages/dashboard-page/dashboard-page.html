@@ -212,6 +212,21 @@
           }}
         </p>
       </div>
+      <select
+        hlmInput
+        class="w-48"
+        [attr.aria-label]="'dashboard.holdings.filter.label' | translate"
+        [value]="service.reviewOnly() ? 'review' : 'all'"
+        (change)="filter($event)"
+      >
+        <option value="all">
+          {{ 'dashboard.holdings.filter.all' | translate }}
+        </option>
+        <option value="review">
+          {{ 'dashboard.holdings.filter.review' | translate: { count:
+          service.reviewCount() } }}
+        </option>
+      </select>
       <input
         hlmInput
         type="search"
@@ -224,7 +239,9 @@
     </div>
     <div hlmCardContent>
       @if (service.holdings().length === 0) {
-      <lk-empty-state [message]="'dashboard.holdings.empty' | translate" />
+      <lk-empty-state
+        [message]="(service.reviewOnly() ? 'dashboard.holdings.filter.none' : 'dashboard.holdings.empty') | translate"
+      />
       } @else {
       <div hlmTableContainer class="lk-panel">
         <table hlmTable class="w-full table-fixed">
