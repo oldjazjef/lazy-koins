@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "lazy-koins",
-    "version": "lazy-koins v{{version}} ({{commit}})"
+    "version": "lazy-koins v{{version}} ({{commit}})",
+    "versionBadge": "v{{version}}"
   },
   "actions": {
     "undo": "Rückgängig"
@@ -63,7 +64,9 @@
     "dashboard": "Dashboard",
     "chat": "Assistent",
     "library": "Bibliothek",
-    "myMappings": "Meine Mappings"
+    "myMappings": "Meine Mappings",
+    "toggleSidebar": "Seitenleiste ein- oder ausblenden",
+    "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",

@@ -17,11 +17,17 @@ export interface NavItem {
    * the desktop a linked web deployment's — `LibraryAvailability`).
    */
   readonly needsLibrary?: boolean;
-  /** Sub-items: the entry opens a menu with them (user rule: the library belongs to Mappings). */
+  /**
+   * Sub-items, listed under the entry in the sidebar (expandable, like etx). User rule: the
+   * library belongs to Mappings.
+   */
   readonly children?: readonly NavItem[];
 }
 
-/** The main navigation in the header, in order. Icon names must be registered in `NAV_ICONS`. */
+/**
+ * The main navigation in the sidebar, in order — its single source (`app-shell.html` only renders
+ * it). Icon names must be registered in `NAV_ICONS`.
+ */
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     path: '/app/dashboard',
@@ -58,7 +64,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
 ];
 
-/** The user menu at the top right (ANFORDERUNGEN §11): Profil and Einstellungen. */
+/** The user menu in the sidebar's footer (ANFORDERUNGEN §11): Profil and Einstellungen. */
 export const USER_MENU_ITEMS: readonly NavItem[] = [
   {
     path: '/app/profile',
@@ -117,4 +123,18 @@ export function isNavActive(
         under(other.path),
     )
   );
+}
+
+/**
+ * Whether a top-level row is highlighted: an entry without sub-items when it is current; an entry
+ * with sub-items only while they cannot be seen (group closed, sidebar collapsed to icons) —
+ * otherwise the sub-item carries the highlight, never both.
+ */
+export function isNavRowActive(
+  url: string,
+  item: NavItem,
+  subItemsVisible: boolean,
+): boolean {
+  if (!isNavActive(url, item)) return false;
+  return !item.children?.length || !subItemsVisible;
 }
