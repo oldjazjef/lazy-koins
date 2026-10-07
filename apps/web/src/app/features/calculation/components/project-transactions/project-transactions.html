@@ -1,7 +1,24 @@
 <section hlmCard>
-  <div hlmCardHeader>
-    <h2 hlmCardTitle>{{ 'transactions.title' | translate }}</h2>
-    <p hlmCardDescription>{{ 'transactions.subtitle' | translate }}</p>
+  <div
+    hlmCardHeader
+    class="flex flex-row flex-wrap items-start justify-between gap-3"
+  >
+    <div class="flex min-w-0 flex-col gap-1.5">
+      <h2 hlmCardTitle>{{ 'transactions.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'transactions.subtitle' | translate }}</p>
+    </div>
+    @if (!closed()) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [attr.title]="'transactions.ai.reviewHint' | translate"
+      (click)="aiReview()"
+    >
+      <ng-icon name="lucideSparkles" size="16" aria-hidden="true" />
+      {{ 'transactions.ai.reviewButton' | translate }}
+    </button>
+    }
   </div>
   <div hlmCardContent class="flex flex-col gap-4">
     <div class="lk-form-row">

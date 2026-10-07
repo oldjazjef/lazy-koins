@@ -10,6 +10,8 @@ export const TOOL_TITLES_EN: Readonly<Record<string, string>> = {
   get_result: 'Result',
   list_positions: 'Positions at 31.12.',
   list_income: 'Income',
+  list_transactions: 'Transactions',
+  exclude_booking: 'Deactivate booking',
   get_figure_records: 'Trace back',
   get_checks: 'Checks',
   update_open_item: 'Tick off open item',

@@ -11,8 +11,11 @@ import {
   lucideCircleCheck,
   lucideCircleOff,
   lucideListTree,
+  lucideSparkles,
   lucideTags,
 } from '@ng-icons/lucide';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { ChatService } from '../../../../core/assistant/chat.service';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -38,7 +41,8 @@ import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import { ChfPipe, QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectTransactionsService } from './project-transactions.service';
 
-type TransactionAction = 'exclude' | 'reactivate' | 'reclassify' | 'figure';
+type TransactionAction =
+  'aiFix' | 'exclude' | 'reactivate' | 'reclassify' | 'figure';
 
 /** The longest reason the API takes for a correction. */
 export const EXCLUDE_REASON_MAX = 1000;
@@ -66,6 +70,12 @@ export function transactionActions(
 ): RowAction<TransactionAction>[] {
   const excluded = row.treatment === 'excluded';
   return [
+    {
+      id: 'aiFix',
+      labelKey: 'transactions.actions.aiFix',
+      icon: lucideSparkles,
+      hidden: closed,
+    },
     {
       id: 'figure',
       labelKey: 'transactions.actions.figure',
@@ -103,6 +113,7 @@ export function transactionActions(
 @Component({
   selector: 'lk-project-transactions',
   imports: [
+    NgIcon,
     TranslatePipe,
     LkDatePipe,
     ChfPipe,
@@ -120,13 +131,14 @@ export function transactionActions(
     ...HlmTableImports,
     ...HlmTextareaImports,
   ],
-  providers: [ProjectTransactionsService],
+  providers: [ProjectTransactionsService, provideIcons({ lucideSparkles })],
   templateUrl: './project-transactions.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectTransactions {
   protected readonly service = inject(ProjectTransactionsService);
   private readonly translate = inject(TranslateService);
+  private readonly chat = inject(ChatService);
   protected readonly treatments = BOOKING_TREATMENTS;
   protected readonly badge = BADGE;
   protected readonly reasonMax = EXCLUDE_REASON_MAX;
@@ -175,6 +187,9 @@ export class ProjectTransactions {
 
   protected act(action: string, row: TransactionRow): void {
     switch (action as TransactionAction) {
+      case 'aiFix':
+        void this.chat.startWith(this.aiQuestion(row));
+        break;
       case 'exclude':
         this.reason.set('');
         this.reasonMissing.set(false);
@@ -200,6 +215,34 @@ export class ProjectTransactions {
         break;
       }
     }
+  }
+
+  /** "Mit AI prüfen": the assistant looks over the bookings that most likely need a fix. */
+  protected aiReview(): void {
+    void this.chat.startWith(this.translate.instant('transactions.ai.review'));
+  }
+
+  /** The question for one booking — everything the assistant needs to find it and its neighbours. */
+  private aiQuestion(row: TransactionRow): string {
+    return this.translate.instant('transactions.ai.fix', {
+      id: row.id,
+      asset: row.asset,
+      quantity: this.signed(row.quantity),
+      timestamp: row.timestamp,
+      platform: row.platform,
+      account: row.accountId,
+      kind: row.kind,
+      rawType: row.rawType,
+      origin: row.manual
+        ? this.translate.instant('transactions.manual')
+        : this.translate.instant('transactions.origin', {
+            file: row.fileName ?? row.sourceFileId,
+            row: row.row,
+          }),
+      treatment: this.translate.instant(
+        'transactions.treatment.' + row.treatment,
+      ),
+    });
   }
 
   protected confirmExclude(): void {

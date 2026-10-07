@@ -160,6 +160,27 @@ describe('ChatService', () => {
     http.expectOne('/api/chat/conversations').flush([]);
   });
 
+  it('"Mit AI beheben": starts a new chat with the question and sends it when ready', async () => {
+    const { service, http } = await setup();
+    service.conversation.set(view());
+    const started = service.startWith('Prüfe Buchung f:2');
+    const request = http.expectOne('/api/chat/conversations');
+    expect(request.request.body).toMatchObject({ text: 'Prüfe Buchung f:2' });
+    request.flush(view());
+    await started;
+    expect(service.open()).toBe(true);
+    expect(service.draft()).toBe('');
+    await settle();
+    http.expectOne('/api/chat/conversations').flush([]);
+  });
+
+  it('"Mit AI beheben" leaves the question in the input while consent is open', async () => {
+    const { service } = await setup(status({ consentRequired: true }));
+    await service.startWith('Prüfe Buchung f:2');
+    expect(service.draft()).toBe('Prüfe Buchung f:2');
+    expect(service.conversation()).toBeNull();
+  });
+
   it('shows no activity snackbar while the assistant answers (the chat shows it itself)', async () => {
     const { service, http } = await setup();
     const activity = TestBed.inject(ActivityService);

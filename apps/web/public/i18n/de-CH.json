@@ -1148,6 +1148,7 @@
     "reason": "Grund: {{reason}}",
     "figureTitle": "{{asset}} auf {{platform}}",
     "actions": {
+      "aiFix": "Mit AI beheben",
       "exclude": "Deaktivieren",
       "reactivate": "Wieder aktivieren",
       "reclassify": "Umklassieren",
@@ -1160,6 +1161,12 @@
       "reasonPlaceholder": "z. B. doppelt importiert, Testüberweisung, gehört nicht zu mir",
       "reasonRequired": "Bitte gib eine Begründung an.",
       "hint": "Das wird als Korrektur gespeichert (mit Datum und Begründung) und lässt sich jederzeit rückgängig machen. Danach wird neu berechnet."
+    },
+    "ai": {
+      "reviewButton": "Mit AI prüfen",
+      "reviewHint": "Der Assistent sieht sich nicht klassierte, doppelte und auffällige Buchungen an und schlägt Korrekturen vor – du bestätigst jede einzeln.",
+      "review": "Prüfe die Transaktionen dieses Projekts auf Fehler: nicht klassierte Buchungen, Duplikate (gleiche Zeit, Menge und Asset), Überträge zwischen eigenen Konten, die als Ein- oder Auszahlung gelten, und Erträge, die keine sind. Erkläre kurz, was du findest, und schlage für jede falsche Buchung eine Korrektur vor (umklassieren, deaktivieren mit Begründung oder eine fehlende Buchung erfassen).",
+      "fix": "Prüfe diese Buchung und behebe sie, falls sie falsch ist: {{quantity}} {{asset}} am {{timestamp}} auf {{platform}} / {{account}}, Art «{{kind}}» (Original-Typ «{{rawType}}»), {{origin}}, Buchungs-ID {{id}}. Steuerlich zurzeit: {{treatment}}. Sieh dir auch die Nachbarbuchungen an und schlage die passende Korrektur vor (umklassieren, deaktivieren mit Begründung oder eine fehlende Buchung erfassen) – oder sag, dass sie stimmt."
     }
   },
   "records": {

@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { BOOKING_KINDS, CorrectionDataSchema } from '@lazykoins/engine';
+import {
+  BOOKING_KINDS,
+  BOOKING_TREATMENTS,
+  CorrectionDataSchema,
+} from '@lazykoins/engine';
 import type { ResultView } from '../../calculation/application/calculation.handlers';
 import {
   type AnyTool,
@@ -371,6 +375,91 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       },
     }),
     defineTool({
+      name: 'list_transactions',
+      title: 'Transaktionen',
+      description:
+        'Every booking of the project (live input, newest first) and how it counts for tax: treatment income | oneOff | balance (decides the position at 31.12.) | checkOnly (account valued from a statement) | transfer | spam | unknown (unclassified) | afterYear | excluded (deactivated, with the reason). Filter by words (q: asset, platform, account, kind, raw type, note, file, booking id), treatment and platform. Use the booking id with reclassify_booking, exclude_booking or create_correction.',
+      area: 'results',
+      effect: 'readOnly',
+      input: z.object({
+        projectId,
+        q: z.string().trim().max(200).optional(),
+        treatment: z.enum(BOOKING_TREATMENTS).optional(),
+        platform: z.string().trim().max(80).optional(),
+        limit: limit(25, 100),
+      }),
+      output: z.object({
+        currency,
+        total: z.number(),
+        truncated: z.boolean(),
+        counts: z.record(z.string(), z.number()),
+        transactions: z.array(
+          z.object({
+            bookingId: z.string(),
+            timestamp: z.string(),
+            platform: z.string(),
+            accountId: z.string(),
+            asset: z.string(),
+            quantity: z.string(),
+            kind: z.string(),
+            importedKind: z.string().nullable(),
+            fee: z.string().nullable(),
+            feeAsset: z.string().nullable(),
+            rawType: z.string(),
+            note: z.string().nullable(),
+            group: z.string().nullable(),
+            treatment: z.enum(BOOKING_TREATMENTS),
+            valueChf: z.string().nullable(),
+            correctionId: z.string().nullable(),
+            correctionReason: z.string().nullable(),
+            fileName: z.string().nullable(),
+            row: z.number(),
+            link: z.string(),
+          }),
+        ),
+      }),
+      async run(ctx, input) {
+        const view = await s.calculation.transactions(
+          ctx.userId,
+          input.projectId,
+          {
+            q: input.q,
+            treatment: input.treatment,
+            platform: input.platform,
+            limit: input.limit,
+          },
+        );
+        return {
+          currency: view.currency,
+          total: view.total,
+          truncated: view.total > view.rows.length,
+          counts: view.counts,
+          transactions: view.rows.map((r) => ({
+            bookingId: r.id,
+            timestamp: r.timestamp,
+            platform: r.platform,
+            accountId: r.accountId,
+            asset: r.asset,
+            quantity: r.quantity,
+            kind: r.kind,
+            importedKind: r.importedKind,
+            fee: r.fee,
+            feeAsset: r.feeAsset,
+            rawType: r.rawType,
+            note: r.note,
+            group: r.group,
+            treatment: r.treatment,
+            valueChf: r.valueChf,
+            correctionId: r.correctionId,
+            correctionReason: r.correctionReason,
+            fileName: r.fileName,
+            row: r.row,
+            link: projectLink(input.projectId, 'transactions'),
+          })),
+        };
+      },
+    }),
+    defineTool({
       name: 'list_income',
       title: 'Erträge',
       description:
@@ -712,6 +801,38 @@ export function calculationTools(s: ToolServices): AnyTool[] {
           ctx.userId,
           input.projectId,
           { type: 'reclassify', bookingId: input.bookingId, kind: input.kind },
+          input.reason,
+        );
+      },
+    }),
+    defineTool({
+      name: 'exclude_booking',
+      title: 'Buchung deaktivieren',
+      description:
+        'Leaves one booking out of the calculation (a duplicate, a test transfer, a row that does not belong to the user) — a correction with a reason, undoable with undo_correction; the file is not changed. bookingId from list_transactions or get_figure_records.',
+      area: 'corrections',
+      effect: 'write',
+      input: z.object({
+        projectId,
+        bookingId: z.string().min(1).max(200),
+        reason,
+      }),
+      output: correctionOut,
+      async run(ctx, input) {
+        return correctionOf(
+          await s.calculation.createCorrection(
+            ctx.userId,
+            input.projectId,
+            { type: 'exclude_booking', bookingId: input.bookingId },
+            input.reason,
+          ),
+        );
+      },
+      async preview(ctx, input) {
+        return correctionPreview(
+          ctx.userId,
+          input.projectId,
+          { type: 'exclude_booking', bookingId: input.bookingId },
           input.reason,
         );
       },

@@ -550,6 +550,15 @@ const CASES: Record<string, (a: Seeded, b: Seeded) => Attack[]> = {
   get_result: (a) => [{ args: { projectId: a.projectId } }],
   list_positions: (a) => [{ args: { projectId: a.projectId } }],
   list_income: (a) => [{ args: { projectId: a.projectId } }],
+  list_transactions: (a) => [
+    { args: { projectId: a.projectId } },
+    { args: { projectId: a.projectId, q: 'ETH', treatment: 'balance' } },
+  ],
+  exclude_booking: (a) => [
+    {
+      args: { projectId: a.projectId, bookingId: 'any', reason: 'B tries A' },
+    },
+  ],
   get_figure_records: (a, b) => [
     {
       args: { projectId: a.projectId, figureId: a.figureId, includeRaw: true },

@@ -1148,6 +1148,7 @@
     "reason": "Reason: {{reason}}",
     "figureTitle": "{{asset}} on {{platform}}",
     "actions": {
+      "aiFix": "Fix with AI",
       "exclude": "Deactivate",
       "reactivate": "Activate again",
       "reclassify": "Reclassify",
@@ -1160,6 +1161,12 @@
       "reasonPlaceholder": "e.g. imported twice, test transfer, not mine",
       "reasonRequired": "Please give a reason.",
       "hint": "This is stored as a correction (with date and reason) and can be undone at any time. The project is recalculated afterwards."
+    },
+    "ai": {
+      "reviewButton": "Check with AI",
+      "reviewHint": "The assistant looks at unclassified, duplicate and suspicious bookings and proposes corrections – you confirm each one.",
+      "review": "Check the transactions of this project for mistakes: unclassified bookings, duplicates (same time, quantity and asset), transfers between own accounts that count as deposits or withdrawals, and income that is not income. Briefly explain what you find and propose a correction for every wrong booking (reclassify, deactivate with a reason or add a missing booking).",
+      "fix": "Check this booking and fix it if it is wrong: {{quantity}} {{asset}} at {{timestamp}} on {{platform}} / {{account}}, kind “{{kind}}” (original type “{{rawType}}”), {{origin}}, booking id {{id}}. Currently for tax: {{treatment}}. Also look at the neighbouring bookings and propose the matching correction (reclassify, deactivate with a reason or add a missing booking) – or say that it is right."
     }
   },
   "records": {

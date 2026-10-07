@@ -114,7 +114,12 @@ describe('transactionActions (the row menu)', () => {
       .map((a) => a.id);
 
   it('offers deactivate, reclassify and the figure for a counted booking', () => {
-    expect(visible(row())).toEqual(['figure', 'reclassify', 'exclude']);
+    expect(visible(row())).toEqual([
+      'aiFix',
+      'figure',
+      'reclassify',
+      'exclude',
+    ]);
   });
 
   it('offers "activate again" for a deactivated booking, nothing that changes on a closed project', () => {
@@ -123,13 +128,13 @@ describe('transactionActions (the row menu)', () => {
       correctionId: 'c1',
       figureIds: [],
     });
-    expect(visible(excluded)).toEqual(['reactivate']);
+    expect(visible(excluded)).toEqual(['aiFix', 'reactivate']);
     expect(visible(excluded, true)).toEqual([]);
     expect(visible(row(), true)).toEqual(['figure']);
   });
 
   it('never deactivates a manual booking (undo its correction instead)', () => {
-    expect(visible(row({ manual: true }))).toEqual(['figure']);
+    expect(visible(row({ manual: true }))).toEqual(['aiFix', 'figure']);
   });
 });
 

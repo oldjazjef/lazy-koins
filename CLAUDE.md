@@ -1157,6 +1157,14 @@ platform, treatment chips with counts, legend, row actions In der Rechnung anzei
 · Umklassieren (prefilled corrections form) · Deaktivieren (dialog, reason required) / Wieder
 aktivieren (undo) — the last three hidden on a closed project and for manual bookings (undo their
 correction). The corrections form does not offer `exclude_booking` (`FORM_CORRECTION_TYPES`).
+**Mit AI beheben** (user request 07.10.2026): row action "Mit AI beheben" and the card's "Mit AI
+prüfen" call `ChatService.startWith(question)` — the sidebar opens on a new chat and the
+question (booking id, file + row, kind, raw type, treatment; or a review of the whole list) is
+sent at once when the assistant is ready and consent is settled, else it waits in the input.
+Tools: `list_transactions` (read, area `results`) and `exclude_booking` (write → a proposal,
+area `corrections`); the default prompt tells the model to look at neighbours (duplicates,
+counter-bookings) and propose `reclassify_booking` / `exclude_booking` / `create_correction`.
+Nothing changes without "Ausführen".
 
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
