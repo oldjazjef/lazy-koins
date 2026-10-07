@@ -4,7 +4,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locales';
-import { SETTINGS_SECTIONS } from '../../features/settings/settings-shell';
+import {
+  LOCAL_SETTINGS_SECTIONS,
+  SETTINGS_SECTIONS,
+} from '../../features/settings/settings-shell';
 import { WORKSPACE_TABS } from '../../features/calculation/components/project-workspace/project-workspace.service';
 import {
   CHECK_KINDS,
@@ -56,6 +59,7 @@ import {
   LIBRARY_SORTS,
   MISSING_FILE_KINDS,
   PRIVACY_FINDING_KINDS,
+  REMOTE_URL_PROBLEMS,
 } from '../api/api.types';
 import {
   AUDIT_SOURCES,
@@ -145,6 +149,10 @@ const DYNAMIC_KEYS = [
   // F5.15–F5.17: the mapping library.
   ...LIBRARY_SORTS.map((sort) => `library.sortBy.${sort}`),
   ...PRIVACY_FINDING_KINDS.map((kind) => `library.findings.kind.${kind}`),
+  // F5.18: the desktop's link to a web library.
+  ...REMOTE_URL_PROBLEMS.map(
+    (problem) => `library.remote.urlProblems.${problem}`,
+  ),
   ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
   ...KPI_KINDS.map((kind) => `dashboard.kpi.${kind}`),
   ...HOLDING_STATUSES.map((status) => `dashboard.holdings.status.${status}`),
@@ -170,6 +178,7 @@ const DYNAMIC_KEYS = [
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
   ...['statements', 'internal'].map((group) => `exports.groups.${group}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
+  ...LOCAL_SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
   ...MAIL_SECURITIES.map((security) => `settings.mail.securities.${security}`),
   ...MAIL_PLACEHOLDERS.map((name) => `mail.placeholders.${name}`),
   ...SMTP_ERROR_KINDS.map((kind) => `mail.smtp.kind.${kind}`),

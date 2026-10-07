@@ -190,6 +190,16 @@ export class Env {
   /** The ICTax API; only a local fake server (`scripts/dev/fake-ictax-server.mjs`) differs. */
   @IsUrl({ require_tld: false, require_protocol: true })
   ESTV_BASE_URL = 'https://www.ictax.admin.ch';
+
+  // --- Mapping library ---
+
+  /**
+   * F5.18: the public, read-only endpoint of the mapping library (`/api/public/library…`, no
+   * login) that installed desktop apps read. `false` switches it off (404); the signed-in
+   * library itself stays. Without effect with `AUTH_MODE=local` (always off there).
+   */
+  @IsIn(['true', 'false'])
+  LIBRARY_PUBLIC = 'true';
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */

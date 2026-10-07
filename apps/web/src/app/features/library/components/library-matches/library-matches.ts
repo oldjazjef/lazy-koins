@@ -19,7 +19,7 @@ import type {
   LibraryFileMatches,
   TakenLibraryMapping,
 } from '../../../../core/api/api.types';
-import { AuthService } from '../../../../core/auth/auth.service';
+import { LibraryAvailability } from '../../../../core/library/library-availability.service';
 import { Truncate } from '../../../../shared/components/truncate';
 import { LibraryClient } from '../../library-client';
 import { StarRating } from '../star-rating';
@@ -27,8 +27,9 @@ import { StarRating } from '../star-rating';
 /**
  * F5.16 in the files area: "In der Bibliothek gefunden: N passende Mappings" for files that
  * need a mapping, each with a one-click "Übernehmen" (private copy + assigned to the file) —
- * shown before the AI option. Web only; nothing on the desktop, in a closed project or without
- * a match. `refresh` is any value that changes when the project's files change (the files
+ * shown before the AI option. On the desktop (F5.18) from the linked web library, only with
+ * suggestions switched on (what leaves the device: each file's header row + name); nothing
+ * without a library, in a closed project or without a match. `refresh` is any value that changes when the project's files change (the files
  * overview), so the matches follow uploads and assignments.
  */
 @Component({
@@ -49,7 +50,9 @@ import { StarRating } from '../star-rating';
 })
 export class LibraryMatches {
   private readonly client = inject(LibraryClient);
-  private readonly webApp = inject(AuthService).hasAccount;
+  private readonly library = inject(LibraryAvailability);
+  /** The linked web library (desktop), shown as the source. */
+  protected readonly server = this.library.server;
 
   readonly projectId = input.required<string>();
   /** Only this file (the assignment dialog); all files that need a mapping otherwise. */
@@ -62,7 +65,7 @@ export class LibraryMatches {
 
   protected readonly matches = httpResource<LibraryFileMatches[]>(() => {
     this.refresh();
-    return this.webApp && !this.closed()
+    return this.library.suggestions() && !this.closed()
       ? apiUrl(`/projects/${this.projectId()}/library-matches`)
       : undefined;
   });

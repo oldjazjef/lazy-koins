@@ -15,6 +15,8 @@ import { ChainSources } from './chains/chain-sources';
 import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
 import { FirebaseIdentityTokenVerifier } from './firebase/firebase-identity-token.verifier';
+import { HttpRemoteLibrary } from './library/http-remote-library.adapter';
+import { RemoteLibraryPort } from './library/remote-library.port';
 import { LocalIdentityVerifier } from './local-identity.verifier';
 import { MailTransportPort } from './mail/mail-transport.port';
 import { NodemailerTransport } from './mail/nodemailer.transport';
@@ -93,6 +95,9 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
           : ChainSources.real(),
     },
     { provide: MailTransportPort, useFactory: () => new NodemailerTransport() },
+    // F5.18: a web deployment's public mapping library, read by the desktop app. `useFactory`:
+    // the adapter's defaulted `fetchImpl` parameter cannot be resolved by DI.
+    { provide: RemoteLibraryPort, useFactory: () => new HttpRemoteLibrary() },
   ],
   exports: [
     IdentityTokenVerifierPort,
@@ -104,6 +109,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     PdfRendererPort,
     ChainDataSourcesPort,
     MailTransportPort,
+    RemoteLibraryPort,
   ],
 })
 export class IntegrationsModule {}

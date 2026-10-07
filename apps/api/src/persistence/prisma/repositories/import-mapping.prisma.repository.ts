@@ -31,7 +31,15 @@ function toMapping(row: ImportMappingRow): ImportMapping {
     version: row.version,
     origin: row.origin as MappingOrigin,
     ...(row.libraryId !== null && row.libraryVersion !== null
-      ? { library: { id: row.libraryId, version: row.libraryVersion } }
+      ? {
+          library: {
+            id: row.libraryId,
+            version: row.libraryVersion,
+            ...(row.libraryServer !== null
+              ? { server: row.libraryServer }
+              : {}),
+          },
+        }
       : {}),
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt),
@@ -48,7 +56,11 @@ function columns(input: SaveMappingInput) {
     origin: input.origin,
     // An update without a reference keeps the stored one (an edited copy still names its source).
     ...(input.library !== undefined
-      ? { libraryId: input.library.id, libraryVersion: input.library.version }
+      ? {
+          libraryId: input.library.id,
+          libraryVersion: input.library.version,
+          libraryServer: input.library.server ?? null,
+        }
       : {}),
   };
 }

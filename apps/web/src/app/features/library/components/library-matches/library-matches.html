@@ -15,7 +15,11 @@
   <p class="text-muted-foreground text-sm">
     {{ 'library.matches.body' | translate }}
   </p>
-  @for (file of visible(); track file.projectFileId) {
+  @if (server(); as server) {
+  <p class="text-muted-foreground text-xs" [lkTruncate]="server">
+    {{ 'library.remote.source' | translate: { server } }}
+  </p>
+  } @for (file of visible(); track file.projectFileId) {
   <div class="flex flex-col gap-2">
     @if (!fileId()) {
     <p class="text-sm font-medium" [lkTruncate]="file.displayName">

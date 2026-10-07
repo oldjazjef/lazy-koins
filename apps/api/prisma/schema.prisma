@@ -78,6 +78,7 @@ model User {
   notifications Notification[]
   libraryMappings LibraryMapping[]
   libraryRatings  LibraryRating[]
+  remoteLibrary   RemoteLibrarySettings?
 
   @@map("user")
 }
@@ -164,6 +165,9 @@ model ImportMapping {
   libraryId      String? @map("library_id")
   /// The entry's version at taking.
   libraryVersion Int?    @map("library_version")
+  /// F5.18: the web server a desktop copy was taken from (normalised base URL); NULL = this
+  /// deployment's own library. CHECK in the migration.
+  libraryServer  String? @map("library_server")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -941,4 +945,20 @@ model Notification {
   @@unique([userId, topic])
   @@index([userId, occurredAt])
   @@map("notification")
+}
+
+/// F5.18 (desktop): the link to the mapping library of a web deployment — its public,
+/// read-only endpoint. Empty url = never online for it. CHECKs in the migration.
+model RemoteLibrarySettings {
+  userId      String   @id @map("user_id")
+  /// Normalised base URL (https, or http on loopback); '' = none.
+  url         String   @default("")
+  enabled     Boolean  @default(false)
+  /// Library suggestions in the files tab (sends header row + file name).
+  suggestions Boolean  @default(true)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("remote_library_settings")
 }

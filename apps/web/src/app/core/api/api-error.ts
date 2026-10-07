@@ -36,6 +36,15 @@ export const API_ERROR_CODES = [
   'publishLimit',
   'privacyFindings',
   'specTooLarge',
+  // F5.18: the desktop's link to a web deployment's mapping library.
+  'libraryNotConfigured',
+  'libraryNetwork',
+  'libraryTimeout',
+  'libraryBadResponse',
+  'libraryDisabled',
+  'libraryRateLimited',
+  'libraryUrlInvalid',
+  'incompatibleSpec',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

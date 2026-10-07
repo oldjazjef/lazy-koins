@@ -1,0 +1,137 @@
+<lk-page-header
+  [title]="'settings.title' | translate"
+  [subtitle]="'library.remote.settingsSubtitle' | translate"
+/>
+
+@if (service.settings.hasValue()) { @let status = library.status();
+<div class="flex max-w-3xl flex-col gap-6">
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle class="flex items-center gap-2">
+        {{ 'library.remote.title' | translate }}
+        <span hlmBadge [variant]="status?.available ? 'secondary' : 'outline'"
+          >{{ (status?.available ? 'library.remote.state.on' :
+          'library.remote.state.off') | translate }}</span
+        >
+      </h2>
+      <p hlmCardDescription>{{ 'library.remote.intro' | translate }}</p>
+    </div>
+    <div hlmCardContent>
+      <form class="flex flex-col gap-4" [formGroup]="form" (ngSubmit)="save()">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="library-url"
+            >{{ 'library.remote.url' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="library-url"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            formControlName="url"
+            [placeholder]="'library.remote.urlPlaceholder' | translate"
+            [attr.aria-invalid]="service.urlProblem() ? true : null"
+            aria-describedby="library-url-hint"
+          />
+          @if (service.urlProblem(); as problem) {
+          <p class="text-destructive text-sm" role="alert">
+            {{ 'library.remote.urlProblems.' + problem | translate }}
+          </p>
+          } @else if (form.controls.url.errors?.['zod']; as message) {
+          <p class="text-destructive text-sm" role="alert">
+            {{ message | translate }}
+          </p>
+          }
+          <p id="library-url-hint" class="text-muted-foreground text-xs">
+            {{ 'library.remote.urlHint' | translate }}
+          </p>
+        </div>
+        <label class="flex items-center gap-2 text-sm" for="library-enabled">
+          <input
+            id="library-enabled"
+            type="checkbox"
+            formControlName="enabled"
+          />
+          {{ 'library.remote.enabled' | translate }}
+        </label>
+        <label
+          class="flex items-center gap-2 text-sm"
+          for="library-suggestions"
+        >
+          <input
+            id="library-suggestions"
+            type="checkbox"
+            formControlName="suggestions"
+          />
+          {{ 'library.remote.suggestions' | translate }}
+        </label>
+
+        @if (status?.reason === 'offline') {
+        <p class="text-muted-foreground text-sm" role="note">
+          {{ 'library.remote.offline' | translate }}
+          <a class="text-primary hover:underline" routerLink="../rates"
+            >{{ 'library.remote.offlineLink' | translate }}</a
+          >
+        </p>
+        }
+
+        <div class="flex flex-wrap justify-end gap-2">
+          <button
+            hlmBtn
+            variant="outline"
+            type="button"
+            [disabled]="service.testing() || !form.controls.url.value.trim()"
+            (click)="test()"
+          >
+            {{ 'library.remote.test' | translate }}
+          </button>
+          <button
+            hlmBtn
+            type="submit"
+            [disabled]="service.isSaving() || form.pristine || form.invalid"
+          >
+            {{ 'common.save' | translate }}
+          </button>
+        </div>
+        @if (service.testing()) {
+        <p class="text-muted-foreground text-sm" aria-live="polite">
+          {{ 'library.remote.testing' | translate }}
+        </p>
+        } @if (service.testResult(); as result) {
+        <p class="text-sm" aria-live="polite">
+          {{ 'library.remote.testOk' | translate: { server: result.server,
+          count: result.total } }}
+        </p>
+        } @if (service.testError(); as error) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'library.remote.testFailed' | translate }} {{ error | translate }}
+        </p>
+        }
+      </form>
+    </div>
+  </section>
+
+  <!-- What leaves this device (F5.18): stated plainly, before anything is switched on. -->
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'library.remote.privacy.title' | translate }}</h2>
+    </div>
+    <div hlmCardContent>
+      <ul class="flex list-disc flex-col gap-2 pl-5 text-sm">
+        <li>{{ 'library.remote.privacy.reads' | translate }}</li>
+        <li>{{ 'library.remote.privacy.suggestions' | translate }}</li>
+        <li>{{ 'library.remote.privacy.take' | translate }}</li>
+        <li>{{ 'library.remote.privacy.never' | translate }}</li>
+        <li>{{ 'library.remote.privacy.offline' | translate }}</li>
+      </ul>
+    </div>
+  </section>
+</div>
+} @else if (service.settings.error()) {
+<p class="text-destructive text-sm" role="alert">
+  {{ 'library.loadFailed' | translate }}
+</p>
+} @else {
+<hlm-skeleton class="h-48 w-full max-w-3xl" />
+}

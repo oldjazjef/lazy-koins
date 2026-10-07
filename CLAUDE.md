@@ -12,8 +12,8 @@ two as a package (F1.3).
 > **Status (08.10.2026): files + mappings + AI plugin + calculation + dashboard / carry-over /
 > packages.** Nx monorepo with the NestJS API
 > (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
-> storage/upload/preview, **mappings** = declarative mapping specs, **library** = F5.15–F5.17 the
-> global mapping library (web only), **ai** = F5.13/F5.14: AI-written
+> storage/upload/preview, **mappings** = declarative mapping specs, **library** = F5.15–F5.18 the
+> global mapping library (web; the desktop reads a linked server's, read-only), **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine, **dashboard** = F11.4–F11.9, **carryover** = F4.4/F4.4a,
 > **packages** = F10.8/F10.9, data export F10.7, **tools / assistant / mcp** = F11.14–F11.16: one
@@ -21,7 +21,7 @@ two as a package (F1.3).
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
 > Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
-> the **Bibliothek** (mapping library, web only) as its sub-item (`/app/mappings/library`; the nav entry opens a menu Meine Mappings · Bibliothek, `NavItem.children`);
+> the **Bibliothek** (mapping library; on the desktop a linked web server's, F5.18) as its sub-item (`/app/mappings/library`; the nav entry opens a menu Meine Mappings · Bibliothek, `NavItem.children`);
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -138,7 +138,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     persistence/            #   the ONLY code that touches Prisma
       persistence.module.ts #     binds every repository port to its adapter (global)
       prisma/               #     PrismaService, sqlite-url, mappers, repositories/*.prisma.repository.ts
-    integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers
+    integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers;
+                            #     library/ = RemoteLibraryPort + HttpRemoteLibrary (F5.18, desktop → web)
       ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
       rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs;
                             #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser
@@ -150,7 +151,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
     mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0),
                             #   stateless sample-file inspect/preview for the editor
-    library/                #   F5.15–F5.17: the global mapping library (web only; 404 + no tools on the desktop)
+    library/                #   F5.15–F5.18: the global mapping library (web) + its public read-only endpoint;
+                            #   desktop = remote mode (a linked web server's library, read-only)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings (project file or editor sample), PDF statements
       domain/               #     pure: prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
@@ -371,18 +373,23 @@ To support a new platform: write (or let the AI write — "Mit AI erstellen") a 
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
 fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
 
-## Mapping library (F5.15–F5.17, web only)
+## Mapping library (F5.15–F5.18)
 
 User requirement (08.10.2026): a global database of mappings — rated, uploaded by their authors,
 deleted only by them, and **taken as a copy** so that a deleted entry never breaks anyone's
 projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
 
-- **Web only**: `LibraryRuntime.enabled = AUTH_MODE !== 'local'` (`library.module.ts`). On the
-  desktop every route answers **404** (`LibraryEnabledGuard`, and each handler checks again),
-  `buildTools` registers **no** library tools, the web hides the nav entry (`navItemsFor`,
-  `NavItem.webOnly`), the route (`canMatch` on `AuthService.hasAccount`), the files-area matches
-  and the mapping page's publish button. The tables exist in every database (one migration
-  history), they stay empty on the desktop.
+- **Own library on the web only**: `LibraryRuntime.enabled = AUTH_MODE !== 'local'`
+  (`library.module.ts`, mode `web`). On the desktop (mode `remote`, F5.18 below) publish, review,
+  rate and delete answer **404** (`LibraryEnabledGuard` on those routes, and each handler checks
+  again) and their tools are not registered; search, entry, take and matches go to the linked
+  web server. The web reads one service, `LibraryAvailability` (`core/library`): web = always
+  available and writable (no request); desktop = `GET /api/library/status`, asked again on every
+  `settings` change. It drives the nav sub-item (`navItemsFor(available)`,
+  `NavItem.needsLibrary`), the route (`canMatch` → `canOpen()`), the files-area matches
+  (`suggestions()`), the mapping page's publish button (`canPublish` = mode `web`) and origin line,
+  and the library pages' write actions (`readOnly`). The tables exist in every database (one
+  migration history); `library_mapping`/`library_rating` stay empty on the desktop.
 - **Model** (migration `20261008200000_mapping_library`): `library_mapping` (author FK cascade —
   internal only, never in a DTO/tool output; `author_name` = the pseudonym snapshot, NULL =
   "Anonym"; `source_mapping_id` = the author's mapping, no FK; name/platform/description, spec
@@ -446,7 +453,65 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   `delete_library_mapping` (destructive). The isolation suite has a case for each: B reads A's
   public entry without A's id/e-mail/profile name, copies it only into B's own mappings, cannot
   take it into A's project/file, cannot publish A's mapping, republish or delete A's entry; over
-  HTTP: A's own rating = 409, A deleting the entry leaves B's copy working.
+  HTTP: A's own rating = 409, A deleting the entry leaves B's copy working (and it is gone from
+  the public endpoint), the public endpoint without a sign-in (exact keys, no identity).
+  **Desktop** (`libraryTools` filters by `REMOTE_LIBRARY_TOOLS`): only `search_library`,
+  `get_library_mapping`, `take_library_mapping` — same names, routed by `LibraryService`.
+- **F5.18 — the desktop reads a web server's library** (user request 08.10.2026: "In der
+  installierten Version soll die globale Library hinterlegt werden können … Endpunkt, über den man
+  diese Mapper beziehen kann aus dem Web"):
+  - **Public endpoint (web)** `public-library.controller.ts`: `GET /api/public/library?search&
+platform&sort&offset&limit` (≤ 50, default 20, `{items,total,offset,limit}`), `GET
+/api/public/library/:id` (+ `spec`), `POST /api/public/library/match {fileName, headers}`
+    (`matchEntries` = `mappingConfidence` on a one-row stand-in file, ≤ 10; nothing stored).
+    `@Public()` + `@AllowWhileLocked()`, `@SkipThrottle({ writes: true })`, own per-IP budgets
+    (60 reads / 30 matches per minute), `Cache-Control: public, max-age=60` on GETs, `no-store` on
+    match; `PublicLibraryEnabledGuard` = 404 before anything else with `AUTH_MODE=local` or
+    `LIBRARY_PUBLIC=false` (env, default `true`; `deploy/README.md`). Answers are the allow-list
+    `publicEntry` (`PUBLIC_ENTRY_KEYS`: id, name, platform, description, authorName, version,
+    fingerprint, ratingAverage, ratingCount, usageCount, publishedAt, updatedAt) — never an
+    author/user id, e-mail, source mapping or rating; deleted entries do not exist.
+    `public-library.http.spec.ts` (keys, deleted, validation, throttle 429, off/local 404).
+  - **Desktop link** (migration `20261008210000_remote_library`): `remote_library_settings` (PK
+    user, cascade; `url` default `''`, `enabled`, `suggestions`; CHECKs: http(s), no trailing
+    `/`, `?`, `#`, ≤ 300, enabled needs a url) and `import_mapping.library_server` (`ADD COLUMN`
+    with CHECK: only with a library reference, http(s)) → `LibraryRef.server`. Routes (desktop
+    only, 404 on the web): `GET|PUT /api/settings/library` (`normaliseRemoteUrl`: https only, http
+    only for localhost/127.0.0.1/[::1], no credentials/query/fragment, trailing `/api` dropped →
+    422 `libraryUrlInvalid` + `problem`; empty url = off), `POST /api/settings/library/test {url?}`
+    (one list request with the typed address, nothing stored). `GET /api/library/status` (both
+    modes) `{mode, available, readOnly, server, suggestions, reason}`.
+  - **Gate** `RemoteLibraryGate`: goes online only when a url is saved, the link is on and F11.3
+    allows it (user switch + `RATES_ONLINE`) → else 409 `libraryNotConfigured` / `offline`;
+    adapter errors → 502 `libraryNetwork | libraryTimeout | libraryBadResponse |
+libraryDisabled | libraryRateLimited` + `detail` (status or system cause, never a body); a
+    gone entry → 404. Adapter `integrations/library/http-remote-library.adapter.ts` (bound with
+    `useFactory`): plain `fetch`, 10 s timeout, `redirect: 'manual'` (a 3xx = `network`), no
+    credentials/cookies, capped reads (512 KB lists, 256 KB entry), zod answer schemas (unknown
+    keys stripped). `http-remote-library.adapter.spec.ts` runs it against a `node:http` fake.
+  - **Remote handlers** (`remote-library.handlers.ts`, `LibraryService` routes by
+    `runtime.remote`): search (≤ 2 pages = 100 entries, `q`/`platform`/`sort` passed on), entry
+    and take validate the spec with `validateRemoteSpec` (`validateMappingSpec` + refuses keys zod
+    would strip + spec `version` > `MAPPING_VERSION` → 422 `incompatibleSpec` with paths — "neuere
+    App-Version nötig"); remote texts are data only. **Take** = the validated spec as my own
+    mapping (origin `library`, `{id, version, server}`; same server + id + version reused; target
+    file checked before anything is fetched); nothing is reported back (no usage count). Views are
+    `LibraryEntryView` with `mine: false`, `myRating: null`.
+  - **What leaves the device**: search text / entry id for reads and takes; for **suggestions**
+    (files tab, only with `suggestions` on) per `needs_mapping` file (≤ 20 per call) only
+    `headerMatchRequest`: the engine's `guessHeaderRow` row minus cells that `looksLikeData` or
+    that the privacy scan classifies (`classifyPrivateValue`), capped (200 cells × 200 chars),
+    fewer than 2 cells = nothing sent, plus the **base** file name. Answers cached in memory 5 min
+    per server + header + name. Einstellungen › Bibliothek says this in plain words.
+  - **Web**: `features/settings/pages/library-settings-page` (route `settings/library`,
+    `canMatch` = no account; section `LOCAL_SETTINGS_SECTIONS`): URL, on/off, suggestions on/off,
+    "Verbindung testen" (unsaved address), the refused address under the field, the privacy card,
+    the offline hint linking to Kurse. Library pages in remote mode: subtitle names the server, no
+    publish/rate/delete, the search goes to the server debounced (400 ms; ≥ 100 answers = "grenze
+    die Suche ein"), errors by code. The mapping page asks the linked library about a copy only
+    when it came from that server (else "übernommen, Version N · von <server>"). New codes in
+    `API_ERROR_CODES` + both message files; `dataChangesInterceptor`: `PUT settings/library` =
+    `settings`, `…/test` read-only.
 
 ## AI plugin (F5.13, F5.14)
 
@@ -1227,6 +1292,9 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `setup.persistence.integration.spec.ts`.
 - **Mapping library** (migration `20261008200000_mapping_library`): see "Mapping library" —
   two new tables with triggers, `import_mapping` redefined (origin `library` + reference).
+- **Remote library** (migration `20261008210000_remote_library`, F5.18): `remote_library_settings`
+  (new table, CHECKs inside the CREATE TABLE) and `import_mapping.library_server` (`ADD COLUMN`
+  with a column CHECK — no redefinition); `remote-library.persistence.integration.spec.ts`.
 - **Notifications** (migration `20261008160000_notifications`, new table only): `notification`
   (unique `(user_id, topic)`, index `(user_id, occurred_at)`; CHECKs: kind, topic 1–300,
   `title_key LIKE 'notifications.%'`, params a JSON object ≤ 4000, action null or a JSON object;
@@ -1336,6 +1404,9 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
   German dialog instead of Electron's raw stack, then exit; start failures likewise. Both are
   logged with the stack to `<userData>/logs/main.log`. `LK_NO_DIALOGS=1` (automated runs) only
   logs. Hilfe → Über lazy-koins shows the full version.
+- **Mapping library (F5.18)**: the desktop has no library of its own; Einstellungen › Bibliothek
+  links it to a web deployment's public, read-only library (empty by default = never online for
+  it). See "Mapping library".
 - **Unsigned, no auto-update** (open decision). Signing later via `CSC_LINK`/`CSC_KEY_PASSWORD`
   and `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID` as GitHub secrets (names in
   `deploy/README.md`); without `CSC_LINK` the mac identity is forced off.

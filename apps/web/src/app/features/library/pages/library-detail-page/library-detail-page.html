@@ -1,5 +1,14 @@
-@if (service.entry.hasValue()) { @let entry = service.entry.value();
-<lk-page-header [title]="entry.name" [subtitle]="entry.platform" [back]="true">
+@if (service.entry.hasValue()) { @let entry = service.entry.value(); @let server
+= service.server();
+<lk-page-header
+  [title]="entry.name"
+  [subtitle]="
+    server
+      ? ('library.remote.entrySubtitle' | translate: { platform: entry.platform, server })
+      : entry.platform
+  "
+  [back]="true"
+>
   <span hlmBadge variant="outline"
     >{{ 'library.versionShort' | translate: { version: entry.version } }}</span
   >
@@ -80,6 +89,7 @@
       </div>
     </section>
 
+    @if (!service.readOnly()) {
     <section hlmCard>
       <div hlmCardHeader>
         <h2 hlmCardTitle>{{ 'library.rating.yours' | translate }}</h2>
@@ -109,6 +119,7 @@
         } }
       </div>
     </section>
+    }
   </div>
 </div>
 
@@ -141,7 +152,7 @@
 } @else if (service.notFound()) {
 <lk-empty-state [message]="'library.detail.notFound' | translate" />
 } @else if (service.entry.error()) {
-<lk-empty-state [message]="'library.loadFailed' | translate">
+<lk-empty-state [message]="service.errorKey() | translate">
   <button
     hlmBtn
     variant="outline"

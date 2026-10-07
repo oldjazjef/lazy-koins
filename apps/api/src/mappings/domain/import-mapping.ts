@@ -16,11 +16,18 @@ export type MappingOrigin = (typeof MAPPING_ORIGINS)[number];
 export interface LibraryRef {
   readonly id: string;
   readonly version: number;
+  /**
+   * F5.18: the web server a desktop copy was taken from (normalised base URL); absent = this
+   * deployment's own library.
+   */
+  readonly server?: string;
 }
 
-/** `library:<id>@<version>` — how a copy names its source. */
+/** `library:<id>@<version>` (`…@<server>` for a remote copy) — how a copy names its source. */
 export function libraryOriginLabel(ref: LibraryRef): string {
-  return `library:${ref.id}@${ref.version}`;
+  return ref.server
+    ? `library:${ref.id}@${ref.version}@${ref.server}`
+    : `library:${ref.id}@${ref.version}`;
 }
 
 export interface ImportMapping {

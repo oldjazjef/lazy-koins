@@ -1,15 +1,15 @@
 import { isNavActive, NAV_ICONS, NAV_ITEMS, navItemsFor } from './nav-config';
 
-const mappings = (webApp: boolean) =>
-  navItemsFor(webApp).find((item) => item.path === '/app/mappings');
+const mappings = (libraryAvailable: boolean) =>
+  navItemsFor(libraryAvailable).find((item) => item.path === '/app/mappings');
 
 describe('main navigation', () => {
-  it('lists the library under Mappings (user rule) and only in the web app (F5.15)', () => {
+  it('lists the library under Mappings (user rule) only while it can be used (F5.15, F5.18)', () => {
     expect(mappings(true)?.children?.map((child) => child.path)).toEqual([
       '/app/mappings',
       '/app/mappings/library',
     ]);
-    // Desktop: no library, so Mappings is a plain link without a menu.
+    // Desktop without a linked web library: Mappings is a plain link without a menu.
     expect(mappings(false)?.children).toBeUndefined();
     expect(navItemsFor(false)).toHaveLength(NAV_ITEMS.length);
   });

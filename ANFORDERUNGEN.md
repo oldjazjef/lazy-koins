@@ -141,7 +141,7 @@ Mappings hält. Mappings können geratet werden. Man kann seine eigenen Mappings
 kann nur sein eigenes Mapping von dort löschen. Wenn jemand dieses Mapping in sein Projekt
 verwendet, wird eine Kopie davon erstellt, damit beim globalen Löschen die User dieses Mapping
 weiter verwenden können.“ Die Bibliothek gibt es nur in der Web-App (alle Benutzer eines Servers
-teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittstelle antwortet 404).
+teilen sie); die Desktop-App hat keine eigene, kann aber die eines Servers lesen (F5.18).
 
 - **F5.15 Veröffentlichen und Löschen**: Ein eigenes Mapping (Mapping-Seite „In Bibliothek
   veröffentlichen“) oder eine hochgeladene `.json` lässt sich in der Bibliothek veröffentlichen –
@@ -170,6 +170,18 @@ teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittst
   eigene Einträge nicht); angezeigt werden Durchschnitt und Anzahl. Chat und MCP haben dieselben
   Funktionen als Werkzeuge (suchen, ansehen, übernehmen, bewerten, eigenes veröffentlichen,
   eigenes löschen) – strikt auf den angemeldeten Benutzer beschränkt (F11.16).
+- **F5.18 Globale Bibliothek in der Desktop-App** (Wunsch 08.10.2026: „In der installierten
+  Version soll die globale Library hinterlegt werden können … über einen Endpunkt, über den man
+  diese Mapper beziehen kann aus dem Web“): Der Web-Server bietet die Bibliothek zusätzlich
+  **öffentlich und nur lesend** an (ohne Anmeldung; nur Anzeigename, nie E-Mail oder Benutzer-ID;
+  gelöschte Einträge fehlen; Ratenlimit pro IP, abschaltbar). In der Desktop-App trägt man unter
+  Einstellungen › Bibliothek die Adresse eines Servers ein (leer = Standard; dann, ausgeschaltet
+  oder mit ausgeschalteten Online-Abfragen F11.3 geht die App dafür nie ins Internet), mit
+  „Verbindung testen“. Danach: Bibliothek suchen, ansehen, als **eigene Kopie** übernehmen (mit
+  Server, Eintrag und Version als Herkunft) und Vorschläge im Dateien-Tab – dafür verlassen nur
+  die Kopfzeile und der Dateiname einer Datei das Gerät, die Seite sagt das ausdrücklich.
+  Veröffentlichen, Bewerten und Löschen gibt es in der Desktop-App nicht. Ein Mapping, das diese
+  App-Version nicht vollständig versteht, wird nicht übernommen („neuere App-Version nötig“).
 
 ## 6. Wallets
 

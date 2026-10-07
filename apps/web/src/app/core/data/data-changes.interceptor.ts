@@ -24,6 +24,8 @@ const READ_ONLY: readonly RegExp[] = [
   /^mail\/template\/preview$/,
   /^settings\/keys\/[^/]+\/test$/,
   /^settings\/wallets\/test$/,
+  // F5.18: "Verbindung testen" with the typed address of a web library stores nothing.
+  /^settings\/library\/test$/,
   /^wallets\/inspect$/,
   /^chat\//,
   /^pin\//,
@@ -90,6 +92,9 @@ const RULES: readonly (readonly [
     () => ({ projectId: EVERY_PROJECT, scope: 'rates' }),
   ],
   [/^notifications(\/.*)?$/, () => ({ scope: 'notifications' })],
+  // F5.18 (desktop): the link to a web library — the nav entry, the files tab's suggestions
+  // and the library pages follow it (`LibraryAvailability` reloads on `settings`).
+  [/^settings\/library$/, () => ({ scope: 'settings' })],
   [
     /^(settings|ai\/settings|assistant\/settings|mail|setup)(\/.*)?$/,
     () => ({

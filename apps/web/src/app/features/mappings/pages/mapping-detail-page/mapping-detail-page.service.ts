@@ -10,7 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
-import { AuthService } from '../../../../core/auth/auth.service';
+import { LibraryAvailability } from '../../../../core/library/library-availability.service';
 import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import { LibraryClient } from '../../../library/library-client';
 import type {
@@ -63,16 +63,33 @@ export class MappingDetailPageService {
     return id ? apiUrl(`/mappings/${id}/usage`) : undefined;
   });
 
-  /** F5.15–F5.17 are web only (the desktop has no library). */
-  readonly webApp = inject(AuthService).hasAccount;
+  private readonly availability = inject(LibraryAvailability);
+  /** F5.15: publishing exists only in the web app's own library (never on the desktop). */
+  readonly canPublish = computed(
+    () => this.availability.status()?.mode === 'web',
+  );
   private readonly library = inject(LibraryClient);
 
-  /** For a copy from the library (F5.16): the entry as it is now — 404 once it was removed. */
+  /**
+   * For a copy from the library (F5.16): the entry as it is now — 404 once it was removed. Only
+   * asked where the copy came from: this deployment's library (web), or on the desktop the linked
+   * web library when the copy was taken from that same server (F5.18).
+   */
   readonly libraryEntry = httpResource<LibraryEntry>(() => {
     const source = this.mapping.hasValue()
       ? this.mapping.value().library
       : undefined;
-    return source && this.webApp ? apiUrl(`/library/${source.id}`) : undefined;
+    return source &&
+      this.availability.available() &&
+      (source.server ?? null) === this.availability.server()
+      ? apiUrl(`/library/${source.id}`)
+      : undefined;
+  });
+
+  /** The entry is gone from its library (a 404 — not a network problem). */
+  readonly libraryGone = computed(() => {
+    const error = this.libraryEntry.error() as { status?: number } | undefined;
+    return error?.status === 404;
   });
 
   /** The entry's newer version, if the author published one since the copy was taken. */
