@@ -16,6 +16,11 @@ import {
   SetCorrectionUndoneCommand,
   UpdateOpenItemCommand,
 } from './application/calculation.handlers';
+import {
+  ListTransactionsQuery,
+  type TransactionsFilter,
+  type TransactionsView,
+} from './application/transactions.handlers';
 import type { OpenItemState, StoredCorrection } from './domain/calculation';
 
 /** Thin façade over the buses — no logic here; it lives in the handlers. */
@@ -47,6 +52,16 @@ export class CalculationService {
   ): Promise<FigureRecords> {
     return this.queries.execute(
       new GetFigureRecordsQuery(userId, projectId, figureId),
+    );
+  }
+
+  transactions(
+    userId: string,
+    projectId: string,
+    filter: TransactionsFilter,
+  ): Promise<TransactionsView> {
+    return this.queries.execute(
+      new ListTransactionsQuery(userId, projectId, filter),
     );
   }
 

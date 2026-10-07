@@ -1,0 +1,302 @@
+<section hlmCard>
+  <div
+    hlmCardHeader
+    class="flex flex-row flex-wrap items-start justify-between gap-3"
+  >
+    <div class="flex min-w-0 flex-col gap-1.5">
+      <h2 hlmCardTitle>{{ 'transactions.title' | translate }}</h2>
+      <p hlmCardDescription>{{ 'transactions.subtitle' | translate }}</p>
+    </div>
+    @if (!closed()) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [attr.title]="'transactions.ai.reviewHint' | translate"
+      (click)="aiReview()"
+    >
+      <ng-icon name="lucideSparkles" size="16" aria-hidden="true" />
+      {{ 'transactions.ai.reviewButton' | translate }}
+    </button>
+    }
+  </div>
+  <div hlmCardContent class="flex flex-col gap-4">
+    <div class="lk-form-row">
+      <div class="lk-field">
+        <label class="text-sm font-medium" for="tx-search"
+          >{{ 'transactions.search' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="tx-search"
+          type="search"
+          [placeholder]="'transactions.searchPlaceholder' | translate"
+          [value]="search()"
+          (input)="typed($any($event.target).value)"
+        />
+      </div>
+      <div class="lk-field">
+        <label class="text-sm font-medium" for="tx-platform"
+          >{{ 'transactions.platform' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="tx-platform"
+          [value]="service.platform()"
+          (change)="setPlatform($any($event.target).value)"
+        >
+          <option value="">
+            {{ 'transactions.allPlatforms' | translate }}
+          </option>
+          @for (platform of service.platforms(); track platform) {
+          <option [value]="platform">{{ platform }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- The treatments as filter chips, with how many bookings each has -->
+    <div
+      class="flex flex-wrap gap-2"
+      role="group"
+      [attr.aria-label]="'transactions.treatmentFilter' | translate"
+    >
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [variant]="service.treatment() === '' ? 'default' : 'outline'"
+        [attr.aria-pressed]="service.treatment() === ''"
+        (click)="setTreatment('')"
+      >
+        {{ 'transactions.all' | translate }}
+        <span class="tabular-nums">{{ service.scopedTotal() }}</span>
+      </button>
+      @for (treatment of treatments; track treatment) { @let count =
+      service.counts()?.[treatment] ?? 0; @if (count > 0 || service.treatment()
+      === treatment) {
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [variant]="service.treatment() === treatment ? 'default' : 'outline'"
+        [attr.aria-pressed]="service.treatment() === treatment"
+        [attr.title]="'transactions.help.' + treatment | translate"
+        (click)="setTreatment(treatment)"
+      >
+        {{ 'transactions.treatment.' + treatment | translate }}
+        <span class="tabular-nums">{{ count }}</span>
+      </button>
+      } }
+    </div>
+
+    <details class="text-sm">
+      <summary class="cursor-pointer font-medium">
+        {{ 'transactions.legendTitle' | translate }}
+      </summary>
+      <dl class="lk-facts mt-2">
+        @for (treatment of treatments; track treatment) {
+        <dt>{{ 'transactions.treatment.' + treatment | translate }}</dt>
+        <dd>{{ 'transactions.help.' + treatment | translate }}</dd>
+        }
+      </dl>
+      <p class="text-muted-foreground mt-2 text-xs">
+        {{ 'transactions.liveHint' | translate }}
+      </p>
+    </details>
+
+    @if (service.view.hasValue()) { @if (service.rows().length === 0) {
+    <lk-empty-state
+      [message]="(service.scopedTotal() === 0 && !service.query() && !service.platform() ? 'transactions.empty' : 'transactions.emptyFiltered') | translate"
+    />
+    } @else {
+    <div hlmTableContainer class="lk-panel">
+      <table hlmTable class="table-fixed">
+        <colgroup>
+          <col class="hidden w-40 sm:table-column" />
+          <col />
+          <col class="hidden w-40 md:table-column" />
+          <col class="w-32 sm:w-44" />
+          <col class="w-14" />
+        </colgroup>
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh class="hidden sm:table-cell">
+              {{ 'transactions.columns.date' | translate }}
+            </th>
+            <th hlmTh>{{ 'transactions.columns.booking' | translate }}</th>
+            <th hlmTh class="hidden text-right md:table-cell">
+              {{ 'transactions.columns.quantity' | translate }}
+            </th>
+            <th hlmTh>{{ 'transactions.columns.treatment' | translate }}</th>
+            <th hlmTh class="lk-sticky-actions text-right">
+              <span class="sr-only">{{ 'common.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (row of service.pager.visible(); track row.id) {
+          <tr
+            hlmTr
+            [class.text-muted-foreground]="row.treatment === 'excluded' || row.treatment === 'afterYear'"
+          >
+            <td
+              hlmTd
+              class="hidden align-top whitespace-nowrap tabular-nums sm:table-cell"
+            >
+              {{ row.timestamp | lkDate: 'dateTime' : 'UTC' }}
+            </td>
+            <td hlmTd class="max-w-0 align-top">
+              <span
+                class="text-muted-foreground block text-xs tabular-nums sm:hidden"
+                >{{ row.timestamp | lkDate: 'dateTime' : 'UTC' }}</span
+              >
+              @let kind = 'bookings.kind.' + row.kind | translate;
+              <span class="flex min-w-0 items-center gap-2">
+                <span
+                  class="min-w-0 font-medium"
+                  [class.line-through]="row.treatment === 'excluded'"
+                  [lkTruncate]="row.asset + ' · ' + kind"
+                  >{{ row.asset }} · {{ kind }}</span
+                >
+                <span class="shrink-0 tabular-nums md:hidden"
+                  >{{ signed(row.quantity) }}</span
+                >
+              </span>
+              @let origin = row.manual ? ('transactions.manual' | translate) :
+              ('transactions.origin' | translate: { file: row.fileName ??
+              row.sourceFileId, row: row.row }); @let where = row.platform + ' ·
+              ' + row.accountId + ' · ' + row.rawType + ' · ' + origin;
+              <span class="text-muted-foreground text-xs" [lkTruncate]="where"
+                >{{ where }}</span
+              >
+              @if (row.importedKind) { @let imported = 'transactions.importedAs'
+              | translate: { kind: ('bookings.kind.' + row.importedKind |
+              translate) };
+              <span
+                class="text-muted-foreground text-xs"
+                [lkTruncate]="imported"
+                >{{ imported }}</span
+              >
+              }
+            </td>
+            <td
+              hlmTd
+              class="hidden text-right align-top tabular-nums md:table-cell"
+            >
+              <span [class.line-through]="row.treatment === 'excluded'"
+                >{{ signed(row.quantity) }}</span
+              >
+              @if (row.fee) {
+              <span class="text-muted-foreground block text-xs"
+                >{{ 'transactions.fee' | translate: { fee: (row.fee |
+                lkQuantity), asset: row.feeAsset } }}</span
+              >
+              }
+            </td>
+            <td hlmTd class="max-w-0 align-top">
+              <span
+                hlmBadge
+                class="max-w-full"
+                [variant]="badge[row.treatment]"
+                [attr.title]="'transactions.help.' + row.treatment | translate"
+                ><span class="truncate"
+                  >{{ 'transactions.treatment.' + row.treatment | translate
+                  }}</span
+                ></span
+              >
+              @if (row.treatment === 'income' || row.treatment === 'oneOff') {
+              <span class="block text-xs tabular-nums">
+                @if (row.valueChf !== null) { {{ row.valueChf | lkChf:
+                service.currency() }} } @else {
+                <span class="text-muted-foreground"
+                  >{{ 'transactions.noPrice' | translate }}</span
+                >
+                }
+              </span>
+              } @if (row.treatment === 'excluded' && row.correctionReason) {
+              @let because = 'transactions.reason' | translate: { reason:
+              row.correctionReason };
+              <span class="block text-xs" [lkTruncate]="because"
+                >{{ because }}</span
+              >
+              }
+            </td>
+            <td hlmTd class="lk-sticky-actions text-right align-top">
+              <lk-row-actions
+                [actions]="actions().get(row.id) ?? []"
+                (selected)="act($event, row)"
+              />
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <lk-paginator [pager]="service.pager" />
+    } } @else if (service.view.error()) {
+    <p class="text-destructive text-sm">
+      {{ 'transactions.loadFailed' | translate }}
+    </p>
+    } @else {
+    <hlm-skeleton class="h-48 w-full" />
+    }
+  </div>
+</section>
+
+<!-- Deactivate one booking: the reason is required (it is stored with the correction) -->
+<hlm-dialog
+  [state]="excluding() ? 'open' : 'closed'"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (excluding(); as row) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'transactions.exclude.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'transactions.exclude.body' | translate: { asset: row.asset,
+        quantity: signed(row.quantity), platform: row.platform } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium" for="tx-exclude-reason"
+          >{{ 'transactions.exclude.reason' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="tx-exclude-reason"
+          rows="3"
+          class="w-full"
+          [attr.maxlength]="reasonMax"
+          [attr.aria-invalid]="reasonMissing()"
+          [placeholder]="'transactions.exclude.reasonPlaceholder' | translate"
+          [value]="reason()"
+          (input)="reason.set($any($event.target).value); reasonMissing.set(false)"
+        ></textarea>
+        @if (reasonMissing()) {
+        <p class="text-destructive text-sm">
+          {{ 'transactions.exclude.reasonRequired' | translate }}
+        </p>
+        }
+        <p class="text-muted-foreground text-xs">
+          {{ 'transactions.exclude.hint' | translate }}
+        </p>
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        (click)="confirmExclude()"
+      >
+        {{ 'transactions.actions.exclude' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

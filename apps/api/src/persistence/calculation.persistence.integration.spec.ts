@@ -367,6 +367,19 @@ describe('snapshots, corrections, open items, exports', () => {
         project.id,
       ),
     ).rejects.toThrow(/CHECK constraint failed/);
+    // Widened by 20261009120000 (Transaktionen: leave a booking out); the other CHECKs kept.
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO correction (id, project_id, type, data, reason) VALUES ('x2b', ?, 'exclude_booking', '{"type":"exclude_booking","bookingId":"f:1"}', 'Doppelt')`,
+        project.id,
+      ),
+    ).resolves.toBe(1);
+    await expect(
+      prisma.$executeRawUnsafe(
+        `INSERT INTO correction (id, project_id, type, data, reason) VALUES ('x2c', ?, 'exclude_booking', 'not json', 'Doppelt')`,
+        project.id,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
     await expect(
       prisma.$executeRawUnsafe(
         `INSERT INTO calculation_snapshot (id, project_id, input_hash, engine_version, result, records, wealth_chf, income_chf) VALUES ('x3', ?, 'short', 1, '{}', '{}', '0', '0')`,

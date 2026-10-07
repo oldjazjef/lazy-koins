@@ -135,6 +135,22 @@ export class ChatService {
     if (isOverlay()) this.close();
   }
 
+  /**
+   * "Mit AI beheben" from a page: opens the sidebar on a new chat with the question. It is sent
+   * at once when the assistant is ready and consent is settled; otherwise it waits in the input
+   * (the sidebar shows the consent notice or the setup hint first).
+   */
+  async startWith(text: string): Promise<void> {
+    this.setOpen(true);
+    this.newChat();
+    if (this.ready() && !this.needsConsent() && !this.thinking()) {
+      this.draft.set('');
+      if (!(await this.ask(text))) this.draft.set(text);
+    } else {
+      this.draft.set(text);
+    }
+  }
+
   acceptConsent(): void {
     this.consentAccepted.set(true);
   }

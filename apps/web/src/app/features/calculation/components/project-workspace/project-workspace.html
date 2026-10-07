@@ -20,6 +20,8 @@
   <lk-project-wallets [projectId]="projectId()" [closed]="closed()" />
   } @case ('rates') {
   <lk-project-rates [closed]="closed()" [taxYear]="taxYear()" />
+  } @case ('transactions') {
+  <lk-project-transactions [closed]="closed()" />
   } @case ('result') {
   <lk-project-result [closed]="closed()" />
   } @case ('checks') {

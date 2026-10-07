@@ -61,6 +61,7 @@ export const WORKSPACE_TABS = [
   'hints',
   'wallets',
   'rates',
+  'transactions',
   'result',
   'checks',
   'corrections',

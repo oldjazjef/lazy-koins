@@ -150,7 +150,7 @@ export function carryableCorrections(
   return corrections.filter((c) => {
     if (c.undoneAt !== null) return false;
     if (c.data.type === 'manual_booking') return true;
-    if (c.data.type === 'reclassify') {
+    if (c.data.type === 'reclassify' || c.data.type === 'exclude_booking') {
       const sha = c.data.bookingId.split(':')[0] ?? '';
       return reaching.has(sha);
     }

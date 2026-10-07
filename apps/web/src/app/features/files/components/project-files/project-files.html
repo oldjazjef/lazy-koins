@@ -42,7 +42,12 @@
     <p class="text-muted-foreground text-sm">
       {{ 'files.closedHint' | translate }}
     </p>
-    } @if (service.uploads().length > 0) {
+    }
+    <!-- What to download from the platforms; open while the project has no files yet. -->
+    <lk-file-guide
+      [open]="service.overview.hasValue() && service.overview.value().groups.length === 0"
+    />
+    @if (service.uploads().length > 0) {
     <div class="flex flex-col gap-2" aria-live="polite">
       <progress
         class="w-full"

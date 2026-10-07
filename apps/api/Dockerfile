@@ -57,6 +57,17 @@ LABEL org.opencontainers.image.version="${LK_VERSION}" \
 #   docker exec <api> sqlite3 /data/lazykoins.db ".backup /data/backup.db"
 RUN apk add --no-cache libstdc++ sqlite
 
+# PDF exports (simple/detailed statement, internal report) are HTML printed by headless Chromium
+# through playwright-core (integrations/pdf/playwright-pdf.renderer.ts). Without a browser every
+# PDF export answers 503 `pdfUnavailable`. Alpine's Chromium (musl) instead of Playwright's
+# download (glibc only); fonts so text does not render as boxes.
+# The binary's name differs between Alpine releases (chromium-browser / chromium): one fixed link,
+# and the build fails here rather than the first PDF export in production.
+RUN apk add --no-cache chromium font-noto ttf-dejavu \
+ && ln -s "$(command -v chromium-browser || command -v chromium)" /usr/local/bin/lk-chromium \
+ && test -x /usr/local/bin/lk-chromium
+ENV PDF_CHROMIUM_PATH=/usr/local/bin/lk-chromium
+
 WORKDIR /app
 COPY --from=builder /deploy ./
 
