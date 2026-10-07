@@ -5,13 +5,16 @@ import {
   effect,
   inject,
   input,
+  untracked,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmCardImports } from '@lazykoins/ui/card';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import type { KpiKind } from '../../../../core/api/dashboard.types';
+import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { LineChart } from '../../../../shared/charts';
 import { RecordsDialog } from '../../../../shared/components/records-dialog';
+import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
 import { ChfPipe, isNegative } from '../../../../shared/format/number-format';
 import { taxYearPeriod } from '../../dashboard-period';
 import { DashboardPageService } from '../../pages/dashboard-page/dashboard-page.service';
@@ -110,6 +113,8 @@ import { TranslateService } from '@ngx-translate/core';
 })
 export class ProjectDashboardCard {
   protected readonly service = inject(DashboardPageService);
+  private readonly sentEvents = inject(ProjectSentEvents);
+  private readonly assistantEvents = inject(AssistantEvents);
   private readonly translate = inject(TranslateService);
   protected readonly isNegative = isNegative;
   protected readonly kinds: readonly KpiKind[] = [
@@ -137,6 +142,26 @@ export class ProjectDashboardCard {
       this.service.setCustom(
         taxYearPeriod(this.taxYear(), this.service.today()),
       );
+    });
+    // Regression (07.10.2026): after "Neu berechnen" the chart kept the old values. Reload on
+    // every change the workspace announces (calculation, export, correction) and on changes the
+    // assistant made to this project — not on the first run.
+    let seenSent = this.sentEvents.version();
+    effect(() => {
+      const version = this.sentEvents.version();
+      if (version === seenSent) return;
+      seenSent = version;
+      untracked(() => this.service.view.reload());
+    });
+    let seenChange = this.assistantEvents.change()?.seq ?? 0;
+    effect(() => {
+      const change = this.assistantEvents.change();
+      if (!change || change.seq === seenChange) return;
+      seenChange = change.seq;
+      const id = untracked(() => this.projectId());
+      if (change.projectId === null || change.projectId === id) {
+        untracked(() => this.service.view.reload());
+      }
     });
   }
 
