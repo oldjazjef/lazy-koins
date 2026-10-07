@@ -11,7 +11,9 @@ export type ConflictCode =
   | 'offline'
   | 'estvAutoOff'
   | 'usedByClosedProject'
-  | 'alreadyDecided';
+  | 'alreadyDecided'
+  | 'alreadyPublished'
+  | 'ownEntry';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

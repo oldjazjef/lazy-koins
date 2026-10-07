@@ -39,6 +39,11 @@ export const PREVIEW_TEXTS = {
   'chat.preview.createMapping': ['name'],
   'chat.preview.updateMapping': ['name', 'from', 'to'],
   'chat.preview.deleteMapping': ['name'],
+  'chat.preview.publishMapping': ['name'],
+  'chat.preview.publishMappingVersion': ['name', 'version'],
+  'chat.preview.takeLibraryMapping': ['name', 'version'],
+  'chat.preview.rateLibraryMapping': ['name'],
+  'chat.preview.deleteLibraryMapping': ['name'],
   'chat.preview.createProject': ['name', 'year', 'canton'],
   'chat.preview.updateProject': ['name'],
   'chat.preview.deleteProject': ['name', 'year'],
@@ -60,6 +65,10 @@ export const PREVIEW_TEXTS = {
   'chat.preview.label.file': [],
   'chat.preview.label.mapping': [],
   'chat.preview.label.version': [],
+  'chat.preview.label.libraryEntry': [],
+  'chat.preview.label.stars': [],
+  'chat.preview.label.privacyFindings': [],
+  'chat.preview.label.pseudonym': [],
   'chat.preview.label.name': [],
   'chat.preview.label.taxYear': [],
   'chat.preview.label.canton': [],
@@ -75,6 +84,9 @@ export const PREVIEW_TEXTS = {
   'chat.preview.value.override': ['price', 'unit'],
   'chat.preview.value.yes': [],
   'chat.preview.value.no': [],
+  'chat.preview.value.anonymous': [],
+  'chat.preview.value.findingsRemoved': ['count'],
+  'chat.preview.value.findingsKept': ['count'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type PreviewKey = keyof typeof PREVIEW_TEXTS;

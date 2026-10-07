@@ -1,0 +1,234 @@
+<lk-page-header
+  [title]="'library.title' | translate"
+  [subtitle]="'library.subtitle' | translate"
+>
+  <button hlmBtn type="button" (click)="publish.start()">
+    <ng-icon name="lucideBookUp" size="16" aria-hidden="true" />
+    {{ 'library.publish.button' | translate }}
+  </button>
+</lk-page-header>
+
+@if (service.entries.isLoading() && !service.entries.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.entries.error()) {
+<lk-empty-state [message]="'library.loadFailed' | translate">
+  <button hlmBtn variant="outline" type="button" (click)="service.refresh()">
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.isEmpty()) {
+<lk-empty-state [message]="'library.empty' | translate">
+  <button hlmBtn type="button" (click)="publish.start()">
+    {{ 'library.publish.button' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<div class="lk-form-row mb-4">
+  <div class="lk-field">
+    <label hlmLabel for="library-search" [title]="'library.search' | translate"
+      >{{ 'library.search' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="library-search"
+      type="search"
+      [placeholder]="'library.searchPlaceholder' | translate"
+      [ngModel]="service.search()"
+      (ngModelChange)="service.search.set($event)"
+    />
+  </div>
+  <div class="lk-field">
+    <label
+      hlmLabel
+      for="library-platform"
+      [title]="'library.fields.platform' | translate"
+      >{{ 'library.fields.platform' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="library-platform"
+      [ngModel]="service.platform()"
+      (ngModelChange)="service.platform.set($event)"
+    >
+      <option value="">{{ 'library.allPlatforms' | translate }}</option>
+      @for (platform of service.platforms(); track platform) {
+      <option [value]="platform">{{ platform }}</option>
+      }
+    </select>
+  </div>
+  <div class="lk-field">
+    <label hlmLabel for="library-sort" [title]="'library.sort' | translate"
+      >{{ 'library.sort' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="library-sort"
+      [ngModel]="service.sort()"
+      (ngModelChange)="setSort($event)"
+    >
+      @for (sort of sorts; track sort) {
+      <option [value]="sort">{{ 'library.sortBy.' + sort | translate }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (service.visible().length === 0) {
+<lk-empty-state [message]="'library.noMatch' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-32" />
+      <col class="hidden w-40 md:table-column" />
+      <col class="hidden w-24 lg:table-column" />
+      <col class="hidden w-36 lg:table-column" />
+      <col class="hidden w-16 xl:table-column" />
+      <col class="w-14" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'library.fields.name' | translate }}</th>
+        <th hlmTh>{{ 'library.fields.platform' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'library.fields.rating' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right lg:table-cell">
+          {{ 'library.fields.usage' | translate }}
+        </th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'library.fields.author' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right xl:table-cell">
+          {{ 'library.fields.version' | translate }}
+        </th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (entry of pager.visible(); track entry.id) {
+      <tr hlmTr class="cursor-pointer" (click)="open(entry.id)">
+        <td hlmTd class="max-w-0">
+          <span class="flex min-w-0 items-center gap-2">
+            <a
+              class="font-medium hover:underline"
+              [routerLink]="entry.id"
+              [lkTruncate]="entry.name"
+              (click)="$event.stopPropagation()"
+              >{{ entry.name }}</a
+            >
+            @if (entry.mine) {
+            <span hlmBadge variant="outline" class="shrink-0"
+              >{{ 'library.mine' | translate }}</span
+            >
+            }
+          </span>
+          @let secondary = entry.description ?? ('library.publishedAt' |
+          translate: { date: (entry.publishedAt | lkDate) });
+          <span
+            class="text-muted-foreground block text-xs"
+            [lkTruncate]="secondary"
+            >{{ secondary }}</span
+          >
+        </td>
+        <td hlmTd class="max-w-0">
+          <span [lkTruncate]="entry.platform">{{ entry.platform }}</span>
+        </td>
+        <td hlmTd class="hidden md:table-cell">
+          <span class="flex items-center gap-2">
+            <lk-star-rating [readonly]="true" [value]="entry.ratingAverage" />
+            <span class="text-muted-foreground text-xs tabular-nums"
+              >{{ 'library.ratingCount' | translate: { count: entry.ratingCount
+              } }}</span
+            >
+          </span>
+        </td>
+        <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+          {{ entry.usageCount }}
+        </td>
+        <td hlmTd class="hidden max-w-0 lg:table-cell">
+          @let author = entry.authorName ?? ('library.anonymous' | translate);
+          <span [lkTruncate]="author">{{ author }}</span>
+        </td>
+        <td hlmTd class="hidden text-right tabular-nums xl:table-cell">
+          {{ entry.version }}
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions().get(entry.id) ?? []"
+            (selected)="act($event, entry)"
+          />
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+} }
+
+<lk-library-publish-dialog />
+
+<!-- Rate (F5.17) -->
+<hlm-dialog [state]="rateState()" (stateChanged)="rateChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (rating(); as entry) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'library.rate.title' | translate: { name: entry.name } }}
+      </h3>
+      <p hlmDialogDescription>{{ 'library.rate.body' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex justify-center">
+        <lk-star-rating [value]="entry.myRating" (rated)="rate($event)" />
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      @if (entry.myRating !== null) {
+      <button hlmBtn variant="outline" type="button" (click)="rate(null)">
+        {{ 'library.rate.remove' | translate }}
+      </button>
+      }
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Delete my entry (F5.15) -->
+<hlm-dialog [state]="deleteState()" (stateChanged)="deleteChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (deleting(); as entry) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'library.delete.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'library.delete.body' | translate: { name: entry.name } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body"></div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        (click)="confirmDelete()"
+      >
+        {{ 'library.actions.delete' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

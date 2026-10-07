@@ -31,6 +31,11 @@ export const API_ERROR_CODES = [
   'encryptionUnavailable',
   'confirmationRequired',
   'consentRequired',
+  'alreadyPublished',
+  'ownEntry',
+  'publishLimit',
+  'privacyFindings',
+  'specTooLarge',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

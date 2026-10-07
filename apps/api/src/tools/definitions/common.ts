@@ -3,6 +3,7 @@ import type { AiGate } from '../../ai/application/ai-gate';
 import type { CalculationService } from '../../calculation/calculation.service';
 import type { ExportsService } from '../../exports/exports.service';
 import type { FilesService } from '../../files/files.service';
+import type { LibraryService } from '../../library/library.service';
 import type { MailService } from '../../mail/mail.service';
 import type { MappingsService } from '../../mappings/mappings.service';
 import type { ProjectsService } from '../../projects/projects.service';
@@ -22,6 +23,8 @@ export interface ToolServices {
   readonly settings: SettingsService;
   readonly mail: MailService;
   readonly ai: AiGate;
+  /** F5.15–F5.17: the mapping library — its tools exist only where it is enabled (web). */
+  readonly library?: LibraryService;
 }
 
 export const id = (what: string) =>

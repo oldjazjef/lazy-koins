@@ -11,7 +11,12 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideDownload, lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
+import {
+  lucideBookUp,
+  lucideDownload,
+  lucidePencil,
+  lucideTrash2,
+} from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -29,6 +34,10 @@ import { ProjectStatusBadge } from '../../../projects/components/project-status-
 import { MappingDetailPageService } from './mapping-detail-page.service';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
+import {
+  LibraryPublishDialog,
+  LibraryPublishService,
+} from '../../../library/components/publish-dialog';
 
 /**
  * One mapping (F11.0): facts, the JSON (view, and edit with a sample file and a live preview),
@@ -49,6 +58,7 @@ import { Truncate } from '../../../../shared/components/truncate';
     EmptyState,
     MappingWorkbench,
     ProjectStatusBadge,
+    LibraryPublishDialog,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -59,7 +69,9 @@ import { Truncate } from '../../../../shared/components/truncate';
   providers: [
     MappingDetailPageService,
     MappingWorkbenchService,
-    provideIcons({ lucideDownload, lucidePencil, lucideTrash2 }),
+    // F5.15: "In Bibliothek veröffentlichen" (web only).
+    LibraryPublishService,
+    provideIcons({ lucideBookUp, lucideDownload, lucidePencil, lucideTrash2 }),
   ],
   templateUrl: './mapping-detail-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,6 +79,7 @@ import { Truncate } from '../../../../shared/components/truncate';
 export class MappingDetailPage {
   protected readonly service = inject(MappingDetailPageService);
   protected readonly workbench = inject(MappingWorkbenchService);
+  protected readonly publish = inject(LibraryPublishService);
 
   /** Route param `:id` — no default, absent params bind as `undefined` (see CLAUDE.md). */
   readonly id = input<string | undefined>();

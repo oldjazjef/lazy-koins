@@ -16,6 +16,8 @@ const READ_ONLY: readonly RegExp[] = [
   /^projects\/[^/]+\/files\/[^/]+\/ai\/(mapping|statement)$/,
   /^projects\/[^/]+\/mail\/compose$/,
   /^mapping-samples\//,
+  // F5.15: the review before publishing to the mapping library stores nothing.
+  /^library\/review$/,
   /^ai\/mapping-sample(\/payload)?$/,
   /^ai\/settings\/test$/,
   /^mail\/settings\/test$/,
@@ -76,6 +78,12 @@ const RULES: readonly (readonly [
     }),
   ],
   [/^wallets(\/.*)?$/, () => ({ projectId: EVERY_PROJECT, scope: 'wallets' })],
+  // F5.16: taking from the library = a new mapping of mine, maybe assigned to a file of a
+  // project the URL does not name. Publishing / rating / deleting an entry touch no own data.
+  [
+    /^library\/[^/]+\/take$/,
+    () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
+  ],
   // A new ESTV Kursliste: every project's Kurse tab says "neuer Stand".
   [
     /^rates\/estv\/update$/,

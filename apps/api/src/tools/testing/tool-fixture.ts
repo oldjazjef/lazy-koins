@@ -34,6 +34,27 @@ import { RatesService } from '../../rates/rates.service';
 import { GetSettingsQuery } from '../../settings/application/settings.handlers';
 import { SettingsService } from '../../settings/settings.service';
 import { WalletsService } from '../../wallets/wallets.service';
+import {
+  DeleteLibraryMappingCommand,
+  DeleteLibraryMappingHandler,
+  PublishLibraryMappingCommand,
+  PublishLibraryMappingHandler,
+  RateLibraryMappingCommand,
+  RateLibraryMappingHandler,
+  TakeLibraryMappingCommand,
+  TakeLibraryMappingHandler,
+} from '../../library/application/library.commands';
+import {
+  GetLibraryMappingHandler,
+  GetLibraryMappingQuery,
+  ReviewPublicationHandler,
+  ReviewPublicationQuery,
+  SearchLibraryHandler,
+  SearchLibraryQuery,
+} from '../../library/application/library.queries';
+import { LibraryRuntime } from '../../library/application/library-runtime';
+import { LibraryService } from '../../library/library.service';
+import { InMemoryLibraryRepository } from '../../library/testing/in-memory-library.repository';
 import { ToolExecutor } from '../application/tool-executor';
 import { ToolRegistry } from '../application/tool-registry';
 import type { ToolServices } from '../definitions/common';
@@ -141,6 +162,42 @@ export async function toolSetup() {
     });
   const commands = bus as unknown as CommandBus;
   const queries = bus as unknown as QueryBus;
+  // F5.15–F5.17: the library over an in-memory repository (web: enabled).
+  const library = new InMemoryLibraryRepository();
+  const libraryRuntime = new LibraryRuntime(true);
+  bus
+    .on(SearchLibraryQuery, new SearchLibraryHandler(library, libraryRuntime))
+    .on(
+      GetLibraryMappingQuery,
+      new GetLibraryMappingHandler(library, libraryRuntime),
+    )
+    .on(
+      ReviewPublicationQuery,
+      new ReviewPublicationHandler(library, t.mappings, libraryRuntime),
+    )
+    .on(
+      PublishLibraryMappingCommand,
+      new PublishLibraryMappingHandler(library, t.mappings, libraryRuntime),
+    )
+    .on(
+      DeleteLibraryMappingCommand,
+      new DeleteLibraryMappingHandler(library, libraryRuntime),
+    )
+    .on(
+      RateLibraryMappingCommand,
+      new RateLibraryMappingHandler(library, libraryRuntime),
+    )
+    .on(
+      TakeLibraryMappingCommand,
+      new TakeLibraryMappingHandler(
+        library,
+        t.mappings,
+        t.projects,
+        t.files,
+        libraryRuntime,
+        commands,
+      ),
+    );
   const files = new FilesService(commands, queries, views);
   const ai = {
     settingsOf: async (userId: string) => ({
@@ -166,9 +223,10 @@ export async function toolSetup() {
     settings: new SettingsService(commands, queries),
     mail: new MailService(commands, queries),
     ai,
+    library: new LibraryService(commands, queries, libraryRuntime),
   };
   const audit = new InMemoryToolAuditRepository();
   const registry = ToolRegistry.over(services);
   const executor = new ToolExecutor(registry, audit);
-  return { ...t, bus, services, audit, registry, executor };
+  return { ...t, bus, services, audit, registry, executor, library };
 }

@@ -1,4 +1,6 @@
-import type { Route } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, type Route } from '@angular/router';
+import { AuthService } from './core/auth/auth.service';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { setupGuard } from './core/setup/setup-state.service';
 
@@ -30,6 +32,16 @@ export const appRoutes: Route[] = [
       {
         path: 'mappings',
         loadChildren: () => import('./features/mappings/mappings.routes'),
+      },
+      {
+        // F5.15–F5.17: the mapping library exists only in the web app, not on the desktop.
+        path: 'library',
+        canMatch: [
+          () =>
+            inject(AuthService).hasAccount ||
+            inject(Router).parseUrl('/app/dashboard'),
+        ],
+        loadChildren: () => import('./features/library/library.routes'),
       },
       {
         path: 'wallets',

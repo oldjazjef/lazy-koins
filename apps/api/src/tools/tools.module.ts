@@ -7,6 +7,8 @@ import { ExportsModule } from '../exports/exports.module';
 import { ExportsService } from '../exports/exports.service';
 import { FilesModule } from '../files/files.module';
 import { FilesService } from '../files/files.service';
+import { LibraryModule } from '../library/library.module';
+import { LibraryService } from '../library/library.service';
 import { MailModule } from '../mail/mail.module';
 import { MailService } from '../mail/mail.service';
 import { MappingsModule } from '../mappings/mappings.module';
@@ -31,6 +33,7 @@ import { ToolRegistry } from './application/tool-registry';
     ProjectsModule,
     FilesModule,
     MappingsModule,
+    LibraryModule,
     CalculationModule,
     RatesModule,
     ExportsModule,
@@ -53,6 +56,7 @@ import { ToolRegistry } from './application/tool-registry';
         SettingsService,
         MailService,
         AiGate,
+        LibraryService,
       ],
       useFactory: (
         projects: ProjectsService,
@@ -65,6 +69,7 @@ import { ToolRegistry } from './application/tool-registry';
         settings: SettingsService,
         mail: MailService,
         ai: AiGate,
+        library: LibraryService,
       ) =>
         ToolRegistry.over({
           projects,
@@ -77,6 +82,7 @@ import { ToolRegistry } from './application/tool-registry';
           settings,
           mail,
           ai,
+          library,
         }),
     },
     ToolExecutor,

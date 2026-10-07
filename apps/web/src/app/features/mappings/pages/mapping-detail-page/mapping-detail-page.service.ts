@@ -10,8 +10,11 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
+import { LibraryClient } from '../../../library/library-client';
 import type {
+  LibraryEntry,
   Mapping,
   MappingUsageProject,
   ProjectStatus,
@@ -59,6 +62,39 @@ export class MappingDetailPageService {
     const id = this.mappingId();
     return id ? apiUrl(`/mappings/${id}/usage`) : undefined;
   });
+
+  /** F5.15–F5.17 are web only (the desktop has no library). */
+  readonly webApp = inject(AuthService).hasAccount;
+  private readonly library = inject(LibraryClient);
+
+  /** For a copy from the library (F5.16): the entry as it is now — 404 once it was removed. */
+  readonly libraryEntry = httpResource<LibraryEntry>(() => {
+    const source = this.mapping.hasValue()
+      ? this.mapping.value().library
+      : undefined;
+    return source && this.webApp ? apiUrl(`/library/${source.id}`) : undefined;
+  });
+
+  /** The entry's newer version, if the author published one since the copy was taken. */
+  readonly newerVersion = computed(() => {
+    const source = this.mapping.hasValue()
+      ? this.mapping.value().library
+      : undefined;
+    const entry = this.libraryEntry.hasValue()
+      ? this.libraryEntry.value()
+      : undefined;
+    return source && entry && entry.version > source.version
+      ? entry.version
+      : null;
+  });
+
+  /** A copy of the newer version (a new mapping of mine; this one stays as it is). */
+  async takeNewerVersion(): Promise<void> {
+    const source = this.mapping.value()?.library;
+    if (!source) return;
+    const taken = await this.library.take(source.id);
+    if (taken) await this.router.navigate(['/app/mappings', taken.mapping.id]);
+  }
 
   constructor() {
     // "Wird genutzt in" follows re-applies and files added/removed in any project. The mapping

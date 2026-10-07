@@ -2,6 +2,7 @@ import {
   lucideFileJson,
   lucideFolderOpen,
   lucideLayoutDashboard,
+  lucideLibraryBig,
   lucideSettings,
   lucideUserRound,
   lucideWallet,
@@ -11,6 +12,8 @@ export interface NavItem {
   readonly path: string;
   readonly labelKey: string;
   readonly icon: string;
+  /** Only in the web app (F5.15: the mapping library is shared by the users of a server). */
+  readonly webOnly?: boolean;
 }
 
 /** The main navigation in the header, in order. Icon names must be registered in `NAV_ICONS`. */
@@ -29,6 +32,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     path: '/app/mappings',
     labelKey: 'nav.mappings',
     icon: 'lucideFileJson',
+  },
+  {
+    path: '/app/library',
+    labelKey: 'nav.library',
+    icon: 'lucideLibraryBig',
+    webOnly: true,
   },
   {
     path: '/app/wallets',
@@ -51,10 +60,16 @@ export const USER_MENU_ITEMS: readonly NavItem[] = [
   },
 ];
 
+/** The main navigation for this app: without the web-only entries on the desktop. */
+export function navItemsFor(webApp: boolean): readonly NavItem[] {
+  return NAV_ITEMS.filter((item) => webApp || !item.webOnly);
+}
+
 export const NAV_ICONS = {
   lucideFileJson,
   lucideFolderOpen,
   lucideLayoutDashboard,
+  lucideLibraryBig,
   lucideSettings,
   lucideUserRound,
   lucideWallet,

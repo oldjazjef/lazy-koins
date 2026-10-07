@@ -53,7 +53,9 @@ import {
   HINT_KINDS,
   HINT_SEVERITIES,
   HINT_STATUSES,
+  LIBRARY_SORTS,
   MISSING_FILE_KINDS,
+  PRIVACY_FINDING_KINDS,
 } from '../api/api.types';
 import {
   AUDIT_SOURCES,
@@ -137,7 +139,12 @@ const DYNAMIC_KEYS = [
     'spam',
     'unknown',
   ].map((kind) => `bookings.kind.${kind}`),
-  ...['ai', 'manual', 'copied'].map((origin) => `mappings.origin.${origin}`),
+  ...['ai', 'manual', 'copied', 'library'].map(
+    (origin) => `mappings.origin.${origin}`,
+  ),
+  // F5.15–F5.17: the mapping library.
+  ...LIBRARY_SORTS.map((sort) => `library.sortBy.${sort}`),
+  ...PRIVACY_FINDING_KINDS.map((kind) => `library.findings.kind.${kind}`),
   ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
   ...KPI_KINDS.map((kind) => `dashboard.kpi.${kind}`),
   ...HOLDING_STATUSES.map((status) => `dashboard.holdings.status.${status}`),

@@ -61,7 +61,8 @@
     "userMenu": "User menu",
     "wallets": "Wallets",
     "dashboard": "Dashboard",
-    "chat": "Assistant"
+    "chat": "Assistant",
+    "library": "Library"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
@@ -405,7 +406,8 @@
     "origin": {
       "ai": "AI",
       "manual": "manual",
-      "copied": "uploaded"
+      "copied": "uploaded",
+      "library": "from library"
     },
     "actions": {
       "download": "Download as JSON"
@@ -1805,7 +1807,8 @@
       "statementSave": "Checking and saving holdings from {{name}}",
       "mappingReady": "Mapping suggestion for {{name}} is ready",
       "statementReady": "Account statement {{name}} has been read"
-    }
+    },
+    "libraryTake": "Taking mapping from the library"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2359,14 +2362,26 @@
         "displayName": "Name",
         "advisorName": "Tax advisor (Treuhänder)",
         "advisorEmail": "Tax advisor email",
-        "onlineRates": "Online rate lookups"
+        "onlineRates": "Online rate lookups",
+        "libraryEntry": "Library",
+        "stars": "Stars",
+        "privacyFindings": "Values that look personal",
+        "pseudonym": "Display name"
       },
       "value": {
         "noPrice": "no price",
         "override": "{{price}} {{unit}} (override)",
         "yes": "yes",
-        "no": "no"
-      }
+        "no": "no",
+        "anonymous": "Anonymous",
+        "findingsRemoved": "{{count}} removed",
+        "findingsKept": "{{count}} kept"
+      },
+      "publishMapping": "Publish mapping \"{{name}}\" to the library",
+      "publishMappingVersion": "Publish version {{version}} of \"{{name}}\" to the library",
+      "takeLibraryMapping": "Take mapping \"{{name}}\" (version {{version}}) from the library",
+      "rateLibraryMapping": "Rate mapping \"{{name}}\"",
+      "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library"
     },
     "event": {
       "executed": "Done: {{title}}",
@@ -2543,7 +2558,12 @@
       "evidenceNotPdf": "The receipt must be a PDF of the project.",
       "encryptionUnavailable": "Keys cannot be stored on this server (SETTINGS_ENCRYPTION_KEY is not set).",
       "confirmationRequired": "Please confirm first.",
-      "consentRequired": "Your consent is still missing."
+      "consentRequired": "Your consent is still missing.",
+      "alreadyPublished": "You have already published exactly this mapping.",
+      "ownEntry": "You cannot rate your own mappings.",
+      "publishLimit": "You have published enough mappings today – try again tomorrow.",
+      "privacyFindings": "The mapping contains values that look personal – remove or confirm them.",
+      "specTooLarge": "The mapping is too large for the library."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -2557,6 +2577,133 @@
       "locked": "The app is locked.",
       "rateLimited": "Too many requests – please wait a moment.",
       "server": "Server error – please try again later."
+    }
+  },
+  "library": {
+    "title": "Mapping library",
+    "subtitle": "Mappings of all users – take them, rate them, publish your own",
+    "loadFailed": "The library could not be loaded.",
+    "empty": "No mappings in the library yet. Publish the first one!",
+    "noMatch": "No mapping matches the search.",
+    "search": "Search",
+    "searchPlaceholder": "Name, platform or description",
+    "allPlatforms": "All platforms",
+    "sort": "Sort",
+    "sortBy": {
+      "rating": "Best rated",
+      "usage": "Most taken",
+      "newest": "Newest",
+      "name": "Name"
+    },
+    "mine": "mine",
+    "publishedAt": "published on {{date}}",
+    "anonymous": "Anonymous",
+    "ratingCount": "({{count}})",
+    "ratingSummary": "{{average}} of 5 · {{count}} ratings",
+    "versionShort": "v{{version}}",
+    "usage": "taken {{count}}×",
+    "fields": {
+      "name": "Name",
+      "platform": "Platform",
+      "rating": "Rating",
+      "usage": "Taken",
+      "author": "By",
+      "version": "Version",
+      "description": "Description",
+      "published": "Published",
+      "updated": "Last changed"
+    },
+    "actions": {
+      "view": "View",
+      "take": "Take",
+      "rate": "Rate",
+      "newVersion": "New version",
+      "delete": "Delete from library"
+    },
+    "take": {
+      "failed": "Taking failed",
+      "done": "Taken as your own mapping",
+      "doneAssigned": "Taken and assigned to the file",
+      "existing": "You already have this version – your mapping stays as it is"
+    },
+    "rate": {
+      "failed": "Rating failed",
+      "done": "Thanks for your rating",
+      "removed": "Rating removed",
+      "title": "Rate \"{{name}}\"",
+      "body": "How well does this mapping read your files? 1 to 5 stars – you can change it any time.",
+      "remove": "Remove rating"
+    },
+    "delete": {
+      "done": "Removed from the library",
+      "failed": "Removing failed",
+      "title": "Delete from the library?",
+      "body": "\"{{name}}\" disappears from the library. Whoever took it keeps their copy – their projects stay unchanged."
+    },
+    "rating": {
+      "readable": "{{average}} of 5 stars",
+      "yours": "Your rating",
+      "stars": "{{count}} stars",
+      "ownEntry": "This is your own mapping – the others can rate it."
+    },
+    "detail": {
+      "jsonTitle": "Mapping (JSON)",
+      "takeHint": "Taking it creates your own copy in your mappings. Later versions or deleting it here do not change your copy.",
+      "factsTitle": "Details",
+      "fingerprint": "Recognises files with the columns",
+      "notFound": "This mapping is not (or no longer) in the library."
+    },
+    "matches": {
+      "title": "Found in the library: {{count}} matching mappings",
+      "body": "Others have already published mappings for this file layout. \"Take\" creates your own copy and reads the file with it – without AI."
+    },
+    "origin": {
+      "label": "Library",
+      "version": "taken, version {{version}}",
+      "newer": "New version available: version {{version}}",
+      "takeNewer": "Take new version",
+      "gone": "Version {{version}} – no longer in the library, your copy still applies"
+    },
+    "publish": {
+      "button": "Publish mapping",
+      "fromMapping": "Publish to library",
+      "title": "Publish to the library",
+      "titleVersion": "Publish a new version",
+      "description": "Check exactly what becomes public: all users of this server see the JSON below. Your e-mail and your name are never shown.",
+      "sourceMapping": "One of your mappings",
+      "choose": "Choose a mapping …",
+      "orFile": "or a file",
+      "invalid": "The file is not a valid mapping:",
+      "notFound": "This mapping or library entry is not yours.",
+      "reviewFailed": "The check failed.",
+      "publicNote": "Others can view it, take it (as their own copy) and rate it. Only you can delete it again.",
+      "asNewVersion": "Publish as new version {{version}} of your existing entry",
+      "authorName": "Display name (public)",
+      "authorHint": "Empty = \"Anonymous\". Do not use your real name unless you want to.",
+      "json": "Will be published like this ({{size}} bytes):",
+      "tooLarge": "Too large – at most {{max}} bytes.",
+      "confirm": "I have checked the JSON and want to publish it like this.",
+      "keepFindings": "Keep {{count}} findings on purpose (no personal data).",
+      "submit": "Publish",
+      "done": "Published to the library",
+      "doneVersion": "Version {{version}} published",
+      "open": "Show",
+      "failed": "Publishing failed"
+    },
+    "findings": {
+      "title": "Privacy check",
+      "none": "Nothing found that looks like account numbers, addresses, e-mails, IBANs or names.",
+      "intro": "These values look personal. Ticked ones are removed before publishing:",
+      "removeHint": "Removed while ticked.",
+      "editHint": "Cannot be removed here – change it in the mapping itself.",
+      "kind": {
+        "email": "E-mail",
+        "iban": "IBAN",
+        "walletAddress": "Wallet address",
+        "accountId": "Account/customer number",
+        "personName": "Name",
+        "secret": "Secret key"
+      }
     }
   }
 }

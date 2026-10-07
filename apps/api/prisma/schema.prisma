@@ -76,6 +76,8 @@ model User {
   setupProgress SetupProgress?
   pin           UserPin?
   notifications Notification[]
+  libraryMappings LibraryMapping[]
+  libraryRatings  LibraryRating[]
 
   @@map("user")
 }
@@ -155,8 +157,13 @@ model ImportMapping {
   fingerprint String
   /// Spec format version (`MAPPING_VERSION`).
   version     Int
-  /// ai | manual | copied. CHECK in the migration.
+  /// ai | manual | copied | library. CHECK in the migration.
   origin      String
+  /// F5.16: the library entry this copy was taken from (origin library) — no FK: the copy stays
+  /// when the entry is deleted.
+  libraryId      String? @map("library_id")
+  /// The entry's version at taking.
+  libraryVersion Int?    @map("library_version")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -164,7 +171,59 @@ model ImportMapping {
   files ProjectFile[]
 
   @@index([ownerId])
+  @@index([ownerId, libraryId])
   @@map("import_mapping")
+}
+
+/// F5.15–F5.17: the global mapping library (web only) — a published copy of a mapping spec.
+/// Soft-deleted (deleted_at) for the audit; copies taken from it are independent import_mappings.
+model LibraryMapping {
+  id              String    @id @default(uuid(7))
+  /// Internal only — never leaves the API.
+  authorId        String    @map("author_id")
+  /// The pseudonym chosen when publishing (snapshot); NULL = "Anonym".
+  authorName      String?   @map("author_name")
+  /// The author's own mapping it was published from (no FK; internal).
+  sourceMappingId String?   @map("source_mapping_id")
+  name            String
+  platform        String
+  description     String?
+  /// The validated, privacy-reviewed spec (JSON). CHECKs in the migration.
+  spec            String
+  fingerprint     String
+  /// Bumped by every new version the author publishes.
+  version         Int       @default(1)
+  /// Maintained by triggers on library_rating (same transaction).
+  ratingCount     Int       @default(0) @map("rating_count")
+  ratingSum       Int       @default(0) @map("rating_sum")
+  /// Copies taken.
+  usageCount      Int       @default(0) @map("usage_count")
+  publishedAt     DateTime  @default(now()) @map("published_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  author  User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  ratings LibraryRating[]
+
+  @@index([fingerprint])
+  @@index([authorId, publishedAt])
+  @@map("library_mapping")
+}
+
+/// One user's 1–5 stars for a library entry (changeable, removable).
+model LibraryRating {
+  libraryMappingId String   @map("library_mapping_id")
+  userId           String   @map("user_id")
+  stars            Int
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  mapping LibraryMapping @relation(fields: [libraryMappingId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([libraryMappingId, userId])
+  @@index([userId])
+  @@map("library_rating")
 }
 
 /// A stored file as part of one project (F5.5): how it was read and what it contributed.

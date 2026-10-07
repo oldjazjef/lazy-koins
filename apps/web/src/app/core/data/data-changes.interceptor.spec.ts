@@ -71,6 +71,12 @@ describe('changeOf — URL/method → scope and project', () => {
       '/api/ai/mapping-sample/accept',
       { projectId: null, scope: 'mappings' },
     ],
+    // F5.16: a library entry taken = a new mapping, maybe assigned to a file of any project.
+    ['POST', '/api/library/l1/take', { projectId: null, scope: 'mappings' }],
+    ['POST', '/api/library/review', null],
+    ['POST', '/api/library', null],
+    ['PUT', '/api/library/l1/rating', null],
+    ['DELETE', '/api/library/l1', null],
     ['POST', '/api/wallets/w1/fetch', { projectId: null, scope: 'wallets' }],
     [
       'POST',
