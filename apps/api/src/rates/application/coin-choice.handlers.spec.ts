@@ -256,7 +256,9 @@ describe('OPN priced as another coin (regression, F7.4)', () => {
     expect(items).toEqual([]);
   });
 
-  it('without a CoinGecko key a chosen coin is not fetched from Binance either (noKey)', async () => {
+  it('without a CoinGecko key a chosen coin is still priced at CoinGecko (public API), never by Binance', async () => {
+    // Regression (07.10.2026): every coin chosen at CoinGecko showed "Schlüssel des Anbieters
+    // fehlt" for a user without a Demo key.
     const t = await setup();
     await t.setChoice.execute(
       new SetCoinChoiceCommand('anna', 'OPN', OPEN_TICKETING),
@@ -265,9 +267,9 @@ describe('OPN priced as another coin (regression, F7.4)', () => {
     const summary = await t.refresh.execute(
       new RefreshRatesCommand('anna', t.project.id, false),
     );
-    expect(summary.assets.find((a) => a.asset === 'OPN')).toMatchObject({
-      status: 'noKey',
-    });
+    expect(summary.assets.find((a) => a.asset === 'OPN')?.status).not.toBe(
+      'noKey',
+    );
     expect(t.usd.calls.map((c) => c.symbol)).not.toContain('OPN');
   });
 });

@@ -1025,8 +1025,6 @@
       "save": "Save order",
       "saved": "Price providers saved.",
       "saveFailed": "The price providers could not be saved.",
-      "cmcKey": "CoinMarketCap API key",
-      "cmcHint": "Free \"Basic\" key (365 days of history). Stored encrypted.",
       "chosenNote": "A chosen coin (\"Choose coin\") always comes from its provider first.",
       "test": {
         "button": "Test",
@@ -1041,7 +1039,11 @@
         "noKey": "Enter a key first.",
         "offline": "Rate lookups on the internet are switched off on this server.",
         "error": "The test could not be run."
-      }
+      },
+      "keyOptional": "Key optional",
+      "keyLabel": "Key for {{name}}",
+      "keyPlaceholderRequired": "Enter key (required)",
+      "keyPlaceholderOptional": "Enter key (optional – without: public API, slower)"
     }
   },
   "workspace": {
@@ -2260,7 +2262,7 @@
       },
       "rates": {
         "title": "Rates",
-        "intro": "For valuation, lazy-koins needs rates: exchange rates (ECB), daily closing prices (Binance) and, with a free CoinGecko key, also coins that Binance doesn't list. The ESTV rate list (Kursliste) with the tax values as of 31.12. is fetched automatically."
+        "intro": "For valuation, lazy-koins needs rates: exchange rates (ECB), daily closing prices (Binance) and from CoinGecko also coins that Binance doesn't list – without a key through the public API, faster with a free key. You can switch on further providers. The ESTV rate list (Kursliste) with the tax values as of 31.12. is fetched automatically."
       },
       "wallets": {
         "title": "Wallets & networks",

@@ -60,15 +60,18 @@
         </button>
       </div>
       <div class="flex flex-wrap gap-1 pl-8">
-        @if (provider.key === 'required' || provider.id === 'coingecko') { @if
-        (provider.keyHint) {
+        @if (isKeyed(provider.id)) { @if (provider.keyHint) {
         <span hlmBadge variant="secondary"
           >{{ 'settings.priceSources.keyStored' | translate: { hint:
           provider.keyHint } }}</span
         >
-        } @else {
+        } @else if (provider.key === 'required') {
         <span hlmBadge variant="outline"
           >{{ 'settings.priceSources.keyRequired' | translate }}</span
+        >
+        } @else {
+        <span hlmBadge variant="outline"
+          >{{ 'settings.priceSources.keyOptional' | translate }}</span
         >
         } } @if (provider.freeHistoryDays !== null) {
         <span hlmBadge variant="outline"
@@ -93,7 +96,34 @@
         >
         }
       </div>
-      @if (!compact() && provider.attribution; as text) {
+      @if (isKeyed(provider.id)) {
+      <!-- The provider's key right in its row (user request 07.10.2026) -->
+      <div class="flex flex-wrap items-center gap-2 pl-8">
+        <input
+          hlmInput
+          type="password"
+          autocomplete="off"
+          class="min-w-48 flex-1"
+          [id]="'ps-key-' + provider.id"
+          [disabled]="!keyStorage()"
+          [value]="typedKey(provider.id)"
+          [attr.aria-label]="'settings.priceSources.keyLabel' | translate: { name }"
+          [placeholder]="provider.keyHint ?? ((provider.key === 'required' ? 'settings.priceSources.keyPlaceholderRequired' : 'settings.priceSources.keyPlaceholderOptional') | translate)"
+          (input)="typeKey(provider.id, $event)"
+        />
+        @if (provider.keyHint) {
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="removeKey(provider.id)"
+        >
+          {{ 'settings.removeKey' | translate }}
+        </button>
+        }
+      </div>
+      } @if (!compact() && provider.attribution; as text) {
       <p class="text-muted-foreground pl-8 text-xs">
         {{ 'settings.priceSources.attribution' | translate: { text } }}
       </p>
@@ -148,36 +178,17 @@
   <p class="text-muted-foreground text-xs">
     {{ 'settings.priceSources.chosenNote' | translate }}
   </p>
-  } @if (cmc(); as cmc) {
-  <div class="flex flex-col gap-2">
-    <label hlmLabel for="ps-cmc-key"
-      >{{ 'settings.priceSources.cmcKey' | translate }}</label
-    >
-    <input
-      hlmInput
-      id="ps-cmc-key"
-      type="password"
-      autocomplete="off"
-      [disabled]="!keyStorage()"
-      [value]="cmcKey()"
-      [placeholder]="cmc.keyHint ?? ('settings.noKey' | translate)"
-      (input)="typeKey($event)"
-    />
-    <p class="text-muted-foreground text-xs">
-      {{ 'settings.priceSources.cmcHint' | translate }}
-    </p>
-  </div>
   }
   <div class="flex flex-wrap justify-end gap-2">
-    @if (cmc()?.keyHint) {
-    <button hlmBtn variant="ghost" type="button" (click)="removeKey()">
-      {{ 'settings.removeKey' | translate }}
-    </button>
+    @if (!keyStorage()) {
+    <p class="text-destructive mr-auto text-sm" role="note">
+      {{ 'settings.keysUnavailable' | translate }}
+    </p>
     } @if (!embedded()) {
     <button
       hlmBtn
       type="button"
-      [disabled]="service.isSaving() || (!dirty() && !cmcKey().trim())"
+      [disabled]="service.isSaving() || (!dirty() && !hasTypedKey())"
       (click)="save()"
     >
       {{ 'settings.priceSources.save' | translate }}

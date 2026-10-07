@@ -254,9 +254,10 @@ describe('dashboard (F11.4–F11.9)', () => {
         false,
       ),
     );
+    // BTC: Binance has nothing in this fake, CoinGecko answers without a key (public API).
     expect(summary.assets.map((a) => [a.asset, a.status])).toEqual([
       ['DOT', 'fetched'],
-      ['BTC', 'notFound'],
+      ['BTC', 'fetched'],
     ]);
     expect((await t.userRates.listByUser('anna')).length).toBeGreaterThan(0);
     const view = await t.get.execute(

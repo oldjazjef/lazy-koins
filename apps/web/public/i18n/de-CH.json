@@ -1025,8 +1025,6 @@
       "save": "Reihenfolge speichern",
       "saved": "Kursanbieter gespeichert.",
       "saveFailed": "Die Kursanbieter konnten nicht gespeichert werden.",
-      "cmcKey": "CoinMarketCap API-Schlüssel",
-      "cmcHint": "Kostenloser «Basic»-Schlüssel (365 Tage Verlauf). Wird verschlüsselt gespeichert.",
       "chosenNote": "Ein gewählter Coin («Coin wählen») kommt immer zuerst von seinem Anbieter.",
       "test": {
         "button": "Testen",
@@ -1041,7 +1039,11 @@
         "noKey": "Gib zuerst einen Schlüssel ein.",
         "offline": "Kursabfragen aus dem Internet sind auf diesem Server ausgeschaltet.",
         "error": "Der Test konnte nicht ausgeführt werden."
-      }
+      },
+      "keyOptional": "Schlüssel optional",
+      "keyLabel": "Schlüssel für {{name}}",
+      "keyPlaceholderRequired": "Schlüssel eingeben (nötig)",
+      "keyPlaceholderOptional": "Schlüssel eingeben (optional – ohne: öffentliche API, langsamer)"
     }
   },
   "workspace": {
@@ -2260,7 +2262,7 @@
       },
       "rates": {
         "title": "Kurse",
-        "intro": "Für die Bewertung braucht lazy-koins Kurse: Wechselkurse (EZB), Tagesschlusskurse (Binance) und mit einem kostenlosen CoinGecko-Schlüssel auch Coins, die Binance nicht führt. Die ESTV-Kursliste mit den Steuerwerten per 31.12. wird automatisch bezogen."
+        "intro": "Für die Bewertung braucht lazy-koins Kurse: Wechselkurse (EZB), Tagesschlusskurse (Binance) und von CoinGecko auch Coins, die Binance nicht führt – ohne Schlüssel über die öffentliche API, mit einem kostenlosen Schlüssel schneller. Weitere Anbieter kannst du zuschalten. Die ESTV-Kursliste mit den Steuerwerten per 31.12. wird automatisch bezogen."
       },
       "wallets": {
         "title": "Wallets & Netzwerke",

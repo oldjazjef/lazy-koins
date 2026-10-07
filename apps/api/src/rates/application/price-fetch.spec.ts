@@ -113,23 +113,31 @@ describe('provider chain (price sources phase 2)', () => {
     });
   });
 
-  it('a provider without its key is skipped; the default order is Binance → CoinGecko', async () => {
+  it('CoinGecko answers without a key (public API); CoinMarketCap is skipped without one', async () => {
     const s = sources({ XYZ: '2' });
     s.history.fake('coingecko').prices = { '*': '1.5' };
-    const noKey = await fetchPrices(s, {
+    s.history.fake('coinmarketcap').prices = { '*': '1.6' };
+    // Regression (07.10.2026): without a Demo key CoinGecko used to be skipped ("Schlüssel des
+    // Anbieters fehlt"), so a coin chosen there never got a price.
+    const keyless = await fetchPrices(s, {
       ...base,
       asset: 'ETH',
       keys: {},
     });
-    // ETH: Binance has nothing here, CoinGecko needs the key → not found (as before phase 2).
-    expect(noKey.status).toBe('notFound');
-    expect(noKey.attempts.map((a) => [a.provider, a.outcome])).toEqual([
-      ['binance', 'empty'],
-      ['coingecko', 'noKey'],
+    expect(keyless).toMatchObject({ status: 'fetched', source: 'coingecko' });
+    expect(s.history.callsOf('coingecko')[0]).not.toHaveProperty('apiKey');
+    const cmcOnly = await fetchPrices(s, {
+      ...base,
+      asset: 'ETH',
+      keys: {},
+      providers: ['coinmarketcap'],
+    });
+    expect(cmcOnly.attempts.map((a) => [a.provider, a.outcome])).toEqual([
+      ['coinmarketcap', 'noKey'],
     ]);
     const keyed = await fetchPrices(s, { ...base, asset: 'ETH' });
     expect(keyed).toMatchObject({ status: 'fetched', source: 'coingecko' });
-    expect(s.history.callsOf('coingecko')[0]).toMatchObject({
+    expect(s.history.callsOf('coingecko').at(-1)).toMatchObject({
       coin: 'ethereum',
       quote: 'CHF',
       apiKey: 'cg-key',
@@ -249,22 +257,27 @@ describe('provider chain (price sources phase 2)', () => {
         keys: {},
         providers: ['binance', 'kraken', 'defillama'],
       });
+      // CoinGecko is asked without a key (public API); it has nothing here → DefiLlama.
       expect(found.attempts.map((a) => [a.provider, a.outcome])).toEqual([
-        ['coingecko', 'noKey'],
+        ['coingecko', 'empty'],
         ['defillama', 'fetched'],
       ]);
       expect(found.source).toBe('defillama');
       expect(s.usd.calls).toEqual([]);
       expect(s.history.callsOf('kraken')).toEqual([]);
-      // Without DefiLlama: the chosen provider lacks its key → noKey (as before phase 2).
-      const noKey = await fetchPrices(s, {
+      // Regression (07.10.2026): a coin chosen at CoinGecko is priced without a Demo key.
+      s.history.fake('coingecko').prices = {
+        'open-ticketing-ecosystem': '0.021',
+      };
+      const keyless = await fetchPrices(s, {
         ...base,
         asset: 'OPN',
         choices,
         keys: {},
         providers: ['binance', 'kraken'],
       });
-      expect(noKey.status).toBe('noKey');
+      expect(keyless).toMatchObject({ status: 'fetched', source: 'coingecko' });
+      expect(s.history.callsOf('kraken')).toEqual([]);
     });
 
     it('a chosen CoinMarketCap coin is asked by its CMC id; a contract coin also at the contract providers', async () => {

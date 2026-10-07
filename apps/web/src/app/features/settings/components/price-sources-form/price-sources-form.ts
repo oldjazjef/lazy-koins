@@ -14,9 +14,11 @@ import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
-import type {
-  PriceProviderId,
-  PriceSourceView,
+import {
+  isKeyedProvider,
+  type KeyedProvider,
+  type PriceProviderId,
+  type PriceSourceView,
 } from '../../../../core/api/price-sources.types';
 import { PriceSourcesService } from '../../price-sources.service';
 
@@ -36,8 +38,9 @@ export function moveProvider<T>(
 /**
  * Price sources (F7.4, phase 2): the crypto price providers in the order they are asked — on/off,
  * up/down — with what each offers (key, history depth on the free tier, USD only, personal use
- * only, attribution), the CoinMarketCap key and "Testen" per provider (plan, history depth, the
- * error and the provider's words). Shared by Einstellungen › Kurse and the setup wizard
+ * only, attribution) and "Testen" per provider (plan, history depth, the error and the provider's
+ * words). Providers with a key (CoinGecko optional, CoinMarketCap required) take it right in their
+ * row (user request 07.10.2026) — typed, tested and saved there. Shared by Einstellungen › Kurse and the setup wizard
  * (`compact`: no details; `embedded`: no save button — "Weiter" calls `submit()`).
  */
 @Component({
@@ -62,15 +65,15 @@ export class PriceSourcesForm {
   /** The order on screen (edited locally until saved). */
   protected readonly order = signal<PriceSourceView[]>([]);
   protected readonly dirty = signal(false);
-  /** The CoinMarketCap key typed (sent once on save, never shown again). */
-  protected readonly cmcKey = signal('');
+  /** Keys typed per provider (sent once on save, never shown again). */
+  protected readonly typedKeys = signal<Partial<Record<KeyedProvider, string>>>(
+    {},
+  );
+  protected readonly isKeyed = isKeyedProvider;
   protected readonly keyStorage = computed(
     () =>
       !this.service.sources.hasValue() ||
       this.service.sources.value().keyStorageAvailable,
-  );
-  protected readonly cmc = computed(() =>
-    this.order().find((p) => p.id === 'coinmarketcap'),
   );
 
   constructor() {
@@ -92,9 +95,28 @@ export class PriceSourcesForm {
     this.dirty.set(true);
   }
 
-  protected typeKey(event: Event): void {
-    this.cmcKey.set((event.target as HTMLInputElement).value);
+  protected typedKey(id: PriceProviderId): string {
+    return isKeyedProvider(id) ? (this.typedKeys()[id] ?? '') : '';
   }
+
+  protected typeKey(id: PriceProviderId, event: Event): void {
+    if (!isKeyedProvider(id)) return;
+    const value = (event.target as HTMLInputElement).value;
+    this.typedKeys.update((keys) => ({ ...keys, [id]: value }));
+  }
+
+  /** Typed keys that are not blank — what a save sends. */
+  private keysToSave(): Partial<Record<KeyedProvider, string>> {
+    return Object.fromEntries(
+      Object.entries(this.typedKeys())
+        .map(([id, key]) => [id, key.trim()] as const)
+        .filter(([, key]) => key !== ''),
+    );
+  }
+
+  protected readonly hasTypedKey = computed(
+    () => Object.keys(this.keysToSave()).length > 0,
+  );
 
   protected quotesUsdOnly(provider: PriceSourceView): boolean {
     return (
@@ -104,31 +126,29 @@ export class PriceSourcesForm {
     );
   }
 
-  /** "Testen": the typed CoinMarketCap key for CMC (never stored), else the stored key. */
+  /** "Testen": the key typed in the row (never stored), else the stored one (CoinGecko without = public API). */
   protected test(id: PriceProviderId): void {
-    void this.service.test(
-      id,
-      id === 'coinmarketcap' ? this.cmcKey() : undefined,
-    );
+    void this.service.test(id, this.typedKey(id) || undefined);
   }
 
-  protected removeKey(): void {
+  protected removeKey(id: PriceProviderId): void {
+    if (!isKeyedProvider(id)) return;
     void this.service
-      .save(this.order(), { coinmarketcapKey: null })
+      .save(this.order(), { keys: { [id]: null } })
       .catch(() => undefined);
   }
 
-  /** Saves order and a typed key; true when saved or nothing changed. */
+  /** Saves order and typed keys; true when saved or nothing changed. */
   async submit(): Promise<boolean> {
-    const key = this.cmcKey().trim();
-    if (!this.dirty() && key === '') return true;
+    const keys = this.keysToSave();
+    if (!this.dirty() && Object.keys(keys).length === 0) return true;
     try {
       await this.service.save(this.order(), {
-        ...(key ? { coinmarketcapKey: key } : {}),
+        keys,
         quiet: this.embedded(),
       });
       this.dirty.set(false);
-      this.cmcKey.set('');
+      this.typedKeys.set({});
       return true;
     } catch {
       return false;

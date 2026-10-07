@@ -16,6 +16,7 @@ import {
   type CoinPick,
   dayShift,
   isKeyedProvider,
+  requiresKey,
   type KeyedProvider,
   type PriceProviderId,
   type PriceProviderInfo,
@@ -265,7 +266,7 @@ async function askProvider(
   const quote = quoteFor(info.quotes, request.currency);
   if (quote === null) return answer('unsupportedQuote');
   const key = isKeyedProvider(provider) ? request.keys[provider] : undefined;
-  if (isKeyedProvider(provider) && !key) return answer('noKey');
+  if (requiresKey(provider) && !key) return answer('noKey');
   const shift = dayShift(info.dayPoint);
   try {
     if (provider === 'binance') {

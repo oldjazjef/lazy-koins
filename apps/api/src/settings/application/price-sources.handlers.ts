@@ -16,6 +16,7 @@ import { errorCode, providerInfo } from '../../rates/application/price-fetch';
 import {
   addDays,
   isKeyedProvider,
+  requiresKey,
   type PriceProviderId,
   type PriceProviderInfo,
 } from '../../rates/domain/price-providers';
@@ -127,7 +128,7 @@ export class TestPriceSourceHandler implements ICommandHandler<
     if (isKeyedProvider(provider)) {
       apiKey =
         key?.trim() || (await this.reader.resolve(userId)).keys[provider];
-      if (!apiKey) {
+      if (!apiKey && requiresKey(provider)) {
         throw new ConflictException({
           statusCode: 409,
           error: 'Conflict',

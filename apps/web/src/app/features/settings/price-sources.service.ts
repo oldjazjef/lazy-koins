@@ -7,6 +7,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { apiUrl } from '../../core/api/api-url';
 import type {
+  KeyedProvider,
   PriceProviderId,
   PriceSourceSetting,
   PriceSourcesView,
@@ -43,19 +44,21 @@ export class PriceSourcesService {
   readonly tests = this.testsState.asReadonly();
 
   /**
-   * Saves the order (and a typed CoinMarketCap key: a string stores it, `null` removes it,
-   * absent keeps it), then reloads the list.
+   * Saves the order (and typed keys per provider: a string stores it, `null` removes it, absent
+   * keeps it), then reloads the list.
    */
   async save(
     order: readonly PriceSourceSetting[],
-    options: { coinmarketcapKey?: string | null; quiet?: boolean } = {},
+    options: {
+      keys?: Partial<Record<KeyedProvider, string | null>>;
+      quiet?: boolean;
+    } = {},
   ): Promise<void> {
+    const keys = options.keys ?? {};
     await this.settings.save(
       {
         priceSources: order.map((p) => ({ id: p.id, enabled: p.enabled })),
-        ...(options.coinmarketcapKey !== undefined
-          ? { keys: { coinmarketcap: options.coinmarketcapKey } }
-          : {}),
+        ...(Object.keys(keys).length > 0 ? { keys } : {}),
       },
       { quiet: options.quiet },
     );

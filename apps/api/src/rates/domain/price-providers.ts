@@ -82,12 +82,24 @@ export function providerOrder(
   return settings.map((p) => p.id);
 }
 
-/** Providers that only work with the user's key **in this app** (CoinGecko: the Demo key, as before). */
+/** Providers whose key the user can store (sealed); see `requiresKey` for the ones that need it. */
 export const KEYED_PROVIDERS = ['coingecko', 'coinmarketcap'] as const;
 export type KeyedProvider = (typeof KEYED_PROVIDERS)[number];
 
 export function isKeyedProvider(id: string): id is KeyedProvider {
   return (KEYED_PROVIDERS as readonly string[]).includes(id);
+}
+
+/**
+ * Providers that cannot be asked at all without the user's key. CoinGecko is not one of them: its
+ * public API answers without a key (slower, 365 days) — otherwise a coin chosen at CoinGecko by a
+ * user without a Demo key would never get a price (bug 07.10.2026: "Schlüssel des Anbieters fehlt"
+ * for every chosen coin).
+ */
+export const KEY_REQUIRED_PROVIDERS = ['coinmarketcap'] as const;
+
+export function requiresKey(id: string): boolean {
+  return (KEY_REQUIRED_PROVIDERS as readonly string[]).includes(id);
 }
 
 /**

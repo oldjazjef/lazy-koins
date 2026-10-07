@@ -76,7 +76,7 @@ describe('PriceSourcesService (Einstellungen › Kurse, price sources)', () => {
         { id: 'coinmarketcap', enabled: true },
         { id: 'binance', enabled: true },
       ],
-      { coinmarketcapKey: 'cmc-typed' },
+      { keys: { coinmarketcap: 'cmc-typed' } },
     );
     const put = http.expectOne(
       (r) => r.url === '/api/settings' && r.method === 'PUT',

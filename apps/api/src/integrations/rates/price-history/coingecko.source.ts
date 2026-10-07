@@ -26,6 +26,8 @@ import {
 
 const BASE = 'https://api.coingecko.com/api/v3';
 const CHUNK_DAYS = 365;
+/** The public API (no key) allows only a handful of calls per minute — one every 6 s stays under it. */
+const PUBLIC_SPACING_MS = 6000;
 
 /** App network → CoinGecko asset platform id (`/coins/{platform}/contract/{address}`). */
 const PLATFORMS: Record<string, string> = {
@@ -61,10 +63,16 @@ export class CoinGeckoHistorySource extends PriceHistorySourcePort {
     attribution: 'Data provided by CoinGecko',
   };
   private readonly http: PriceHttp;
+  /** Without a key: CoinGecko's public API, which allows far fewer calls per minute. */
+  private readonly publicHttp: PriceHttp;
 
   constructor(options: PriceHttpOptions = {}) {
     super();
     this.http = new PriceHttp(this.id, { spacingMs: 2500, ...options });
+    this.publicHttp = new PriceHttp(this.id, {
+      spacingMs: PUBLIC_SPACING_MS,
+      ...options,
+    });
   }
 
   async daily(request: DailyPriceRequest): Promise<DailyPrice[]> {
@@ -159,7 +167,8 @@ export class CoinGeckoHistorySource extends PriceHistorySourcePort {
 
   private async call(url: string, apiKey?: string): Promise<PriceHttpAnswer> {
     const key = apiKey?.trim();
-    const answer = await this.http.get(
+    const http = key ? this.http : this.publicHttp;
+    const answer = await http.get(
       url,
       key ? { 'x-cg-demo-api-key': key } : {},
       [key],
@@ -167,11 +176,11 @@ export class CoinGeckoHistorySource extends PriceHistorySourcePort {
     const code = errorCodeOf(answer);
     if (code === null) {
       if (answer.body === undefined) {
-        throw this.http.fail('badResponse', answer, [key], 'not JSON');
+        throw http.fail('badResponse', answer, [key], 'not JSON');
       }
       return answer;
     }
-    throw this.http.fail(code, answer, [key], messageOf(answer) ?? undefined);
+    throw http.fail(code, answer, [key], messageOf(answer) ?? undefined);
   }
 }
 
