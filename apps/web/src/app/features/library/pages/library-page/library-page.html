@@ -1,11 +1,18 @@
+@let server = service.server();
 <lk-page-header
   [title]="'library.title' | translate"
-  [subtitle]="'library.subtitle' | translate"
+  [subtitle]="
+    server
+      ? ('library.remote.subtitle' | translate: { server })
+      : ('library.subtitle' | translate)
+  "
 >
+  @if (!service.readOnly()) {
   <button hlmBtn type="button" (click)="publish.start()">
     <ng-icon name="lucideBookUp" size="16" aria-hidden="true" />
     {{ 'library.publish.button' | translate }}
   </button>
+  }
 </lk-page-header>
 
 @if (service.entries.isLoading() && !service.entries.hasValue()) {
@@ -15,18 +22,21 @@
   }
 </div>
 } @else if (service.entries.error()) {
-<lk-empty-state [message]="'library.loadFailed' | translate">
+<lk-empty-state [message]="service.errorKey() | translate">
   <button hlmBtn variant="outline" type="button" (click)="service.refresh()">
     {{ 'common.retry' | translate }}
   </button>
 </lk-empty-state>
-} @else if (service.isEmpty()) {
+} @else if (service.isEmpty() && service.search() === '') { @if
+(service.readOnly()) {
+<lk-empty-state [message]="'library.remote.empty' | translate" />
+} @else {
 <lk-empty-state [message]="'library.empty' | translate">
   <button hlmBtn type="button" (click)="publish.start()">
     {{ 'library.publish.button' | translate }}
   </button>
 </lk-empty-state>
-} @else {
+} } @else {
 <div class="lk-form-row mb-4">
   <div class="lk-field">
     <label hlmLabel for="library-search" [title]="'library.search' | translate"
@@ -77,7 +87,12 @@
   </div>
 </div>
 
-@if (service.visible().length === 0) {
+@if (service.truncated()) {
+<p class="text-muted-foreground mb-3 text-sm">
+  {{ 'library.remote.truncated' | translate: { count:
+  service.entries.value()?.length ?? 0 } }}
+</p>
+} @if (service.visible().length === 0) {
 <lk-empty-state [message]="'library.noMatch' | translate" />
 } @else {
 <div hlmTableContainer class="lk-panel">

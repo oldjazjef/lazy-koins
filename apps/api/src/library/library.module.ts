@@ -17,19 +17,49 @@ import {
 } from './application/library.queries';
 import { LibraryRuntime } from './application/library-runtime';
 import {
+  PublicLibraryEntryHandler,
+  PublicLibraryMatchHandler,
+  PublicLibraryPageHandler,
+} from './application/public-library.handlers';
+import { RemoteLibraryGate } from './application/remote-library-gate';
+import {
+  GetRemoteLibraryMappingHandler,
+  GetRemoteLibrarySettingsHandler,
+  LibraryStatusHandler,
+  RemoteProjectLibraryMatchesHandler,
+  SaveRemoteLibrarySettingsHandler,
+  SearchRemoteLibraryHandler,
+  TakeRemoteLibraryMappingHandler,
+  TestRemoteLibraryHandler,
+} from './application/remote-library.handlers';
+import {
   LibraryController,
   LibraryEnabledGuard,
+  LibrarySettingsController,
   ProjectLibraryController,
 } from './library.controller';
 import { LibraryService } from './library.service';
+import {
+  PublicLibraryController,
+  PublicLibraryEnabledGuard,
+  PublicLibraryService,
+} from './public-library.controller';
 
 /**
- * F5.15–F5.17: the global mapping library — web only. With `AUTH_MODE=local` (desktop) the
- * runtime is off: every route answers 404 and the tool layer registers no library tools.
+ * F5.15–F5.17: the global mapping library. On the web (`AUTH_MODE=firebase|dev`) the
+ * deployment's own library, plus (F5.18) its public read-only endpoint for desktop apps
+ * (`LIBRARY_PUBLIC`). On the desktop (`AUTH_MODE=local`) the `remote` mode: search, show and take
+ * from a linked web deployment (Einstellungen › Bibliothek); publishing, reviews, ratings and
+ * deletions answer 404 and their tools are not registered.
  */
 @Module({
   imports: [CqrsModule, FilesModule],
-  controllers: [LibraryController, ProjectLibraryController],
+  controllers: [
+    LibraryController,
+    ProjectLibraryController,
+    LibrarySettingsController,
+    PublicLibraryController,
+  ],
   providers: [
     {
       provide: LibraryRuntime,
@@ -37,10 +67,19 @@ import { LibraryService } from './library.service';
       useFactory: (config: ConfigService<Env, true>) =>
         new LibraryRuntime(
           config.get('AUTH_MODE', { infer: true }) !== 'local',
+          () => new Date(),
+          {
+            publicEndpoint:
+              config.get('LIBRARY_PUBLIC', { infer: true }) !== 'false',
+            online: config.get('RATES_ONLINE', { infer: true }) !== 'false',
+          },
         ),
     },
     LibraryEnabledGuard,
+    PublicLibraryEnabledGuard,
     LibraryService,
+    PublicLibraryService,
+    RemoteLibraryGate,
     SearchLibraryHandler,
     GetLibraryMappingHandler,
     ReviewPublicationHandler,
@@ -49,6 +88,17 @@ import { LibraryService } from './library.service';
     DeleteLibraryMappingHandler,
     RateLibraryMappingHandler,
     TakeLibraryMappingHandler,
+    PublicLibraryPageHandler,
+    PublicLibraryEntryHandler,
+    PublicLibraryMatchHandler,
+    LibraryStatusHandler,
+    SearchRemoteLibraryHandler,
+    GetRemoteLibraryMappingHandler,
+    RemoteProjectLibraryMatchesHandler,
+    TakeRemoteLibraryMappingHandler,
+    GetRemoteLibrarySettingsHandler,
+    SaveRemoteLibrarySettingsHandler,
+    TestRemoteLibraryHandler,
   ],
   // The tool layer (tools/) calls the same façade as the controller.
   exports: [LibraryService],

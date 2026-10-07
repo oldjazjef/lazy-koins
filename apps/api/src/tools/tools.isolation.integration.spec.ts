@@ -1108,6 +1108,72 @@ describe('HTTP: the mapping library (F5.15–F5.17, web only)', () => {
     expect(still.body).toMatchObject({ mine: true, version: 1 });
   });
 
+  it('F5.18: the public endpoint answers without a sign-in — pseudonyms only, exact keys', async () => {
+    const anonymous = async (path: string, init: RequestInit = {}) => {
+      const response = await fetch(`${api}${path}`, init);
+      return {
+        status: response.status,
+        cache: response.headers.get('cache-control'),
+        body: (await response.json()) as Record<string, unknown>,
+      };
+    };
+    const page = await anonymous('/public/library?limit=50');
+    expect(page.status).toBe(200);
+    expect(page.cache).toBe('public, max-age=60');
+    const items = page.body['items'] as Record<string, unknown>[];
+    const mine = items.find((item) => item['id'] === A.libraryId);
+    expect(mine).toBeDefined();
+    expect(Object.keys(mine ?? {}).sort()).toEqual(
+      [
+        'authorName',
+        'description',
+        'fingerprint',
+        'id',
+        'name',
+        'platform',
+        'publishedAt',
+        'ratingAverage',
+        'ratingCount',
+        'updatedAt',
+        'usageCount',
+        'version',
+      ].sort(),
+    );
+    expect(containsAny(page.body, aIdentity())).toEqual([]);
+    const one = await anonymous(`/public/library/${A.libraryId}`);
+    expect(one.status).toBe(200);
+    expect(one.body).toMatchObject({ authorName: 'Alice Pseudonym' });
+    expect(Object.keys(one.body)).toContain('spec');
+    expect(containsAny(one.body, aIdentity())).toEqual([]);
+    const match = await anonymous('/public/library/match', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        fileName: 'ledgers.csv',
+        headers: (KRAKEN_SPEC as { match: { headers: string[] } }).match
+          .headers,
+      }),
+    });
+    expect(match.status).toBe(200);
+    expect(match.cache).toBe('no-store');
+    expect(JSON.stringify(match.body)).toContain(A.libraryId);
+    expect(containsAny(match.body, aIdentity())).toEqual([]);
+    // Only the two fields: anything else is refused.
+    const extra = await anonymous('/public/library/match', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fileName: 'x.csv', headers: [], rows: [['1']] }),
+    });
+    expect(extra.status).toBe(400);
+    // The desktop's settings routes do not exist on the web.
+    expect((await http('GET', '/settings/library', dev(B))).status).toBe(404);
+    expect((await http('GET', '/library/status', dev(B))).body).toMatchObject({
+      mode: 'web',
+      available: true,
+      readOnly: false,
+    });
+  });
+
   it("A deleting the entry leaves B's private copy working", async () => {
     const taken = await http(
       'POST',
@@ -1123,6 +1189,15 @@ describe('HTTP: the mapping library (F5.15–F5.17, web only)', () => {
     expect((await http('GET', `/library/${A.libraryId}`, dev(B))).status).toBe(
       404,
     );
+    // F5.18: gone from the public endpoint too.
+    expect((await fetch(`${api}/public/library/${A.libraryId}`)).status).toBe(
+      404,
+    );
+    expect(
+      JSON.stringify(
+        await (await fetch(`${api}/public/library?limit=50`)).json(),
+      ),
+    ).not.toContain(A.libraryId);
     const copy = await http('GET', `/mappings/${copyId}`, dev(B));
     expect(copy.status).toBe(200);
     expect(copy.body).toMatchObject({

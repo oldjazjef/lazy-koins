@@ -50,6 +50,13 @@ export class UpdateMappingDto {
 export class LibraryRefDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() version!: number;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'F5.18: the web server a desktop copy was taken from; null = this deployment',
+  })
+  server!: string | null;
 }
 
 export class MappingResponseDto {
@@ -80,7 +87,13 @@ export class MappingResponseDto {
       fingerprint: mapping.fingerprint,
       version: mapping.version,
       origin: mapping.origin,
-      library: mapping.library ? { ...mapping.library } : null,
+      library: mapping.library
+        ? {
+            id: mapping.library.id,
+            version: mapping.library.version,
+            server: mapping.library.server ?? null,
+          }
+        : null,
       spec: mapping.spec as unknown as Record<string, unknown>,
       createdAt: mapping.createdAt,
       updatedAt: mapping.updatedAt,

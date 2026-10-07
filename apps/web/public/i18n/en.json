@@ -764,7 +764,8 @@
       "storage": "Storage location",
       "system": "System",
       "mail": "Mail",
-      "mcp": "MCP"
+      "mcp": "MCP",
+      "library": "Library"
     },
     "system": {
       "title": "System",
@@ -2564,7 +2565,15 @@
       "ownEntry": "You cannot rate your own mappings.",
       "publishLimit": "You have published enough mappings today – try again tomorrow.",
       "privacyFindings": "The mapping contains values that look personal – remove or confirm them.",
-      "specTooLarge": "The mapping is too large for the library."
+      "specTooLarge": "The mapping is too large for the library.",
+      "libraryNotConfigured": "No library linked – enter its address under Settings › Library.",
+      "libraryNetwork": "The library server cannot be reached.",
+      "libraryTimeout": "The library server does not answer.",
+      "libraryBadResponse": "The server did not send a valid answer of a lazy-koins library.",
+      "libraryDisabled": "This server offers no public library.",
+      "libraryRateLimited": "Too many requests to the library server – wait a moment.",
+      "libraryUrlInvalid": "This address cannot be used.",
+      "incompatibleSpec": "This mapping needs a newer version of the app – update lazy-koins."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -2663,7 +2672,8 @@
       "version": "taken, version {{version}}",
       "newer": "New version available: version {{version}}",
       "takeNewer": "Take new version",
-      "gone": "Version {{version}} – no longer in the library, your copy still applies"
+      "gone": "Version {{version}} – no longer in the library, your copy still applies",
+      "server": "from {{server}}"
     },
     "publish": {
       "button": "Publish mapping",
@@ -2704,6 +2714,46 @@
         "accountId": "Account/customer number",
         "personName": "Name",
         "secret": "Secret key"
+      }
+    },
+    "remote": {
+      "subtitle": "Library of {{server}} – view and take over",
+      "entrySubtitle": "{{platform}} · from the library of {{server}}",
+      "empty": "There are no mappings in this library yet.",
+      "truncated": "Showing the first {{count}} results – narrow the search down.",
+      "source": "From the library of {{server}}",
+      "settingsSubtitle": "Library – mappings from a lazy-koins server",
+      "title": "Global mapping library",
+      "intro": "Link this app to the mapping library of a lazy-koins server (web version). You can search it, view mappings and take them over as your own copy – publishing, rating and deleting only work on the web.",
+      "state": {
+        "on": "connected",
+        "off": "off"
+      },
+      "url": "Server address",
+      "urlPlaceholder": "https://lazykoins.example.ch",
+      "urlHint": "Only https:// (http:// only for this computer, e.g. localhost). Empty = no connection.",
+      "urlProblems": {
+        "invalidUrl": "That is not a valid address (only https://…, without ? or #).",
+        "httpsRequired": "Only https:// – unencrypted http:// only works for this computer (localhost).",
+        "credentialsInUrl": "The address must not contain a user name or a password.",
+        "tooLong": "The address is too long."
+      },
+      "enabled": "Use the library",
+      "suggestions": "Suggestions in the Files tab (sends the header row and file name of files without a mapping)",
+      "offline": "Online lookups are switched off – meanwhile the app does not go online for the library either.",
+      "offlineLink": "Settings › Rates",
+      "test": "Test connection",
+      "testing": "Testing the connection …",
+      "testOk": "Connected to {{server}} – {{count}} mappings in the library.",
+      "testFailed": "Connection failed:",
+      "saved": "Library settings saved",
+      "privacy": {
+        "title": "What leaves this device",
+        "reads": "Searching and viewing: only your search text or the entry id – no projects, files or amounts.",
+        "suggestions": "Suggestions (when switched on): for each file that still needs a mapping, its header row (the column names) and its file name – never rows, amounts, addresses or folders. Cells that look like data or personal details are left out.",
+        "take": "Taking over: only the entry id. The mapping is stored as your own copy; the server does not learn what you use it for.",
+        "never": "Never: sign-in data, your e-mail, projects, file contents, ratings or publications.",
+        "offline": "Without an address, switched off, or with online lookups switched off, the app never goes online for the library."
       }
     }
   }

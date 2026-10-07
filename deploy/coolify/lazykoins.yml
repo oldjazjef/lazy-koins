@@ -33,6 +33,8 @@ services:
       - SETTINGS_ENCRYPTION_KEY=${SETTINGS_ENCRYPTION_KEY:-}
       # API reference at /api/reference: off in production unless set to `true`.
       - API_DOCS=${API_DOCS:-}
+      # F5.18: the public, read-only mapping library for desktop apps; `false` switches it off.
+      - LIBRARY_PUBLIC=${LIBRARY_PUBLIC:-true}
     volumes:
       # The database (/data/lazykoins.db, uploaded files included) and its backup copy.
       # Deleting the volume deletes the data.

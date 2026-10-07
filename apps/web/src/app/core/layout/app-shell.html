@@ -12,7 +12,7 @@
 
       <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
         <ul class="flex items-center gap-1">
-          @if (!setup.incomplete()) { @for (item of items; track item.path) {
+          @if (!setup.incomplete()) { @for (item of items(); track item.path) {
           <li>
             @if (item.children; as children) {
             <!-- An entry with sub-items (Mappings: Meine Mappings · Bibliothek) opens a menu. -->

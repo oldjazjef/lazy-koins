@@ -339,8 +339,11 @@ export interface Mapping {
   fingerprint: string;
   version: number;
   origin: MappingOrigin;
-  /** Origin `library` (F5.16): the entry and version this private copy was taken from. */
-  library?: { id: string; version: number } | null;
+  /**
+   * Origin `library` (F5.16): the entry and version this private copy was taken from;
+   * `server` (F5.18) = the web deployment a desktop copy came from, `null` = this deployment.
+   */
+  library?: { id: string; version: number; server?: string | null } | null;
   spec: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -411,6 +414,47 @@ export interface TakenLibraryMapping {
   projectFileId: string | null;
   fileStatus: ProjectFileStatus | null;
 }
+
+/**
+ * `GET /api/library/status` (F5.18): `web` = this deployment's library; `remote` = the desktop,
+ * linked to a web deployment's public library (read-only).
+ */
+export interface LibraryStatus {
+  mode: 'web' | 'remote';
+  available: boolean;
+  readOnly: boolean;
+  server: string | null;
+  suggestions: boolean;
+  reason: 'libraryNotConfigured' | 'offline' | null;
+}
+
+/** Einstellungen › Bibliothek (desktop, F5.18) — `GET|PUT /api/settings/library`. */
+export interface RemoteLibrarySettings {
+  url: string;
+  enabled: boolean;
+  suggestions: boolean;
+  updatedAt: string | null;
+}
+
+export type SaveRemoteLibrarySettings = Pick<
+  RemoteLibrarySettings,
+  'url' | 'enabled' | 'suggestions'
+>;
+
+/** `POST /api/settings/library/test` — the server answered, with this many entries. */
+export interface RemoteLibraryTest {
+  server: string;
+  total: number;
+}
+
+/** Why an address cannot be used (`422 libraryUrlInvalid`, `problem`). */
+export const REMOTE_URL_PROBLEMS = [
+  'invalidUrl',
+  'httpsRequired',
+  'credentialsInUrl',
+  'tooLong',
+] as const;
+export type RemoteUrlProblem = (typeof REMOTE_URL_PROBLEMS)[number];
 
 /** `GET /api/projects/:id/library-matches` — per file that needs a mapping. */
 export interface LibraryFileMatches {

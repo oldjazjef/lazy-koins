@@ -43,13 +43,23 @@ import {
   TakeLibraryMappingDto,
   TakenLibraryMappingResponseDto,
 } from './dto/library.dto';
+import {
+  LibraryStatusDto,
+  RemoteLibrarySettingsDto,
+  RemoteLibraryTestDto,
+  SaveRemoteLibrarySettingsDto,
+  TestRemoteLibraryDto,
+} from './dto/remote-library.dto';
 import { LibraryService } from './library.service';
 
 /** Per account: publishing (new entries and versions) and rating have tight budgets. */
 const PUBLISH_BUDGET = { writes: { limit: 10, ttl: 10 * 60_000 } };
 const RATE_BUDGET = { writes: { limit: 60, ttl: 10 * 60_000 } };
 
-/** Desktop (`AUTH_MODE=local`): every library route is a 404, as if it did not exist. */
+/**
+ * Desktop (`AUTH_MODE=local`): publishing, reviews, ratings and deletions are a 404, as if they
+ * did not exist. Search, entry, take and matches go to the linked web deployment (F5.18).
+ */
 @Injectable()
 export class LibraryEnabledGuard implements CanActivate {
   constructor(private readonly runtime: LibraryRuntime) {}
@@ -65,10 +75,21 @@ const FINDINGS =
 
 @ApiTags('library')
 @ApiBearerAuth(BEARER_SCHEME)
-@UseGuards(LibraryEnabledGuard)
 @Controller('library')
 export class LibraryController {
   constructor(private readonly library: LibraryService) {}
+
+  @Get('status')
+  @ApiOperation({
+    summary:
+      'Where the library comes from (F5.18): web = this deployment; remote = the desktop, linked to a web deployment (read-only)',
+  })
+  @ApiOkResponse({ type: LibraryStatusDto })
+  async status(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<LibraryStatusDto> {
+    return LibraryStatusDto.from(await this.library.status(user.userId));
+  }
 
   @Get()
   @ApiOperation({
@@ -89,6 +110,7 @@ export class LibraryController {
     ).map(LibraryEntryResponseDto.from);
   }
 
+  @UseGuards(LibraryEnabledGuard)
   @Post('review')
   @HttpCode(200)
   @ApiOperation({
@@ -109,6 +131,7 @@ export class LibraryController {
     );
   }
 
+  @UseGuards(LibraryEnabledGuard)
   @Post()
   @Throttle(PUBLISH_BUDGET)
   @ApiOperation({
@@ -142,6 +165,7 @@ export class LibraryController {
     );
   }
 
+  @UseGuards(LibraryEnabledGuard)
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({
@@ -157,6 +181,7 @@ export class LibraryController {
     await this.library.remove(user.userId, id);
   }
 
+  @UseGuards(LibraryEnabledGuard)
   @Put(':id/rating')
   @Throttle(RATE_BUDGET)
   @ApiOperation({ summary: 'Rate 1–5 stars (F5.17); not my own entry' })
@@ -173,6 +198,7 @@ export class LibraryController {
     );
   }
 
+  @UseGuards(LibraryEnabledGuard)
   @Delete(':id/rating')
   @Throttle(RATE_BUDGET)
   @ApiOperation({ summary: 'Remove my rating' })
@@ -214,7 +240,6 @@ export class LibraryController {
 
 @ApiTags('library')
 @ApiBearerAuth(BEARER_SCHEME)
-@UseGuards(LibraryEnabledGuard)
 @Controller('projects/:projectId/library-matches')
 export class ProjectLibraryController {
   constructor(private readonly library: LibraryService) {}
@@ -232,6 +257,73 @@ export class ProjectLibraryController {
   ): Promise<LibraryFileMatchesDto[]> {
     return (await this.library.matchesForProject(user.userId, projectId)).map(
       LibraryFileMatchesDto.from,
+    );
+  }
+}
+
+/**
+ * F5.18, desktop only: Einstellungen › Bibliothek — the link to a web deployment's public
+ * mapping library (address, on/off, suggestions) and "Verbindung testen". 404 on the web.
+ */
+@ApiTags('library')
+@ApiBearerAuth(BEARER_SCHEME)
+@Controller('settings/library')
+export class LibrarySettingsController {
+  constructor(private readonly library: LibraryService) {}
+
+  @Get()
+  @ApiOkResponse({ type: RemoteLibrarySettingsDto })
+  @ApiNotFoundResponse({ description: 'Not the desktop app' })
+  async get(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<RemoteLibrarySettingsDto> {
+    return RemoteLibrarySettingsDto.from(
+      await this.library.remoteSettings(user.userId),
+    );
+  }
+
+  @Put()
+  @ApiOperation({
+    summary:
+      'Save the link (no network). An empty address switches it off; http only for localhost',
+  })
+  @ApiOkResponse({ type: RemoteLibrarySettingsDto })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'body.code: libraryUrlInvalid (body.problem: invalidUrl | httpsRequired | credentialsInUrl | tooLong)',
+  })
+  async save(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SaveRemoteLibrarySettingsDto,
+  ): Promise<RemoteLibrarySettingsDto> {
+    return RemoteLibrarySettingsDto.from(
+      await this.library.saveRemoteSettings(user.userId, {
+        url: dto.url,
+        enabled: dto.enabled,
+        suggestions: dto.suggestions,
+      }),
+    );
+  }
+
+  @Post('test')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Verbindung testen: one list request to the given (or saved) address — no user data sent',
+  })
+  @ApiOkResponse({ type: RemoteLibraryTestDto })
+  @ApiConflictResponse({
+    description: 'body.code: libraryNotConfigured | offline',
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'body.code: libraryUrlInvalid',
+  })
+  async test(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: TestRemoteLibraryDto,
+  ): Promise<RemoteLibraryTestDto> {
+    return RemoteLibraryTestDto.from(
+      await this.library.testRemote(user.userId, dto.url),
     );
   }
 }

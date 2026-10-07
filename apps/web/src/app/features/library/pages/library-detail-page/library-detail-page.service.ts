@@ -1,19 +1,27 @@
 import { httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { apiErrorText } from '../../../../core/api/api-error';
 import { apiUrl } from '../../../../core/api/api-url';
 import type { LibraryEntryDetail } from '../../../../core/api/api.types';
+import { LibraryAvailability } from '../../../../core/library/library-availability.service';
 import { LibraryClient } from '../../library-client';
 
 /**
  * Page-scoped: one library entry (F5.17) — facts, the JSON, my rating, "Übernehmen" (a private
  * copy), and for my own entry a new version and deleting it (copies others took stay). A
- * deleted or unknown entry is a 404.
+ * deleted or unknown entry is a 404. On the desktop (F5.18) an entry of the linked web library:
+ * facts, JSON and "Übernehmen" only.
  */
 @Injectable()
 export class LibraryDetailPageService {
   private readonly client = inject(LibraryClient);
   private readonly router = inject(Router);
+  private readonly availability = inject(LibraryAvailability);
+
+  /** The desktop: a linked web library, no rating / new version / delete. */
+  readonly readOnly = this.availability.readOnly;
+  readonly server = this.availability.server;
 
   readonly entryId = signal<string | undefined>(undefined);
 
@@ -26,6 +34,11 @@ export class LibraryDetailPageService {
     const error = this.entry.error() as { status?: number } | undefined;
     return error?.status === 404;
   });
+
+  /** Why loading failed (a linked library: its code, e.g. `incompatibleSpec`). */
+  readonly errorKey = computed(
+    () => apiErrorText(this.entry.error())?.key ?? 'library.loadFailed',
+  );
 
   readonly json = computed(() =>
     this.entry.hasValue()

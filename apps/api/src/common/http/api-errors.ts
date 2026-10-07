@@ -13,7 +13,8 @@ export type ConflictCode =
   | 'usedByClosedProject'
   | 'alreadyDecided'
   | 'alreadyPublished'
-  | 'ownEntry';
+  | 'ownEntry'
+  | 'libraryNotConfigured';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

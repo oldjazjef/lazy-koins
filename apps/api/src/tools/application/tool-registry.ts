@@ -23,8 +23,8 @@ export function buildTools(services: ToolServices): AnyTool[] {
     ...projectTools(services),
     ...fileTools(services),
     ...mappingTools(services),
-    // Web only: on the desktop (AUTH_MODE=local) the library does not exist.
-    ...(services.library?.enabled ? libraryTools(services.library) : []),
+    // Web: all of them. Desktop (F5.18): only search / get / take — from the linked web library.
+    ...(services.library ? libraryTools(services.library) : []),
     ...rateTools(services),
     ...calculationTools(services),
     ...exportTools(services),

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   ElementRef,
@@ -35,6 +36,7 @@ import { ChatSidebar } from '../assistant/chat-sidebar';
 import { UserSettingsService } from '../../features/settings/user-settings.service';
 import { AuthService } from '../auth/auth.service';
 import { LanguageService } from '../i18n/language.service';
+import { LibraryAvailability } from '../library/library-availability.service';
 import { PinLockService } from '../pin/pin-lock.service';
 import { SetupStateService } from '../setup/setup-state.service';
 import { NotificationBell } from '../notification-centre/notification-bell';
@@ -83,8 +85,14 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppShell {
-  /** F5.15: the mapping library is web only (`hasAccount` = not the desktop). */
-  protected readonly items = navItemsFor(inject(AuthService).hasAccount);
+  /**
+   * F5.15–F5.18: the library sub-item while the library can be used (web: always; desktop: when
+   * linked to a web library and online).
+   */
+  private readonly library = inject(LibraryAvailability);
+  protected readonly items = computed(() =>
+    navItemsFor(this.library.available()),
+  );
   protected readonly userItems = USER_MENU_ITEMS;
   protected readonly menuOpen = signal(false);
   private readonly host = inject(ElementRef<HTMLElement>);

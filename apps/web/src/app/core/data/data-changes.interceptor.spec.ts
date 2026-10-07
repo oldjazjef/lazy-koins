@@ -74,6 +74,9 @@ describe('changeOf — URL/method → scope and project', () => {
     // F5.16: a library entry taken = a new mapping, maybe assigned to a file of any project.
     ['POST', '/api/library/l1/take', { projectId: null, scope: 'mappings' }],
     ['POST', '/api/library/review', null],
+    // F5.18 (desktop): the link to a web library; its test stores nothing.
+    ['PUT', '/api/settings/library', { scope: 'settings' }],
+    ['POST', '/api/settings/library/test', null],
     ['POST', '/api/library', null],
     ['PUT', '/api/library/l1/rating', null],
     ['DELETE', '/api/library/l1', null],

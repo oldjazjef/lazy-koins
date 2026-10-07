@@ -764,7 +764,8 @@
       "storage": "Speicherort",
       "system": "System",
       "mail": "Mail",
-      "mcp": "MCP"
+      "mcp": "MCP",
+      "library": "Bibliothek"
     },
     "system": {
       "title": "System",
@@ -2564,7 +2565,15 @@
       "ownEntry": "Eigene Mappings kannst du nicht bewerten.",
       "publishLimit": "Heute hast du schon genug Mappings veröffentlicht – versuch es morgen wieder.",
       "privacyFindings": "Das Mapping enthält Werte, die persönlich aussehen – entferne oder bestätige sie.",
-      "specTooLarge": "Das Mapping ist zu gross für die Bibliothek."
+      "specTooLarge": "Das Mapping ist zu gross für die Bibliothek.",
+      "libraryNotConfigured": "Keine Bibliothek verbunden – trage die Adresse unter Einstellungen › Bibliothek ein.",
+      "libraryNetwork": "Der Bibliothek-Server ist nicht erreichbar.",
+      "libraryTimeout": "Der Bibliothek-Server antwortet nicht.",
+      "libraryBadResponse": "Der Server hat keine gültige Antwort einer lazy-koins-Bibliothek geschickt.",
+      "libraryDisabled": "Dieser Server bietet keine öffentliche Bibliothek an.",
+      "libraryRateLimited": "Zu viele Anfragen an den Bibliothek-Server – warte einen Moment.",
+      "libraryUrlInvalid": "Diese Adresse kann nicht verwendet werden.",
+      "incompatibleSpec": "Dieses Mapping braucht eine neuere Version der App – aktualisiere lazy-koins."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -2663,7 +2672,8 @@
       "version": "übernommen, Version {{version}}",
       "newer": "Neue Version verfügbar: Version {{version}}",
       "takeNewer": "Neue Version übernehmen",
-      "gone": "Version {{version}} – nicht mehr in der Bibliothek, deine Kopie gilt weiter"
+      "gone": "Version {{version}} – nicht mehr in der Bibliothek, deine Kopie gilt weiter",
+      "server": "von {{server}}"
     },
     "publish": {
       "button": "Mapping veröffentlichen",
@@ -2704,6 +2714,46 @@
         "accountId": "Konto-/Kundennummer",
         "personName": "Name",
         "secret": "Geheimer Schlüssel"
+      }
+    },
+    "remote": {
+      "subtitle": "Bibliothek von {{server}} – ansehen und übernehmen",
+      "entrySubtitle": "{{platform}} · aus der Bibliothek von {{server}}",
+      "empty": "In dieser Bibliothek gibt es noch keine Mappings.",
+      "truncated": "Es werden die ersten {{count}} Treffer angezeigt – grenze die Suche ein.",
+      "source": "Aus der Bibliothek von {{server}}",
+      "settingsSubtitle": "Bibliothek – Mappings von einem lazy-koins-Server",
+      "title": "Globale Mapping-Bibliothek",
+      "intro": "Verknüpfe diese App mit der Mapping-Bibliothek eines lazy-koins-Servers (Web-Version). Du kannst dort suchen, Mappings ansehen und als eigene Kopie übernehmen – veröffentlichen, bewerten und löschen geht nur im Web.",
+      "state": {
+        "on": "verbunden",
+        "off": "aus"
+      },
+      "url": "Adresse des Servers",
+      "urlPlaceholder": "https://lazykoins.example.ch",
+      "urlHint": "Nur https:// (http:// nur für diesen Computer, z. B. localhost). Leer = keine Verbindung.",
+      "urlProblems": {
+        "invalidUrl": "Das ist keine gültige Adresse (nur https://…, ohne ? oder #).",
+        "httpsRequired": "Nur https:// – unverschlüsseltes http:// geht nur für diesen Computer (localhost).",
+        "credentialsInUrl": "Die Adresse darf keinen Benutzernamen und kein Passwort enthalten.",
+        "tooLong": "Die Adresse ist zu lang."
+      },
+      "enabled": "Bibliothek verwenden",
+      "suggestions": "Vorschläge im Dateien-Tab (sendet Kopfzeile und Dateiname von Dateien ohne Mapping)",
+      "offline": "Online-Abfragen sind ausgeschaltet – solange geht die App auch für die Bibliothek nicht ins Internet.",
+      "offlineLink": "Einstellungen › Kurse",
+      "test": "Verbindung testen",
+      "testing": "Verbindung wird getestet …",
+      "testOk": "Verbunden mit {{server}} – {{count}} Mappings in der Bibliothek.",
+      "testFailed": "Verbindung fehlgeschlagen:",
+      "saved": "Bibliothek-Einstellungen gespeichert",
+      "privacy": {
+        "title": "Was dieses Gerät verlässt",
+        "reads": "Suchen und Ansehen: nur dein Suchbegriff bzw. die ID des Eintrags – keine Projekte, Dateien oder Beträge.",
+        "suggestions": "Vorschläge (wenn eingeschaltet): pro Datei, die noch ein Mapping braucht, ihre Kopfzeile (die Spaltennamen) und ihr Dateiname – nie Zeilen, Beträge, Adressen oder Ordner. Zellen, die nach Daten oder persönlichen Angaben aussehen, werden weggelassen.",
+        "take": "Übernehmen: nur die ID des Eintrags. Das Mapping wird als deine eigene Kopie gespeichert; der Server erfährt nicht, wofür du es verwendest.",
+        "never": "Nie: Anmeldedaten, deine E-Mail, Projekte, Dateiinhalte, Bewertungen oder Veröffentlichungen.",
+        "offline": "Ohne Adresse, ausgeschaltet oder mit ausgeschalteten Online-Abfragen geht die App für die Bibliothek nie ins Internet."
       }
     }
   }
