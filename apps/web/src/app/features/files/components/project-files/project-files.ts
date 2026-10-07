@@ -55,6 +55,7 @@ import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
 import { TakeOverFiles } from '../take-over-files';
+import { FileGuide } from '../file-guide';
 import {
   MappingSuggestions,
   type SuggestionAdapt,
@@ -93,6 +94,7 @@ export const FILE_NOTE_MAX = 500;
 @Component({
   selector: 'lk-project-files',
   imports: [
+    FileGuide,
     TakeOverFiles,
     MappingSuggestions,
     LkDatePipe,

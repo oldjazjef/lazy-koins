@@ -2,7 +2,8 @@
   "app": {
     "name": "lazy-koins",
     "version": "lazy-koins v{{version}} ({{commit}})",
-    "versionBadge": "v{{version}}"
+    "versionBadge": "v{{version}}",
+    "disclaimer": "Hobby project without warranty: we are not tax or finance professionals and accept no liability – neither for calculations nor for statements or their consequences. Check everything yourself or have a professional check it; this is not tax or financial advice."
   },
   "actions": {
     "undo": "Undo"
@@ -427,6 +428,38 @@
       "deactivated": "File deactivated – the result needs to be recalculated",
       "activated": "File activated – the result needs to be recalculated",
       "failed": "The file could not be changed"
+    },
+    "guide": {
+      "title": "Which files do I need?",
+      "intro": "For your taxes you need the complete data of every exchange, broker and wallet you had during the tax year – including accounts that are empty or closed today.",
+      "needTitle": "Per platform or account",
+      "need": {
+        "transactions": "Transaction history or ledger: every booking of the account – buys, sells, swaps, fees, deposits, withdrawals, rewards. This is the most important file; if the platform offers it, it often covers everything else.",
+        "trades": "Trade or order history: the executed trades with price and fee (open or cancelled orders are not needed).",
+        "transfers": "Deposits and withdrawals: crypto (with network and address) and fiat (CHF, EUR, USD) – so transfers between your own accounts are recognised.",
+        "rewards": "Staking, earn, interest, lending, airdrops, cashback: everything you received – this is taxable income.",
+        "statement": "Account or balance statement as of 31.12. (PDF or CSV): the holdings per asset on that day. It is used to check that the history adds up.",
+        "previousYear": "Holdings as of 31.12. of the previous year (or last year's project as a follow-up project): for the opening balance and the earn gap.",
+        "wallets": "Your own wallets (Ledger, Trezor, MetaMask, …): add addresses or xpub in the Wallets tab, or upload the wallet software's export."
+      },
+      "tipsTitle": "When downloading",
+      "tips": {
+        "period": "Period: at least 01.01.–31.12. of the tax year, better from account opening – then holdings and cost bases add up.",
+        "everything": "If the platform asks: choose all assets, all accounts (spot, earn, futures, sub-accounts) and all columns.",
+        "format": "Prefer CSV or Excel (XLSX), PDF only for statements. Upload files unchanged – don't open and re-save them in Excel.",
+        "closedAccounts": "Accounts with a single booking or a small remaining balance count too."
+      },
+      "platformsTitle": "Examples: where to find the files",
+      "platformsNote": "Menus change over time – the names are pointers, not a guarantee.",
+      "platforms": {
+        "kraken": "Kraken: Documents or History → Export → “Ledgers” (all assets, all fields, CSV); plus the statement as of 31.12.",
+        "binance": "Binance: Orders → Transaction History → “Export Transaction Records” (all accounts); plus the account statement as of 31.12.",
+        "bitfinex": "Bitfinex: Reports → “Ledgers”, plus “Trades” and “Movements” (deposits and withdrawals).",
+        "coinbase": "Coinbase: Profile → Reports or Statements → transaction history (CSV, all assets).",
+        "bitpanda": "Bitpanda: History → export transactions (CSV); plus the annual or tax statement.",
+        "revolut": "Revolut: Crypto → statement (Excel or CSV) for the whole tax year; plus the crypto tax report if offered."
+      },
+      "unknown": "A platform is not recognised? A mapping helps (“Create with AI” or by hand) – or enter the bookings in the standard-format template."
     }
   },
   "mappings": {

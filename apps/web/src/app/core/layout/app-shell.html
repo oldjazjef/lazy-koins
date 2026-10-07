@@ -215,6 +215,13 @@
           <div class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6">
             <router-outlet />
           </div>
+          <!-- On every page: no warranty, no liability, no advice. -->
+          <footer
+            data-disclaimer
+            class="text-muted-foreground mx-auto w-full max-w-6xl px-4 pb-6 text-xs md:px-6"
+          >
+            {{ 'app.disclaimer' | translate }}
+          </footer>
         </div>
       </div>
 

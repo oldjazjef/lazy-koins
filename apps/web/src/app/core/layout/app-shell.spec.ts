@@ -135,6 +135,14 @@ describe('AppShell', () => {
     ).not.toBeNull();
   });
 
+  it('shows the liability disclaimer under every page', async () => {
+    const { el } = await setup();
+    expect(
+      el.querySelector('.lk-scroll-content footer[data-disclaimer]')
+        ?.textContent,
+    ).toContain('app.disclaimer');
+  });
+
   it('has a sidebar trigger in the top bar (mobile + collapse)', async () => {
     const { el } = await setup();
     const trigger = el.querySelector<HTMLButtonElement>(

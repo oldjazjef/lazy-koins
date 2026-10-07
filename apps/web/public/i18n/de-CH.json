@@ -2,7 +2,8 @@
   "app": {
     "name": "lazy-koins",
     "version": "lazy-koins v{{version}} ({{commit}})",
-    "versionBadge": "v{{version}}"
+    "versionBadge": "v{{version}}",
+    "disclaimer": "Hobbyprojekt ohne Gewähr: Wir sind keine Steuer- oder Finanzprofis und haften für nichts – weder für Berechnungen noch für Auszüge oder Folgen daraus. Prüfe alles selbst oder lass es von einer Fachperson prüfen; das ist keine Steuer- oder Finanzberatung."
   },
   "actions": {
     "undo": "Rückgängig"
@@ -427,6 +428,38 @@
       "deactivated": "Datei deaktiviert – das Ergebnis muss neu berechnet werden",
       "activated": "Datei aktiviert – das Ergebnis muss neu berechnet werden",
       "failed": "Die Datei konnte nicht geändert werden"
+    },
+    "guide": {
+      "title": "Welche Dateien brauche ich?",
+      "intro": "Für die Steuern braucht es von jeder Börse, jedem Broker und jeder Wallet, die du im Steuerjahr hattest, die vollständigen Daten – auch von Konten, die heute leer oder geschlossen sind.",
+      "needTitle": "Pro Plattform bzw. Konto",
+      "need": {
+        "transactions": "Transaktionshistorie bzw. Ledger: alle Buchungen des Kontos – Käufe, Verkäufe, Tausch, Gebühren, Ein- und Auszahlungen, Rewards. Das ist die wichtigste Datei; bietet die Plattform sie an, deckt sie oft alles andere ab.",
+        "trades": "Trade- bzw. Order-Historie: die ausgeführten Trades mit Preis und Gebühr (offene oder stornierte Orders braucht es nicht).",
+        "transfers": "Ein- und Auszahlungen: Krypto (mit Netzwerk und Adresse) und Fiat (CHF, EUR, USD) – damit Überträge zwischen deinen eigenen Konten erkannt werden.",
+        "rewards": "Staking, Earn, Zinsen, Lending, Airdrops, Cashback: alles, was du erhalten hast – das ist steuerbarer Ertrag.",
+        "statement": "Konto- bzw. Vermögensauszug per 31.12. (PDF oder CSV): die Bestände je Asset am Stichtag. Damit wird geprüft, ob die Historie aufgeht.",
+        "previousYear": "Bestände per 31.12. des Vorjahres (oder das Vorjahresprojekt als Folgeprojekt): für den Anfangsbestand und die Earn-Lücke.",
+        "wallets": "Eigene Wallets (Ledger, Trezor, MetaMask, …): Adressen bzw. xpub im Tab Wallets erfassen oder den Export der Wallet-Software hochladen."
+      },
+      "tipsTitle": "Beim Herunterladen",
+      "tips": {
+        "period": "Zeitraum: mindestens 01.01.–31.12. des Steuerjahres, besser ab Kontoeröffnung – dann gehen Bestände und Einstandswerte auf.",
+        "everything": "Wenn die Plattform fragt: alle Assets, alle Konten (Spot, Earn, Futures, Unterkonten) und alle Spalten wählen.",
+        "format": "CSV oder Excel (XLSX) bevorzugen, PDF nur für Kontoauszüge. Dateien unverändert hochladen – nicht in Excel öffnen und neu speichern.",
+        "closedAccounts": "Auch Konten mit nur einer einzigen Buchung oder einem kleinen Restbestand gehören dazu."
+      },
+      "platformsTitle": "Beispiele: wo du die Dateien findest",
+      "platformsNote": "Menüs ändern sich mit der Zeit – die Bezeichnungen sind Anhaltspunkte, keine Garantie.",
+      "platforms": {
+        "kraken": "Kraken: Dokumente bzw. History → Export → «Ledgers» (alle Assets, alle Felder, CSV); dazu der Kontoauszug per 31.12.",
+        "binance": "Binance: Orders → Transaktionsverlauf → «Transaktionsaufzeichnungen exportieren» (alle Konten); dazu das Account Statement per 31.12.",
+        "bitfinex": "Bitfinex: Reports → «Ledgers», zusätzlich «Trades» und «Movements» (Ein- und Auszahlungen).",
+        "coinbase": "Coinbase: Profil → Berichte bzw. Statements → Transaktionsverlauf (CSV, alle Assets).",
+        "bitpanda": "Bitpanda: Verlauf → Transaktionen exportieren (CSV); dazu der Jahres- bzw. Steuerauszug.",
+        "revolut": "Revolut: Krypto → Kontoauszug (Excel oder CSV) für das ganze Steuerjahr; dazu der Krypto-Steuerbericht, falls angeboten."
+      },
+      "unknown": "Eine Plattform wird nicht erkannt? Dann hilft ein Mapping («Mit AI erstellen» oder von Hand) – oder du trägst die Buchungen in die Vorlage im Standardformat ein."
     }
   },
   "mappings": {
