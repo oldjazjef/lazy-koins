@@ -12,8 +12,8 @@ two as a package (F1.3).
 > **Status (08.10.2026): files + mappings + AI plugin + calculation + dashboard / carry-over /
 > packages.** Nx monorepo with the NestJS API
 > (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
-> storage/upload/preview, **mappings** = declarative mapping specs, **library** = F5.15–F5.17 the
-> global mapping library (web only), **ai** = F5.13/F5.14: AI-written
+> storage/upload/preview, **mappings** = declarative mapping specs, **library** = F5.15–F5.18 the
+> global mapping library (web; the desktop reads a linked server's, read-only), **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine, **dashboard** = F11.4–F11.9, **carryover** = F4.4/F4.4a,
 > **packages** = F10.8/F10.9, data export F10.7, **tools / assistant / mcp** = F11.14–F11.16: one
@@ -21,7 +21,7 @@ two as a package (F1.3).
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
 > Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
-> the **Bibliothek** (mapping library, web only) as its sub-item (`/app/mappings/library`; the nav entry opens a menu Meine Mappings · Bibliothek, `NavItem.children`);
+> the **Bibliothek** (mapping library; on the desktop a linked web server's, F5.18) as its sub-item (`/app/mappings/library`; in the sidebar the entry expands to Meine Mappings · Bibliothek, `NavItem.children`);
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -138,10 +138,12 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     persistence/            #   the ONLY code that touches Prisma
       persistence.module.ts #     binds every repository port to its adapter (global)
       prisma/               #     PrismaService, sqlite-url, mappers, repositories/*.prisma.repository.ts
-    integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers
+    integrations/           #   the ONLY code that touches firebase-admin; dev + local verifiers;
+                            #     library/ = RemoteLibraryPort + HttpRemoteLibrary (F5.18, desktop → web)
       ai/                   #     AiCompletionPort + OpenAI-compatible / Anthropic adapters (plain fetch)
       rates/                #     Binance klines, CoinGecko, Frankfurter (ECB) — serialised, no key in logs;
-                            #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser
+                            #     ictax/ = the ESTV Kursliste (F7.4a): client, ZIP entry stream, SAX parser;
+                            #     price-history/ = selectable daily-price providers behind one port (F7.4b)
       pdf/                  #     PlaywrightPdfRenderer (Chromium, lazily started)
     auth/                   #   AccessTokenGuard (global), PrincipalService, @Public, @CurrentUser
     users/                  #   GET /api/me
@@ -150,14 +152,17 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
     mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0),
                             #   stateless sample-file inspect/preview for the editor
-    library/                #   F5.15–F5.17: the global mapping library (web only; 404 + no tools on the desktop)
+    library/                #   F5.15–F5.18: the global mapping library (web) + its public read-only endpoint;
+                            #   desktop = remote mode (a linked web server's library, read-only)
+    suggestions/            #   F5.19: mapping suggestions for files that need one + the bundled standard
+                            #   mappings (mappings/standard/) as read-only templates (web + desktop)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings (project file or editor sample), PDF statements
       domain/               #     pure: prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
                             #   items, corrections (undo/redo); testing/calculation-fixture.ts
     rates/                  #   F7.4: stored rates per project, refresh (ports), overrides, ESTV import;
                             #   F7.4a: automatic ESTV Kursliste (sync service + daily scheduler, matching)
-    settings/               #   F11 profile data + CoinGecko/Etherscan keys (sealed), online rates on/off
+    settings/               #   F11 profile data + CoinGecko/CoinMarketCap/Etherscan keys (sealed), price providers, online on/off
     exports/                #   F10: Excel (ExcelJS, formulas) + HTML → PDF, stored exports, mail draft,
                             #   data export in the standard format (F10.7, data-export.handlers.ts)
     dashboard/              #   F11.4–F11.9: input across all projects, cache per input hash, user rate cache
@@ -183,8 +188,8 @@ apps/web/                   # Angular app
                             #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
                             #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
     features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
-                            #   mappings (F11.0: list + detail), library (F5.15–F5.17: list + entry, publish
-                            #   dialog, files-area matches; web only), profile (+ account package), settings
+                            #   mappings (F11.0: list + detail, several .json at once, bulk publish), library
+                            #   (F5.15–F5.20: list + entry, publish + bulk-publish dialogs), profile (+ account package), settings
                             #   (shell + rates/wallets/ai/mail; components/ = the forms shared with
                             #   the wizard), setup (F11.0s wizard), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
@@ -229,6 +234,8 @@ scripts/                    # lint budget, private-inspect, dev/ (test-db wrappe
 assets/brand/icon.svg       # THE app icon source (pnpm icons → desktop + web icons)
 deploy/                     # Coolify: README (secrets + variables by name), coolify/SETUP.md + lazykoins.yml,
                             #   deploy.sh, smoke-test.sh
+mappings/standard/          # ready-to-import mapping specs for 10 platforms (upload on the Mappings page /
+                            #   publish to the library), samples/ = SYNTHETIC exports, README = the formats
 private/                    # REAL tax data + golden.json — git-ignored, see Private data
 ```
 
@@ -283,6 +290,65 @@ fee + fee asset, kind lookup rules (first match wins, default `unknown` — rows
 asset rewrites + aliases, exclude filters, balances (`rows` or `lastPerAsset` from a running
 balance column). `applyMapping` is pure and deterministic; every record keeps `sourceFileId` (the
 SHA-256), the 1-based row and the raw row (F7.5). Bad rows become `errors` with row + column.
+Optional extras (all backwards compatible — a spec without them reads exactly as before): a kind
+rule's `direction` (`in`/`out`, for unsigned amounts), `asset.pattern` (base of a pair),
+`numbers.nullValues` (`-` = empty), `quantity.fallbackColumn` (side mode), `timestamp.headerPattern`
+(zone from a header like `Time(UTC+08:00)`) and **`bookings.counter`**: a second leg from the same
+row (the money/quote side of a one-row trade, or the other account of an Earn/staking move) — same
+row, kind and group (the group column, else `<file>:<row>`), id `<file>:<row>:counter`, emitted
+right after its main leg; `lastPerAsset` reads the main leg only. Tests: `apply-mapping-counter.spec.ts`.
+
+**Standard mappings** (`mappings/standard/`, repo root): hand-researched specs for Binance,
+Coinbase, Kraken, Bitfinex, Bybit, OKX (2), KuCoin (2), Crypto.com App, Bitstamp, Bitpanda, each
+with a synthetic sample; `README.md` documents every export format (headers, dates, signs, type
+→ kind, sources, confidence). `libs/engine/src/mapping/standard-mappings.spec.ts` applies each to
+its sample (no errors/unknowns, kind counts, trade pairing, privacy scan, no fingerprint overlap
+with each other or the standard templates). They are product data, not test fixtures — the
+synthetic `libs/engine/src/mapping/fixtures/` stay as they are. **Shipped with the API** (F5.19,
+decided 08.10.2026): `suggestions/domain/standard-mappings.ts` imports each JSON (webpack inlines
+it — web server, Docker image and desktop bundle carry the same catalogue; `resolveJsonModule` in
+`apps/api/tsconfig.json`, the eslint `enforce-module-boundaries` rule allows exactly
+`../mappings/standard/*.mapping.json`). The catalogue is **read-only and versioned**: each entry
+has a `revision`, and `suggestions.handlers.spec.ts` pins `revision:hash` per entry in a snapshot
+(change a JSON → bump its revision → update the snapshot; it also fails when a file in the folder
+is missing from the catalogue). `GET /api/standard-mappings` (+ `copyId` = my identical copy),
+`GET /api/standard-mappings/:id` (+ spec), `POST /api/standard-mappings/:id/take
+{projectId?, projectFileId?}` = a copy in my mappings (origin **`copied`** — no new origin, no
+migration; an identical copy I already have is reused, `findSameSpec` = canonical JSON equality),
+target checked before copying (ownership 404, closed project 409, PDF 400), then assigned through
+`ChangeProjectFileCommand`. To add one: the JSON + sample + its case in `standard-mappings.spec.ts`
+
+- its line in the catalogue + the snapshot.
+
+**Mapping suggestions on upload (F5.19, user request 08.10.2026: „Sind Mappings verfügbar, soll
+ein Mapping beim Upload eines Files vorgeschlagen werden“)** — the upload stays exactly as strict
+as before (`mappingConfidence`: every fingerprint header, file-name pattern); suggestions are a
+separate read: `GET /api/projects/:id/mapping-suggestions` (`suggestions/application/
+suggestions.handlers.ts`) = per `needs_mapping` CSV/XLSX file (newest 50) ≤ 6 ranked candidates
+from (a) **my mappings** — the engine's `mappingSimilarity` (`libs/engine/src/mapping/
+similarity.ts`: the best header row via `bestHeaderRow`, `coverage` = share of the spec's
+fingerprint headers present, `missing`, file-name pattern, platform in the file name, `score`;
+`isSuggestable` = reads it, or coverage ≥ 0.6 with ≥ 2 shared headers); a mapping of mine that
+reads the file was saved after the upload; (b) the **standard catalogue** (same similarity; hidden
+when I already have the identical copy — it shows as `own`); (c) the **library** through
+`LibraryService` (web: own library; desktop: the linked server with suggestions on, F5.18 — what
+`LibraryStatus` says): its F5.16 matches (full matches only; near matches need specs the desktop
+does not have), kept in the library's order. `rankSuggestions`: what reads the file first (own →
+standard → library), then near matches by score. `library: used | off | unavailable` — a failing
+library never fails the answer. Closed project = no suggestions. `GET …/files/:fileId/
+suggestion-preview?source=own|standard|library&id=` = `kindSummary` + the first records (the
+mapping preview), nothing stored. Web: `ProjectFilesService.suggestions` (one request, reloads
+with the project and `mappings`), `lk-mapping-suggestions` (`features/files/components/
+mapping-suggestions`) in the files card (replaces F5.16's `lk-library-matches`, which was removed)
+and the assignment dialog (`fileId`): "Vorschlag: <name> (<Quelle>, Übereinstimmung N %)", the
+preview of the shown suggestion (kind badges, unknown values, totals, "Vorschau anzeigen" =
+`lk-mapping-preview`), **Übernehmen** (`takeSuggestion`: own = PATCH assign, standard =
+`…/take`, library = `LibraryClient.take`), "Andere Vorschläge", "Mit AI erstellen", "Neues
+Mapping"; a near match offers **"Als Vorlage anpassen"** = `MappingEditorState.openFrom(file,
+spec, missing)` (the new-mapping editor with the spec minus the missing headers; stored only on
+save, then assigned). The upload list marks an upload that ended `needs_mapping` ("braucht ein
+Mapping · Vorschlag ansehen" scrolls to `#mapping-suggestions`). Nothing is assigned without a
+click.
 
 Upload flow (`files/application/commands/upload-project-file.command.ts`): kind from the bytes
 (`%PDF-`, ZIP with `xl/`, text) → SHA-256 → duplicate in the same project = **409** with
@@ -312,13 +378,38 @@ badge = open count; the files area only shows "N Hinweise → anzeigen"); `Proje
 tab; `<lk-ai-assist>` lives there too). Checks link to the hints of a platform and back; file
 issues are never open items.
 
+**Deactivated files (F5.7a, user request 09.10.2026: „Dateien deaktivieren … bei Rechnung /
+Neuberechnung ignoriert“)** — per **project file**, not per stored file: `project_file.disabled_at`
+(+ `disabled_note` ≤ 500, CHECK: only with a date; migration `20261009100000_project_file_disabled`,
+`ADD COLUMN` only). `PATCH /api/projects/:id/files/:fileId/active {active, note?}`
+(`SetFileActiveCommand`, `loadOwnProjectFile` → someone else's = 404, closed = 409; deactivating
+again keeps the first date) → `ProjectNotifications.filesChanged`. **One rule**: `readsRecords(file)`
+(`files/domain/project-file.ts`) = status standard|mapped **and** active — used by
+`CalculationInputService.sources` (so the file leaves the input hash → the snapshot is **stale**;
+its records are in no result, so no F7.5 drill-down shows them), `DashboardInputService` (rule 1
+below), the F5.8 coverage (hints query, files overview `missing`, internal report,
+`ProjectNotifications.openHints`); `isActive(file)` skips a deactivated file in the file hints
+(`unrecognisedFile`/`rowErrors`), the file notification topics (resolved), the F5.19 suggestions
+and the library matches. A coverage hint names the deactivated files with records for its
+platform/account (`disabledFiles`, web: "Deaktiviert und deshalb nicht berücksichtigt: …");
+a platform whose files are **all** deactivated has no coverage at all, so it gets no hint either
+(deactivated on purpose — decided, nothing to remind of). The
+file itself stays stored, downloadable, previewable and assignable; its status/mapping are
+unchanged. The data export (F10.7) holds only active files (it reads `CalculationInputService.build`,
+decided). Web: files table — badge "Deaktiviert" next to the status badge (tooltip with the
+date), the row muted, the note as a second line, row actions "Deaktivieren" (dialog with an
+optional note) / "Aktivieren" (hidden on a closed project), "N deaktiviert" with Ausblenden/Anzeigen
+(`hideDisabled`, a `#file-<id>` link to a hidden file shows them again). Tool `set_file_active`
+(write → a proposal in the chat, isolation CASE), `list_files` has `active`/`disabledAt`/`disabledNote`.
+
 Mappings are owner-scoped (`import_mapping`); a project lists the mappings its files use. Editing
 one does not touch files until the user confirms `POST /api/mappings/:id/reapply` (closed projects
 are skipped). Deleting one resets its files to `needs_mapping` in the same transaction.
 
 **Mappings page (F11.0)** — `features/mappings`, `/app/mappings` in the main navigation: every
 mapping of mine (`GET /api/mappings` adds `filesUsing` / `projectsUsing`, counted by the
-database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json`, new.
+database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json` (several
+at once, below), new.
 `/app/mappings/:id`: facts, JSON, edit (`lk-mapping-workbench` with a sample file — a file that
 uses it is preloaded; see Beispieldatei below), save → offer re-apply, download, delete (lists the affected
 files; disabled while a closed project uses it — the API's 409), and "Wird genutzt in"
@@ -327,6 +418,36 @@ files; disabled while a closed project uses it — the API's 409), and "Wird gen
 section only lists the mappings its files use (linking here), uploads a `.json`, starts
 "Mit AI erstellen" and the editor of a new mapping for one file; edits happen on this page. After
 a save from a project (editor, upload, AI) the toast links to the new mapping's page.
+
+**Several mapping files at once (F11.0u)** — "Mappings hochladen" on the Mappings page (picker
+`multiple` + a drop zone above the table) and in a project's mappings section:
+`MappingImportService` (root, `features/mappings/mapping-import.service.ts`) posts each file on its
+own to the existing `POST /api/mappings` with `rejectDuplicate: true` (409 `duplicateMapping` +
+`existingId`/`existingName` when I already have exactly this spec — canonical JSON, key order and
+unknown keys do not matter; without the flag, as before). No batch endpoint (decided: per file is
+as good — the per-account write budget of 120 / 10 min covers it; ≤ 50 files and ≤ 1 MB per file
+in the web). Not JSON / an array / too large / beyond 50 are refused locally; one failure never
+stops the others; progress through the ActivityService (`activity.mappingImport`). Results in
+`lk-mapping-import-results` (stored → link, duplicate → link to mine, invalid → the zod issues,
+failed → the API error); a single stored file only gets the toast with the link.
+
+**Bulk publish (F5.20, web)** — the Mappings page has a checkbox column while
+`LibraryAvailability` is mode `web` (select all on the page, `N ausgewählt`, cleared on a new
+search/sort) and "In Bibliothek veröffentlichen": `BulkPublishService` +
+`lk-bulk-publish-dialog` (`features/library/components/bulk-publish-dialog`, provided by the page):
+`GET /api/library/quota` (`{newPerDay, usedToday, remainingToday, publishesPer10Min}` — the count
+the publish handler enforces), then **every mapping reviewed** (`POST /api/library/review`,
+removable findings ticked and reviewed again, untick → review again, stale answers dropped), mode
+per mapping (new entry / new version of my existing entry — the default when `existing` / skip),
+the JSON per mapping on demand, the pseudonym **once**, the warning when the new entries exceed
+what is left today or the selection exceeds the 10-minute budget, the explicit confirmation (+ keep
+remaining findings) — then `POST /api/library` **one by one** with the single dialog's body (no
+bulk endpoint, every server rule per item). Results per item: published (version) / already
+published (409 `alreadyPublished` → "Als neue Version veröffentlichen" with its `libraryId`) /
+refused (`publishLimit`, a throttler 429 = `rateLimited`, any other code). **Library copies**
+(origin `library`) cannot be published as new entries: the review carries `libraryCopy`, the
+publish answers **409 `libraryCopy`** unless it is a new version of my own entry; the dialogs
+explain it (single dialog: publish disabled).
 
 **Beispieldatei (sample file) in the mapping editor** — "Neues Mapping" (dialog, `sm:max-w-6xl`)
 and editing on `/app/mappings/:id` use `features/mappings/components/mapping-workbench`
@@ -354,18 +475,23 @@ To support a new platform: write (or let the AI write — "Mit AI erstellen") a 
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
 fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
 
-## Mapping library (F5.15–F5.17, web only)
+## Mapping library (F5.15–F5.18)
 
 User requirement (08.10.2026): a global database of mappings — rated, uploaded by their authors,
 deleted only by them, and **taken as a copy** so that a deleted entry never breaks anyone's
 projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
 
-- **Web only**: `LibraryRuntime.enabled = AUTH_MODE !== 'local'` (`library.module.ts`). On the
-  desktop every route answers **404** (`LibraryEnabledGuard`, and each handler checks again),
-  `buildTools` registers **no** library tools, the web hides the nav entry (`navItemsFor`,
-  `NavItem.webOnly`), the route (`canMatch` on `AuthService.hasAccount`), the files-area matches
-  and the mapping page's publish button. The tables exist in every database (one migration
-  history), they stay empty on the desktop.
+- **Own library on the web only**: `LibraryRuntime.enabled = AUTH_MODE !== 'local'`
+  (`library.module.ts`, mode `web`). On the desktop (mode `remote`, F5.18 below) publish, review,
+  rate and delete answer **404** (`LibraryEnabledGuard` on those routes, and each handler checks
+  again) and their tools are not registered; search, entry, take and matches go to the linked
+  web server. The web reads one service, `LibraryAvailability` (`core/library`): web = always
+  available and writable (no request); desktop = `GET /api/library/status`, asked again on every
+  `settings` change. It drives the nav sub-item (`navItemsFor(available)`,
+  `NavItem.needsLibrary`), the route (`canMatch` → `canOpen()`), the mapping page's publish button
+  and the bulk selection (F5.20) (`canPublish` = mode `web`) and origin line,
+  and the library pages' write actions (`readOnly`). The tables exist in every database (one
+  migration history); `library_mapping`/`library_rating` stay empty on the desktop.
 - **Model** (migration `20261008200000_mapping_library`): `library_mapping` (author FK cascade —
   internal only, never in a DTO/tool output; `author_name` = the pseudonym snapshot, NULL =
   "Anonym"; `source_mapping_id` = the author's mapping, no FK; name/platform/description, spec
@@ -390,7 +516,9 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   `privacyFindings` with paths + kinds, never the values), ≤ 64 KB (422 `specTooLarge`), the same
   canonical spec twice = 409 `alreadyPublished`, ≤ 10 **new** entries per author per 24 h (429
   `publishLimit`, deleted ones count), HTTP budgets 10 publishes / 60 ratings per 10 min.
-  `libraryId` = a new version of **my** entry (someone else's = 404). `removePrivacyFindings`
+  `libraryId` = a new version of **my** entry (someone else's = 404). A copy taken from the
+  library (`libraryCopy` in the review) as a new entry = 409 `libraryCopy` (F5.20).
+  `GET /api/library/quota` = new entries left today (F5.20). `removePrivacyFindings`
   drops a filter value (the filter when nothing is left), an alias/rewrite/kind rule whole, a
   constant (its source when it had no column), the description, the file-name pattern.
 - **Delete** (`DELETE /api/library/:id`): author only, others 404 (never 403 — no leak of who
@@ -417,9 +545,11 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   host: library pages and the mapping page): source → findings with checkboxes (every change
   reviews again, stale answers dropped) → pseudonym + description → exact JSON → confirmation
   (+ "Hinweise bewusst beibehalten"). `LibraryClient` (root) = take/rate/delete through the
-  ActionRunner. `lk-library-matches` in the files card and in the assignment dialog (before the
-  AI buttons): "In der Bibliothek gefunden: N passende Mappings" + Übernehmen (copy + assign).
-  `dataChangesInterceptor`: `POST /library/:id/take` = scope `mappings` + every project (the
+  ActionRunner. In the files card and the assignment dialog the library's matches are part of the
+  F5.19 suggestions (`lk-mapping-suggestions`, see Files and mappings) — Übernehmen = copy + assign.
+  (The files-tab suggestions, F5.19, ask the API, which reads the same `LibraryStatus`.)
+  `dataChangesInterceptor`: `POST /library/:id/take` (and F5.19's
+  `POST /standard-mappings/:id/take`) = scope `mappings` + every project (the
   file it was assigned to is in the body, not the URL); `/library/review` is read-only; publish,
   rate and delete touch no own data.
 - **Tools** (`tools/definitions/library.tools.ts`, area `mappings`): `search_library`,
@@ -429,7 +559,65 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   `delete_library_mapping` (destructive). The isolation suite has a case for each: B reads A's
   public entry without A's id/e-mail/profile name, copies it only into B's own mappings, cannot
   take it into A's project/file, cannot publish A's mapping, republish or delete A's entry; over
-  HTTP: A's own rating = 409, A deleting the entry leaves B's copy working.
+  HTTP: A's own rating = 409, A deleting the entry leaves B's copy working (and it is gone from
+  the public endpoint), the public endpoint without a sign-in (exact keys, no identity).
+  **Desktop** (`libraryTools` filters by `REMOTE_LIBRARY_TOOLS`): only `search_library`,
+  `get_library_mapping`, `take_library_mapping` — same names, routed by `LibraryService`.
+- **F5.18 — the desktop reads a web server's library** (user request 08.10.2026: "In der
+  installierten Version soll die globale Library hinterlegt werden können … Endpunkt, über den man
+  diese Mapper beziehen kann aus dem Web"):
+  - **Public endpoint (web)** `public-library.controller.ts`: `GET /api/public/library?search&
+platform&sort&offset&limit` (≤ 50, default 20, `{items,total,offset,limit}`), `GET
+/api/public/library/:id` (+ `spec`), `POST /api/public/library/match {fileName, headers}`
+    (`matchEntries` = `mappingConfidence` on a one-row stand-in file, ≤ 10; nothing stored).
+    `@Public()` + `@AllowWhileLocked()`, `@SkipThrottle({ writes: true })`, own per-IP budgets
+    (60 reads / 30 matches per minute), `Cache-Control: public, max-age=60` on GETs, `no-store` on
+    match; `PublicLibraryEnabledGuard` = 404 before anything else with `AUTH_MODE=local` or
+    `LIBRARY_PUBLIC=false` (env, default `true`; `deploy/README.md`). Answers are the allow-list
+    `publicEntry` (`PUBLIC_ENTRY_KEYS`: id, name, platform, description, authorName, version,
+    fingerprint, ratingAverage, ratingCount, usageCount, publishedAt, updatedAt) — never an
+    author/user id, e-mail, source mapping or rating; deleted entries do not exist.
+    `public-library.http.spec.ts` (keys, deleted, validation, throttle 429, off/local 404).
+  - **Desktop link** (migration `20261008210000_remote_library`): `remote_library_settings` (PK
+    user, cascade; `url` default `''`, `enabled`, `suggestions`; CHECKs: http(s), no trailing
+    `/`, `?`, `#`, ≤ 300, enabled needs a url) and `import_mapping.library_server` (`ADD COLUMN`
+    with CHECK: only with a library reference, http(s)) → `LibraryRef.server`. Routes (desktop
+    only, 404 on the web): `GET|PUT /api/settings/library` (`normaliseRemoteUrl`: https only, http
+    only for localhost/127.0.0.1/[::1], no credentials/query/fragment, trailing `/api` dropped →
+    422 `libraryUrlInvalid` + `problem`; empty url = off), `POST /api/settings/library/test {url?}`
+    (one list request with the typed address, nothing stored). `GET /api/library/status` (both
+    modes) `{mode, available, readOnly, server, suggestions, reason}`.
+  - **Gate** `RemoteLibraryGate`: goes online only when a url is saved, the link is on and F11.3
+    allows it (user switch + `RATES_ONLINE`) → else 409 `libraryNotConfigured` / `offline`;
+    adapter errors → 502 `libraryNetwork | libraryTimeout | libraryBadResponse |
+libraryDisabled | libraryRateLimited` + `detail` (status or system cause, never a body); a
+    gone entry → 404. Adapter `integrations/library/http-remote-library.adapter.ts` (bound with
+    `useFactory`): plain `fetch`, 10 s timeout, `redirect: 'manual'` (a 3xx = `network`), no
+    credentials/cookies, capped reads (512 KB lists, 256 KB entry), zod answer schemas (unknown
+    keys stripped). `http-remote-library.adapter.spec.ts` runs it against a `node:http` fake.
+  - **Remote handlers** (`remote-library.handlers.ts`, `LibraryService` routes by
+    `runtime.remote`): search (≤ 2 pages = 100 entries, `q`/`platform`/`sort` passed on), entry
+    and take validate the spec with `validateRemoteSpec` (`validateMappingSpec` + refuses keys zod
+    would strip + spec `version` > `MAPPING_VERSION` → 422 `incompatibleSpec` with paths — "neuere
+    App-Version nötig"); remote texts are data only. **Take** = the validated spec as my own
+    mapping (origin `library`, `{id, version, server}`; same server + id + version reused; target
+    file checked before anything is fetched); nothing is reported back (no usage count). Views are
+    `LibraryEntryView` with `mine: false`, `myRating: null`.
+  - **What leaves the device**: search text / entry id for reads and takes; for **suggestions**
+    (files tab, only with `suggestions` on) per `needs_mapping` file (≤ 20 per call) only
+    `headerMatchRequest`: the engine's `guessHeaderRow` row minus cells that `looksLikeData` or
+    that the privacy scan classifies (`classifyPrivateValue`), capped (200 cells × 200 chars),
+    fewer than 2 cells = nothing sent, plus the **base** file name. Answers cached in memory 5 min
+    per server + header + name. Einstellungen › Bibliothek says this in plain words.
+  - **Web**: `features/settings/pages/library-settings-page` (route `settings/library`,
+    `canMatch` = no account; section `LOCAL_SETTINGS_SECTIONS`): URL, on/off, suggestions on/off,
+    "Verbindung testen" (unsaved address), the refused address under the field, the privacy card,
+    the offline hint linking to Kurse. Library pages in remote mode: subtitle names the server, no
+    publish/rate/delete, the search goes to the server debounced (400 ms; ≥ 100 answers = "grenze
+    die Suche ein"), errors by code. The mapping page asks the linked library about a copy only
+    when it came from that server (else "übernommen, Version N · von <server>"). New codes in
+    `API_ERROR_CODES` + both message files; `dataChangesInterceptor`: `PUT settings/library` =
+    `settings`, `…/test` read-only.
 
 ## AI plugin (F5.13, F5.14)
 
@@ -620,7 +808,7 @@ limited to the authenticated user:
   data read before and after must be equal.
 
 **Web**: `core/assistant/` — `ChatService` (root: status, conversations, ask/confirm/cancel,
-consent notice, AI error panel state), `chat-sidebar` in the app shell (header toggle, open state
+consent notice, AI error panel state), `chat-sidebar` in the app shell (toggle in the top bar, open state
 in localStorage; beside the page from `lg`, an overlay with backdrop below; only the message list
 scrolls; without a usable AI plugin a hint links to the wizard's AI step `/app/setup?step=ai`), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
 `textContent`, only relative `/app/…` links become router links), `proposal-card`
@@ -712,7 +900,8 @@ Treuhänder mail without mailer, the project's Kurse tab and the dashboard when 
   `features/settings/components/ai-settings-form` (`lk-ai-settings-form`), `mailer-form`,
   `rates-key-form` (online on/off + CoinGecko key + **Testen** = `POST
 /api/settings/keys/coingecko/test`, `KeyCheckResult` with code/status/provider message/URL →
-  `lk-key-check-result`), storage via `StorageSettingsPageService`. `embedded` hides their save
+  `lk-key-check-result`) + `lk-price-sources-form` compact (provider order, on/off, CMC key,
+  "Testen", F7.4b), storage via `StorageSettingsPageService`. `embedded` hides their save
   button and their success toast (it would sit on "Weiter"); the page's "Weiter" calls
   `submit()` of the step on screen (`SetupStepComponent` token, `provideSetupStep`). The AI step
   can give the F5.14 consent up front (`giveConsent` on `PUT /api/ai/settings`; the payload is
@@ -728,7 +917,7 @@ a time (`PinPolicy.serial`). Web: after 10 failures `reloginRequired` until a si
 moment (the identity's `authTime` = Firebase `auth_time`; the dev token carries it as
 `dev:<email>#<epoch ms>`). "PIN vergessen": desktop = `POST /api/pin/forgot {confirmClearKeys:
 true}` removes the PIN **and every sealed key** (AI key, mail password, CoinGecko, Etherscan,
-Helius, Subscan — `SealedKeysEraser`; a new sealed key elsewhere must be added there); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
+Helius, Subscan, CoinMarketCap — `SealedKeysEraser`; a new sealed key elsewhere must be added there); web = only with a sign-in ≤ 10 min old (the lock screen signs out, remembers
 it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (default 15).
 
 - **Enforced in the API**: `PinLockGuard` (global, after `AccessTokenGuard`) answers **423
@@ -754,7 +943,7 @@ it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (def
 
 ## Notifications (F11.11–F11.13)
 
-The bell in the header (`core/notification-centre/notification-bell`, next to the theme toggle)
+The bell in the top bar (`core/notification-centre/notification-bell`, next to the theme toggle)
 with the unread badge; its panel (dialog layout: header with "Erledigte ausblenden", the only
 scrolling list grouped by project, footer "Alle als gelesen" / "Alle anzeigen"; Escape and a
 click outside close it, focus back on the bell) and the page `/app/notifications`
@@ -782,30 +971,31 @@ filters kind / project / status). Slice `notifications/` (API), global module.
   specs that do not care construct them as before.
 - **`ProjectNotifications`** re-derives a project's conditions from stored state after every change
   that can affect them, raising what is true and resolving the rest: `filesChanged` (upload,
-  derived file, assignment, remove, re-apply, mapping deleted, carry-over, package import),
+  derived file, assignment, (de)activation, remove, re-apply, mapping deleted, carry-over, package
+  import — a deactivated file raises no file topic, F5.7a),
   `hintsChanged`, `calculated`, `openItemsChanged`, `sentChanged` (send, mark, undo, export,
   correction). A hint marked done/ignored settles the matching file topic.
 - **Triggers** (F11.12):
 
-  | Topic                                             | Kind            | Raised by / resolved by                                                                                            |
-  | ------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
-  | `rates.fetchFailed:<p>` (assets)                  | error           | "Kurse aktualisieren" with failed assets / a clean refresh; `retry:rates`                                          |
-  | `key.invalid:coingecko`                           | action          | CoinGecko 401/403 in a refresh / key accepted or saved                                                             |
-  | `estv.fetchFailed:<year>`                         | error           | scheduler **and** manual check fails (owners of the year's open projects + requester) / next success; `retry:estv` |
-  | `estv.newVersion:<p>`                             | info            | a new Kursliste stored / the project applies it (`EstvProjectRatesService`)                                        |
-  | `ai.callFailed`, `key.invalid:ai`                 | error / action  | `AiGate.call` with a context (code + HTTP status only) / a successful call, saved key                              |
-  | `mail.sendFailed:<p>`, `key.invalid:mail`         | error / action  | failed send (kind; auth → key) / successful send, test with the saved password, settings saved                     |
-  | `mail.sent:<p>`                                   | success         | successful send                                                                                                    |
-  | `export.failed:<p>`                               | error           | statement creation failed / next one succeeds                                                                      |
-  | `package.importFailed`                            | error           | project/account package import (its code) / next import                                                            |
-  | `file.needsMapping:<pf>`, `file.rowErrors:<pf>`   | action          | `ProjectNotifications.fileTopics` / file mapped, hint settled, file gone                                           |
-  | `file.readFailed:<p>`                             | error           | upload that cannot be read (422; the name only)                                                                    |
-  | `hints.open:<p>`                                  | action          | open F5.8 coverage hints (warnings/errors) / none left                                                             |
-  | `checks.openItems:<p>`, `rates.missingPrices:<p>` | action          | after a calculation (count) / ticked off, recalculated without                                                     |
-  | `project.changedSinceSent:<p>`                    | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
-  | `desktop.syncConflict`                            | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
-  | `setup.incomplete`                                | action          | wizard finished with skipped/open optional steps still missing settings / all set up (below)                       |
-  | `task.done:<label>[:<p>]`, `task.failed:…`        | success / error | the app's activity report (below)                                                                                  |
+  | Topic                                                | Kind            | Raised by / resolved by                                                                                            |
+  | ---------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+  | `rates.fetchFailed:<p>` (assets)                     | error           | "Kurse aktualisieren" with failed assets / a clean refresh; `retry:rates`                                          |
+  | `key.invalid:coingecko`, `key.invalid:coinmarketcap` | action          | the provider's 401/403 in a refresh / key accepted or saved                                                        |
+  | `estv.fetchFailed:<year>`                            | error           | scheduler **and** manual check fails (owners of the year's open projects + requester) / next success; `retry:estv` |
+  | `estv.newVersion:<p>`                                | info            | a new Kursliste stored / the project applies it (`EstvProjectRatesService`)                                        |
+  | `ai.callFailed`, `key.invalid:ai`                    | error / action  | `AiGate.call` with a context (code + HTTP status only) / a successful call, saved key                              |
+  | `mail.sendFailed:<p>`, `key.invalid:mail`            | error / action  | failed send (kind; auth → key) / successful send, test with the saved password, settings saved                     |
+  | `mail.sent:<p>`                                      | success         | successful send                                                                                                    |
+  | `export.failed:<p>`                                  | error           | statement creation failed / next one succeeds                                                                      |
+  | `package.importFailed`                               | error           | project/account package import (its code) / next import                                                            |
+  | `file.needsMapping:<pf>`, `file.rowErrors:<pf>`      | action          | `ProjectNotifications.fileTopics` / file mapped, hint settled, file gone                                           |
+  | `file.readFailed:<p>`                                | error           | upload that cannot be read (422; the name only)                                                                    |
+  | `hints.open:<p>`                                     | action          | open F5.8 coverage hints (warnings/errors) / none left                                                             |
+  | `checks.openItems:<p>`, `rates.missingPrices:<p>`    | action          | after a calculation (count) / ticked off, recalculated without                                                     |
+  | `project.changedSinceSent:<p>`                       | action          | `changesSinceSent` non-empty (F4.7) / sent again or undone                                                         |
+  | `desktop.syncConflict`                               | action          | desktop app reports conflict copies at start (`PUT …/sync-conflict`)                                               |
+  | `setup.incomplete`                                   | action          | wizard finished with skipped/open optional steps still missing settings / all set up (below)                       |
+  | `task.done:<label>[:<p>]`, `task.failed:…`           | success / error | the app's activity report (below)                                                                                  |
 
   Plus `wallet.fetchFailed:<wallet>` (error: label, failed networks, first code — never the
   address; resolved by a fetch without failures) and `key.invalid:chain` (a network's 401/403 →
@@ -885,8 +1075,8 @@ version) → `stale` without reading files. `POST /projects/:id/calculate` store
 key), `GET …/checks`, `PATCH …/open-items`, `GET|POST …/corrections`, `…/corrections/:id/undo|redo`.
 Closed projects: 409 for calculate, corrections, ticks, rate changes; exports stay allowed (the
 final statement) and use the last snapshot. `rates/`: `POST …/rates/refresh` (ECB via
-Frankfurter, Binance `<SYM>USDT`/`BUSD` daily closes, CoinGecko CHF with the user's key as
-fallback; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
+Frankfurter, then per asset the user's price providers in order — default Binance
+`<SYM>USDT`/`BUSD` daily closes, CoinGecko in T with the user's key — see "Price sources"; renamed assets via `RATE_ALIASES`; a series that already covers the year is skipped
 unless `force`; `GET …/rates/refresh/status` = progress of the refresh in flight, in memory —
 `RefreshProgress`; `RATES_DEV_DELAY_MS` slows each series down, development only),
 `PUT|DELETE …/rates/manual`, `POST …/rates/estv` (raw file body). Refused (409)
@@ -895,6 +1085,56 @@ recalculates first when stale; detailed Excel = the FACHREGELN sheets with formu
 `USDCHF`/`EURCHF`, value per position by price priority, SUMIFS), PDF = HTML printed by Chromium
 (`PdfRendererPort` → 503 without a browser; the desktop app prints with Electron, see Versions
 and icons › PDFs); `GET …/mail-draft` (F10.6).
+
+**A ticker is not a coin (F7.4, bug 07.10.2026: OPN = OPEN Ticketing Ecosystem was priced with
+Binance's `OPNUSDT`, another coin)** — `rates/domain/coin-choice.ts` (pure) decides per asset:
+
+- **Coin choice** (`user_settings.coin_choices`, provider-aware: symbol → `{ provider, id, name,
+symbol, contract? }`; `COIN_PROVIDERS` = `coingecko`, `coinmarketcap` (F7.4b); a new provider = an id
+  pattern + a `CoinDirectoryPort` adapter + a price source). A chosen coin → its provider
+  first (with the user's key; without one `noKey`), then only providers that see the same coin
+  (F7.4b, "Price sources"), **never** Binance or another ticker source.
+  The older `coingecko_ids` were migrated (`20261009090000_coin_choices`, and `parseCoinChoices`
+  still reads the plain-string shape, e.g. from older account packages).
+- **Ambiguous tickers** = the hand-kept `AMBIGUOUS_SYMBOLS` (OPN, ONE — verified at CoinGecko)
+  **plus** tickers the market list shows without a clear leader (below), without a chosen coin:
+  nothing is fetched by ticker, an existing Binance series is deleted on refresh and **filtered at
+  read time** everywhere (calculation input before the hash, dashboard project rates and the
+  `user_rate` cache) — so it counts on no day, never as 0; the calculation gets the open item
+  `ambiguousPrice:<asset>` („Kurs mehrdeutig – Coin wählen", `missingPrices` check; internal
+  report only, never on statements; fiat and USD-pegged assets never get it — the live market
+  list shares e.g. BUSD).
+- **Shared tickers (warnings)**: `coin_market` = CoinGecko's top 2000 by market cap
+  (`/coins/markets`, deployment-wide, `CoinMarketService.refreshIfStale` — at most daily, only in
+  an online "Kurse aktualisieren", which waits ≤ 3 s for it (`refreshBriefly`) — the pages run
+  on in the background; without a key 15 s apart with one retry after a 429 (the public API
+  refused 8 pages 2.5 s apart); a coin repeated across pages counts once; a failure keeps the
+  old list). Rule (`sharedTicker`,
+  deterministic): coins with the symbol and rank ≤ `SHARED_RANK_LIMIT` (2000) are relevant; < 2
+  relevant → nothing; second rank < `LEADER_FACTOR` (3) × first rank → **ambiguous** (no clear
+  leader); else **warning** (price used; Kurse tab, dashboard holding and the hint
+  `sharedTicker:<SYM>` say „Kürzel … wird von mehreren Coins verwendet — verwendet: … Prüfen?"
+  with the candidates). „Passt so" (`coin_dismissed`, per user + ticker) settles a warning only; a
+  chosen coin settles both.
+- **Choosing**: `GET /rates/coins/search?q=`, `GET /rates/coins/:provider/:id` (validation, 422
+  `unknownCoin`, 502 `coinProviderFailed`, 409 `offline`), `PUT|DELETE /settings/coins/:symbol`,
+  `PUT|DELETE /settings/coins/:symbol/dismissal`, `POST /projects/:id/rates/coin` (store + refetch
+  that asset with `force`). Storing/removing a choice deletes the asset's fetched rows in every
+  open project and in `user_rate`; choices are part of both input hashes (snapshot stale,
+  dashboard cache key) — the dashboard value changes at once. An override is only for its day.
+- **Wallet tokens** (`ContractCoinResolver`): in a project refresh, an ambiguous ticker (or a
+  shared one, with a CoinGecko key) held by the project's wallets under exactly one contract on
+  a CoinGecko platform (`COINGECKO_PLATFORMS`) is identified via `GET
+/coins/{platform}/contract/{address}` and stored as the coin choice with `contract` (several
+  contracts for one ticker, an unlisted contract or another symbol → nothing).
+- **ESTV**: a chosen coin is binding — a Kursliste entry (also a single ticker hit) is taken only
+  when its normalised name is the coin's, else `coinMismatch`; an unresolved ambiguous ticker
+  takes nothing (`ambiguousSymbol`).
+- Web: `shared/coins` (`CoinsService`, `lk-coin-picker`), Einstellungen › Kurse „Coin je Kürzel",
+  Kurse tab „Kursquelle je Asset" (source, „Falscher Kurs? Coin wählen", „Passt so", remove),
+  dashboard holdings (source line, warning, same actions), the override hint „Gilt nur für dieses
+  Datum". `COINGECKO_IDS` (built-in ids, OPN = `open-ticketing-ecosystem`) are only the
+  fallback after Binance and the picker's suggestion.
 
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
@@ -911,6 +1151,161 @@ scans every cell/HTML of the statements for forbidden words. Web (Exporte tab): 
 the internal report in separate cards, the list grouped „Auszüge für die Steuerbehörde“ /
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
+
+## Price sources (F7.4b)
+
+User request (07.10.2026): CoinMarketCap as a selectable price provider, plus other **free**
+providers with **historical daily** prices, so the user picks the order (e.g. CoinGecko or
+CoinMarketCap, with fallbacks). **Phase 1** = the adapters in
+`apps/api/src/integrations/rates/price-history/` (one port, seven adapters, bound in
+`IntegrationsModule`: `PriceHistorySourcesPort` → `PriceHistorySources.real()`, `useFactory`).
+**Phase 2 (done, 07.10.2026)** = settings, wiring into both refreshes, read-time preference, UI —
+below the port contract.
+
+**Research** (official docs + a few manual calls, checked **07.10.2026**; re-check before relying
+on a limit — free tiers change, CoinDesk's disappeared this year):
+
+| Provider                          | Key                                 | Daily history on the free tier                                                     | Limits (free)                                       | Quotes                      | Coin identification                                                               | Licence / attribution                                             | Sources                                                                                                                                                                                                                                            |
+| --------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CoinMarketCap**                 | required (free Basic), header       | **365 days** (`/v3/cryptocurrency/quotes/historical`); Builder 3 y, Startup+ 2010– | 15 000 credits/month, 50/min, 1 `convert` per call  | any fiat via `convert`      | CMC id; `/v1/cryptocurrency/map?symbol=` (no credits), `/v2/…/info?address=`      | commercial for one product ≤ 100k users; **attribution required** | coinmarketcap.com/api/pricing, …/api/documentation/pro-api-reference/cryptocurrency, …/guides/errors-and-rate-limits, …/academy/article/best-free-crypto-api-in-2026-free-tier-comparison                                                          |
+| **CoinGecko**                     | optional (Demo key or none)         | **365 days** (older → 401 `error_code` 10012, verified)                            | Demo 10 000 calls/month, ~30–100/min; keyless lower | any `vs_currency`           | CoinGecko id; `/search`, `/coins/{platform}/contract/{address}`                   | Demo: attribution required, no commercial licence                 | docs.coingecko.com, live call 07.10.2026                                                                                                                                                                                                           |
+| **DefiLlama**                     | none                                | **full** (`coins.llama.fi/chart`)                                                  | not published (Pro $300/mo = "higher")              | **USD only**                | `coingecko:<id>` or `<chain>:<address>` (`/prices/current/…` to check a contract) | free API, no attribution clause in the docs                       | api-docs.defillama.com (+ llms-free.txt), live call 07.10.2026                                                                                                                                                                                     |
+| **CoinPaprika**                   | none (free); paid via api-pro + key | **365 days** (rolling; older `start` → **402**, verified); OHLCV only 1 day        | 20 000 calls/month, 10 req/s per IP                 | **USD only** (or BTC)       | paprika id (`btc-bitcoin`); `/search?c=currencies`                                | **personal use only**, no redistribution                          | docs.coinpaprika.com/api-plans.md, …/faq.md, …/api-reference/tickers/get-historical-ticks-for-a-specific-coin.md, live call                                                                                                                        |
+| **Kraken**                        | none                                | **last 720 daily candles only** (fixed, not a plan)                                | public ~1 req/s                                     | USD, EUR, **CHF**, GBP, …   | pair `<BASE><QUOTE>` (BTC = `XBT`, DOGE = `XDG`)                                  | exchange ToS; no attribution clause in the API docs               | docs.kraken.com/api/docs/rest-api/get-ohlc-data, live call (XBTCHF starts 720 days back)                                                                                                                                                           |
+| **Bitfinex**                      | none                                | full                                                                               | candles 30 req/min, ≤ 10 000 per call               | USD, EUR, GBP, JPY — no CHF | `t<BASE><QUOTE>` / `t<BASE>:<QUOTE>` (USDT = `UST`)                               | exchange ToS; no attribution clause in the API docs               | docs.bitfinex.com/reference/rest-public-candles, live call (tBTCCHF empty)                                                                                                                                                                         |
+| **Coinbase Exchange**             | none (User-Agent required)          | full since listing                                                                 | ≤ 300 candles per call; public ~10 req/s            | USD, EUR, GBP — no CHF      | product `<BASE>-<QUOTE>`                                                          | exchange ToS; no attribution clause in the API docs               | docs.cdp.coinbase.com/exchange/reference/exchangerestapi_getproductcandles, live call (BTC-CHF NotFound)                                                                                                                                           |
+| ~~CryptoCompare / CoinDesk Data~~ | —                                   | —                                                                                  | —                                                   | —                           | —                                                                                 | —                                                                 | **Dropped**: CoinDesk retired the free API tier on 21.05.2026 ("accounts without a subscription will no longer have API access"; data.coindesk.com/blogs/changes-to-coindesk-data-indices-api-free-tier-access); paid plans are sales-quoted only. |
+
+**Port contract** (`price-history-source.port.ts`):
+
+- `PriceHistorySourcePort { id; capabilities; searchCoins?(query, key?); resolveCoin?({symbol? |
+contract?: {network, address}}, key?); daily({coin, quote, from, to, apiKey?}) →
+DailyPrice[]; test(key?) → PriceSourceTestResult }`. `PriceHistorySourcesPort` = `all()` +
+  `byId(id)`; ids `coinmarketcap | coingecko | defillama | coinpaprika | kraken | bitfinex |
+coinbase`.
+- `capabilities`: `key` (required/optional/none), `quotes` (`anyFiat` or a list),
+  `freeHistoryDays` (`null` = all), `coinRef` (`cmcId | coingeckoId | llamaCoin | paprikaId |
+ticker`), **`dayPoint`** (`close` = end of day D: DefiLlama, Kraken, Bitfinex, Coinbase;
+  `startOfDay` = first snapshot ≈ 00:00 UTC of D: CoinMarketCap `interval=daily`, CoinGecko,
+  CoinPaprika — phase 2 decides whether that matters), `search`, `contractLookup`,
+  `personalUseOnly`, `attribution`.
+- `daily` returns `{date, value}` per **UTC day** inside `[from, to]`, sorted, one per day,
+  **plain decimal strings > 0** (`priceText`: source text via `parseJsonKeepingNumbers` →
+  `tryParseDecimal` → `toDecimalString`; exponents expanded; a JS number, 0 or junk is a missing
+  day). Close-based adapters drop today (unfinished). Ranges are chunked per provider (CMC 366
+  days, CoinGecko/DefiLlama/CoinPaprika 365, Coinbase 300, Bitfinex 10 000 candles).
+- Errors: `PriceSourceError(source, code, status, detail)` with code `invalidKey |
+planLacksHistory | rateLimited | notFound | unsupportedQuote | network | timeout |
+badResponse`; `detail` = the provider's words or the system cause, **redacted**
+  (`redactSecrets` with the key; URLs as `safeUrl`). CMC `error_code` 1006 / a 400 naming the
+  plan, CoinGecko 10012, CoinPaprika 402, Kraken's 720-day depth → `planLacksHistory`.
+  DefiLlama's `{"coins":{}}` and Bitfinex's `[]` are an empty series (they do not tell an
+  unknown coin from no data).
+- `test(key?)` never throws: CMC = `/v1/key/info` (plan credits + rate) + 1-credit probes 360 and
+  1090 days back → `historyDays` 365 or 1095, `ok: false` + `planLacksHistory` when no history;
+  CoinGecko `/ping`; CoinPaprika a tick 360 days back; DefiLlama a current price; Kraken
+  `/Time`; Bitfinex `/platform/status`; Coinbase `/time`.
+- `PriceHttp` (`price-history-http.ts`): per-provider `SerialGate` spacing (CMC 1.5 s, CoinGecko
+  2.5 s, Bitfinex 2.1 s, Kraken 1 s, DefiLlama/CoinPaprika 0.5 s, Coinbase 0.35 s), 20 s timeout
+  covering the body, 4 MB cap, `redirect: 'error'`, no credentials. **No request without an
+  explicit call** — the callers (the refresh handlers, "Testen", "Coin wählen") apply F11.3
+  (`RATES_ONLINE` + the user's switch); building the adapters makes no request.
+- `findCoin?(id, key?)` (phase 2, CoinMarketCap: `/v2/cryptocurrency/info?id=`, 1 credit) —
+  validation in "Coin wählen".
+- Tests: one spec per adapter with a fake `fetch` (`testing/fake-fetch.ts`, recorded shapes:
+  success, empty, plan error, 401, 429, malformed, timeout, size cap) and
+  `expectDecimalStrings` on every series; no live calls.
+
+**Phase 2 — what is wired** (`rates/domain/price-providers.ts` pure rules,
+`rates/application/price-fetch.ts` the ONE chain for project and dashboard):
+
+- **Settings per user** (migration `20261009110000_price_sources`, `ADD COLUMN`s with their own
+  CHECKs): `user_settings.price_sources` = JSON array `[{id, enabled}]` in the user's order
+  (`'[]'` = default; `normalisePriceProviders`: known ids in the stored order, duplicates/unknown
+  dropped, missing ones **appended off**), `coinmarketcap_key` sealed (`enc:v1:%`). The CoinGecko
+  key **stays** in `coingecko_key` (no migration of it). `API_KEY_NAMES` = coingecko, etherscan,
+  coinmarketcap; views carry a hint only; `SealedKeysEraser` ("PIN vergessen") clears the CMC key
+  too (`ErasedKeys.coinmarketcap`). `PUT /api/settings` takes `priceSources` (each id once, else 400) and `keys.coinmarketcap`; `GET /api/settings/price-sources` = the list in the user's order
+  with each provider's capabilities (label, key, quotes, `freeHistoryDays`, `dayPoint`, `coinRef`,
+  `personalUseOnly`, `attribution`) + `keyHint`; `POST /api/settings/price-sources/:provider/test
+{key?}` = the adapter's `test()` (typed key never stored, else the stored one; 409 `noKey` /
+  `offline`; the detail redacted once more; Binance: one recent BTC close). `get_settings`
+  (tool) stays an allow-list without keys — the tool fixture plants a CMC hint and
+  `tool-registry.spec.ts` asserts it never leaves a tool.
+- **Default order** = `binance → coingecko` on (exactly the sources and order before phase 2, so
+  an existing user's prices do not change and no new third party is contacted unasked), then
+  `coinmarketcap, defillama, coinpaprika, kraken, coinbase, bitfinex` **off** (CMC needs a key,
+  CoinPaprika's free tier is personal use only). CoinGecko is used **only with the user's Demo
+  key** in the chain, as before (`noKey` otherwise).
+- **The chain** (`fetchPrices`, per asset): an **ambiguous** ticker (hand-kept list or market
+  list without a clear leader, no chosen coin) → nothing is asked at **any** provider; a **chosen
+  coin** → its provider first (**even when switched off** — the choice is more specific), then only
+  enabled providers that see **the same coin** (`chosenCoinSources`: DefiLlama
+  `coingecko:<id>` for a CoinGecko coin; CoinGecko/CMC/DefiLlama by the choice's contract), never
+  a ticker source (Binance/Kraken/Bitfinex/Coinbase); otherwise the enabled providers in order —
+  ticker sources by the symbol (Binance + `RATE_ALIASES`), CoinGecko by `COINGECKO_IDS` → the
+  market list's leader (`CoinMarketService.leaders`: the only relevant coin or a clear leader) →
+  `resolveCoin({symbol})`, CMC/CoinPaprika by `resolveCoin({symbol})`, DefiLlama only by a known
+  CoinGecko id. **`pickBySymbol`** applies the OPN rule per provider: exact symbol; one → it;
+  several → the best rank only with a clear lead (second ≥ `LEADER_FACTOR` × first or unranked),
+  else that provider is `ambiguous` and the next one is asked — never a silent pick. Lookups are
+  cached a day (`CoinRefCache`, one per handler). **Fallback**: every answer but a series moves
+  on — `notFound`, `planLacksHistory`, `unsupportedQuote`, empty, `noKey`, `noCoin`,
+  `ambiguous` **and hard failures** (key refused, rate limit, network, timeout, bad answer;
+  decided: a broken provider must not block a price another has). Status `fetched` (source =
+  that provider), `failed` only when nobody delivered and someone failed hard (`error: {provider,
+code}` = the first hard failure), `noKey` when a chosen coin's provider lacks its key and
+  nobody else could price that coin, else `notFound`. Quote: the tax currency T where the
+  provider prices in it (`anyFiat`, Kraken CHF/EUR/…), else **USD** (DefiLlama, CoinPaprika,
+  Bitfinex/Coinbase for CHF) — stored as USD and valued × USD/T of the day by the engine as before.
+  CoinGecko prices now come through the price-history adapter (it maps CoinGecko's 10012 to
+  `planLacksHistory`); the legacy `FiatPriceSourcePort` remains only for the old
+  `POST /settings/keys/coingecko/test`.
+- **Day semantics (decided)**: the value stored for UTC day **D is the close of D** (≈ 23:59:59
+  UTC) — Binance's kline close, Kraken, Bitfinex, Coinbase, DefiLlama. `startOfDay` providers
+  (CoinGecko, CoinMarketCap `interval=daily`, CoinPaprika) are asked **one day later** and each
+  value is filed **one day earlier** (`dayShift`): the 00:00 snapshot of 01.01. is the close of
+  31.12., so a year-end value means the same moment at every provider. CoinGecko is always asked
+  for ≥ 91 days (only then one 00:00 point per day). Before phase 2 CoinGecko's 00:00 value was
+  filed under its own day; such stored rows stay until a forced refresh. `price-fetch.spec.ts`.
+- **Sources** (engine `RATE_SOURCES`): + `coinmarketcap | defillama | coinpaprika | kraken |
+bitfinex | coinbase` (`FETCHED_PRICE_SOURCES`); `project_rate`/`user_rate` **redefined** in the
+  same migration only to widen the source CHECK (every other CHECK + the unique index copied;
+  `price-sources.migration.integration.spec.ts`; `migrate diff` empty). Read-time filter
+  `priceSourceUsable`: `TICKER_SOURCES` = Binance, Kraken, Bitfinex, Coinbase, CMC, CoinPaprika,
+  DefiLlama (unusable for an ambiguous ticker; CoinGecko rows keep counting as before); a chosen
+  coin counts only `chosenCoinSources`. Packages validate sources with `RATE_SOURCES`.
+- **Preference among stored series** (point 3 of the request): the engine's price priority is
+  unchanged (override → ESTV → record prices → stored series); among **fetched** series
+  `preferFetchedSources(entries, order)` (engine, pure) keeps per asset and UTC day only the rows
+  of the best-ranked source in the user's **full** order (disabled ones keep their place; unknown
+  after, by the fixed rank) — a lower-ranked series still fills the days the preferred one lacks.
+  Applied before the input hash (`CalculationInputService.sources` → a new order that changes a
+  value makes the snapshot **stale**) and in the dashboard on the merged rates (`sourceOrder` is
+  part of its cache key). Edge decided: where an old CoinGecko series (in T) and a Binance one
+  (USD) share days, the default order now takes Binance's.
+- **Errors**: `rates.fetchFailed:<project>` carries `provider` + `priceError` (the web
+  translates them: `rates.source.*`, `rates.sourceErrors.*`); `key.invalid:coingecko` /
+  `key.invalid:coinmarketcap` (`notifyKeys`, project **and** dashboard refresh) when a keyed
+  provider refuses the key, resolved when it accepts one or a key is saved; refresh summaries have
+  `error` per failed asset; 409 `noKey` (`errors.api.noKey`) for CMC "Coin wählen" without a key.
+- **Coin choice at CoinMarketCap**: `COIN_PROVIDERS` = coingecko, coinmarketcap (ids `^[1-9]\d*$`);
+  `ProviderCoinDirectory` (integrations) = CoinGecko's directory + CMC through its adapter
+  (`searchCoins` = `/v1/cryptocurrency/map?symbol=`, no credits; `findCoin`); market list and
+  contract lookups stay CoinGecko's. `CoinChoiceService.keyFor` picks the provider's key.
+- **Web**: `core/api/price-sources.types.ts`; `PriceSourcesService` (root: list, save via
+  `UserSettingsService.save`, "Testen" state per provider); `lk-price-sources-form`
+  (`features/settings/components/price-sources-form`: numbered list, on/off, up/down, badges key /
+  free history / USD only / by ticker / personal use only, the attribution text, "Testen" with ok
+  - plan + history days or the error code text + HTTP status + the provider's words + URL, the CMC
+    key field; `compact` + `embedded` in the wizard's rates step, whose "Weiter" submits both
+    forms) in Einstellungen › Kurse ("Kursanbieter"). `lk-price-attribution`
+    (`shared/components/price-attribution`: "Kursdaten: Data provided by CoinGecko · Data provided
+    by CoinMarketCap.com", linked) under the Kurse tab's "Kursquelle je Asset" and series tables and
+    the dashboard holdings, whenever such data is shown. The coin picker has a provider select.
+    Refresh results list failed assets as "<provider>: <error>". `dataChangesInterceptor`:
+    `PUT /settings` = every project + `rates` + `settings` (the order ranks every project's
+    series); `…/price-sources/:id/test` is read-only.
 
 ## Tax currency (F4.1, F4.1a)
 
@@ -966,7 +1361,9 @@ corrections, rates, period, engine version — same hash, no file read). Rules a
 
 1. **One record set**: a stored file used in several projects (same SHA-256 → same record ids)
    is read once, from the entry of the project with the newest tax year; `uniqueRecords` also
-   dedupes by id in the engine.
+   dedupes by id in the engine. Only **active** entries take part (F5.7a): a deactivated entry
+   never wins, so the same file still counts through an active entry of another project; the
+   chosen entry's id is part of the cache hash.
 2. **Corrections belong to the year of their project**: a correction counts only when the date it
    concerns (reclassified booking's time, manual booking's time, manual holding's date, override
    date) lies in a year its project _owns_ — `yearOwner`: the project of that tax year, else the
@@ -988,7 +1385,9 @@ year) — the deployment-wide `estv_*` tables are not read directly. Rates: a **
 (`user_rate`, never `manual`/`estv`; unrelated to the deployment-wide `estv_rate`) filled
 by "Kurse aktualisieren" — FX first, then one request per asset without a price (the app shows
 progress), skipped when project or cache rates cover both ends of the period (±14 d) unless
-`force`; 409 when lookups are off (F11.3). Period ≤ 3660 days. The project detail shows a compact
+`force`; 409 when lookups are off (F11.3); the same coin rules as a project (F7.4: a chosen coin
+only from its provider, an ambiguous ticker never by ticker — such cache rows are filtered and
+deleted). Each holding carries `priceSource`, `pricing`, `coin`, `shared`. Period ≤ 3660 days. The project detail shows a compact
 card for its tax year (`project` param: only that project). Charts are hand-rolled SVG in
 `shared/charts` (no dependency): decimal strings become numbers **only there**, for coordinates;
 tooltip + crosshair (mouse, arrow keys), a visually hidden table, colours from tokens (`--alloc-*`
@@ -1003,7 +1402,9 @@ linked in the same transaction via `ProjectBundle.walletIds`, carry-over kind `w
 wallets migration widens that CHECK; their derived files are made anew by `WalletDerivedFiles.sync`
 after the write, files with origin `wallet:` are never offered or linked; manual balances stay with
 their year); `GET|POST /projects/:id/take-over` (F4.4: files
-of other projects, already-linked ones skipped). Every item is recorded in `project_carryover`
+of other projects, already-linked ones skipped). A **deactivated** file (F5.7a) is offered with
+`active: false` and never preselected (the web says why); ticked anyway, it is linked **active**
+(the new project decides for itself). Every item is recorded in `project_carryover`
 ("aus Projekt X", `GET …/carryovers`); a carried open item is ticked via `open_item_state` with
 the key `carried:<carryover id>`. A closed source project is fine (only read). Writes go through
 `ProjectBundleRepositoryPort.write` — ONE interactive transaction (project, mappings, files,
@@ -1015,13 +1416,16 @@ own items by `key`. The previous year's closing positions reach the new project'
 `standardExport` in the engine → the template's columns (re-importable as is; corrections
 applied) + `Typ (Original)`, `Korrekturen`, `Kurs CHF verwendet`, `Kursquelle`, `Wert CHF`,
 `Quelldatei`, `Zeile`. CSV = one record type with a UTF-8 BOM; XLSX = both sheets, every cell
-text. Lost on a round trip: `rawType` (becomes the kind), `valueUsd`/`feeValueUsd`.
+text. Lost on a round trip: `rawType` (becomes the kind), `valueUsd`/`feeValueUsd`. **Only active
+files** (F5.7a, decided: no option for deactivated ones — the export is what the calculation reads;
+the card's hint says so).
 
 **Packages** (`packages/`, fflate): `GET /projects/:id/package` → `<name>-<year>.lkproj.zip`;
 `POST /projects/import-package` (raw body) → a new project; `GET /account/package`,
 `POST /account/import-package` (Profil). `manifest.json` = format + version, app version
 (`APP_VERSION`), created, project facts, files (SHA-256, size, role original/derived, analysis,
-mapping key), mappings, exports, counts, and `entries` = **every** other ZIP entry with SHA-256 +
+mapping key, `disabled` = `{at, note}` or null — F5.7a, zod default null: older packages import
+every file active; the bundle writes it as `deactivation`), mappings, exports, counts, and `entries` = **every** other ZIP entry with SHA-256 +
 size. Import verifies before writing: ZIP directory limits (package ≤ 200 MB, inflated ≤ 1 GB,
 entry ≤ 200 MB, ≤ 20 000 entries; nginx in front allows 50 MB), safe paths only (no `..`,
 absolute, backslash, drive — zip-slip), entries exactly as listed with matching hashes (else 422
@@ -1069,8 +1473,9 @@ divided by `denomination`) and `estv_check` (last check per year, outcome `updat
 * **Projects**: `EstvProjectRatesService.apply` runs first in "Kurse aktualisieren" (and on
   "übernehmen"): assets = `assetsNeedingPrices` + stablecoin positions, matched by ticker, then
   `ESTV_SYMBOL_ALIASES` / `RATE_ALIASES`, then exact name; several entries of one ticker → the
-  one whose name is the known coin name (CoinGecko id table / user ids), else **ambiguous: no
-  value** (the UI asks for an override). Writes `estv` rates at 31.12. (price CHF + fx USD/EUR) with
+  one whose name is the known coin name (CoinGecko id table), else **ambiguous: no
+  value** (the UI asks for an override); a chosen coin (F7.4) is binding by name, an ambiguous
+  ticker without a choice takes nothing. Writes `estv` rates at 31.12. (price CHF + fx USD/EUR) with
   `project_rate.note` = `ESTV-Kursliste <Jahr>, Stand <dd.MM.yyyy>`; automatic rows that no longer
   match are removed. ESTV wins by the price priority (also USD/CHF at 31.12. over the ECB fixing);
   a new version changes values → the input hash → the snapshot is stale. `GET …/rates` has `estv`
@@ -1127,7 +1532,10 @@ unsaved values, the precise error: code, HTTP status, provider words).
   `fee`) and `<label>.wallet-bestaende.csv` (F6.5 manual balances = statement holdings for that
   wallet/network, Beleg = the PDF's name) with origin **`wallet:<walletId>`** (migration
   `20261008140000_wallets` widens the `project_file.origin` CHECK). Same bytes → same file; new
-  bytes → added, the old one removed (F5.7). Closed projects are never touched; deleting a wallet
+  bytes → added, the old one removed (F5.7). A **deactivated** derived file (F5.7a) stays so: same
+  bytes keep the file untouched, and new bytes replacing a deactivated file of the same kind
+  (`.wallet-buchungen.csv` / `.wallet-bestaende.csv`, `derivedKind`) inherit its date + note — a
+  sync never re-enables a file. Closed projects are never touched; deleting a wallet
   used by a closed project → 409 `usedByClosedProject`. Synced on fetch, add/remove, label/network
   change, "kein Spam" and balance changes.
 - **F6.6 spam** (`tokenVerdicts`): scam names ("Claim", URLs), zero-value only, address poisoning
@@ -1194,7 +1602,7 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   CHECK). Deployment-wide: no user/project column. Prisma writes `AUTOINCREMENT` for the `Int @id`
   year keys — harmless, the year is always given. `estv.persistence.integration.spec.ts`.
 - **Dashboard / carry-over** (migration `20261008110000_dashboard_carryover`): `user_rate` (unique
-  `(user, kind, asset, currency, date, source)`; source only `binance|coingecko|ecb`, decimal/date
+  `(user, kind, asset, currency, date, source)`; source `ecb` + the fetched providers (F7.4b), decimal/date
   CHECKs; cascade with the user) and `project_carryover` (kind CHECK, `json_valid(data)`; cascade
   with the project; `source_project_id` is no FK — the source may be deleted later, its name stays).
   `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
@@ -1210,6 +1618,20 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `setup.persistence.integration.spec.ts`.
 - **Mapping library** (migration `20261008200000_mapping_library`): see "Mapping library" —
   two new tables with triggers, `import_mapping` redefined (origin `library` + reference).
+- **Deactivated files** (migration `20261009100000_project_file_disabled`, F5.7a):
+  `project_file.disabled_at` + `disabled_note` (`ADD COLUMN`, column CHECK: a note only with a
+  date, ≤ 500 — no redefinition); `files.persistence.integration.spec.ts` tests them.
+- **Price sources** (migration `20261009110000_price_sources`, F7.4b): `user_settings` + 2 `ADD
+COLUMN`s (`coinmarketcap_key` sealed, `price_sources` JSON array); `project_rate`/`user_rate`
+  **redefined** only to widen the source CHECK. `price-sources.migration.integration.spec.ts`.
+- **Coin choices** (migration `20261009090000_coin_choices`, F7.4): `user_settings` **redefined**
+  — `coingecko_ids` becomes `coin_choices` (JSON object, every stored id carried over as a
+  CoinGecko choice) + `coin_dismissed` (JSON array); every other column/CHECK copied; new table
+  `coin_market` (deployment-wide, PK `(provider, coin_id)`, symbol/name/rank/price CHECKs).
+  `calculation.persistence.integration.spec.ts`, `coin-choices.migration.integration.spec.ts`.
+- **Remote library** (migration `20261008210000_remote_library`, F5.18): `remote_library_settings`
+  (new table, CHECKs inside the CREATE TABLE) and `import_mapping.library_server` (`ADD COLUMN`
+  with a column CHECK — no redefinition); `remote-library.persistence.integration.spec.ts`.
 - **Notifications** (migration `20261008160000_notifications`, new table only): `notification`
   (unique `(user_id, topic)`, index `(user_id, occurred_at)`; CHECKs: kind, topic 1–300,
   `title_key LIKE 'notifications.%'`, params a JSON object ≤ 4000, action null or a JSON object;
@@ -1253,15 +1675,20 @@ handlers.
 container's `entrypoint.sh` rewrites it at start from `LK_*` variables, so one image serves every
 environment.
 
-| Key          | Dev (`public/env.js`)                                                  | Container (`entrypoint.sh`)              |
-| ------------ | ---------------------------------------------------------------------- | ---------------------------------------- |
-| `apiBaseUrl` | empty — dev server proxies                                             | `LK_API_BASE_URL`, empty = nginx proxies |
-| `authMode`   | `dev`                                                                  | `LK_AUTH_MODE`, default `firebase`       |
-| (desktop)    | generated by the app:// handler: `apiBaseUrl: ''`, `authMode: 'local'` |                                          |
-| `firebase.*` | empty                                                                  | `LK_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, … |
+| Key                          | Dev (`public/env.js`)                                                  | Container (`entrypoint.sh`)              |
+| ---------------------------- | ---------------------------------------------------------------------- | ---------------------------------------- |
+| `apiBaseUrl`                 | empty — dev server proxies                                             | `LK_API_BASE_URL`, empty = nginx proxies |
+| `authMode`                   | `dev`                                                                  | `LK_AUTH_MODE`, default `firebase`       |
+| (desktop)                    | generated by the app:// handler: `apiBaseUrl: ''`, `authMode: 'local'` |                                          |
+| `firebase.*`                 | empty                                                                  | `LK_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, … |
+| `umamiUrl`, `umamiWebsiteId` | empty (off)                                                            | `LK_UMAMI_URL`, `LK_UMAMI_WEBSITE_ID`    |
 
 Only `/api` URLs get the bearer token (`isApiRequest`), never the i18n files or another host.
 There is no `GET /api/config` (surf-lend's console settings); env.js is the only source.
+
+**Statistics** (as in surf-lend): `core/analytics/analytics.service.ts` loads the self-hosted
+Umami tracker (cookieless) when both Umami values are set — never with `authMode: 'local'` (the
+desktop). Only the path is sent (`data-exclude-search`, `data-exclude-hash`), no `?tab=`/`#file-`.
 
 ## Desktop (`apps/desktop`, F1.2, F3.1, F3.4)
 
@@ -1314,6 +1741,9 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
   German dialog instead of Electron's raw stack, then exit; start failures likewise. Both are
   logged with the stack to `<userData>/logs/main.log`. `LK_NO_DIALOGS=1` (automated runs) only
   logs. Hilfe → Über lazy-koins shows the full version.
+- **Mapping library (F5.18)**: the desktop has no library of its own; Einstellungen › Bibliothek
+  links it to a web deployment's public, read-only library (empty by default = never online for
+  it). See "Mapping library".
 - **Unsigned, no auto-update** (open decision). Signing later via `CSC_LINK`/`CSC_KEY_PASSWORD`
   and `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID` as GitHub secrets (names in
   `deploy/README.md`); without `CSC_LINK` the mac identity is forced off.
@@ -1332,7 +1762,8 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
   `src/app/build-info.ts` → `GET /api/health` (`version`) and public **`GET /api/version`**
   (`{ version, commit, full, builtAt }`). Unbundled (Vitest): `0.0.0-dev+unknown`.
 - **Web**: reads `/api/version` (`core/version/app-version.service.ts`) and shows "lazy-koins
-  vX.Y.Z (abc1234)" in the shell's footer — web and API always come from the same commit.
+  vX.Y.Z (abc1234)" as the title of the `vX.Y.Z` badge next to the name in the sidebar header
+  (`app.versionBadge`, as in etx) — web and API always come from the same commit.
 - **Images**: `_images.yml` passes `LK_VERSION`/`LK_COMMIT` build args (nearest tag at build time —
   test images are promoted unchanged to production, so the commit is what identifies them) and
   sets `org.opencontainers.image.version` (full) + `.revision`.
@@ -1353,7 +1784,7 @@ away from the app, `http(s)` links open in the system browser, no `<webview>`.
 **Icons**: one source, `assets/brand/icon.svg`. `pnpm icons` (`scripts/build/icons.cjs`, rendered
 by Electron's Chromium — no image library) writes `apps/desktop/build/icon.png` (1024) +
 `icon.ico` (16–256) and `apps/web/public/favicon.svg|.ico` + `apple-touch-icon.png` (180); outputs
-are committed. The header shows `favicon.svg` at 24 px next to the word mark.
+are committed. The sidebar header shows `favicon.svg` at 24 px next to the word mark.
 
 ## Feature structure (app)
 
@@ -1384,7 +1815,23 @@ are provided by the component (`providers: [...]`), list/form services are root.
   with every action button across the full width at the bottom. All three are **direct children**
   of `<hlm-dialog-content>`; a footer inside an `@if` is fine as long as it stays a direct child.
   Styled globally in `styles.css`. The same goes for any other overlay with actions.
-- Desktop first: the shell is a header with the navigation (`core/layout/app-shell`), no tab bar.
+- **The shell is a left sidebar** (user rule, 09.10.2026: "Menü links wie bei Work Time Manager";
+  `core/layout/app-shell`, ported from etx-working-time-manager): the generated spartan
+  `hlm-sidebar collapsible="icon"` inside `hlmSidebarWrapper` — header = `favicon.svg` + name +
+  version badge; content = `<nav aria-label>` with the main navigation from `nav-config.ts` (the
+  single source: `NAV_ITEMS`, `children` = an expandable sub-list like etx's, `navItemsFor` =
+  the library rule, `isNavActive`/`isNavRowActive` = the most specific entry carries
+  `aria-current`; a parent row only while its sub-items cannot be seen); footer = the user menu
+  (spartan dropdown: Profil, Einstellungen, Jetzt sperren with a PIN, Abmelden with an account;
+  the e-mail only with an account). From `md` (768 px wide is still mobile) it collapses to icons
+  (tooltips) — remembered in the cookie `lk_sidebar` (`core/layout/sidebar-config.ts`,
+  `provideAppSidebar()` in `app.config.ts`), Ctrl/Cmd+B toggles; below it is an off-canvas
+  sheet (Escape closes it, focus returns to the trigger; it closes after a navigation). The
+  content (`main[hlmSidebarInset]`) has a slim top bar (`hlmSidebarTrigger` at the left;
+  bell, assistant, theme at the right), then `.lk-scroll-area` (the only scrolling part) beside
+  the chat panel. The setup wizard hides the `<nav>` (header and user menu stay). Sidebar
+  colours: the `--sidebar*` tokens in `styles.css`. `app-shell.spec.ts` guards nav-in-sidebar,
+  the trigger, collapse, the mobile sheet, `aria-current` and the wizard rule. No tab bar.
 - **Every action that can take more than ~1 s goes through the `ActivityService`** (user rule,
   F11.20): `core/activity/activity.service.ts` (root, signals) shows it in the app-wide
   indicator (`lk-activity-indicator` in `app.html`, bottom right, above dialogs and toasts —
@@ -1426,8 +1873,10 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`notifications` + `projects`). Forms are not reloaded under the user's typing (the project
   form resets only when its facts really changed; the mapping editor and wallet form are set from
   their own answers).
+- F5.7a: `PATCH projects/:id/files/:fileId/active` = that project + scope `notifications` (its
+  file topics are resolved / raised again).
 - **Stale**: `CalculationInputService.isStale` is the one rule (engine version or input hash —
-  files, mapping versions, corrections, rates, wallets, currency, previous year); `GET
+  files (only active ones, F5.7a), mapping versions, corrections, rates, wallets, currency, previous year); `GET
 /projects/:id/result` (`stale`), `GET /projects/:id/result/status` (`{ calculatedAt, stale }`,
   cheap) and the list (`stale`) use it. The project page shows "Daten geändert – neu berechnen"
   with a button under its header; the list marks the figures "veraltet". No silent
@@ -1439,8 +1888,8 @@ are provided by the component (`providers: [...]`), list/form services are root.
 - spartan components are generated, never hand-written: `npx nx g @spartan-ng/cli:ui
 --name=<c> --no-interactive` (skill `add-ui-component`). `libs/ui/**` is vendored — don't edit
   or format it. `ls libs/ui/` for what exists (badge, button, calendar, card, date-picker,
-  dialog, dropdown-menu, input, input-group, label, popover, select, separator, skeleton, sonner,
-  table, textarea, tooltip, utils). Selects are native `<select hlmInput>`, as in surf-lend
+  dialog, dropdown-menu, input, input-group, label, popover, select, separator, sheet, sidebar,
+  skeleton, sonner, table, textarea, tooltip, utils). Selects are native `<select hlmInput>`, as in surf-lend
   (`select` came with the calendar's month/year dropdowns).
 - **Date inputs** (user rule, 07.10.2026: "den gleichen Date Selector wie im
   etx-work-time-manager") — every date looks and behaves the same, ported from etx:
@@ -1506,7 +1955,7 @@ disabled?, hidden? }`. Exactly one visible action → a plain icon button with t
 - Colours live **only** in `apps/web/src/styles.css` (light + `:root.dark`). Templates use
   semantic classes; `no-hardcoded-design-values` rejects hex, arbitrary px and inline styles.
 - The look: calm and neutral for reading figures — cool slate greys, an ink-blue primary, Inter,
-  radius 0.5rem; component classes `lk-brand`, `lk-nav-link`, `lk-panel`, `lk-facts`.
+  radius 0.5rem; component classes `lk-brand`, `lk-panel`, `lk-facts`.
 - Every visible string is a key in `public/i18n/de-CH.json` (German/Swiss, du-form) **and**
   `public/i18n/en.json` (English, F11.2); `no-hardcoded-text` rejects literal text in templates
   and `core/i18n/i18n-keys.spec.ts` fails when a referenced key is missing in either file, when

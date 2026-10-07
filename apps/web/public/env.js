@@ -18,4 +18,7 @@ window.__LK_ENV__ = {
     projectId: '',
     appId: '',
   },
+  // Umami statistics (web only, never on the desktop); empty = off.
+  umamiUrl: '',
+  umamiWebsiteId: '',
 };

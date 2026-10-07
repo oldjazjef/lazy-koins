@@ -11,7 +11,9 @@ import { previewText } from '../domain/preview-texts';
 import { capped, fileLink, id, limit, link } from './common';
 
 /**
- * The mapping library (F5.15–F5.17, web only — not registered on the desktop). Reads are
+ * The mapping library (F5.15–F5.17). On the desktop (F5.18, `remote` mode) only the reads and
+ * `take_library_mapping` exist — they go to the linked web deployment's public library; nothing
+ * is published, rated or deleted from there. Reads are
  * public (every signed-in user sees every entry); writes act only for the caller: publishing and
  * deleting reach only the caller's own mappings and entries (someone else's = notFound), taking
  * makes a private copy, rating is the caller's own stars. No input names a user, and no output
@@ -60,7 +62,23 @@ const libraryId = id('library mapping').describe(
   'The library entry id (from search_library).',
 );
 
+/** The tools that also exist on the desktop (read-only library, F5.18). */
+export const REMOTE_LIBRARY_TOOLS = [
+  'search_library',
+  'get_library_mapping',
+  'take_library_mapping',
+] as const;
+
 export function libraryTools(library: LibraryService): AnyTool[] {
+  const all = allLibraryTools(library);
+  return library.enabled
+    ? all
+    : all.filter((tool) =>
+        (REMOTE_LIBRARY_TOOLS as readonly string[]).includes(tool.name),
+      );
+}
+
+function allLibraryTools(library: LibraryService): AnyTool[] {
   return [
     defineTool({
       name: 'search_library',

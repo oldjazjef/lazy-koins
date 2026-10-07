@@ -21,7 +21,12 @@ export default [
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+          allow: [
+            '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
+            // F5.19: the bundled standard mappings (product data, repo `mappings/standard/`) are
+            // inlined into the API bundle by `suggestions/domain/standard-mappings.ts`.
+            '^(\\.\\./)+mappings/standard/[a-z0-9-]+\\.mapping\\.json$',
+          ],
           depConstraints: [
             // The engine is pure: it may depend on nothing in the workspace but itself (its own
             // eslint.config.mjs additionally bans framework, I/O and clock access).

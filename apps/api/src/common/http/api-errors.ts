@@ -13,7 +13,12 @@ export type ConflictCode =
   | 'usedByClosedProject'
   | 'alreadyDecided'
   | 'alreadyPublished'
-  | 'ownEntry';
+  | 'ownEntry'
+  | 'libraryNotConfigured'
+  | 'duplicateMapping'
+  | 'libraryCopy'
+  /** A provider that needs the user's key has none stored (price sources: CoinMarketCap). */
+  | 'noKey';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

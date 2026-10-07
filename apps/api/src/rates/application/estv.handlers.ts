@@ -147,6 +147,6 @@ export class ApplyEstvHandler implements ICommandHandler<
     const project = await loadOwnProject(this.projects, userId, projectId);
     assertProjectOpen(project);
     const settings = await this.settings.resolve(userId);
-    return this.estv.apply(project, { coingeckoIds: settings.coingeckoIds });
+    return this.estv.apply(project, { coinChoices: settings.coinChoices });
   }
 }

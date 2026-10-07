@@ -2,6 +2,7 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { normaliseHeader } from '@lazykoins/engine';
 import { readableOf } from '../../files/application/file-access';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
+import { isActive } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import { loadOwnProject } from '../../projects/application/project-access';
@@ -12,6 +13,9 @@ import {
   type LibraryEntryView,
   type LibraryMapping,
   type LibrarySort,
+  LIBRARY_LIMITS,
+  PUBLISHES_PER_10_MIN,
+  type PublishQuota,
   type PublishReview,
   searchEntries,
 } from '../domain/library-mapping';
@@ -139,6 +143,39 @@ export class ReviewPublicationHandler implements IQueryHandler<
   }
 }
 
+export class PublishQuotaQuery {
+  constructor(readonly userId: string) {}
+}
+
+/**
+ * F5.20: before a bulk publish the app says how many new entries are left today — the same
+ * count the publish handler enforces (deleted entries count, new versions do not).
+ */
+@QueryHandler(PublishQuotaQuery)
+export class PublishQuotaHandler implements IQueryHandler<
+  PublishQuotaQuery,
+  PublishQuota
+> {
+  constructor(
+    private readonly library: LibraryRepositoryPort,
+    private readonly runtime: LibraryRuntime,
+  ) {}
+
+  async execute({ userId }: PublishQuotaQuery): Promise<PublishQuota> {
+    this.runtime.assertEnabled();
+    const since = new Date(
+      this.runtime.now().getTime() - 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const usedToday = await this.library.countPublishedSince(userId, since);
+    return {
+      newPerDay: LIBRARY_LIMITS.publishesPerDay,
+      usedToday,
+      remainingToday: Math.max(0, LIBRARY_LIMITS.publishesPerDay - usedToday),
+      publishesPer10Min: PUBLISHES_PER_10_MIN,
+    };
+  }
+}
+
 export class ProjectLibraryMatchesQuery {
   constructor(
     readonly userId: string,
@@ -181,7 +218,7 @@ export class ProjectLibraryMatchesHandler implements IQueryHandler<
     this.runtime.assertEnabled();
     const project = await loadOwnProject(this.projects, userId, projectId);
     const waiting = (await this.files.listByProject(project.id)).filter(
-      (file) => file.status === 'needs_mapping',
+      (file) => file.status === 'needs_mapping' && isActive(file),
     );
     if (waiting.length === 0) return [];
     const entries = await this.library.listActive();

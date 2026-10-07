@@ -98,6 +98,11 @@ const quantity = z
       .object({
         mode: z.literal('side'),
         column: column.describe('Unsigned amount.'),
+        fallbackColumn: column
+          .optional()
+          .describe(
+            'Amount column used when "column" is empty or a null value (e.g. Bitpanda "Amount Fiat" for cash deposits whose "Amount Asset" is "-").',
+          ),
         sideColumn: column.describe(
           'Column naming the direction (e.g. "Type").',
         ),
@@ -128,6 +133,11 @@ const timestamp = z
       .describe(
         'Regex with ONE capture group that extracts the UTC offset from the file name, e.g. "_UTC_?([+-]?\\d{1,2})_" for "..._UTC_2_..." (= UTC+2). The captured hours (or "+02:00") override timeZone; if the name does not match, timeZone is used and a note is recorded.',
       ),
+    headerPattern: regex
+      .optional()
+      .describe(
+        'For exports whose time column header names the zone and therefore varies (KuCoin "Time(UTC+08:00)"): the timestamp column is the first header matching this regex (instead of "column", which stays the fallback). If the regex has a capture group and it captures a UTC offset ("UTC+08:00", "+08:00", "UTC"), that offset overrides timeZone, e.g. "^Time\\s*\\((UTC[^)]*)\\)$".',
+      ),
   })
   .describe('The timestamp of each row, converted to UTC.');
 
@@ -145,10 +155,98 @@ const kindRule = z
         'Alternatively a regex tested against the kind columns\' values joined by "|".',
       ),
     kind,
+    direction: z
+      .enum(['in', 'out'])
+      .optional()
+      .describe(
+        'Optional: rows matched by this rule ARRIVE ("in") or LEAVE ("out") whatever the sign of their amount — for exports with unsigned amounts whose direction follows from the type (e.g. "Send" = out). Without it the quantity rule decides.',
+      ),
   })
   .refine((rule) => rule.equals !== undefined || rule.pattern !== undefined, {
     message: 'equals or pattern is required',
   });
+
+/** A text taken from a column (optionally cut out of it by a regex) or a constant. */
+const extractedSource = z
+  .object({
+    column: column.optional().describe('Take the value from this column.'),
+    pattern: regex
+      .optional()
+      .describe(
+        'Optional regex with ONE capture group applied to the cell; the captured text is the value (e.g. "to [\\d.,]+ (\\w+)" on a note "Converted 1 ETH to 3,000 USDC"). No match = empty.',
+      ),
+    value: z
+      .string()
+      .max(200)
+      .optional()
+      .describe(
+        'A constant, used when there is no column or the value is empty.',
+      ),
+  })
+  .refine((v) => v.column !== undefined || v.value !== undefined, {
+    message: 'column or value is required',
+  });
+
+const counterLeg = z
+  .object({
+    when: z
+      .object({
+        kinds: z
+          .array(kind)
+          .min(1)
+          .default(['trade'])
+          .describe(
+            'The kinds (decided by bookings.kind) of the rows that get this second leg; default ["trade"].',
+          ),
+        pattern: regex
+          .optional()
+          .describe(
+            'Optional regex the kind columns\' values joined by "|" must also match.',
+          ),
+      })
+      .default({ kinds: ['trade'] })
+      .describe('Which rows get this second leg.'),
+    asset: extractedSource.describe(
+      'Asset of the second leg (e.g. column "To Currency", "Price Currency" or a constant "EUR").',
+    ),
+    quantity: z
+      .object({
+        column,
+        pattern: regex
+          .optional()
+          .describe(
+            'Optional regex with ONE capture group that cuts the number out of the cell.',
+          ),
+        sign: z
+          .enum(['opposite', 'signed'])
+          .default('opposite')
+          .describe(
+            "opposite = the absolute value, moving the other way than the main leg (a buy spends what a sell receives); signed = the cell's own sign (+ arrives, − leaves).",
+          ),
+      })
+      .describe(
+        'Amount of the second leg. An empty cell (or no regex match) or 0 = no second leg for this row.',
+      ),
+    fee: z
+      .object({
+        column: column.describe('Fee amount; its absolute value is taken.'),
+        assetColumn: column
+          .optional()
+          .describe("Fee asset; when absent or empty the second leg's asset."),
+      })
+      .optional()
+      .describe(
+        'Fee charged on the second leg (e.g. Coinbase "Fees and/or Spread" in the price currency). Do not also map it on the main leg.',
+      ),
+    account: valueSource
+      .optional()
+      .describe(
+        'Account of the second leg; default = the main leg\'s account. A constant like "earn" turns a row that only moves an asset into an Earn/staking product into a pair of transfers.',
+      ),
+  })
+  .describe(
+    'A second booking from the same row: the other side of a one-row trade (spent and received asset in one row) or of an internal move. Same timestamp, row, kind and group (the group column, else "<file>:<row>"); record id "<file>:<row>:counter".',
+  );
 
 const bookings = z
   .object({
@@ -158,9 +256,16 @@ const bookings = z
       .describe(
         'Account/wallet on the platform (e.g. column "wallet"); default "main".',
       ),
-    asset: columnOnly.describe(
-      'Column with the asset symbol (normalised by "assets").',
-    ),
+    asset: z
+      .object({
+        column,
+        pattern: regex
+          .optional()
+          .describe(
+            'Optional regex with ONE capture group that cuts the asset out of the cell, e.g. "^([^-/]+)" for the base asset of a pair "BTC-USDT".',
+          ),
+      })
+      .describe('Column with the asset symbol (normalised by "assets").'),
     quantity,
     fee: z
       .object({
@@ -210,6 +315,12 @@ const bookings = z
       .optional()
       .describe(
         'USD value of the fee, if the export has it (e.g. Kraken "feeusd").',
+      ),
+    counter: z
+      .union([counterLeg, z.array(counterLeg).min(1).max(10)])
+      .optional()
+      .describe(
+        'Optional second leg per row (one rule, or several: the first whose "when" matches the row is used). For exports that write both sides of a trade in ONE row, so the spent/received asset (often fiat — wealth at 31.12.) is not lost.',
       ),
   })
   .describe('How rows become Buchungen.');
@@ -313,6 +424,13 @@ export const MappingSpecSchema = z
           .default(false)
           .describe(
             'Remove currency codes/symbols around numbers ("CHF 1,234.56").',
+          ),
+        nullValues: z
+          .array(z.string().min(1).max(20))
+          .max(10)
+          .optional()
+          .describe(
+            'Cell texts that mean "no value" in number columns, e.g. ["-"] (Bitpanda); such a cell counts as empty.',
           ),
       })
       .default({ decimal: '.', thousands: [], stripText: false })

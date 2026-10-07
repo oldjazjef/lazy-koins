@@ -10,6 +10,10 @@ import {
   UpdateOpenItemCommand,
 } from '../../calculation/application/calculation.handlers';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
@@ -125,6 +129,60 @@ describe('follow-up project (F4.4a)', () => {
     ]);
     expect(options.corrections.map((c) => c.id)).toEqual([reclassify.id]);
     expect(options.openItems.length).toBeGreaterThan(0);
+  });
+
+  it('offers a deactivated file unticked; ticked anyway, it is linked active (F5.7a)', async () => {
+    const t = await setup();
+    await new SetFileActiveHandler(t.projects, t.files).execute(
+      new SetFileActiveCommand('anna', t.project.id, t.ledger.id, false, 'alt'),
+    );
+    const options = await t.options.execute(
+      new GetFollowUpOptionsQuery('anna', t.project.id),
+    );
+    // It reaches into 2026 (would be preselected) — but it is deactivated.
+    expect(
+      options.files.map((f) => [f.displayName, f.preselected, f.active]),
+    ).toEqual([
+      ['bitstamp.csv', false, false],
+      ['bestaende.csv', false, true],
+      ['buchungen.csv', false, true],
+    ]);
+    const { projectId } = await t.followUp.execute(
+      new CreateFollowUpProjectCommand('anna', t.project.id, {
+        name: 'Steuern 2026',
+        taxYear: 2026,
+        canton: 'ZH',
+        fileIds: [t.ledger.id],
+        correctionIds: [],
+        openItemKeys: [],
+        notes: false,
+      }),
+    );
+    const [linked] = await t.files.listByProject(projectId);
+    expect(linked).toMatchObject({ sha256: t.ledger.sha256, disabledAt: null });
+    // The source keeps its own state.
+    expect((await t.files.findById(t.ledger.id))?.disabledNote).toBe('alt');
+
+    // F4.4 take-over: shown with its state, linked active as well.
+    const target = await t.projects.create('anna', {
+      name: 'Andere 2026',
+      taxYear: 2026,
+      country: 'CH',
+      canton: 'ZH',
+      notes: '',
+    });
+    const sources = await t.sources.execute(
+      new GetTakeOverSourcesQuery('anna', target.id),
+    );
+    const source = sources.find((s) => s.projectId === t.project.id);
+    expect(
+      source?.files.find((f) => f.projectFileId === t.ledger.id),
+    ).toMatchObject({ active: false, preselected: false });
+    await t.takeOver.execute(
+      new TakeOverFilesCommand('anna', target.id, [t.ledger.id]),
+    );
+    const [taken] = await t.files.listByProject(target.id);
+    expect(taken?.disabledAt).toBeNull();
   });
 
   it('creates the project: files linked (no second blob), items copied, origin recorded, source unchanged', async () => {

@@ -12,13 +12,22 @@ export interface NavItem {
   readonly path: string;
   readonly labelKey: string;
   readonly icon: string;
-  /** Only in the web app (F5.15: the mapping library is shared by the users of a server). */
-  readonly webOnly?: boolean;
-  /** Sub-items: the entry opens a menu with them (user rule: the library belongs to Mappings). */
+  /**
+   * Only while the mapping library can be used (F5.15–F5.18: the web app's own library, or on
+   * the desktop a linked web deployment's — `LibraryAvailability`).
+   */
+  readonly needsLibrary?: boolean;
+  /**
+   * Sub-items, listed under the entry in the sidebar (expandable, like etx). User rule: the
+   * library belongs to Mappings.
+   */
   readonly children?: readonly NavItem[];
 }
 
-/** The main navigation in the header, in order. Icon names must be registered in `NAV_ICONS`. */
+/**
+ * The main navigation in the sidebar, in order — its single source (`app-shell.html` only renders
+ * it). Icon names must be registered in `NAV_ICONS`.
+ */
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     path: '/app/dashboard',
@@ -44,7 +53,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
         path: '/app/mappings/library',
         labelKey: 'nav.library',
         icon: 'lucideLibraryBig',
-        webOnly: true,
+        needsLibrary: true,
       },
     ],
   },
@@ -55,7 +64,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
 ];
 
-/** The user menu at the top right (ANFORDERUNGEN §11): Profil and Einstellungen. */
+/** The user menu in the sidebar's footer (ANFORDERUNGEN §11): Profil and Einstellungen. */
 export const USER_MENU_ITEMS: readonly NavItem[] = [
   {
     path: '/app/profile',
@@ -70,11 +79,12 @@ export const USER_MENU_ITEMS: readonly NavItem[] = [
 ];
 
 /**
- * The main navigation for this app: without the web-only entries on the desktop. An entry left
- * with a single sub-item (Mappings on the desktop) becomes a plain link.
+ * The main navigation for this app: without the library entry while there is no library to open
+ * (a desktop without a linked web library). An entry left with a single sub-item (Mappings
+ * then) becomes a plain link.
  */
-export function navItemsFor(webApp: boolean): readonly NavItem[] {
-  const allowed = (item: NavItem) => webApp || !item.webOnly;
+export function navItemsFor(libraryAvailable: boolean): readonly NavItem[] {
+  const allowed = (item: NavItem) => libraryAvailable || !item.needsLibrary;
   return NAV_ITEMS.filter(allowed).map((item) => {
     const children = item.children?.filter(allowed) ?? [];
     const { children: _all, ...plain } = item;
@@ -113,4 +123,18 @@ export function isNavActive(
         under(other.path),
     )
   );
+}
+
+/**
+ * Whether a top-level row is highlighted: an entry without sub-items when it is current; an entry
+ * with sub-items only while they cannot be seen (group closed, sidebar collapsed to icons) —
+ * otherwise the sub-item carries the highlight, never both.
+ */
+export function isNavRowActive(
+  url: string,
+  item: NavItem,
+  subItemsVisible: boolean,
+): boolean {
+  if (!isNavActive(url, item)) return false;
+  return !item.children?.length || !subItemsVisible;
 }

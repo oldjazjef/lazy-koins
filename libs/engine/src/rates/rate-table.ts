@@ -7,15 +7,43 @@ import type { CountryRules } from '../rules/country-rules';
  * — no network (F7.6, F11.3).
  */
 
-/** Where a rate comes from. `manual` (an override, F7.4) beats everything for the same day. */
+/**
+ * Where a rate comes from. `manual` (an override, F7.4) beats everything for the same day; `ecb`
+ * = exchange rates; the rest are the selectable crypto price providers (price sources phase 2).
+ */
 export const RATE_SOURCES = [
   'manual',
   'estv',
   'binance',
   'coingecko',
+  'coinmarketcap',
+  'defillama',
+  'coinpaprika',
+  'kraken',
+  'bitfinex',
+  'coinbase',
   'ecb',
 ] as const;
 export type RateSource = (typeof RATE_SOURCES)[number];
+
+/** The crypto price providers whose daily series are fetched ("Kurse aktualisieren"). */
+export const FETCHED_PRICE_SOURCES = [
+  'binance',
+  'coingecko',
+  'coinmarketcap',
+  'defillama',
+  'coinpaprika',
+  'kraken',
+  'bitfinex',
+  'coinbase',
+] as const satisfies readonly RateSource[];
+export type FetchedPriceSource = (typeof FETCHED_PRICE_SOURCES)[number];
+
+export function isFetchedPriceSource(
+  source: string,
+): source is FetchedPriceSource {
+  return (FETCHED_PRICE_SOURCES as readonly string[]).includes(source);
+}
 
 /**
  * `price`: one unit of `asset` in `currency`. `fx`: one `asset` (USD, EUR) in `currency` (the tax
@@ -41,8 +69,48 @@ const SOURCE_RANK: Readonly<Record<RateSource, number>> = {
   estv: 1,
   binance: 2,
   coingecko: 3,
-  ecb: 4,
+  coinmarketcap: 4,
+  defillama: 5,
+  coinpaprika: 6,
+  kraken: 7,
+  bitfinex: 8,
+  coinbase: 9,
+  ecb: 10,
 };
+
+/**
+ * Among **fetched** price series, the user's provider order decides (price sources phase 2, F7.4):
+ * per asset and UTC day only the rows of the best-ranked fetched source are kept — the first in
+ * `order`, sources not in it after those (by the fixed rank). Overrides, ESTV values, exchange
+ * rates and days only another source has are untouched, so a lower-ranked series still fills the
+ * days the preferred one lacks. Deterministic: the result keeps the input order of the rows that
+ * stay. The calculation and the dashboard apply it to the stored rates before the `RateTable`
+ * (so the price priority override → ESTV → record prices → stored series is unchanged).
+ */
+export function preferFetchedSources(
+  entries: readonly RateEntry[],
+  order: readonly string[],
+): RateEntry[] {
+  const rank = (source: RateSource): number => {
+    const at = order.indexOf(source);
+    return at >= 0 ? at : order.length + SOURCE_RANK[source];
+  };
+  const best = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.kind !== 'price' || !isFetchedPriceSource(entry.source)) continue;
+    const key = `${entry.asset.toUpperCase()}|${entry.date}`;
+    const r = rank(entry.source);
+    const current = best.get(key);
+    if (current === undefined || r < current) best.set(key, r);
+  }
+  return entries.filter(
+    (entry) =>
+      entry.kind !== 'price' ||
+      !isFetchedPriceSource(entry.source) ||
+      best.get(`${entry.asset.toUpperCase()}|${entry.date}`) ===
+        rank(entry.source),
+  );
+}
 
 /** How a figure's price was found — every position names it (FACHREGELN, Kurse). */
 export type PriceOrigin =

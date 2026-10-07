@@ -4,7 +4,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locales';
-import { SETTINGS_SECTIONS } from '../../features/settings/settings-shell';
+import {
+  LOCAL_SETTINGS_SECTIONS,
+  SETTINGS_SECTIONS,
+} from '../../features/settings/settings-shell';
 import { WORKSPACE_TABS } from '../../features/calculation/components/project-workspace/project-workspace.service';
 import {
   CHECK_KINDS,
@@ -18,7 +21,12 @@ import {
   POSITION_STATUSES,
   PRICE_ORIGINS,
   QUANTITY_SOURCES,
+  RATE_SOURCES,
 } from '../api/calculation.types';
+import {
+  PRICE_PROVIDERS,
+  PRICE_SOURCE_ERROR_CODES,
+} from '../api/price-sources.types';
 import {
   ADDRESS_KINDS,
   CHAIN_SERVICES,
@@ -54,8 +62,10 @@ import {
   HINT_SEVERITIES,
   HINT_STATUSES,
   LIBRARY_SORTS,
+  SUGGESTION_SOURCES,
   MISSING_FILE_KINDS,
   PRIVACY_FINDING_KINDS,
+  REMOTE_URL_PROBLEMS,
 } from '../api/api.types';
 import {
   AUDIT_SOURCES,
@@ -145,6 +155,24 @@ const DYNAMIC_KEYS = [
   // F5.15–F5.17: the mapping library.
   ...LIBRARY_SORTS.map((sort) => `library.sortBy.${sort}`),
   ...PRIVACY_FINDING_KINDS.map((kind) => `library.findings.kind.${kind}`),
+  // F5.18: the desktop's link to a web library.
+  ...REMOTE_URL_PROBLEMS.map(
+    (problem) => `library.remote.urlProblems.${problem}`,
+  ),
+  // F5.19 / F11.0u / F5.20: suggestions, several mapping files, bulk publish.
+  ...SUGGESTION_SOURCES.map((source) => `files.suggestions.source.${source}`),
+  ...[
+    'stored',
+    'duplicate',
+    'invalid',
+    'notJson',
+    'tooLarge',
+    'tooMany',
+    'failed',
+  ].map((state) => `mappings.import.state.${state}`),
+  ...['libraryCopy', 'tooLarge', 'reviewFailed'].map(
+    (block) => `library.bulk.block.${block}`,
+  ),
   ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
   ...KPI_KINDS.map((kind) => `dashboard.kpi.${kind}`),
   ...HOLDING_STATUSES.map((status) => `dashboard.holdings.status.${status}`),
@@ -159,9 +187,12 @@ const DYNAMIC_KEYS = [
   ...OPEN_ITEM_REASONS.map((reason) => `checks.reason.${reason}`),
   ...CORRECTION_TYPES.map((type) => `corrections.type.${type}`),
   ...['price', 'fx'].map((kind) => `rates.kind.${kind}`),
-  ...['manual', 'estv', 'binance', 'coingecko', 'ecb'].map(
-    (source) => `rates.source.${source}`,
-  ),
+  ...RATE_SOURCES.map((source) => `rates.source.${source}`),
+  // Price sources: provider errors (refresh summary, notifications, "Testen").
+  ...PRICE_SOURCE_ERROR_CODES.map((code) => `rates.sourceErrors.${code}`),
+  ...PRICE_PROVIDERS.map((id) => `rates.source.${id}`),
+  ...['coingecko', 'coinmarketcap'].map((id) => `rates.attribution.${id}`),
+  ...['noKey', 'offline'].map((code) => `settings.priceSources.test.${code}`),
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
   ...ESTV_PHASES.map((phase) => `estv.phase.${phase}`),
   ...['updated', 'current', 'failed'].map(
@@ -170,6 +201,7 @@ const DYNAMIC_KEYS = [
   ...EXPORT_KINDS.map((kind) => `exports.kind.${kind}`),
   ...['statements', 'internal'].map((group) => `exports.groups.${group}`),
   ...SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
+  ...LOCAL_SETTINGS_SECTIONS.map((section) => `settings.sections.${section}`),
   ...MAIL_SECURITIES.map((security) => `settings.mail.securities.${security}`),
   ...MAIL_PLACEHOLDERS.map((name) => `mail.placeholders.${name}`),
   ...SMTP_ERROR_KINDS.map((kind) => `mail.smtp.kind.${kind}`),
@@ -299,7 +331,7 @@ const DYNAMIC_KEYS = [
   ...PACKAGE_ERROR_CODES.map((code) => `notifications.reason.${code}`),
   ...TOOL_ERROR_CODES.map((code) => `chat.proposal.errors.${code}`),
   ...CHAT_EVENT_OUTCOMES.map((outcome) => `chat.event.${outcome}`),
-  ...['ai', 'coingecko', 'mail', 'chain'].map(
+  ...['ai', 'coingecko', 'coinmarketcap', 'mail', 'chain'].map(
     (service) => `notifications.service.${service}`,
   ),
   ...['idle', 'lock-screen', 'suspend', 'unknown'].map(

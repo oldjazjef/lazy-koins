@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { conflict } from '../../common/http/api-errors';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -19,9 +19,29 @@ import {
   type RecordSummary,
 } from '@lazykoins/engine';
 import type { Env } from '../../config/env';
-import { COINGECKO_IDS, RATE_ALIASES } from '../../rates/domain/project-rate';
 import {
-  FiatPriceSourcePort,
+  CoinRefCache,
+  fetchPrices,
+  seriesCounts,
+} from '../../rates/application/price-fetch';
+import {
+  type AssetFetchResult,
+  type KeyUse,
+  notifyKeys,
+  priceKeys,
+  recordKeys,
+} from '../../rates/application/rates.handlers';
+import { enabledProviders } from '../../rates/domain/price-providers';
+import { PriceHistorySourcesPort } from '../../integrations/rates/price-history/price-history-source.port';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { CoinMarketService } from '../../rates/application/coin-market.service';
+import {
+  type CoinChoice,
+  type PricePlan,
+  pricePlan,
+  type SharedTicker,
+} from '../../rates/domain/coin-choice';
+import {
   FxRateSourcePort,
   fxBasesFor,
   UsdPriceSourcePort,
@@ -55,7 +75,17 @@ export function checkPeriod(from: string, to: string): void {
   }
 }
 
-export interface DashboardView extends DashboardResult {
+/** A holding with how its price is looked up (F7.4). */
+export type DashboardViewHolding = DashboardResult['holdings'][number] & {
+  /** `chosen` = the user's coin, `ambiguous` = ticker of several coins (no price), `ticker`. */
+  readonly pricing: PricePlan['kind'];
+  readonly coin: CoinChoice | null;
+  /** Other relevant coins carry the same ticker ("Kürzel wird von mehreren Coins verwendet"). */
+  readonly shared: SharedTicker | null;
+};
+
+export interface DashboardView extends Omit<DashboardResult, 'holdings'> {
+  readonly holdings: readonly DashboardViewHolding[];
   /** The user's projects (newest tax year first) — the quick picks of the period picker. */
   readonly projects: readonly {
     readonly id: string;
@@ -87,7 +117,8 @@ export interface DashboardRecords {
 }
 
 interface Cached {
-  readonly view: Omit<DashboardView, 'online'>;
+  readonly view: Omit<DashboardView, 'online' | 'holdings'> &
+    Pick<DashboardResult, 'holdings'>;
   readonly summaries: ReadonlyMap<string, RecordSummary>;
   readonly fileRefs: ReadonlyMap<string, DashboardFileRef>;
 }
@@ -231,6 +262,7 @@ export class GetDashboardHandler implements IQueryHandler<
     private readonly calculator: DashboardCalculator,
     private readonly settings: SettingsReader,
     private readonly config: ConfigService<Env, true>,
+    @Optional() private readonly markets?: CoinMarketService,
   ) {}
 
   async execute({
@@ -248,7 +280,31 @@ export class GetDashboardHandler implements IQueryHandler<
       currency,
     );
     const settings = await this.settings.resolve(userId);
-    return { ...view, online: onlineAllowed(settings, this.config) };
+    // F7.4: per holding how its price is looked up (chosen coin, ambiguous ticker, by ticker) —
+    // the app shows the source and offers "Falscher Kurs? Coin wählen".
+    const shared =
+      (await this.markets?.shared(
+        view.holdings.map((h) => h.asset),
+        settings.coinChoices,
+        settings.coinDismissed,
+      )) ?? new Map<string, SharedTicker>();
+    const holdings = view.holdings.map((h) => {
+      const found = shared.get(h.asset) ?? null;
+      const plan = pricePlan(
+        h.asset,
+        settings.coinChoices,
+        found?.level === 'ambiguous' && found.basis === 'market'
+          ? new Map([[found.symbol, found.candidates.map((c) => c.id)]])
+          : undefined,
+      );
+      return {
+        ...h,
+        pricing: plan.kind,
+        coin: plan.kind === 'chosen' ? plan.choice : null,
+        shared: found,
+      };
+    });
+    return { ...view, holdings, online: onlineAllowed(settings, this.config) };
   }
 }
 
@@ -313,16 +369,15 @@ export class GetDashboardRecordsHandler implements IQueryHandler<
 
 // --- POST /dashboard/rates/refresh ---
 
-export type DashboardFetchStatus = 'fetched' | 'cached' | 'notFound' | 'failed';
+/** As a project's refresh (`AssetFetchStatus`): `ambiguous` = no coin chosen, `noKey` = key needed. */
+export type DashboardFetchStatus =
+  'fetched' | 'cached' | 'notFound' | 'failed' | 'ambiguous' | 'noKey';
 
 export interface DashboardRefreshSummary {
   readonly fx: number;
-  readonly assets: readonly {
-    readonly asset: string;
+  readonly assets: readonly (AssetFetchResult & {
     readonly status: DashboardFetchStatus;
-    readonly source: string | null;
-    readonly points: number;
-  }[];
+  })[];
 }
 
 export class RefreshDashboardRatesCommand {
@@ -341,8 +396,8 @@ export class RefreshDashboardRatesCommand {
 /**
  * "Kurse aktualisieren" on the dashboard (F11.4, F11.9): fetches the daily series missing for
  * the shown period into the user's rate cache — USD and EUR in the shown tax currency T from the
- * ECB (USD/CHF, EUR/CHF for CHF; F4.1a), then Binance USD closes, CoinGecko in T as the fallback
- * with the user's key. A series that already covers the
+ * ECB (USD/CHF, EUR/CHF for CHF; F4.1a), then per asset the user's price providers in order (the
+ * same chain and coin rules as a project, `price-fetch.ts`). A series that already covers the
  * period (project rates or cache, within the 14-day tolerance at both ends) is skipped unless
  * `force`. Refused (409) when rate lookups are off (F11.3); the sources are serialised.
  */
@@ -356,10 +411,14 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
     private readonly userRates: UserRateRepositoryPort,
     private readonly settings: SettingsReader,
     private readonly usd: UsdPriceSourcePort,
-    private readonly fiat: FiatPriceSourcePort,
+    private readonly history: PriceHistorySourcesPort,
     private readonly fx: FxRateSourcePort,
     private readonly config: ConfigService<Env, true>,
+    @Optional() private readonly markets?: CoinMarketService,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
+
+  private readonly coinRefs = new CoinRefCache();
 
   async execute({
     userId,
@@ -386,6 +445,12 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
         .slice(0, 10),
       to,
     };
+    await this.markets?.refreshBriefly(settings.keys.coingecko);
+    const marketAmbiguous =
+      (await this.markets?.marketAmbiguous(
+        assets.map((a) => a.trim().toUpperCase()),
+        settings.coinChoices,
+      )) ?? new Map<string, readonly string[]>();
     const sources = await this.inputs.sources(userId, undefined, currency);
     const quote = sources.currency;
     const known: RateEntry[] = [
@@ -401,51 +466,60 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
       fx += await this.userRates.upsertMany(userId, entries);
     }
     const results: DashboardRefreshSummary['assets'][number][] = [];
+    const keyUse: KeyUse = { accepted: new Set(), rejected: new Set() };
+    const leaders =
+      (await this.markets?.leaders(assets)) ?? new Map<string, string>();
     for (const raw of assets) {
       const asset = raw.trim().toUpperCase();
       if (!asset) continue;
-      if (!force && covers(known, 'price', asset, from, to, quote)) {
+      const choices = settings.coinChoices;
+      const plan = pricePlan(asset, choices, marketAmbiguous);
+      if (plan.kind === 'ambiguous') {
+        // F7.4: a ticker of several coins gets no by-ticker series until a coin is chosen;
+        // old cached rows of it are dropped (they are ignored at read time anyway).
+        await this.userRates.deletePrices(userId, asset);
+        results.push({ asset, status: 'ambiguous', source: null, points: 0 });
+        continue;
+      }
+      const counting = known.filter(
+        (r) =>
+          r.kind !== 'price' ||
+          seriesCounts(r.asset, r.source, choices, marketAmbiguous),
+      );
+      if (!force && covers(counting, 'price', asset, from, to, quote)) {
         results.push({ asset, status: 'cached', source: null, points: 0 });
         continue;
       }
-      try {
-        let entries: RateEntry[] = [];
-        let source: string | null = null;
-        for (const symbol of [asset, ...(RATE_ALIASES[asset] ?? [])]) {
-          const found = await this.usd.dailyUsd({
-            asset,
-            symbol,
-            from: window.from,
-            to: window.to,
-          });
-          const dates = new Set(entries.map((e) => e.date));
-          entries = [...entries, ...found.filter((e) => !dates.has(e.date))];
-        }
-        if (entries.length > 0) source = this.usd.name;
-        const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
-        const apiKey = settings.keys.coingecko;
-        if (entries.length === 0 && coinId && apiKey) {
-          entries = await this.fiat.dailyFiat({
-            asset,
-            symbol: asset,
-            from: window.from,
-            to: window.to,
-            coinId,
-            apiKey,
-            currency: quote,
-          });
-          if (entries.length > 0) source = this.fiat.name;
-        }
-        await this.userRates.upsertMany(userId, entries);
-        results.push({
+      const found = await fetchPrices(
+        { usd: this.usd, history: this.history, coins: this.coinRefs },
+        {
           asset,
-          status: entries.length > 0 ? 'fetched' : 'notFound',
-          source,
-          points: entries.length,
-        });
-      } catch {
-        results.push({ asset, status: 'failed', source: null, points: 0 });
+          from: window.from,
+          to: window.to,
+          currency: quote,
+          choices,
+          keys: priceKeys(settings),
+          providers: enabledProviders(settings.priceSources),
+          marketAmbiguous,
+          marketLeader: leaders.get(asset) ?? null,
+        },
+      );
+      recordKeys(keyUse, found);
+      if (found.status !== 'failed' && plan.kind === 'chosen') {
+        // The chosen coin's series replaces the cached by-ticker one.
+        await this.userRates.deletePrices(userId, asset);
       }
+      await this.userRates.upsertMany(userId, found.entries);
+      results.push({
+        asset,
+        status: found.status,
+        source: found.source,
+        points: found.entries.length,
+        ...(found.error ? { error: found.error } : {}),
+      });
+    }
+    if (this.notifications) {
+      await notifyKeys(this.notifications, userId, keyUse);
     }
     return { fx, assets: results };
   }

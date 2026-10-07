@@ -10,6 +10,7 @@ import { AddDerivedFileHandler } from './application/commands/add-derived-file.c
 import { ChangeProjectFileHandler } from './application/commands/change-project-file.command';
 import { ReapplyMappingHandler } from './application/commands/reapply-mapping.command';
 import { RemoveProjectFileHandler } from './application/commands/remove-project-file.command';
+import { SetFileActiveHandler } from './application/commands/set-file-active.command';
 import { UploadProjectFileHandler } from './application/commands/upload-project-file.command';
 import { FileAnalysisService } from './application/file-analysis.service';
 import { FileViews } from './application/file-views';
@@ -48,6 +49,7 @@ import { StandardFormatController } from './standard-format.controller';
     AddDerivedFileHandler,
     ChangeProjectFileHandler,
     RemoveProjectFileHandler,
+    SetFileActiveHandler,
     ReapplyMappingHandler,
     ListProjectFilesHandler,
     GetFileContentHandler,

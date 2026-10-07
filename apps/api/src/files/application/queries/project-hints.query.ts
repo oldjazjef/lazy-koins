@@ -6,7 +6,12 @@ import {
   type IQueryHandler,
   QueryHandler,
 } from '@nestjs/cqrs';
-import { missingFileHints } from '@lazykoins/engine';
+import { assetsNeedingPrices, missingFileHints } from '@lazykoins/engine';
+import { projectRules } from '../../../calculation/application/calculation-input.service';
+import { CalculationSnapshotRepositoryPort } from '../../../calculation/ports/calculation.repository.port';
+import { sharedTicker } from '../../../rates/domain/coin-choice';
+import { CoinMarketRepositoryPort } from '../../../rates/ports/coin-market.repository.port';
+import { UserSettingsRepositoryPort } from '../../../settings/ports/user-settings.repository.port';
 import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { loadOwnProject } from '../../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
@@ -16,7 +21,9 @@ import {
   type HintState,
   type HintStatus,
   type ProjectHint,
+  sharedTickerHint,
 } from '../../domain/project-hint';
+import { readsRecords } from '../../domain/project-file';
 import { HintStateRepositoryPort } from '../../ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
 
@@ -50,7 +57,42 @@ export class ListProjectHintsHandler implements IQueryHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
     private readonly states: HintStateRepositoryPort,
+    @Optional() private readonly snapshots?: CalculationSnapshotRepositoryPort,
+    @Optional() private readonly market?: CoinMarketRepositoryPort,
+    @Optional() private readonly settings?: UserSettingsRepositoryPort,
   ) {}
+
+  /**
+   * F7.4: the tickers of the latest calculation that several relevant coins carry (market list;
+   * a chosen coin or "Passt so" settles them). Empty without a calculation or a market list.
+   */
+  private async sharedTickerHints(
+    project: Parameters<typeof projectRules>[0] & {
+      id: string;
+      ownerId: string;
+    },
+  ): Promise<Omit<ProjectHint, 'status' | 'note'>[]> {
+    if (!this.snapshots || !this.market || !this.settings) return [];
+    const snapshot = await this.snapshots.latest(project.id);
+    if (!snapshot) return [];
+    const assets = assetsNeedingPrices(
+      { ...snapshot.result, records: {} },
+      projectRules(project),
+    );
+    const stored = await this.settings.find(project.ownerId);
+    const coins = await this.market.listBySymbols('coingecko', assets);
+    return assets
+      .map((asset) =>
+        sharedTicker(
+          asset,
+          coins,
+          stored?.coinChoices ?? {},
+          stored?.coinDismissed ?? [],
+        ),
+      )
+      .filter((s) => s !== null)
+      .map(sharedTickerHint);
+  }
 
   async execute({
     userId,
@@ -58,15 +100,19 @@ export class ListProjectHintsHandler implements IQueryHandler<
   }: ListProjectHintsQuery): Promise<ProjectHints> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     const files = await this.files.listByProject(project.id);
+    // F5.7a: a deactivated file covers nothing; a hint names it when it would have.
     const coverage = files
-      .filter((file) => file.status === 'standard' || file.status === 'mapped')
+      .filter(readsRecords)
       .flatMap((file) => file.coverage);
     const stored = new Map(
       (await this.states.listByProject(project.id)).map((s) => [s.hintKey, s]),
     );
     const hints = [
-      ...missingFileHints(project.taxYear, coverage).map(fromCoverage),
+      ...missingFileHints(project.taxYear, coverage).map((hint) =>
+        fromCoverage(hint, files),
+      ),
       ...fileHints(files),
+      ...(await this.sharedTickerHints(project)),
     ]
       .map((hint): ProjectHint => {
         const state = stored.get(hint.key);

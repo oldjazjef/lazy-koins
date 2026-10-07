@@ -1,0 +1,66 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Bitpanda Transaction History (CSV)",
+  "platform": "bitpanda",
+  "description": "Bitpanda transaction history (bitpanda.com: profile > History > Transaction history / 'Export' > CSV; the file 'bitpanda-trades-<date>.csv'). A disclaimer and a 'UserId' line stand above the header Transaction ID, Timestamp, Transaction Type, In/Out, Amount Fiat, Fiat, Amount Asset, Asset, Asset market price, Asset market price currency, Asset class, Product ID, Fee, Fee asset, Spread, Spread Currency, Tax Fiat. Timestamps carry their offset ('2025-01-15T10:00:00+01:00'). Amounts are unsigned; In/Out gives the direction; '-' means empty. A buy/sell row holds both sides: the asset (Amount Asset) and the money (Amount Fiat in Fiat, the other way); cash deposits/withdrawals without an asset amount use Amount Fiat. Fee is booked in Fee asset (often BEST). Incoming 'transfer' rows are rewards (staking, BEST, cashback) and are booked as staking income; transfer(stake)/transfer(unstake) move assets to/from the account 'staking'. Known limits: stocks/ETFs/metals (Asset class) are booked like crypto; the spread is not a separate fee (it is inside the price); swap rows (asset to asset) need checking; type texts not listed fall to unknown.",
+  "match": {
+    "headers": [
+      "Transaction ID",
+      "Timestamp",
+      "Transaction Type",
+      "In/Out",
+      "Amount Fiat",
+      "Fiat",
+      "Amount Asset",
+      "Asset",
+      "Asset class"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [], "nullValues": ["-"] },
+  "bookings": {
+    "timestamp": { "column": "Timestamp", "format": "ymd", "timeZone": "UTC" },
+    "asset": { "column": "Asset" },
+    "quantity": {
+      "mode": "side",
+      "column": "Amount Asset",
+      "fallbackColumn": "Amount Fiat",
+      "sideColumn": "In/Out",
+      "outValues": ["outgoing"]
+    },
+    "fee": { "column": "Fee", "assetColumn": "Fee asset" },
+    "group": { "column": "Transaction ID" },
+    "kind": {
+      "columns": ["Transaction Type", "In/Out"],
+      "rules": [
+        { "equals": ["buy"], "kind": "trade" },
+        { "equals": ["sell"], "kind": "trade" },
+        { "equals": ["deposit"], "kind": "deposit" },
+        { "equals": ["withdrawal"], "kind": "withdrawal" },
+        { "equals": ["transfer(stake)"], "kind": "transfer" },
+        { "equals": ["transfer(unstake)"], "kind": "transfer" },
+        { "equals": ["transfer", "incoming"], "kind": "income_staking" },
+        { "equals": ["transfer", "outgoing"], "kind": "transfer" },
+        { "equals": ["refund"], "kind": "deposit" }
+      ],
+      "default": "unknown"
+    },
+    "counter": [
+      {
+        "when": { "kinds": ["trade"] },
+        "asset": { "column": "Fiat" },
+        "quantity": { "column": "Amount Fiat", "sign": "opposite" }
+      },
+      {
+        "when": {
+          "kinds": ["transfer"],
+          "pattern": "^transfer\\((un)?stake\\)\\|"
+        },
+        "asset": { "column": "Asset" },
+        "quantity": { "column": "Amount Asset", "sign": "opposite" },
+        "account": { "value": "staking" }
+      }
+    ]
+  }
+}

@@ -14,6 +14,11 @@ import {
   PROJECT_HINT_KINDS,
 } from '../domain/project-hint';
 
+export class DisabledFileRefDto {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty() name!: string;
+}
+
 export class ProjectHintDto {
   @ApiProperty({ description: 'Stable key — dismissals are stored under it' })
   key!: string;
@@ -35,6 +40,12 @@ export class ProjectHintDto {
   fileId!: string | null;
   @ApiProperty({ type: String, nullable: true }) fileName!: string | null;
   @ApiProperty({ type: Number, nullable: true }) count!: number | null;
+  @ApiProperty({
+    type: [DisabledFileRefDto],
+    description:
+      'F5.7a: deactivated files with records for this platform/account — they cover nothing while deactivated',
+  })
+  disabledFiles!: DisabledFileRefDto[];
   @ApiProperty({ enum: HINT_STATUSES }) status!: string;
   @ApiProperty() note!: string;
 }

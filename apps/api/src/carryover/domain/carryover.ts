@@ -1,7 +1,10 @@
 import type { CorrectionData, RateEntry } from '@lazykoins/engine';
 import type { ExportKind } from '../../exports/domain/project-export';
 import type { NewStoredFile } from '../../files/ports/project-file.repository.port';
-import type { FileAnalysis } from '../../files/domain/project-file';
+import type {
+  FileAnalysis,
+  FileDeactivation,
+} from '../../files/domain/project-file';
 import type { MappingSpec } from '@lazykoins/engine';
 import type { MappingOrigin } from '../../mappings/domain/import-mapping';
 import type {
@@ -78,6 +81,11 @@ export interface ProjectBundle {
     /** Its `mappingId` is replaced by the mapping of `mappingKey`. */
     readonly analysis: FileAnalysis;
     readonly mappingKey: string | null;
+    /**
+     * F5.7a: written deactivated (a package keeps the flag). Absent = active — carry-over and
+     * take-over always link active (a ticked deactivated file is wanted in the new project).
+     */
+    readonly deactivation?: FileDeactivation | null;
   }[];
   readonly corrections: readonly {
     readonly key: string;

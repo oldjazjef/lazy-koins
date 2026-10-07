@@ -1,3 +1,9 @@
+import type {
+  PriceProviderId,
+  PriceSourceErrorCode,
+  PriceSourceSetting,
+} from './price-sources.types';
+import type { AssetPricing, CoinChoice } from './coin.types';
 import type { BookingKind, Project } from './api.types';
 import type {
   DateFormat,
@@ -185,6 +191,7 @@ export const OPEN_ITEM_REASONS = [
   'positionWithoutPrice',
   'incomeWithoutPrice',
   'oneOffWithoutPrice',
+  'ambiguousPrice',
   'unclassifiedBookings',
   'walletNetworksNotAvailable',
   'walletNetworksUnchecked',
@@ -353,7 +360,33 @@ export interface Correction {
   applied: AppliedCorrection | null;
 }
 
-export type RateSource = 'manual' | 'estv' | 'binance' | 'coingecko' | 'ecb';
+export type RateSource =
+  | 'manual'
+  | 'estv'
+  | 'ecb'
+  | 'binance'
+  | 'coingecko'
+  | 'coinmarketcap'
+  | 'defillama'
+  | 'coinpaprika'
+  | 'kraken'
+  | 'bitfinex'
+  | 'coinbase';
+
+/** Every rate source (texts `rates.source.<source>`). */
+export const RATE_SOURCES: readonly RateSource[] = [
+  'manual',
+  'estv',
+  'ecb',
+  'binance',
+  'coingecko',
+  'coinmarketcap',
+  'defillama',
+  'coinpaprika',
+  'kraken',
+  'bitfinex',
+  'coinbase',
+];
 
 export interface RateSeries {
   kind: 'price' | 'fx';
@@ -387,6 +420,8 @@ export interface RatesView {
   currency: string;
   online: boolean;
   series: RateSeries[];
+  /** F7.4: every priced asset and where its price comes from ("Coin wählen"). */
+  assets: AssetPricing[];
   manual: StoredRate[];
   /** F7.4a: the stored Kursliste of the tax year and the version in use. */
   estv: {
@@ -407,10 +442,19 @@ export interface EstvApplySummary {
   matched: { asset: string; symbol: string; name: string; value: string }[];
   ambiguous: {
     asset: string;
+    /** several entries · the chosen coin is not listed · the ticker stands for several coins */
+    reason: EstvAmbiguity;
     candidates: { symbol: string; name: string; valorNumber: string | null }[];
   }[];
   fx: string[];
 }
+
+export const ESTV_AMBIGUITIES = [
+  'several',
+  'coinMismatch',
+  'ambiguousSymbol',
+] as const;
+export type EstvAmbiguity = (typeof ESTV_AMBIGUITIES)[number];
 
 export const ESTV_PHASES = ['metadata', 'download', 'parse', 'store'] as const;
 export type EstvPhase = (typeof ESTV_PHASES)[number];
@@ -456,6 +500,8 @@ export const FETCH_STATUSES = [
   'cached',
   'notFound',
   'failed',
+  'ambiguous',
+  'noKey',
 ] as const;
 export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
@@ -467,15 +513,21 @@ export interface RefreshStatus {
   current: string | null;
 }
 
+/** One asset of a refresh; `error` = the first provider that failed hard (status `failed`). */
+export interface AssetFetchResult {
+  asset: string;
+  status: FetchStatus;
+  source: string | null;
+  points: number;
+  error?: { provider: PriceProviderId; code: PriceSourceErrorCode } | null;
+}
+
 export interface RefreshSummary {
   fx: number;
   estv: EstvApplySummary;
-  assets: {
-    asset: string;
-    status: FetchStatus;
-    source: string | null;
-    points: number;
-  }[];
+  assets: AssetFetchResult[];
+  /** F6: wallet tokens identified by chain + contract in this refresh. */
+  contracts?: { asset: string; choice: CoinChoice }[];
 }
 
 export interface ManualRateRequest {
@@ -534,8 +586,15 @@ export interface Settings {
   dateFormat: DateFormat;
   onlineRates: boolean;
   /** Hints (`…abcd`) or null — never the key. */
-  keys: { coingecko: string | null; etherscan: string | null };
-  coingeckoIds: Record<string, string>;
+  keys: {
+    coingecko: string | null;
+    etherscan: string | null;
+    coinmarketcap: string | null;
+  };
+  /** F7.4: the coin per ticker (`PUT|DELETE /settings/coins/:symbol`). */
+  coinChoices: Record<string, CoinChoice>;
+  /** Price sources: every provider in the user's order, on or off. */
+  priceSources: PriceSourceSetting[];
   keyStorageAvailable: boolean;
 }
 
@@ -548,6 +607,11 @@ export interface UpdateSettingsRequest {
   numberFormat?: NumberFormat;
   dateFormat?: DateFormat;
   onlineRates?: boolean;
-  keys?: { coingecko?: string | null; etherscan?: string | null };
-  coingeckoIds?: Record<string, string>;
+  keys?: {
+    coingecko?: string | null;
+    etherscan?: string | null;
+    coinmarketcap?: string | null;
+  };
+  /** Price sources: the order as arranged (each provider once). */
+  priceSources?: PriceSourceSetting[];
 }

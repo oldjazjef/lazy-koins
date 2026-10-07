@@ -144,6 +144,11 @@ export function rateTools(s: ToolServices): AnyTool[] {
             status: z.string(),
             source: z.string().nullable(),
             points: z.number(),
+            // Price sources: the first provider that failed hard and its code (never its words).
+            error: z
+              .object({ provider: z.string(), code: z.string() })
+              .nullable()
+              .optional(),
           }),
         ),
       }),

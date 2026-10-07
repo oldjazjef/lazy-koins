@@ -30,7 +30,7 @@ describe('tool registry (F11.14, F11.16)', () => {
     }
   });
 
-  it('registers the mapping-library tools only where the library exists (web, F5.15)', async () => {
+  it('registers every mapping-library tool on the web, only search/get/take on the desktop (F5.15, F5.18)', async () => {
     const { registry, services, bus } = await toolSetup();
     const LIBRARY = [
       'search_library',
@@ -50,7 +50,21 @@ describe('tool registry (F11.14, F11.16)', () => {
         new LibraryRuntime(false),
       ),
     });
-    for (const name of LIBRARY) expect(desktop.get(name)).toBeUndefined();
+    // F5.18: the desktop reads from a linked web library — no publish, rate or delete there.
+    for (const name of [
+      'search_library',
+      'get_library_mapping',
+      'take_library_mapping',
+    ]) {
+      expect(desktop.get(name), name).toBeDefined();
+    }
+    for (const name of [
+      'rate_library_mapping',
+      'publish_mapping',
+      'delete_library_mapping',
+    ]) {
+      expect(desktop.get(name), name).toBeUndefined();
+    }
   });
 
   it('marks reading tools readOnly and changing tools write/destructive', async () => {
@@ -229,6 +243,52 @@ describe('tool registry (F11.14, F11.16)', () => {
       date: '2025-12-31',
       priceChf: '4.5',
     });
+  });
+
+  it('deactivates a file only after the confirmation; list_files shows the state (F5.7a)', async () => {
+    const { executor, registry, files, project, bookingsFile } =
+      await toolSetup();
+    expect(registry.get('set_file_active')?.effect).toBe('write');
+    const args = {
+      projectId: project.id,
+      fileId: bookingsFile.id,
+      active: false,
+      note: 'doppelt',
+    };
+    const proposed = await executor.call(
+      { userId: 'anna', source: 'chat' },
+      'set_file_active',
+      args,
+    );
+    expect(proposed.ok ? null : proposed.error.code).toBe('refused');
+    expect((await files.findById(bookingsFile.id))?.disabledAt).toBeNull();
+
+    const done = await executor.call(
+      { userId: 'anna', source: 'chat' },
+      'set_file_active',
+      args,
+      { confirmed: true },
+    );
+    expect(done.ok && done.output).toMatchObject({
+      id: bookingsFile.id,
+      active: false,
+      disabledNote: 'doppelt',
+    });
+    const listed = await executor.call(
+      { userId: 'anna', source: 'mcp' },
+      'list_files',
+      { projectId: project.id },
+      { policy: READ_ONLY },
+    );
+    const output = (
+      listed as { output: { files: { id: string; active: boolean }[] } }
+    ).output;
+    expect(
+      output.files.map((f) => [f.id === bookingsFile.id, f.active]),
+    ).toEqual([
+      [true, false],
+      [false, true],
+    ]);
   });
 
   it('keeps closed projects read-only (the service’s 409 becomes a conflict)', async () => {

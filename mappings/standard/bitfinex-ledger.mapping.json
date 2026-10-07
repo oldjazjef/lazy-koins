@@ -1,0 +1,67 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Bitfinex Ledgers (CSV)",
+  "platform": "bitfinex",
+  "description": "Bitfinex 'Ledgers' report (bitfinex.com: Reports > Ledgers > Export, CSV). Header #, DESCRIPTION, CURRENCY, AMOUNT, BALANCE, DATE, WALLET. DATE is written day first ('15-01-2025 10:00:00', also '15-01-25 10:00:00') in the time zone set in the report preferences — UTC assumed; change timeZone if you export in another zone (or set the date format to DD-MM-YYYY before exporting). AMOUNT is signed; trading and withdrawal fees are rows of their own. The kind is read from the DESCRIPTION text ('Exchange 0.1 BTC for USD @ ...', 'Trading fees for ...', 'Deposit (BITCOIN) #...', '... Withdrawal #...', 'Transfer of ... from wallet Exchange to Margin ...', 'Staking Reward ...', 'Margin Funding Payment ...'). The wallet (exchange, margin, funding) becomes the account; the running BALANCE gives the balance per wallet and currency. The legs of a trade share their DATE (group). Known limits: margin positions (settlements, claims) are booked as trade; description texts Bitfinex adds later fall to unknown; UST is renamed to USDT and IOT to IOTA; other Bitfinex-specific codes are kept as written — add aliases if you need them.",
+  "match": {
+    "headers": [
+      "#",
+      "DESCRIPTION",
+      "CURRENCY",
+      "AMOUNT",
+      "BALANCE",
+      "DATE",
+      "WALLET"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "assets": { "rewrites": [], "aliases": { "UST": "USDT", "IOT": "IOTA" } },
+  "bookings": {
+    "timestamp": { "column": "DATE", "format": "dmy", "timeZone": "UTC" },
+    "account": { "column": "WALLET", "value": "exchange" },
+    "asset": { "column": "CURRENCY" },
+    "quantity": { "mode": "signed", "column": "AMOUNT" },
+    "group": { "column": "DATE" },
+    "note": { "column": "DESCRIPTION" },
+    "kind": {
+      "columns": ["DESCRIPTION"],
+      "rules": [
+        { "pattern": "^Trading fees? for ", "kind": "fee" },
+        {
+          "pattern": "Withdrawal fee|Withdraw fee|^Deposit fee",
+          "kind": "fee"
+        },
+        { "pattern": "Margin Funding Charge|Funding Cost", "kind": "fee" },
+        { "pattern": "^Exchange .+ for .+", "kind": "trade" },
+        {
+          "pattern": "^(Settlement|Position (closed|claimed|#))",
+          "kind": "trade"
+        },
+        { "pattern": "^Canceled withdrawal", "kind": "withdrawal" },
+        { "pattern": "^Deposit", "kind": "deposit" },
+        { "pattern": "Withdrawal", "kind": "withdrawal" },
+        { "pattern": "^Transfer of ", "kind": "transfer" },
+        { "pattern": "Staking Reward", "kind": "income_staking" },
+        {
+          "pattern": "Margin Funding Payment|Interest Payment",
+          "kind": "income_interest"
+        },
+        {
+          "pattern": "^Earned fees from user|Affiliate Rebate",
+          "kind": "income_airdrop"
+        },
+        { "pattern": "Hard ?fork|fork", "kind": "income_hardfork" },
+        { "pattern": "Airdrop|Distribution", "kind": "income_airdrop" }
+      ],
+      "default": "unknown"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": { "column": "CURRENCY" },
+    "quantity": { "column": "BALANCE" },
+    "account": { "column": "WALLET", "value": "exchange" }
+  }
+}

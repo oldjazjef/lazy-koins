@@ -6,9 +6,13 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
-import type { LibraryEntry } from '../../../../core/api/api.types';
+import type {
+  LibraryEntry,
+  LibraryStatus,
+} from '../../../../core/api/api.types';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import { LibraryPageService } from './library-page.service';
+import { LibraryPageService, REMOTE_SEARCH_MAX } from './library-page.service';
 
 const entry = (over: Partial<LibraryEntry> = {}): LibraryEntry => ({
   id: 'l1',
@@ -179,5 +183,97 @@ describe('LibraryPageService (F5.17)', () => {
     http.expectOne('/api/library').flush([LIST[0], LIST[2]]);
     await settle();
     expect(service.visible().map((e) => e.id)).toEqual(['l1', 'l3']);
+  });
+});
+
+describe('LibraryPageService on the desktop (F5.18): a linked web library', () => {
+  const LINKED: LibraryStatus = {
+    mode: 'remote',
+    available: true,
+    readOnly: true,
+    server: 'https://lazykoins.example.ch',
+    suggestions: true,
+    reason: null,
+  };
+
+  afterEach(() => {
+    try {
+      TestBed.inject(HttpTestingController).verify();
+    } finally {
+      TestBed.resetTestingModule();
+    }
+  });
+
+  async function remote() {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        provideTranslateService(),
+        { provide: AuthService, useValue: { hasAccount: false } },
+        {
+          provide: NotificationService,
+          useValue: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+        },
+      ],
+    });
+    const service = TestBed.inject(LibraryPageService);
+    const http = TestBed.inject(HttpTestingController);
+    await settle();
+    http.expectOne('/api/library/status').flush(LINKED);
+    await settle();
+    http.expectOne('/api/library').flush(LIST);
+    await settle();
+    return { service, http };
+  }
+
+  it('is read-only and names the server', async () => {
+    const { service } = await remote();
+    expect(service.readOnly()).toBe(true);
+    expect(service.server()).toBe('https://lazykoins.example.ch');
+    expect(service.visible()).toHaveLength(3);
+    expect(service.truncated()).toBe(false);
+  });
+
+  it('sends the search to the server (debounced) and says when the answer is cut', async () => {
+    const { service, http } = await remote();
+    service.search.set('kra');
+    service.search.set('kraken ');
+    TestBed.tick();
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    await settle();
+    const many = Array.from({ length: REMOTE_SEARCH_MAX }, (_, i) =>
+      entry({ id: `x${i}`, name: `Kraken ${i}` }),
+    );
+    http.expectOne('/api/library?q=kraken').flush(many);
+    await settle();
+    expect(service.truncated()).toBe(true);
+  });
+
+  it('shows the code of a failure of the linked server', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        provideTranslateService(),
+        { provide: AuthService, useValue: { hasAccount: false } },
+        { provide: NotificationService, useValue: {} },
+      ],
+    });
+    const service = TestBed.inject(LibraryPageService);
+    const http = TestBed.inject(HttpTestingController);
+    await settle();
+    http.expectOne('/api/library/status').flush(LINKED);
+    await settle();
+    http
+      .expectOne('/api/library')
+      .flush(
+        { code: 'libraryNetwork', detail: 'ECONNREFUSED' },
+        { status: 502, statusText: 'Bad Gateway' },
+      );
+    await settle();
+    expect(service.errorKey()).toBe('errors.api.libraryNetwork');
   });
 });

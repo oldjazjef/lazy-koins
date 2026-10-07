@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runtime configuration, written at container start, so ONE image serves every environment:
-#   1. /env.js from the LK_* variables (read by core/config/runtime-env.ts before the app boots);
+#   1. /env.js from the LK_* variables (incl. the optional Umami statistics) (read by core/config/runtime-env.ts before the app boots);
 #   2. nginx's /api upstream from LK_API_UPSTREAM.
 # `set -e`: a container with a half-written config must refuse to start rather than serve it.
 set -e
@@ -24,6 +24,8 @@ window.__LK_ENV__ = {
     projectId: "$(clean "${LK_FIREBASE_PROJECT_ID:-}")",
     appId: "$(clean "${LK_FIREBASE_APP_ID:-}")",
   },
+  umamiUrl: "$(clean "${LK_UMAMI_URL:-}")",
+  umamiWebsiteId: "$(clean "${LK_UMAMI_WEBSITE_ID:-}")",
 };
 JS
 

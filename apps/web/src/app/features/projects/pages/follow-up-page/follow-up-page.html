@@ -101,6 +101,16 @@
           <span class="min-w-0 flex-1" [lkTruncate]="file.displayName"
             >{{ file.displayName }}</span
           >
+          @if (file.active === false) {
+          <!-- F5.7a: deactivated in this project — offered, never preselected -->
+          <span
+            hlmBadge
+            variant="outline"
+            class="shrink-0"
+            [title]="'projects.followUp.disabledFile' | translate"
+            >{{ 'files.disabled.badge' | translate }}</span
+          >
+          }
           <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
             @if (file.periodFrom && file.periodTo) { {{ file.periodFrom | lkDate
             }} – {{ file.periodTo | lkDate }} } @else { {{ 'files.status.' +

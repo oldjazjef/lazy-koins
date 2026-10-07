@@ -78,6 +78,7 @@ model User {
   notifications Notification[]
   libraryMappings LibraryMapping[]
   libraryRatings  LibraryRating[]
+  remoteLibrary   RemoteLibrarySettings?
 
   @@map("user")
 }
@@ -164,6 +165,9 @@ model ImportMapping {
   libraryId      String? @map("library_id")
   /// The entry's version at taking.
   libraryVersion Int?    @map("library_version")
+  /// F5.18: the web server a desktop copy was taken from (normalised base URL); NULL = this
+  /// deployment's own library. CHECK in the migration.
+  libraryServer  String? @map("library_server")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -252,6 +256,11 @@ model ProjectFile {
   /// `wallet:<wallet id>` for the standard-format records a wallet fetch derived (F6.3).
   origin       String   @default("uploaded")
   addedAt      DateTime @default(now()) @map("added_at")
+  /// F5.7a: set = deactivated in THIS project — ignored by calculation, dashboard, hints,
+  /// checks and exports; the file stays stored, downloadable and previewable. Null = active.
+  disabledAt   DateTime? @map("disabled_at")
+  /// Optional reason for the deactivation (≤ 500, only with `disabled_at`). CHECK in the migration.
+  disabledNote String?   @map("disabled_note")
 
   project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
@@ -286,8 +295,15 @@ model UserSettings {
   /// `enc:v1:…` (secret-box.ts), or null.
   coingeckoKey String?  @map("coingecko_key")
   etherscanKey String?  @map("etherscan_key")
-  /// JSON object symbol → CoinGecko id, overriding the built-in table.
-  coingeckoIds String   @default("{}") @map("coingecko_ids")
+  /// Price sources phase 2: the CoinMarketCap key, sealed like the others. CHECK in the migration.
+  coinmarketcapKey String? @map("coinmarketcap_key")
+  /// JSON array of { id, enabled } — the crypto price providers in the user's order; '[]' = the
+  /// default order (rates/domain/price-providers.ts). CHECK json array in the migration.
+  priceSources String   @default("[]") @map("price_sources")
+  /// JSON object symbol → the chosen coin { provider, id, name, symbol } (F7.4, coin-choice.ts).
+  coinChoices  String   @default("{}") @map("coin_choices")
+  /// JSON array of tickers whose shared-code warning the user settled ("Passt so", F7.4).
+  coinDismissed String  @default("[]") @map("coin_dismissed")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -310,7 +326,8 @@ model ProjectRate {
   date      String
   /// Decimal string.
   value     String
-  /// manual | estv | binance | coingecko | ecb. CHECK in the migration.
+  /// manual | estv | ecb | binance | coingecko | coinmarketcap | defillama | coinpaprika | kraken |
+  /// bitfinex | coinbase. CHECK in the migration.
   source    String
   /// Shown with the source, e.g. "ESTV-Kursliste 2025, Stand 02.10.2026" for the automatic ESTV
   /// values (F7.4a); null for everything else.
@@ -648,7 +665,8 @@ model UserRate {
   date      String
   /// Decimal string.
   value     String
-  /// binance | coingecko | ecb. CHECK in the migration.
+  /// ecb | binance | coingecko | coinmarketcap | defillama | coinpaprika | kraken | bitfinex |
+  /// coinbase. CHECK in the migration.
   source    String
   fetchedAt DateTime @default(now()) @map("fetched_at")
 
@@ -737,6 +755,25 @@ model EstvCheck {
   error     String?
 
   @@map("estv_check")
+}
+
+/// F7.4: the price provider's top coins by market cap (deployment-wide, refreshed at most daily
+/// when online) — which coins share a ticker ("Kürzel wird von mehreren Coins verwendet").
+model CoinMarket {
+  /// coingecko (CHECK in the migration).
+  provider      String
+  coinId        String   @map("coin_id")
+  /// Upper case.
+  symbol        String
+  name          String
+  marketCapRank Int      @map("market_cap_rank")
+  /// USD per unit at fetch time, plain decimal; null when unknown.
+  priceUsd      String?  @map("price_usd")
+  fetchedAt     DateTime @map("fetched_at")
+
+  @@id([provider, coinId])
+  @@index([provider, symbol])
+  @@map("coin_market")
 }
 
 /// F11.0s: where a user is in the setup wizard. One row per user, created on the first step
@@ -941,4 +978,20 @@ model Notification {
   @@unique([userId, topic])
   @@index([userId, occurredAt])
   @@map("notification")
+}
+
+/// F5.18 (desktop): the link to the mapping library of a web deployment — its public,
+/// read-only endpoint. Empty url = never online for it. CHECKs in the migration.
+model RemoteLibrarySettings {
+  userId      String   @id @map("user_id")
+  /// Normalised base URL (https, or http on loopback); '' = none.
+  url         String   @default("")
+  enabled     Boolean  @default(false)
+  /// Library suggestions in the files tab (sends header row + file name).
+  suggestions Boolean  @default(true)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("remote_library_settings")
 }

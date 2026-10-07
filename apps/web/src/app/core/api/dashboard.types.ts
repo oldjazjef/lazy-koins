@@ -1,5 +1,7 @@
+import type { CoinChoice, Pricing, SharedTicker } from './coin.types';
 import type { BookingKind, Project, ProjectFileStatus } from './api.types';
 import type {
+  AssetFetchResult,
   CorrectionType,
   FigureRecord,
   OpenItem,
@@ -54,6 +56,13 @@ export interface DashboardHolding {
   readonly asset: string;
   readonly quantity: string;
   readonly priceChf: string | null;
+  /** F7.4: where the price comes from (`binance`, `coingecko`, `manual`, `estv`, `record`, …). */
+  readonly priceSource: string | null;
+  /** How the price is looked up: the chosen coin, none (ambiguous ticker), by ticker. */
+  readonly pricing: Pricing;
+  readonly coin: CoinChoice | null;
+  /** Several relevant coins carry the ticker ("Kürzel … wird von mehreren Coins verwendet"). */
+  readonly shared: SharedTicker | null;
   readonly valueChf: string | null;
   readonly status: DashboardHoldingStatus;
   readonly sparkline: readonly (string | null)[];
@@ -99,12 +108,7 @@ export interface DashboardRecords {
 
 export interface DashboardRefreshSummary {
   readonly fx: number;
-  readonly assets: readonly {
-    readonly asset: string;
-    readonly status: 'fetched' | 'cached' | 'notFound' | 'failed';
-    readonly source: string | null;
-    readonly points: number;
-  }[];
+  readonly assets: readonly AssetFetchResult[];
 }
 
 // --- Carry-over (F4.4, F4.4a) ---
@@ -117,6 +121,8 @@ export interface FileOption {
   readonly periodFrom: string | null;
   readonly periodTo: string | null;
   readonly preselected: boolean;
+  /** F5.7a: false = deactivated in its project — offered unticked; ticked, it is linked active. */
+  readonly active?: boolean;
 }
 
 export interface CorrectionOption {

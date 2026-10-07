@@ -7,7 +7,7 @@
   <span hlmBadge variant="outline"
     >{{ 'mappings.origin.' + mapping.origin | translate }}</span
   >
-  @if (service.webApp) {
+  @if (service.canPublish()) {
   <button
     hlmBtn
     variant="outline"
@@ -121,10 +121,19 @@
           >
             {{ 'library.origin.takeNewer' | translate }}
           </button>
-          } } @else if (service.libraryEntry.error()) {
+          } } @else if (service.libraryGone()) {
           <span class="text-muted-foreground"
             >{{ 'library.origin.gone' | translate: { version: source.version }
             }}</span
+          >
+          } @else {
+          <span
+            >{{ 'library.origin.version' | translate: { version: source.version
+            } }}</span
+          >
+          } @if (source.server; as server) {
+          <span class="text-muted-foreground text-xs break-all"
+            >{{ 'library.origin.server' | translate: { server } }}</span
           >
           }
         </dd>

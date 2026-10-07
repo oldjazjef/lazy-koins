@@ -23,6 +23,7 @@ const review = (over: Partial<PublishReview> = {}): PublishReview => ({
   target: null,
   existing: null,
   lastAuthorName: null,
+  libraryCopy: false,
   ...over,
 });
 
@@ -181,5 +182,17 @@ describe('LibraryPublishService (F5.15 review step)', () => {
     expect(service.issues()).toEqual([
       { path: 'format', message: 'Invalid input' },
     ]);
+  });
+
+  it('a copy taken from the library cannot be published as a new entry (F5.20)', async () => {
+    const { service, http } = await setup();
+    service.start({ mappingId: 'm9' });
+    http.expectOne('/api/library/review').flush(review({ libraryCopy: true }));
+    await tick();
+    http.expectOne('/api/library/review').flush(review({ libraryCopy: true }));
+    await tick();
+    service.confirmed.set(true);
+    expect(service.libraryCopy()).toBe(true);
+    expect(service.canPublish()).toBe(false);
   });
 });

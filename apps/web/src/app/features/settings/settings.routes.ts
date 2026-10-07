@@ -1,4 +1,6 @@
+import { inject } from '@angular/core';
 import type { Routes } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
 import { desktopOnly } from '../../core/desktop/desktop-bridge';
 
 /** Einstellungen (ANFORDERUNGEN §11): Kurse, Wallets, AI, Mail, MCP, System — each a sub-route. */
@@ -52,6 +54,16 @@ const routes: Routes = [
         loadComponent: () =>
           import('./pages/storage-settings-page/storage-settings-page').then(
             (m) => m.StorageSettingsPage,
+          ),
+      },
+      {
+        // Desktop app only (F5.18): the link to a web deployment's mapping library. The web app
+        // has its own library — there the route does not exist.
+        path: 'library',
+        canMatch: [() => !inject(AuthService).hasAccount],
+        loadComponent: () =>
+          import('./pages/library-settings-page/library-settings-page').then(
+            (m) => m.LibrarySettingsPage,
           ),
       },
       {

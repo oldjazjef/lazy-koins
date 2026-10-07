@@ -123,12 +123,20 @@ export class MappingsController {
   @ApiBadRequestResponse({
     description: 'Invalid spec — body.issues lists path + message',
   })
+  @ApiConflictResponse({
+    description: 'body.code: duplicateMapping (only with rejectDuplicate)',
+  })
   async create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateMappingDto,
   ): Promise<MappingResponseDto> {
     return MappingResponseDto.from(
-      await this.mappings.create(user.userId, dto.spec, dto.origin ?? 'manual'),
+      await this.mappings.create(
+        user.userId,
+        dto.spec,
+        dto.origin ?? 'manual',
+        dto.rejectDuplicate === true,
+      ),
     );
   }
 

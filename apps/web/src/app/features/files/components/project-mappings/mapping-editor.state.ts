@@ -67,6 +67,23 @@ export class MappingEditorState {
     this.open.set(true);
   }
 
+  /**
+   * F5.19 "Als Vorlage anpassen": a new mapping for the file, starting from a suggestion that
+   * comes close. Headers the file lacks are dropped from `match.headers` (so the editor's
+   * preview can read it); the user checks the rest and saves — only then is anything stored.
+   */
+  openFrom(
+    file: ProjectFile,
+    spec: Record<string, unknown>,
+    missing: readonly string[],
+  ): void {
+    this.reset();
+    this.targetFile.set(file);
+    this.checkFileId.set(file.id);
+    this.text.set(JSON.stringify(adaptedSpec(spec, missing), null, 2));
+    this.open.set(true);
+  }
+
   close(): void {
     this.open.set(false);
   }
@@ -129,4 +146,23 @@ export class MappingEditorState {
     this.invalidJson.set(false);
     this.preview.set(null);
   }
+}
+
+/** A suggested spec without the fingerprint headers the file lacks (never emptied completely). */
+export function adaptedSpec(
+  spec: Record<string, unknown>,
+  missing: readonly string[],
+): Record<string, unknown> {
+  const match = spec['match'];
+  if (typeof match !== 'object' || match === null) return spec;
+  const headers = (match as { headers?: unknown }).headers;
+  if (!Array.isArray(headers)) return spec;
+  const gone = new Set(missing);
+  const kept = headers.filter(
+    (header) => typeof header !== 'string' || !gone.has(header),
+  );
+  return {
+    ...spec,
+    match: { ...match, headers: kept.length > 0 ? kept : headers },
+  };
 }

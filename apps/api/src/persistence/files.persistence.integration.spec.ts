@@ -225,6 +225,38 @@ describe('stored files and project files', () => {
     expect(await files.remove(second.created.id)).toBeUndefined();
   });
 
+  it('deactivates one project entry and activates it again (F5.7a)', async () => {
+    const owner = await newUser('disable');
+    const p1 = await newProject(owner.id, 'P1');
+    const p2 = await newProject(owner.id, 'P2');
+    const first = await addNew(owner.id, p1.id, `disable ${randomUUID()}`);
+    const second = await files.add({
+      ownerId: owner.id,
+      projectId: p2.id,
+      stored: { existingId: first.fileId },
+      displayName: 'copy.csv',
+      origin: `from_project:${p1.id}`,
+      analysis: ANALYSIS,
+    });
+    if (!('created' in second)) throw new Error('expected a new entry');
+    expect(first).toMatchObject({ disabledAt: null, disabledNote: null });
+
+    const at = '2026-02-01T10:00:00.000Z';
+    const off = await files.setDeactivation(first.id, { at, note: 'doppelt' });
+    expect(off).toMatchObject({
+      disabledAt: at,
+      disabledNote: 'doppelt',
+      status: 'standard',
+    });
+    expect((await files.listByProject(p1.id))[0]?.disabledAt).toBe(at);
+    // The same stored file in the other project is unaffected.
+    expect((await files.findById(second.created.id))?.disabledAt).toBeNull();
+
+    const on = await files.setDeactivation(first.id, null);
+    expect(on).toMatchObject({ disabledAt: null, disabledNote: null });
+    expect(await files.setDeactivation(randomUUID(), null)).toBeUndefined();
+  });
+
   it('purges unreferenced bytes when a project is deleted, keeping shared ones', async () => {
     const owner = await newUser('purge');
     const p1 = await newProject(owner.id, 'P1');
@@ -443,11 +475,18 @@ describe('CHECK constraints of the files migration', () => {
       { period_from: '2025-12-31', period_to: '2025-01-01' },
       { coverage: 'nope' },
       { display_name: '' },
+      // F5.7a: a note only with a deactivation, at most 500 characters.
+      { disabled_note: 'ohne Datum' },
+      { disabled_at: now, disabled_note: 'x'.repeat(501) },
     ]) {
       await expect(entry(bad)).rejects.toThrow(/CHECK constraint failed/);
     }
-    await expect(entry({ origin: `from_project:${project.id}` })).resolves.toBe(
-      1,
-    );
+    await expect(
+      entry({
+        origin: `from_project:${project.id}`,
+        disabled_at: now,
+        disabled_note: 'x'.repeat(500),
+      }),
+    ).resolves.toBe(1);
   });
 });

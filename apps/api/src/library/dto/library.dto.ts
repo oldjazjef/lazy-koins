@@ -233,6 +233,11 @@ export class PublishReviewResponseDto {
   @ApiProperty({ type: ExistingEntryDto, nullable: true })
   existing!: ExistingEntryDto | null;
   @ApiProperty({ type: String, nullable: true }) lastAuthorName!: string | null;
+  @ApiProperty({
+    description:
+      'The source is a copy taken from the library: only a new version of my own entry is possible (else 409 libraryCopy)',
+  })
+  libraryCopy!: boolean;
 
   static from(review: PublishReview): PublishReviewResponseDto {
     return {
@@ -246,8 +251,20 @@ export class PublishReviewResponseDto {
       target: review.target ? { ...review.target } : null,
       existing: review.existing ? { ...review.existing } : null,
       lastAuthorName: review.lastAuthorName,
+      libraryCopy: review.libraryCopy,
     };
   }
+}
+
+export class PublishQuotaResponseDto {
+  @ApiProperty({ description: 'New entries per author and 24 h' })
+  newPerDay!: number;
+  @ApiProperty() usedToday!: number;
+  @ApiProperty() remainingToday!: number;
+  @ApiProperty({
+    description: 'Publishes (new entries and versions) per 10 minutes',
+  })
+  publishesPer10Min!: number;
 }
 
 export class TakenLibraryMappingResponseDto {

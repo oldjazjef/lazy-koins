@@ -31,16 +31,33 @@ import { ProjectRepositoryPort } from '../../projects/ports/project.repository.p
 import { SettingsReader } from '../../settings/application/settings.handlers';
 import { ESTV_LABEL_PREFIX, estvSourceLabel } from '../domain/estv';
 import {
+  type CoinChoice,
+  type CoinChoices,
+  type PricePlan,
+  pricePlan,
+  type SharedTicker,
+} from '../domain/coin-choice';
+import { CoinMarketService } from './coin-market.service';
+import {
   COINGECKO_IDS,
   type ProjectRate,
-  RATE_ALIASES,
   type RateKey,
 } from '../domain/project-rate';
+import { CalculationSnapshotRepositoryPort } from '../../calculation/ports/calculation.repository.port';
+import { projectRules } from '../../calculation/application/calculation-input.service';
+import { CoinRefCache, fetchPrices, seriesCounts } from './price-fetch';
+import { PriceHistorySourcesPort } from '../../integrations/rates/price-history/price-history-source.port';
+import type { PriceSourceErrorCode } from '../../integrations/rates/price-history/price-history-source.port';
+import {
+  enabledProviders,
+  type KeyedProvider,
+  type PriceProviderId,
+} from '../domain/price-providers';
 import { EstvKurslisteRepositoryPort } from '../ports/estv.port';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
 import { RefreshProgress, type RefreshStatus } from './refresh-progress';
+import { type ContractCoin, ContractCoinResolver } from './contract-coins';
 import {
-  FiatPriceSourcePort,
   FxRateSourcePort,
   fxBasesFor,
   UsdPriceSourcePort,
@@ -70,6 +87,27 @@ export interface RateSeries {
   readonly fetchedAt: string;
 }
 
+/**
+ * F7.4: how one asset of the project is priced — shown per asset in the Kurse tab with
+ * "Falscher Kurs? Coin wählen".
+ */
+export interface AssetPricing {
+  readonly asset: string;
+  /** `chosen` = the user's coin only; `ambiguous` = ticker of several coins, nothing fetched; `ticker`. */
+  readonly pricing: PricePlan['kind'];
+  readonly coin: CoinChoice | null;
+  /** The built-in CoinGecko id (a suggestion for "Coin wählen"). */
+  readonly suggested: string | null;
+  /** Sources of the fetched price series that count (`binance`, `coingecko`). */
+  readonly sources: readonly string[];
+  /** Fetched series that do not count (a by-ticker series of a chosen/ambiguous ticker). */
+  readonly ignored: readonly string[];
+  /** An override or ESTV value exists. */
+  readonly overridden: boolean;
+  /** Other relevant coins carry the same ticker (warning or ambiguous), `null` = none / settled. */
+  readonly shared: SharedTicker | null;
+}
+
 export interface RatesView {
   readonly taxYear: number;
   /** F4.1a: the project's tax currency — overrides and exchange rates are in it. */
@@ -77,6 +115,8 @@ export interface RatesView {
   /** F11.3: whether "Kurse aktualisieren" may go to the internet. */
   readonly online: boolean;
   readonly series: readonly RateSeries[];
+  /** F7.4: every priced asset (latest calculation + stored series) and where its price comes from. */
+  readonly assets: readonly AssetPricing[];
   /** Overrides and ESTV values, one row each. */
   readonly manual: readonly ProjectRate[];
   /** F7.4a: the stored Kursliste of the tax year and the version this project uses. */
@@ -120,6 +160,8 @@ export class GetRatesHandler implements IQueryHandler<
     private readonly settings: SettingsReader,
     private readonly config: ConfigService<Env, true>,
     private readonly estv: EstvKurslisteRepositoryPort,
+    private readonly snapshots: CalculationSnapshotRepositoryPort,
+    @Optional() private readonly markets?: CoinMarketService,
   ) {}
 
   async execute({
@@ -187,11 +229,30 @@ export class GetRatesHandler implements IQueryHandler<
       all.find(
         (r) => r.source === 'estv' && r.note?.startsWith(ESTV_LABEL_PREFIX),
       )?.note ?? null;
+    const snapshot = await this.snapshots.latest(project.id);
+    const calculated = snapshot
+      ? assetsNeedingPrices(
+          { ...snapshot.result, records: {} },
+          projectRules(project),
+        )
+      : [];
+    const names = [
+      ...calculated,
+      ...all.filter((r) => r.kind === 'price').map((r) => r.asset),
+    ];
+    const shared =
+      (await this.markets?.shared(
+        names,
+        resolved.coinChoices,
+        resolved.coinDismissed,
+      )) ?? new Map<string, SharedTicker>();
+    const assets = assetPricing(all, calculated, resolved.coinChoices, shared);
     return {
       taxYear: project.taxYear,
       currency: project.taxCurrency,
       online,
       series,
+      assets,
       manual: all.filter((r) => r.source === 'manual' || r.source === 'estv'),
       estv: {
         autoEnabled:
@@ -206,19 +267,77 @@ export class GetRatesHandler implements IQueryHandler<
   }
 }
 
-export type AssetFetchStatus = 'fetched' | 'cached' | 'notFound' | 'failed';
+/** The pricing of every asset of the calculation and of every stored price series (sorted). */
+export function assetPricing(
+  rates: readonly ProjectRate[],
+  calculated: readonly string[],
+  choices: CoinChoices,
+  shared: ReadonlyMap<string, SharedTicker> = new Map(),
+): AssetPricing[] {
+  const marketAmbiguous = new Map(
+    [...shared.values()]
+      .filter((s) => s.level === 'ambiguous' && s.basis === 'market')
+      .map((s) => [s.symbol, s.candidates.map((c) => c.id)] as const),
+  );
+  const names = new Set(calculated.map((a) => a.toUpperCase()));
+  for (const r of rates) if (r.kind === 'price') names.add(r.asset);
+  return [...names].sort(compareText).map((asset) => {
+    const plan = pricePlan(asset, choices, marketAmbiguous);
+    const own = rates.filter((r) => r.kind === 'price' && r.asset === asset);
+    const fetched = [
+      ...new Set(
+        own
+          .filter((r) => r.source !== 'manual' && r.source !== 'estv')
+          .map((r) => r.source),
+      ),
+    ].sort(compareText);
+    return {
+      asset,
+      pricing: plan.kind,
+      coin: plan.kind === 'chosen' ? plan.choice : null,
+      suggested: COINGECKO_IDS[asset] ?? null,
+      sources: fetched.filter((s) => seriesCounts(asset, s, choices)),
+      ignored: fetched.filter((s) => !seriesCounts(asset, s, choices)),
+      overridden: own.some((r) => r.source === 'manual' || r.source === 'estv'),
+      shared: shared.get(asset) ?? null,
+    };
+  });
+}
+
+/**
+ * `ambiguous`: a ticker of several coins without a chosen coin — no price fetched; `noKey`: the
+ * chosen coin's provider needs a key that is not stored.
+ */
+export type AssetFetchStatus =
+  'fetched' | 'cached' | 'notFound' | 'failed' | 'ambiguous' | 'noKey';
+
+/** One asset's outcome of a refresh (project or dashboard). */
+export interface AssetFetchResult {
+  readonly asset: string;
+  readonly status: AssetFetchStatus;
+  /** The provider the series came from. */
+  readonly source: string | null;
+  readonly points: number;
+  /**
+   * `failed`: the first provider that failed hard and its code (`PriceSourceErrorCode` — the app
+   * shows `rates.sourceErrors.<code>`); `null` otherwise.
+   */
+  readonly error?: {
+    readonly provider: PriceProviderId;
+    readonly code: PriceSourceErrorCode;
+  } | null;
+}
 
 export interface RefreshSummary {
   readonly fx: number;
   /** F7.4a: the stored Kursliste, applied first (ESTV wins at 31.12.). */
   readonly estv: EstvApplySummary;
-  readonly assets: readonly {
-    readonly asset: string;
-    readonly status: AssetFetchStatus;
-    readonly source: string | null;
-    readonly points: number;
-  }[];
+  readonly assets: readonly AssetFetchResult[];
+  /** F6: wallet tokens identified by chain + contract in this refresh (stored as coin choices). */
+  readonly contracts?: readonly ContractCoin[];
 }
+
+type ResolvedRefreshSettings = Awaited<ReturnType<SettingsReader['resolve']>>;
 
 export class RefreshRatesCommand {
   constructor(
@@ -226,14 +345,19 @@ export class RefreshRatesCommand {
     readonly projectId: string,
     /** Fetch again even when a series is already stored. */
     readonly force: boolean,
+    /** Only these assets (no FX) — "Coin wählen" refetches one asset. */
+    readonly only?: readonly string[],
   ) {}
 }
 
 /**
  * "Kurse aktualisieren" (F7.4): USD and EUR in the project's tax currency T from the ECB (USD/CHF
  * and EUR/CHF for CHF; F4.1a), then a daily price series for every asset the calculation needs a
- * price for — Binance closes first (no key, USD), CoinGecko in T when Binance has none and a key
- * is stored. The ESTV Kursliste is applied first, for CHF projects only. One request at a time per source; a series already
+ * price for, through the user's price providers in order (`price-fetch.ts`, price sources
+ * phase 2 — falling back down the list): a coin the user chose → only that provider
+ * first, then only providers that see the same coin, never a ticker source; a ticker of several coins without a choice → nothing (status
+ * `ambiguous`, its old fetched rows removed); else the enabled providers (default Binance closes,
+ * then CoinGecko in T with the key). The ESTV Kursliste is applied first, for CHF projects only. One request at a time per source; a series already
  * stored for the year is not fetched again (cache) unless `force`. Refused when rate lookups
  * are off (F11.3).
  */
@@ -248,22 +372,55 @@ export class RefreshRatesHandler implements ICommandHandler<
     private readonly inputs: CalculationInputService,
     private readonly settings: SettingsReader,
     private readonly usd: UsdPriceSourcePort,
-    private readonly fiat: FiatPriceSourcePort,
+    private readonly history: PriceHistorySourcesPort,
     private readonly fx: FxRateSourcePort,
     private readonly config: ConfigService<Env, true>,
     private readonly progress: RefreshProgress,
     private readonly estv: EstvProjectRatesService,
     @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly markets?: CoinMarketService,
+    @Optional() private readonly contractCoins?: ContractCoinResolver,
   ) {}
+
+  /** Coin lookups (symbol search, contract) of the providers, kept a day across refreshes. */
+  private readonly coinRefs = new CoinRefCache();
+
+  /**
+   * F7.4 + F6: tickers worth identifying by a wallet contract — ambiguous ones (no price
+   * otherwise) and, with a CoinGecko key (the chosen coin is priced there), shared ones.
+   */
+  private async identifyByContract(
+    project: Project,
+    assets: readonly string[],
+    settings: ResolvedRefreshSettings,
+    marketAmbiguous: ReadonlyMap<string, readonly string[]>,
+  ): Promise<ContractCoin[]> {
+    if (!this.contractCoins) return [];
+    const choices = settings.coinChoices;
+    const shared =
+      (await this.markets?.shared(assets, choices, settings.coinDismissed)) ??
+      new Map<string, SharedTicker>();
+    const wanted = assets.filter((asset) => {
+      const plan = pricePlan(asset, choices, marketAmbiguous);
+      if (plan.kind === 'chosen') return false;
+      if (plan.kind === 'ambiguous') return true;
+      return (
+        shared.get(asset)?.level === 'warning' &&
+        settings.keys.coingecko !== undefined
+      );
+    });
+    return this.contractCoins.resolve(project, wanted, settings.keys.coingecko);
+  }
 
   async execute({
     userId,
     projectId,
     force,
+    only,
   }: RefreshRatesCommand): Promise<RefreshSummary> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     assertProjectOpen(project);
-    const settings = await this.settings.resolve(userId);
+    let settings: ResolvedRefreshSettings = await this.settings.resolve(userId);
     if (
       !settings.onlineRates ||
       this.config.get('RATES_ONLINE', { infer: true }) === 'false'
@@ -275,17 +432,49 @@ export class RefreshRatesHandler implements ICommandHandler<
     }
     const assembled = await this.inputs.build(project);
     const calculated = calculate(assembled.input);
-    const assets = assetsNeedingPrices(calculated, assembled.input.rules);
+    const assets = only
+      ? [...new Set(only.map((a) => a.toUpperCase()))].sort()
+      : assetsNeedingPrices(calculated, assembled.input.rules);
+    // F7.4: the market list (at most daily) — tickers without a clear leader get no by-ticker price.
+    await this.markets?.refreshBriefly(settings.keys.coingecko);
+    let marketAmbiguous =
+      (await this.markets?.marketAmbiguous(assets, settings.coinChoices)) ??
+      new Map<string, readonly string[]>();
+    // F6: a wallet token of an ambiguous/shared ticker is identified by its contract (stored as
+    // the user's coin), before ESTV and prices — both then follow that coin.
+    const contracts = only
+      ? []
+      : await this.identifyByContract(
+          project,
+          assets,
+          settings,
+          marketAmbiguous,
+        );
+    if (contracts.length > 0) {
+      settings = {
+        ...settings,
+        coinChoices: {
+          ...settings.coinChoices,
+          ...Object.fromEntries(contracts.map((c) => [c.asset, c.choice])),
+        },
+      };
+      marketAmbiguous =
+        (await this.markets?.marketAmbiguous(assets, settings.coinChoices)) ??
+        new Map<string, readonly string[]>();
+    }
     const estv = await this.estv.apply(project, {
       assets: estvAssetsOf(calculated, assembled.input.rules),
-      coingeckoIds: settings.coingeckoIds,
+      coinChoices: settings.coinChoices,
+      marketAmbiguous: [...marketAmbiguous.keys()],
     });
     const stored = await this.rates.listByProject(project.id);
     this.progress.start(
       project.id,
-      assets.length + fxBasesFor(project.taxCurrency).length,
+      assets.length + (only ? 0 : fxBasesFor(project.taxCurrency).length),
     );
-    const keyUse: KeyUse = { accepted: false, rejected: false };
+    const keyUse: KeyUse = { accepted: new Set(), rejected: new Set() };
+    const leaders =
+      (await this.markets?.leaders(assets)) ?? new Map<string, string>();
     try {
       const summary = {
         ...(await this.fetchAll(
@@ -295,10 +484,15 @@ export class RefreshRatesHandler implements ICommandHandler<
           force,
           settings,
           keyUse,
+          only !== undefined,
+          marketAmbiguous,
+          leaders,
         )),
         estv,
+        contracts,
       };
-      await this.notify(userId, project.id, summary, keyUse);
+      // One asset (Coin wählen) says nothing about the others' failures.
+      if (!only) await this.notify(userId, project.id, summary, keyUse);
       return summary;
     } finally {
       this.progress.finish(project.id);
@@ -307,7 +501,8 @@ export class RefreshRatesHandler implements ICommandHandler<
 
   /**
    * F11.12: assets whose lookup failed → one error per project (which assets, "Erneut
-   * versuchen"); a CoinGecko 401/403 → "Schlüssel prüfen". A clean refresh resolves both.
+   * versuchen"); a keyed provider's 401/403 (CoinGecko, CoinMarketCap) → "Schlüssel prüfen" per
+   * provider. A clean refresh resolves them.
    */
   private async notify(
     userId: string,
@@ -316,9 +511,8 @@ export class RefreshRatesHandler implements ICommandHandler<
     keyUse: KeyUse,
   ): Promise<void> {
     if (!this.notifications) return;
-    const failed = summary.assets
-      .filter((a) => a.status === 'failed')
-      .map((a) => a.asset);
+    const failed = summary.assets.filter((a) => a.status === 'failed');
+    const first = failed.find((a) => a.error)?.error;
     await this.notifications.toggle(
       userId,
       Topics.ratesFetchFailed(projectId),
@@ -326,24 +520,19 @@ export class RefreshRatesHandler implements ICommandHandler<
       {
         kind: 'error',
         projectId,
-        params: { assets: failed.slice(0, 10), count: failed.length },
+        params: {
+          assets: failed.slice(0, 10).map((a) => a.asset),
+          count: failed.length,
+          ...(first
+            ? { provider: first.provider, priceError: first.code }
+            : {}),
+        },
         action: projectRoute(projectId, 'notifications.action.retry', 'rates', {
           named: 'retry:rates',
         }),
       },
     );
-    if (keyUse.rejected) {
-      await this.notifications.raise(userId, Topics.keyInvalid('coingecko'), {
-        kind: 'action',
-        params: { service: 'coingecko' },
-        action: {
-          labelKey: 'notifications.action.checkKey',
-          route: '/app/settings/rates',
-        },
-      });
-    } else if (keyUse.accepted) {
-      await this.notifications.resolve(userId, Topics.keyInvalid('coingecko'));
-    }
+    await notifyKeys(this.notifications, userId, keyUse);
   }
 
   private async fetchAll(
@@ -353,11 +542,14 @@ export class RefreshRatesHandler implements ICommandHandler<
     force: boolean,
     settings: Awaited<ReturnType<SettingsReader['resolve']>>,
     keyUse: KeyUse,
+    skipFx = false,
+    marketAmbiguous: ReadonlyMap<string, readonly string[]> = new Map(),
+    leaders: ReadonlyMap<string, string> = new Map(),
   ): Promise<Omit<RefreshSummary, 'estv'>> {
     const { from, to } = fetchWindow(project.taxYear);
     const quote = project.taxCurrency;
     let fx = 0;
-    for (const base of fxBasesFor(quote)) {
+    for (const base of skipFx ? [] : fxBasesFor(quote)) {
       this.progress.working(project.id, base);
       await this.devDelay();
       if (force || !covered(stored, 'fx', base, project.taxYear, [quote])) {
@@ -374,7 +566,16 @@ export class RefreshRatesHandler implements ICommandHandler<
       this.progress.working(project.id, asset);
       await this.devDelay();
       results.push(
-        await this.fetchAsset(project, asset, stored, force, settings, keyUse),
+        await this.fetchAsset(
+          project,
+          asset,
+          stored,
+          force,
+          settings,
+          keyUse,
+          marketAmbiguous,
+          leaders.get(asset) ?? null,
+        ),
       );
       this.progress.step(project.id);
     }
@@ -394,62 +595,107 @@ export class RefreshRatesHandler implements ICommandHandler<
     force: boolean,
     settings: Awaited<ReturnType<SettingsReader['resolve']>>,
     keyUse: KeyUse,
+    marketAmbiguous: ReadonlyMap<string, readonly string[]>,
+    marketLeader: string | null,
   ): Promise<RefreshSummary['assets'][number]> {
     const { from, to } = fetchWindow(project.taxYear);
     const usable = ['USD', project.taxCurrency];
-    if (!force && covered(stored, 'price', asset, project.taxYear, usable)) {
+    const choices = settings.coinChoices;
+    const plan = pricePlan(asset, choices, marketAmbiguous);
+    if (plan.kind === 'ambiguous') {
+      // Never a by-ticker price for a ticker of several coins: a series fetched before the rule
+      // (Binance) is removed so nothing silently prices the asset; the user chooses the coin.
+      await this.rates.deleteFetchedPrices(project.id, asset);
+      return { asset, status: 'ambiguous', source: null, points: 0 };
+    }
+    const counting = stored.filter((r) =>
+      seriesCounts(asset, r.source, choices, marketAmbiguous),
+    );
+    if (!force && covered(counting, 'price', asset, project.taxYear, usable)) {
       return { asset, status: 'cached', source: null, points: 0 };
     }
-    let keyed = false;
-    try {
-      const symbols = [asset, ...(RATE_ALIASES[asset] ?? [])];
-      let entries: RateEntry[] = [];
-      let source: string | null = null;
-      for (const symbol of symbols) {
-        const found = await this.usd.dailyUsd({ asset, symbol, from, to });
-        entries = mergeByDate(entries, found);
-      }
-      if (entries.length > 0) source = this.usd.name;
-      const coinId = settings.coingeckoIds[asset] ?? COINGECKO_IDS[asset];
-      const apiKey = settings.keys.coingecko;
-      if (entries.length === 0 && coinId && apiKey) {
-        keyed = true;
-        entries = await this.fiat.dailyFiat({
-          asset,
-          symbol: asset,
-          from,
-          to,
-          coinId,
-          apiKey,
-          currency: project.taxCurrency,
-        });
-        if (entries.length > 0) source = this.fiat.name;
-        keyUse.accepted = true;
-      }
-      await this.rates.upsertMany(project.id, entries);
-      return {
+    const found = await fetchPrices(
+      { usd: this.usd, history: this.history, coins: this.coinRefs },
+      {
         asset,
-        status: entries.length > 0 ? 'fetched' : 'notFound',
-        source,
-        points: entries.length,
-      };
-    } catch (error) {
-      if (keyed && isAuthFailure(error)) keyUse.rejected = true;
-      return { asset, status: 'failed', source: null, points: 0 };
+        from,
+        to,
+        currency: project.taxCurrency,
+        choices,
+        keys: priceKeys(settings),
+        providers: enabledProviders(settings.priceSources),
+        marketAmbiguous,
+        marketLeader,
+      },
+    );
+    recordKeys(keyUse, found);
+    if (found.status !== 'failed' && plan.kind === 'chosen') {
+      // The chosen coin replaces whatever was fetched by ticker before (F7.4).
+      await this.rates.deleteFetchedPrices(project.id, asset);
     }
+    await this.rates.upsertMany(project.id, found.entries);
+    return {
+      asset,
+      status: found.status,
+      source: found.source,
+      points: found.entries.length,
+      ...(found.error ? { error: found.error } : {}),
+    };
   }
 }
 
-/** Whether a keyed source accepted or refused the user's key during one refresh. */
-interface KeyUse {
-  accepted: boolean;
-  rejected: boolean;
+/** Which keyed providers accepted or refused the user's key during one refresh. */
+export interface KeyUse {
+  readonly accepted: Set<KeyedProvider>;
+  readonly rejected: Set<KeyedProvider>;
 }
 
-/** A source's 401/403 (`RateSourceError.status`): the key is invalid or expired. */
-function isAuthFailure(error: unknown): boolean {
-  const status = (error as { status?: unknown } | null)?.status;
-  return status === 401 || status === 403;
+/** The user's opened keys the price providers take (never returned, never logged). */
+export function priceKeys(
+  settings: Pick<ResolvedRefreshSettings, 'keys'>,
+): Partial<Record<KeyedProvider, string>> {
+  return {
+    ...(settings.keys.coingecko ? { coingecko: settings.keys.coingecko } : {}),
+    ...(settings.keys.coinmarketcap
+      ? { coinmarketcap: settings.keys.coinmarketcap }
+      : {}),
+  };
+}
+
+export function recordKeys(
+  keyUse: KeyUse,
+  found: {
+    readonly keysAccepted: readonly KeyedProvider[];
+    readonly keysRejected: readonly KeyedProvider[];
+  },
+): void {
+  for (const p of found.keysAccepted) keyUse.accepted.add(p);
+  for (const p of found.keysRejected) keyUse.rejected.add(p);
+}
+
+/**
+ * F11.12 `key.invalid:<provider>`: a provider that refused the user's key in this refresh →
+ * "Schlüssel prüfen" (Einstellungen › Kurse); one that accepted it (and never refused) → resolved.
+ */
+export async function notifyKeys(
+  notifications: NotificationService,
+  userId: string,
+  keyUse: KeyUse,
+): Promise<void> {
+  for (const provider of [...keyUse.rejected].sort()) {
+    await notifications.raise(userId, Topics.keyInvalid(provider), {
+      kind: 'action',
+      params: { service: provider },
+      action: {
+        labelKey: 'notifications.action.checkKey',
+        route: '/app/settings/rates',
+      },
+    });
+  }
+  for (const provider of [...keyUse.accepted].sort()) {
+    if (keyUse.rejected.has(provider)) continue;
+    await notifications.resolve(userId, Topics.keyInvalid(provider));
+  }
 }
 
 export class GetRefreshStatusQuery {
@@ -506,15 +752,6 @@ function covered(
     fetched.some((r) => r.date <= `${taxYear}-01-14`) &&
     fetched.some((r) => r.date >= `${taxYear}-12-17`)
   );
-}
-
-/** Earlier symbols win per day (an asset's own name before its alias). */
-function mergeByDate(
-  existing: readonly RateEntry[],
-  more: readonly RateEntry[],
-): RateEntry[] {
-  const dates = new Set(existing.map((e) => e.date));
-  return [...existing, ...more.filter((e) => !dates.has(e.date))];
 }
 
 export interface ManualRateInput {

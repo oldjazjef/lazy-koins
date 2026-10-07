@@ -57,9 +57,10 @@ export class MappingsService {
     userId: string,
     spec: unknown,
     origin: MappingOrigin,
+    rejectDuplicate = false,
   ): Promise<ImportMapping> {
     return this.commands.execute(
-      new CreateMappingCommand(userId, spec, origin),
+      new CreateMappingCommand(userId, spec, origin, rejectDuplicate),
     );
   }
 

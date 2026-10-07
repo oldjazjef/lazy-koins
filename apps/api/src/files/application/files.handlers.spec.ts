@@ -50,6 +50,10 @@ import {
   RemoveProjectFileHandler,
 } from './commands/remove-project-file.command';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from './commands/set-file-active.command';
+import {
   DuplicateFileException,
   UploadProjectFileCommand,
   UploadProjectFileHandler,
@@ -147,6 +151,7 @@ async function setup() {
     hints: new ListProjectHintsHandler(projects, files, hintStates),
     updateHint: new UpdateHintStateHandler(projects, hintStates),
     rowErrors: new FileRowErrorsHandler(projects, files, mappings, analysis),
+    setActive: new SetFileActiveHandler(projects, files),
   };
 }
 
@@ -512,6 +517,140 @@ describe('overview, preview, removal (F5.5–F5.8)', () => {
     await t.projects.update(t.p2.id, { status: 'in_progress' });
     await t.remove.execute(new RemoveProjectFileCommand('anna', t.p2.id, b.id));
     expect(t.files.stored.size).toBe(0);
+  });
+});
+
+describe('deactivating a file (F5.7a)', () => {
+  const STATEMENT = new TextEncoder().encode(
+    [
+      'Plattform,Konto,Asset,Menge,Stichtag,Preis CHF,Preis USD,Beleg',
+      'ledger-nano,main,BTC,0.3999,2025-12-31,,,Auszug (synthetisch)',
+    ].join('\n'),
+  );
+
+  it('deactivates one project entry only; the file stays readable, its status unchanged', async () => {
+    const t = await setup();
+    const a = await t.upload(t.p1.id, 'b.csv', fixture(STANDARD));
+    const b = await t.upload(t.p2.id, 'b.csv', fixture(STANDARD));
+    const off = await t.setActive.execute(
+      new SetFileActiveCommand('anna', t.p1.id, a.id, false, '  doppelt  '),
+    );
+    expect(off).toMatchObject({ status: 'standard', disabledNote: 'doppelt' });
+    expect(off.disabledAt).not.toBeNull();
+    // The same stored file in another project is unaffected.
+    expect((await t.files.findById(b.id))?.disabledAt).toBeNull();
+    // Still downloadable and previewable.
+    const content = await t.content.execute(
+      new GetFileContentQuery('anna', t.p1.id, a.id),
+    );
+    expect(content.sha256).toBe(a.sha256);
+    expect(
+      (await t.preview.execute(new PreviewFileQuery('anna', t.p1.id, a.id, 2)))
+        .kind,
+    ).toBe('table');
+    // Listed, with its state.
+    const listed = await t.list.execute(
+      new ListProjectFilesQuery('anna', t.p1.id),
+    );
+    expect(listed.files[0]).toMatchObject({
+      id: a.id,
+      disabledNote: 'doppelt',
+    });
+    // Deactivating again keeps the first date; activating clears it.
+    const again = await t.setActive.execute(
+      new SetFileActiveCommand('anna', t.p1.id, a.id, false, ''),
+    );
+    expect(again.disabledAt).toBe(off.disabledAt);
+    expect(again.disabledNote).toBeNull();
+    const on = await t.setActive.execute(
+      new SetFileActiveCommand('anna', t.p1.id, a.id, true, 'ignored'),
+    );
+    expect(on).toMatchObject({ disabledAt: null, disabledNote: null });
+  });
+
+  it("refuses a closed project (409), someone else's file (404) and a long note (400)", async () => {
+    const t = await setup();
+    const a = await t.upload(t.p1.id, 'b.csv', fixture(STANDARD));
+    const bob = await t.projects.create('bruno', {
+      name: 'Bruno',
+      taxYear: 2025,
+      country: 'CH',
+      canton: 'BE',
+      notes: '',
+    });
+    const bobs = await t.upload(bob.id, 'b.csv', fixture(STANDARD), 'bruno');
+    await expect(
+      t.setActive.execute(
+        new SetFileActiveCommand('bruno', t.p1.id, a.id, false),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    // Through one's own project id: still 404 (the file is not in it).
+    await expect(
+      t.setActive.execute(
+        new SetFileActiveCommand('bruno', bob.id, a.id, false),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      t.setActive.execute(
+        new SetFileActiveCommand('anna', t.p1.id, bobs.id, false),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      t.setActive.execute(
+        new SetFileActiveCommand('anna', t.p1.id, a.id, false, 'x'.repeat(501)),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await t.projects.update(t.p1.id, { status: 'closed' });
+    await expect(
+      t.setActive.execute(
+        new SetFileActiveCommand('anna', t.p1.id, a.id, false),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect((await t.files.findById(a.id))?.disabledAt).toBeNull();
+  });
+
+  it('hints: a deactivated file covers nothing (the hint names it) and has no file hints', async () => {
+    const t = await setup();
+    const unread = await t.upload(t.p1.id, 'ledgers.csv', fixture(KRAKEN));
+    const ledger = await t.upload(t.p1.id, 'b.csv', fixture(STANDARD));
+    const statement = await t.upload(t.p1.id, 'auszug.csv', STATEMENT);
+    const keys = async () =>
+      (await t.hints.execute(new ListProjectHintsQuery('anna', t.p1.id))).hints;
+    // With the statement, ledger-nano has its year-end balance.
+    expect(
+      (await keys()).some((h) => h.key === 'noYearEndBalance:ledger-nano'),
+    ).toBe(false);
+
+    await t.setActive.execute(
+      new SetFileActiveCommand('anna', t.p1.id, statement.id, false),
+    );
+    await t.setActive.execute(
+      new SetFileActiveCommand('anna', t.p1.id, unread.id, false),
+    );
+    const hints = await keys();
+    expect(
+      hints.find((h) => h.key === 'noYearEndBalance:ledger-nano'),
+    ).toMatchObject({
+      status: 'open',
+      disabledFiles: [{ id: statement.id, name: 'auszug.csv' }],
+    });
+    // No "Nicht erkannte Datei" for a deactivated file.
+    expect(hints.some((h) => h.key === `unrecognisedFile:${unread.id}`)).toBe(
+      false,
+    );
+    // … nor row errors.
+    expect(hints.some((h) => h.key === `rowErrors:${ledger.id}`)).toBe(true);
+    await t.setActive.execute(
+      new SetFileActiveCommand('anna', t.p1.id, ledger.id, false),
+    );
+    expect((await keys()).some((h) => h.key === `rowErrors:${ledger.id}`)).toBe(
+      false,
+    );
+    // The files overview's missing-file hints follow the same rule.
+    const overview = await t.list.execute(
+      new ListProjectFilesQuery('anna', t.p1.id),
+    );
+    expect(overview.missing).toEqual([]);
   });
 });
 

@@ -92,6 +92,7 @@ export async function buildReview(
   }
   let raw: unknown;
   let sourceMappingId: string | null = null;
+  let libraryCopy = false;
   if (request.mappingId !== undefined) {
     const mapping = await loadOwnMapping(
       deps.mappings,
@@ -100,6 +101,7 @@ export async function buildReview(
     );
     raw = mapping.spec;
     sourceMappingId = mapping.id;
+    libraryCopy = mapping.origin === 'library';
   } else {
     raw = specOr400(request.spec);
   }
@@ -122,6 +124,7 @@ export async function buildReview(
     target: target ? { id: target.id, nextVersion: target.version + 1 } : null,
     existing: existing ? { id: existing.id, version: existing.version } : null,
     lastAuthorName: await deps.library.lastAuthorName(userId),
+    libraryCopy,
     sourceMappingId,
   };
 }

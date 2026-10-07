@@ -83,6 +83,17 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F5.5** Dateiübersicht gruppiert nach Plattform/Wallet mit Typ, erkanntem Zeitraum, Anzahl Buchungen, Upload-Datum und Herkunft (neu / aus Projekt X).
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
 - **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
+- **F5.7a Datei deaktivieren** (Wunsch 09.10.2026: „Ich möchte Dateien deaktivieren können, somit
+  werden sie bei Rechnung / Neuberechnung ignoriert.“): Eine Datei lässt sich pro Projekt
+  deaktivieren (optional mit Notiz) und wieder aktivieren. Deaktiviert bleibt sie gespeichert,
+  herunterladbar und in der Vorschau sichtbar, ihr Mapping-Status bleibt; ignoriert wird sie von
+  Berechnung (das Ergebnis wird „veraltet“), Dashboard, Hinweisen (sie deckt nichts ab – der
+  Hinweis sagt das), Prüfungen, internem Prüfbericht und Datenexport. Dieselbe Datei in einem
+  anderen Projekt bleibt unberührt. Dateiliste: Abzeichen „Deaktiviert“, Zeile abgeschwächt,
+  „N deaktiviert“ mit Ein-/Ausblenden. Folgeprojekt/Übernahme bieten sie nicht vorausgewählt an
+  (angehakt wird sie aktiv übernommen); Projekt-Pakete behalten den Zustand; ein neuer
+  Wallet-Abruf aktiviert eine deaktivierte abgeleitete Datei nicht wieder. Abgeschlossene
+  Projekte: nicht änderbar (F4.5).
 - **F5.8** Fehlende Dateien anzeigen, z. B. „Kraken-Kontoauszug Dezember fehlt“ oder „Binance-Historie endet am 30.06.“, mit Anleitung, wo der Export zu finden ist.
   - **Hinweise** als eigener Bereich im Projekt (Reiter mit Anzahl offener Hinweise; im
     Dateibereich nur eine kurze Zusammenfassung „7 Hinweise → anzeigen“): Tabelle mit **Typ**
@@ -141,7 +152,7 @@ Mappings hält. Mappings können geratet werden. Man kann seine eigenen Mappings
 kann nur sein eigenes Mapping von dort löschen. Wenn jemand dieses Mapping in sein Projekt
 verwendet, wird eine Kopie davon erstellt, damit beim globalen Löschen die User dieses Mapping
 weiter verwenden können.“ Die Bibliothek gibt es nur in der Web-App (alle Benutzer eines Servers
-teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittstelle antwortet 404).
+teilen sie); die Desktop-App hat keine eigene, kann aber die eines Servers lesen (F5.18).
 
 - **F5.15 Veröffentlichen und Löschen**: Ein eigenes Mapping (Mapping-Seite „In Bibliothek
   veröffentlichen“) oder eine hochgeladene `.json` lässt sich in der Bibliothek veröffentlichen –
@@ -170,6 +181,39 @@ teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittst
   eigene Einträge nicht); angezeigt werden Durchschnitt und Anzahl. Chat und MCP haben dieselben
   Funktionen als Werkzeuge (suchen, ansehen, übernehmen, bewerten, eigenes veröffentlichen,
   eigenes löschen) – strikt auf den angemeldeten Benutzer beschränkt (F11.16).
+- **F5.18 Globale Bibliothek in der Desktop-App** (Wunsch 08.10.2026: „In der installierten
+  Version soll die globale Library hinterlegt werden können … über einen Endpunkt, über den man
+  diese Mapper beziehen kann aus dem Web“): Der Web-Server bietet die Bibliothek zusätzlich
+  **öffentlich und nur lesend** an (ohne Anmeldung; nur Anzeigename, nie E-Mail oder Benutzer-ID;
+  gelöschte Einträge fehlen; Ratenlimit pro IP, abschaltbar). In der Desktop-App trägt man unter
+  Einstellungen › Bibliothek die Adresse eines Servers ein (leer = Standard; dann, ausgeschaltet
+  oder mit ausgeschalteten Online-Abfragen F11.3 geht die App dafür nie ins Internet), mit
+  „Verbindung testen“. Danach: Bibliothek suchen, ansehen, als **eigene Kopie** übernehmen (mit
+  Server, Eintrag und Version als Herkunft) und Vorschläge im Dateien-Tab – dafür verlassen nur
+  die Kopfzeile und der Dateiname einer Datei das Gerät, die Seite sagt das ausdrücklich.
+  Veröffentlichen, Bewerten und Löschen gibt es in der Desktop-App nicht. Ein Mapping, das diese
+  App-Version nicht vollständig versteht, wird nicht übernommen („neuere App-Version nötig“).
+- **F5.19 Mapping-Vorschlag beim Upload** (Wunsch 08.10.2026: „Sind Mappings verfügbar, soll ein
+  Mapping beim Upload eines Files vorgeschlagen werden“): Jede hochgeladene Tabelle, für die kein
+  Mapping automatisch gefunden wurde, bekommt sofort einen **Vorschlag** – ohne Suchen, im
+  Dateien-Tab (und in der Upload-Liste „braucht ein Mapping · Vorschlag ansehen“) sowie im
+  Zuordnungsdialog: „Vorschlag: <Mapping> (<Quelle>, Übereinstimmung …)“ mit Vorschau des
+  Ergebnisses (Arten, unbekannte Werte, Zeilenfehler, erste Buchungen) und **„Übernehmen“** mit
+  einem Klick; dazu „Andere Vorschläge“, „Mit AI erstellen“, „Neues Mapping“. Quellen: eigene
+  Mappings (auch beinahe passende – fehlende Spalten werden genannt, „Als Vorlage anpassen“ öffnet
+  den Editor), die mitgelieferten **Standard-Mappings** (`mappings/standard/`, schreibgeschützt,
+  mit Stand; Übernehmen = eigene Kopie) und die Bibliothek (Web; Desktop nur mit verbundener
+  Bibliothek, F5.18). Zugeordnet wird nie ohne Klick; abgeschlossene Projekte bekommen keine
+  Vorschläge (F4.5). Die automatische Erkennung beim Upload bleibt unverändert streng.
+- **F5.20 Mehrere Mappings veröffentlichen** (Wunsch 08.10.2026): Auf der Mapping-Seite lassen
+  sich Mappings auswählen (Kontrollkästchen, ganze Seite, Anzahl; die Auswahl gilt bis zum
+  nächsten Suchen/Sortieren) und als Sammelaktion „In Bibliothek veröffentlichen“. Jedes Mapping
+  durchläuft trotzdem die Prüfung von F5.15 (Hinweise einzeln entfernbar, genaues JSON), der
+  Anzeigename wird einmal für alle angegeben, dann ausdrücklich bestätigen; veröffentlicht wird
+  eines nach dem anderen mit Ergebnis pro Mapping (veröffentlicht / schon veröffentlicht – „Neue
+  Version“ / abgelehnt mit Grund). Vor dem Start sagt die App, wenn die Auswahl mehr neue Einträge
+  enthält, als heute noch erlaubt sind (10 pro Tag). Aus der Bibliothek übernommene Kopien können
+  nicht als neue Einträge veröffentlicht werden. Alle Schutzregeln gelten pro Mapping.
 
 ## 6. Wallets
 
@@ -193,6 +237,17 @@ als abgeleitete Datei im Standardformat Teil des Projekts.
 - **F7.2** Ertrag des Jahres je Kategorie (Zinsen/Earn, Staking, Airdrop, Launchpool, Hardfork), bewertet zum Zuflusszeitpunkt in CHF.
 - **F7.3** Einmalereignisse (Hardforks, Airdrops, Verluste) separat ausweisen.
 - **F7.4** Kurse automatisch ermitteln mit Angabe der Quelle; Stichtags-Wechselkurse je Projekt einsehbar und überschreibbar (z. B. ESTV-Kursliste).
+- **F7.4b Kursanbieter wählbar** (Wunsch 07.10.2026: „CoinMarketCap als Kursanbieter, dazu
+  kostenlose Anbieter mit Kursverlauf, der Benutzer wählt, mit Fallback“): Einstellungen › Kurse
+  listet die Anbieter (Binance, CoinGecko, CoinMarketCap, DefiLlama, CoinPaprika, Kraken,
+  Coinbase, Bitfinex) – ein-/ausschaltbar, Reihenfolge frei; Standard wie bisher Binance →
+  CoinGecko, die neuen aus. „Kurse aktualisieren“ (Projekt und Dashboard) fragt sie der Reihe nach
+  und nimmt pro Asset den ersten mit Kursverlauf (sonst der nächste: Coin unbekannt, Tarif reicht
+  nicht zurück, Währung fehlt, leer oder Fehler). Schlüssel (CoinMarketCap) verschlüsselt, nie
+  zurückgegeben; „Testen“ zeigt Tarif, Verlaufstiefe oder den Fehler. Ein gewählter Coin kommt
+  zuerst von seinem Anbieter, mehrdeutige Kürzel bekommen bei keinem Anbieter einen Kurs. Jeder
+  Kurs behält seine Quelle; Quellenangabe für CoinGecko/CoinMarketCap überall, wo ihre Daten
+  erscheinen. Tageskurs = Schlusskurs des UTC-Tages.
 - **F7.4a ESTV-Kursliste automatisch**: Die Kursliste (ICTax) des Steuerjahres wird online
   bezogen (offizieller XML-Export, jeweils die neueste Fassung – die ESTV aktualisiert sie auch
   nach dem 31.03. noch) und daraus die Jahresendkurse für Kryptowährungen und Devisen
@@ -312,6 +367,12 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
   anderen – ausser was jemand selbst in der Mapping-Bibliothek veröffentlicht (F5.15, nur Web);
   eine dort übernommene Kopie ist ein eigenes Mapping (Herkunft „aus Bibliothek“).
+- **F11.0u Mehrere Mapping-Dateien hochladen** (Wunsch 08.10.2026: „eine Liste hochladen“):
+  „Mappings hochladen“ (Mapping-Seite und Mappings eines Projekts) nimmt mehrere `.json` auf
+  einmal (Auswahl oder Hineinziehen). Jede Datei wird einzeln geprüft; was ich genau so schon
+  habe, wird übersprungen; ein Fehler hält die anderen nicht auf. Danach zeigt eine Liste pro
+  Datei: gespeichert / schon vorhanden / ungültig (mit den Problemen). Höchstens 50 Dateien pro
+  Durchgang.
 - **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
   Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
   Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.

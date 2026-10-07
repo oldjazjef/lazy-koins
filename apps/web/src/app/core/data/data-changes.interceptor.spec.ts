@@ -24,6 +24,12 @@ describe('changeOf — URL/method → scope and project', () => {
     ['POST', `/api/projects/${P}/files`, { projectId: P }],
     ['DELETE', `/api/projects/${P}/files/f1`, { projectId: P }],
     ['PATCH', `/api/projects/${P}/files/f1`, { projectId: P }],
+    // F5.7a: (de)activating a file also settles/raises its notifications.
+    [
+      'PATCH',
+      `/api/projects/${P}/files/f1/active`,
+      { projectId: P, scope: 'notifications' },
+    ],
     ['POST', `/api/projects/${P}/calculate`, { projectId: P }],
     ['POST', `/api/projects/${P}/corrections`, { projectId: P }],
     ['POST', `/api/projects/${P}/corrections/c1/undo`, { projectId: P }],
@@ -74,6 +80,36 @@ describe('changeOf — URL/method → scope and project', () => {
     // F5.16: a library entry taken = a new mapping, maybe assigned to a file of any project.
     ['POST', '/api/library/l1/take', { projectId: null, scope: 'mappings' }],
     ['POST', '/api/library/review', null],
+    // F5.19: a standard mapping taken = a copy, maybe assigned to a file of any project.
+    [
+      'POST',
+      '/api/standard-mappings/kraken-ledger/take',
+      { projectId: null, scope: 'mappings' },
+    ],
+    // F5.18 (desktop): the link to a web library; its test stores nothing.
+    ['PUT', '/api/settings/library', { scope: 'settings' }],
+    // F7.4: a coin per ticker removes fetched prices in every open project + the dashboard cache.
+    [
+      'PUT',
+      '/api/settings/coins/OPN',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    [
+      'DELETE',
+      '/api/settings/coins/OPN',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    [
+      'PUT',
+      '/api/settings/coins/TON/dismissal',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    [
+      'POST',
+      '/api/projects/p1/rates/coin',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    ['POST', '/api/settings/library/test', null],
     ['POST', '/api/library', null],
     ['PUT', '/api/library/l1/rating', null],
     ['DELETE', '/api/library/l1', null],
@@ -86,7 +122,8 @@ describe('changeOf — URL/method → scope and project', () => {
     ['PATCH', '/api/wallets/w1', { projectId: null, scope: 'wallets' }],
     ['POST', '/api/rates/estv/update', { projectId: null, scope: 'rates' }],
     // Settings and notifications.
-    ['PUT', '/api/settings', { scope: 'settings' }],
+    // Price sources: the provider order ranks every project's stored series.
+    ['PUT', '/api/settings', { projectId: null, scope: ['rates', 'settings'] }],
     ['PUT', '/api/settings/wallets', { scope: 'settings' }],
     ['PUT', '/api/ai/settings', { scope: 'settings' }],
     ['PUT', '/api/mail/template', { scope: 'settings' }],
@@ -106,6 +143,7 @@ describe('changeOf — URL/method → scope and project', () => {
     ['POST', '/api/mail/settings/test', null],
     ['POST', '/api/mail/template/preview', null],
     ['POST', '/api/settings/keys/coingecko/test', null],
+    ['POST', '/api/settings/price-sources/coinmarketcap/test', null],
     ['POST', '/api/settings/wallets/test', null],
     ['POST', '/api/wallets/inspect', null],
     ['POST', '/api/dashboard/rates/refresh', null],

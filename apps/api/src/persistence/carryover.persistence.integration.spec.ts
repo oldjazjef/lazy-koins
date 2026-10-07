@@ -182,6 +182,23 @@ describe('carry-over persistence', () => {
       where: { projectId: first.projectId },
     });
     expect(state?.itemKey).toBe(`carried:${rows[0]?.id}`);
+    // Written active unless the bundle says otherwise (F5.7a).
+    expect(entry?.disabledAt).toBeNull();
+  });
+
+  it('writes a file deactivated when the bundle says so (a package, F5.7a)', async () => {
+    const user = await newUser();
+    const base = bundle('Paket', 'new');
+    const at = '2026-03-01T08:00:00.000Z';
+    const written = await bundles.write(user.id, {
+      ...base,
+      files: base.files.map((f) => ({
+        ...f,
+        deactivation: { at, note: 'doppelt' },
+      })),
+    });
+    const [entry] = await files.listByProject(written.projectId);
+    expect(entry).toMatchObject({ disabledAt: at, disabledNote: 'doppelt' });
   });
 
   it('leaves nothing behind when a part fails', async () => {
@@ -233,6 +250,20 @@ describe('carry-over persistence', () => {
         user.id,
       ),
     ).rejects.toThrow(/CHECK constraint failed/);
+    // F7.4: a chosen coin removes every cached price of that asset — only of this user.
+    const other = await newUser();
+    await userRates.upsertMany(other.id, [entry]);
+    await userRates.upsertMany(user.id, [{ ...entry, asset: 'ETH' }]);
+    expect(await userRates.deletePrices(user.id, 'DOT')).toBe(2);
+    expect((await userRates.listByUser(user.id)).map((r) => r.asset)).toEqual([
+      'ETH',
+    ]);
+    expect(await userRates.listByUser(other.id)).toHaveLength(1);
+    await userRates.upsertMany(user.id, [
+      { ...entry, value: '5.5' },
+      { ...entry, currency: 'EUR' },
+    ]);
+    await userRates.deletePrices(user.id, 'ETH');
     const project = await projects.create(user.id, {
       name: 'P',
       taxYear: 2025,

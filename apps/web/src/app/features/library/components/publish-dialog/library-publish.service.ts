@@ -86,9 +86,15 @@ export class LibraryPublishService {
     const review = this.review();
     return review ? JSON.stringify(review.spec, null, 2) : '';
   });
+  /** F5.20: a copy taken from the library cannot become a new entry (409 `libraryCopy`). */
+  readonly libraryCopy = computed(() => {
+    const review = this.review();
+    return review !== null && review.libraryCopy && review.target === null;
+  });
   readonly canPublish = computed(
     () =>
       this.review() !== null &&
+      !this.libraryCopy() &&
       !this.loading() &&
       !this.busy() &&
       !this.tooLarge() &&

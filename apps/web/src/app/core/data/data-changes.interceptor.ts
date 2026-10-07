@@ -24,6 +24,10 @@ const READ_ONLY: readonly RegExp[] = [
   /^mail\/template\/preview$/,
   /^settings\/keys\/[^/]+\/test$/,
   /^settings\/wallets\/test$/,
+  // F5.18: "Verbindung testen" with the typed address of a web library stores nothing.
+  /^settings\/library\/test$/,
+  // Price sources: "Testen" of one provider (typed or stored key) stores nothing.
+  /^settings\/price-sources\/[^/]+\/test$/,
   /^wallets\/inspect$/,
   /^chat\//,
   /^pin\//,
@@ -48,7 +52,24 @@ const RULES: readonly (readonly [
     }),
   ],
   [/^projects\/import-package$/, () => ({ scope: 'projects' })],
+  // F5.7a: a file (de)activated — the project's files, hints, result status and the dashboard
+  // follow; its "ohne Mapping"/"Zeilenfehler" notifications are resolved or raised again.
+  [
+    /^projects\/([^/]+)\/files\/[^/]+\/active$/,
+    (m) => ({ projectId: m[1], scope: 'notifications' }),
+  ],
   [/^projects$/, () => ({ scope: 'projects' })],
+  // F7.4 "Coin wählen": the coin of a ticker is the user's — it removes that asset's fetched
+  // prices in every open project and the dashboard's cache, so every project, the dashboard
+  // (via `projects`) and Einstellungen › Kurse reload.
+  [
+    /^projects\/[^/]+\/rates\/coin$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['rates', 'settings'] }),
+  ],
+  [
+    /^settings\/coins\/[^/]+(\/dismissal)?$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['rates', 'settings'] }),
+  ],
   // A mapping saved from a project's file: the mappings page shows it, too.
   [
     /^projects\/([^/]+)\/files\/[^/]+\/ai\/mapping\/accept$/,
@@ -84,12 +105,27 @@ const RULES: readonly (readonly [
     /^library\/[^/]+\/take$/,
     () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
   ],
+  // F5.19: taking a standard mapping = a copy in my mappings, maybe assigned to a file of a
+  // project the URL does not name (as the library's take).
+  [
+    /^standard-mappings\/[^/]+\/take$/,
+    () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
+  ],
   // A new ESTV Kursliste: every project's Kurse tab says "neuer Stand".
   [
     /^rates\/estv\/update$/,
     () => ({ projectId: EVERY_PROJECT, scope: 'rates' }),
   ],
   [/^notifications(\/.*)?$/, () => ({ scope: 'notifications' })],
+  // F5.18 (desktop): the link to a web library — the nav entry, the files tab's suggestions
+  // and the library pages follow it (`LibraryAvailability` reloads on `settings`).
+  [/^settings\/library$/, () => ({ scope: 'settings' })],
+  // Price sources: PUT /settings may change the provider order (or a key) — it ranks the stored
+  // series of every project and the dashboard, so their results (stale) and rates follow.
+  [
+    /^settings$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['rates', 'settings'] }),
+  ],
   [
     /^(settings|ai\/settings|assistant\/settings|mail|setup)(\/.*)?$/,
     () => ({

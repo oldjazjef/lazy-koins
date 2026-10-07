@@ -46,6 +46,7 @@ import {
   ProjectFileResponseDto,
   ProjectFilesResponseDto,
   RowErrorsResponseDto,
+  SetFileActiveDto,
   UploadFileQueryDto,
 } from './dto/project-file.dto';
 import { FilesService } from './files.service';
@@ -241,6 +242,32 @@ export class FilesController {
         : { mode: dto.mode };
     return ProjectFileResponseDto.from(
       await this.files.change(user.userId, projectId, fileId, assignment),
+    );
+  }
+
+  @Patch(':fileId/active')
+  @ApiOperation({
+    summary: 'Deactivate a file in this project, or activate it again (F5.7a)',
+    description:
+      'A deactivated file stays stored, downloadable and previewable (its mapping status is unchanged) but calculation, dashboard, F5.8 hints, checks and exports ignore it; the snapshot becomes stale. Only this project’s entry changes.',
+  })
+  @ApiOkResponse({ type: ProjectFileResponseDto })
+  @ApiNotFoundResponse({ description: 'Missing, or not mine' })
+  @ApiConflictResponse({ description: 'The project is closed (F4.5)' })
+  async setActive(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Body() dto: SetFileActiveDto,
+  ): Promise<ProjectFileResponseDto> {
+    return ProjectFileResponseDto.from(
+      await this.files.setActive(
+        user.userId,
+        projectId,
+        fileId,
+        dto.active,
+        dto.note ?? '',
+      ),
     );
   }
 

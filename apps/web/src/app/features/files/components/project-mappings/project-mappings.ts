@@ -25,6 +25,8 @@ import { AiAssistState } from '../ai-assist';
 import { MappingEditorForm } from '../mapping-editor';
 import { ProjectFilesService } from '../project-files/project-files.service';
 import { MappingEditorState } from './mapping-editor.state';
+import { MappingImportResults } from '../../../mappings/components/mapping-import-results';
+import { MappingImportService } from '../../../mappings/mapping-import.service';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
 import {
@@ -49,6 +51,7 @@ import {
     Truncate,
     RowActions,
     MappingEditorForm,
+    MappingImportResults,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -63,6 +66,8 @@ export class ProjectMappings {
   protected readonly service = inject(ProjectFilesService);
   protected readonly editor = inject(MappingEditorState);
   protected readonly ai = inject(AiAssistState);
+  /** F11.0u: several `.json` at once. */
+  protected readonly imports = inject(MappingImportService);
 
   readonly closed = input(false);
 
@@ -98,9 +103,9 @@ export class ProjectMappings {
 
   protected picked(event: Event): void {
     const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
+    const files = [...(target.files ?? [])];
     target.value = '';
-    if (file) void this.service.importMappingFile(file);
+    if (files.length > 0) void this.imports.importFiles(files);
   }
 
   /** From the editor of a new mapping for a file: let the AI write it instead. */

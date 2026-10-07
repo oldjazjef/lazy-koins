@@ -78,6 +78,9 @@ describe('one change refreshes every view of the project', () => {
       http.expectOne('/api/projects/p1/files').flush(EMPTY_FILES);
       http.expectOne('/api/projects/p1/hints').flush(HINTS);
       http.expectOne('/api/projects/p1/mappings').flush([]);
+      http
+        .expectOne('/api/projects/p1/mapping-suggestions')
+        .flush({ files: [], library: 'off' });
       http.expectOne('/api/projects/p1/result').flush(RESULT(stale));
       http.expectOne((r) => r.url === '/api/dashboard').flush(DASHBOARD);
     };

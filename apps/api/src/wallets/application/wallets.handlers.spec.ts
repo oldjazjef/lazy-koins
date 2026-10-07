@@ -10,6 +10,10 @@ import { CalculateProjectCommand } from '../../calculation/application/calculati
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
@@ -352,6 +356,56 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     const files = walletFiles(t, wallet.id);
     expect(files).toHaveLength(1);
     expect(files[0]?.id).not.toBe(before);
+  });
+
+  it('a deactivated derived file stays deactivated: same bytes kept, new bytes take it over (F5.7a)', async () => {
+    const t = await setup();
+    const wallet = await t.create.execute(
+      new CreateWalletCommand('anna', {
+        label: 'Ledger',
+        address: EVM,
+        networks: ['ethereum'],
+      }),
+    );
+    await t.add.execute(
+      new AddProjectWalletCommand('anna', t.project.id, wallet.id),
+    );
+    await t.fetch.execute(new FetchWalletCommand('anna', wallet.id));
+    const [file] = walletFiles(t, wallet.id);
+    if (!file) throw new Error('no derived file');
+    const off = await new SetFileActiveHandler(t.projects, t.files).execute(
+      new SetFileActiveCommand('anna', t.project.id, file.id, false, 'Test'),
+    );
+
+    // Same data again: the same file, still deactivated.
+    await t.fetch.execute(new FetchWalletCommand('anna', wallet.id));
+    const same = await t.files.findById(file.id);
+    expect(same).toMatchObject({
+      disabledAt: off.disabledAt,
+      disabledNote: 'Test',
+    });
+
+    // New bytes ("kein Spam" rewrites the file): the replacement inherits the deactivation.
+    const [ethereum] = await t.tokens.execute({
+      userId: 'anna',
+      walletId: wallet.id,
+    });
+    const scam = ethereum?.tokens.find((tok) => tok.spam);
+    await t.setToken.execute(
+      new SetTokenOverrideCommand(
+        'anna',
+        wallet.id,
+        'ethereum',
+        scam?.tokenKey ?? '',
+        true,
+      ),
+    );
+    const [replaced] = walletFiles(t, wallet.id);
+    expect(replaced?.id).not.toBe(file.id);
+    expect(await t.files.findById(replaced?.id ?? '')).toMatchObject({
+      disabledAt: off.disabledAt,
+      disabledNote: 'Test',
+    });
   });
 
   it('manual balance with a PDF receipt (F6.5) becomes a holding; removing the wallet removes its files', async () => {

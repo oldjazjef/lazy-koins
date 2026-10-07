@@ -176,6 +176,19 @@ export interface ProjectFile {
   derivedFromFileId: string | null;
   derivedFromName: string | null;
   addedAt: string;
+  /**
+   * F5.7a: false = deactivated in this project — calculation, dashboard, hints, checks and
+   * exports ignore it; it stays downloadable/previewable. Optional for older answers (= active).
+   */
+  active?: boolean;
+  disabledAt?: string | null;
+  disabledNote?: string | null;
+}
+
+/** `PATCH /api/projects/:id/files/:fileId/active` (F5.7a). */
+export interface SetFileActiveRequest {
+  active: boolean;
+  note?: string;
 }
 
 export const MISSING_FILE_KINDS = [
@@ -207,6 +220,8 @@ export const HINT_KINDS = [
   ...MISSING_FILE_KINDS,
   'unrecognisedFile',
   'rowErrors',
+  // F7.4: a ticker of the project that several relevant coins carry.
+  'sharedTicker',
 ] as const;
 export type HintKind = (typeof HINT_KINDS)[number];
 
@@ -227,6 +242,11 @@ export interface ProjectHint {
   fileId: string | null;
   fileName: string | null;
   count: number | null;
+  /** sharedTicker: the ticker and its coins ("Name (#rank)"). */
+  asset?: string | null;
+  coins?: string[];
+  /** F5.7a: deactivated files that would cover this platform/account — they cover nothing. */
+  disabledFiles?: { id: string; name: string }[];
   status: HintStatus;
   note: string;
 }
@@ -339,8 +359,11 @@ export interface Mapping {
   fingerprint: string;
   version: number;
   origin: MappingOrigin;
-  /** Origin `library` (F5.16): the entry and version this private copy was taken from. */
-  library?: { id: string; version: number } | null;
+  /**
+   * Origin `library` (F5.16): the entry and version this private copy was taken from;
+   * `server` (F5.18) = the web deployment a desktop copy came from, `null` = this deployment.
+   */
+  library?: { id: string; version: number; server?: string | null } | null;
   spec: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -402,6 +425,89 @@ export interface PublishReview {
   target: { id: string; nextVersion: number } | null;
   existing: { id: string; version: number } | null;
   lastAuthorName: string | null;
+  /** A copy taken from the library: only a new version of my own entry (else 409 `libraryCopy`). */
+  libraryCopy: boolean;
+}
+
+/** `GET /api/library/quota` (F5.20) — new entries left today; versions do not count. */
+export interface PublishQuota {
+  newPerDay: number;
+  usedToday: number;
+  remainingToday: number;
+  publishesPer10Min: number;
+}
+
+// --- Mapping suggestions + standard mappings (F5.19) — mirrors apps/api `suggestions/dto` ---
+
+export const SUGGESTION_SOURCES = ['own', 'standard', 'library'] as const;
+export type SuggestionSource = (typeof SUGGESTION_SOURCES)[number];
+
+export interface MappingSuggestion {
+  source: SuggestionSource;
+  /** Mapping id (own), catalogue id (standard) or entry id (library). */
+  id: string;
+  name: string;
+  platform: string;
+  description: string | null;
+  /** Reads the file as it is — "Übernehmen" in one click; else a near match to adapt. */
+  reads: boolean;
+  /** 0 … 1 */
+  coverage: number;
+  matched: number;
+  required: number;
+  missing: string[];
+  fileNameMatches: boolean;
+  platformInName: boolean;
+  score: number;
+  revision: number | null;
+  copyId: string | null;
+  library: {
+    version: number;
+    authorName: string | null;
+    ratingAverage: number | null;
+    ratingCount: number;
+    usageCount: number;
+  } | null;
+}
+
+export interface FileSuggestions {
+  projectFileId: string;
+  displayName: string;
+  suggestions: MappingSuggestion[];
+}
+
+/** `GET /api/projects/:id/mapping-suggestions` */
+export interface ProjectSuggestions {
+  files: FileSuggestions[];
+  library: 'used' | 'off' | 'unavailable';
+}
+
+/** `GET …/files/:fileId/suggestion-preview?source&id` */
+export interface SuggestionPreview {
+  preview: MappingPreview;
+  kindCounts: Partial<Record<BookingKind, number>>;
+  unknownValues: { value: string; count: number }[];
+}
+
+/** `GET /api/standard-mappings[/:id]` — the bundled, read-only templates. */
+export interface StandardMapping {
+  id: string;
+  revision: number;
+  name: string;
+  platform: string;
+  description: string | null;
+  fingerprint: string;
+  copyId: string | null;
+  spec?: Record<string, unknown>;
+}
+
+/** `POST /api/standard-mappings/:id/take` */
+export interface TakenStandardMapping {
+  mapping: Mapping;
+  created: boolean;
+  revision: number;
+  projectFileId: string | null;
+  fileStatus: ProjectFileStatus | null;
 }
 
 /** `POST /api/library/:id/take` — my private copy (and the file it now reads). */
@@ -411,6 +517,47 @@ export interface TakenLibraryMapping {
   projectFileId: string | null;
   fileStatus: ProjectFileStatus | null;
 }
+
+/**
+ * `GET /api/library/status` (F5.18): `web` = this deployment's library; `remote` = the desktop,
+ * linked to a web deployment's public library (read-only).
+ */
+export interface LibraryStatus {
+  mode: 'web' | 'remote';
+  available: boolean;
+  readOnly: boolean;
+  server: string | null;
+  suggestions: boolean;
+  reason: 'libraryNotConfigured' | 'offline' | null;
+}
+
+/** Einstellungen › Bibliothek (desktop, F5.18) — `GET|PUT /api/settings/library`. */
+export interface RemoteLibrarySettings {
+  url: string;
+  enabled: boolean;
+  suggestions: boolean;
+  updatedAt: string | null;
+}
+
+export type SaveRemoteLibrarySettings = Pick<
+  RemoteLibrarySettings,
+  'url' | 'enabled' | 'suggestions'
+>;
+
+/** `POST /api/settings/library/test` — the server answered, with this many entries. */
+export interface RemoteLibraryTest {
+  server: string;
+  total: number;
+}
+
+/** Why an address cannot be used (`422 libraryUrlInvalid`, `problem`). */
+export const REMOTE_URL_PROBLEMS = [
+  'invalidUrl',
+  'httpsRequired',
+  'credentialsInUrl',
+  'tooLong',
+] as const;
+export type RemoteUrlProblem = (typeof REMOTE_URL_PROBLEMS)[number];
 
 /** `GET /api/projects/:id/library-matches` — per file that needs a mapping. */
 export interface LibraryFileMatches {

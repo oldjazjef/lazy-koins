@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { NOT_ANALYSED } from '../../files/domain/project-file';
 import { InMemoryProjectFileRepository } from '../../files/testing/in-memory-project-file.repository';
 import { InMemoryProjectRepository } from '../../projects/testing/in-memory-project.repository';
@@ -97,6 +97,55 @@ async function setup() {
     usage: new GetMappingUsageHandler(mappings, files, projects),
   };
 }
+
+describe('several .json at once (F11.0u): duplicates', () => {
+  it('refuses a spec I already have only when asked (409 duplicateMapping); another user is not a duplicate', async () => {
+    const t = await setup();
+    const create = new CreateMappingHandler(t.mappings);
+    const refused = await create
+      .execute(
+        new CreateMappingCommand('anna', spec('kraken-ledger'), 'copied', true),
+      )
+      .catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(ConflictException);
+    expect((refused as ConflictException).getResponse()).toMatchObject({
+      code: 'duplicateMapping',
+      existingId: t.kraken.id,
+    });
+    // Key order and unknown keys do not make a spec different.
+    const reordered = Object.fromEntries(
+      Object.entries(
+        spec('kraken-ledger') as Record<string, unknown>,
+      ).reverse(),
+    );
+    await expect(
+      create.execute(
+        new CreateMappingCommand(
+          'anna',
+          { ...reordered, unknownKey: 1 },
+          'copied',
+          true,
+        ),
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    // Without the flag (the editor) a second copy is fine, as before.
+    await expect(
+      create.execute(
+        new CreateMappingCommand('anna', spec('kraken-ledger'), 'copied'),
+      ),
+    ).resolves.toMatchObject({ ownerId: 'anna' });
+    await expect(
+      create.execute(
+        new CreateMappingCommand(
+          'bruno',
+          spec('kraken-ledger'),
+          'copied',
+          true,
+        ),
+      ),
+    ).resolves.toMatchObject({ ownerId: 'bruno' });
+  });
+});
 
 describe('the global mappings page (F11.0)', () => {
   it('lists my mappings across all projects with how many files and projects use them', async () => {

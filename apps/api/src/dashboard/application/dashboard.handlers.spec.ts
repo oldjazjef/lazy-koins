@@ -7,14 +7,18 @@ import {
 import { InMemoryUserRateRepository } from '../../carryover/testing/in-memory-carryover.repositories';
 import type { Env } from '../../config/env';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
 import { SourceFileReader } from '../../files/application/source-file-reader';
 import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memory-import-mapping.repository';
+import { FakePriceHistorySources } from '../../rates/testing/fake-price-history';
 import {
-  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../../rates/testing/in-memory-project-rate.repository';
@@ -22,7 +26,6 @@ import {
   SettingsReader,
   SettingsSecrets,
 } from '../../settings/application/settings.handlers';
-import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
 import { DashboardInputService } from './dashboard-input.service';
 import {
   checkPeriod,
@@ -48,6 +51,8 @@ async function setup(online: 'true' | 'false' = 'true') {
     t.corrections,
     userRates,
     t.inputs,
+    t.userSettings,
+    t.market,
   );
   const readFiles = vi.spyOn(t.inputs, 'recordsOf');
   const calculator = new DashboardCalculator(inputs, new DashboardCache());
@@ -59,18 +64,20 @@ async function setup(online: 'true' | 'false' = 'true') {
           ? 'a-test-key-that-is-long-enough-for-aes-256-gcm'
           : undefined,
   } as unknown as ConfigService<Env, true>;
-  const settings = new SettingsReader(
-    new InMemoryUserSettingsRepository(),
-    new SettingsSecrets(config),
-  );
+  const secrets = new SettingsSecrets(config);
+  const settings = new SettingsReader(t.userSettings, secrets);
   const usd = new FakeUsdSource({ DOT: '5' });
+  const fiat = new FakePriceHistorySources();
   const fx = new FakeFxSource();
   return {
     ...t,
     userRates,
     readFiles,
     usd,
+    fiat,
     fx,
+    secrets,
+    inputsService: inputs,
     get: new GetDashboardHandler(calculator, settings, config),
     records: new GetDashboardRecordsHandler(calculator),
     refresh: new RefreshDashboardRatesHandler(
@@ -78,7 +85,7 @@ async function setup(online: 'true' | 'false' = 'true') {
       userRates,
       settings,
       usd,
-      new FakeFiatSource(),
+      fiat,
       fx,
       config,
     ),
@@ -148,6 +155,63 @@ describe('dashboard (F11.4–F11.9)', () => {
     expect(t.readFiles).not.toHaveBeenCalled();
   });
 
+  it('ignores a deactivated entry; the same file still counts through an active one (F5.7a, rule 1)', async () => {
+    const t = await setup();
+    const toggle = new SetFileActiveHandler(t.projects, t.files);
+    const deposits = () =>
+      t.records.execute(
+        new GetDashboardRecordsQuery(
+          'anna',
+          '2025-01-01',
+          '2025-12-31',
+          'deposits',
+        ),
+      );
+    expect((await deposits()).records).toHaveLength(1);
+
+    // Only entry deactivated → its bookings are gone from the dashboard.
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, t.bookingsFile.id, false),
+    );
+    expect((await deposits()).records).toEqual([]);
+
+    // The same stored file, active in an older project: rule 1 reads that entry instead of
+    // the newest project's deactivated one.
+    const older = await t.projects.create('anna', {
+      name: 'Steuern 2024',
+      taxYear: 2024,
+      country: 'CH',
+      canton: 'ZH',
+      notes: '',
+    });
+    await new UploadProjectFileHandler(
+      t.projects,
+      t.files,
+      new FileAnalysisService(
+        new SourceFileReader(),
+        new InMemoryImportMappingRepository(t.files),
+      ),
+    ).execute(
+      new UploadProjectFileCommand(
+        'anna',
+        older.id,
+        'buchungen.csv',
+        new TextEncoder().encode(BOOKINGS_CSV),
+      ),
+    );
+    expect((await deposits()).records).toEqual([
+      expect.objectContaining({ asset: 'CHF', projectId: older.id }),
+    ]);
+
+    // Active again in the newest project: back to that entry (cache key changed with it).
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, t.bookingsFile.id, true),
+    );
+    expect((await deposits()).records).toEqual([
+      expect.objectContaining({ projectId: t.project.id }),
+    ]);
+  });
+
   it('drills a KPI down to its bookings with file and row', async () => {
     const t = await setup();
     const answer = await t.records.execute(
@@ -190,9 +254,10 @@ describe('dashboard (F11.4–F11.9)', () => {
         false,
       ),
     );
+    // BTC: Binance has nothing in this fake, CoinGecko answers without a key (public API).
     expect(summary.assets.map((a) => [a.asset, a.status])).toEqual([
       ['DOT', 'fetched'],
-      ['BTC', 'notFound'],
+      ['BTC', 'fetched'],
     ]);
     expect((await t.userRates.listByUser('anna')).length).toBeGreaterThan(0);
     const view = await t.get.execute(
@@ -289,5 +354,153 @@ describe('dashboard (F11.4–F11.9)', () => {
     expect(() => checkPeriod('2025-1-1', '2025-01-01')).toThrow(
       BadRequestException,
     );
+  });
+});
+
+/** A synthetic MetaMask statement holding OPN at 31.12. (the reported case). */
+const OPN_CSV = [
+  'Plattform,Konto,Asset,Menge,Stichtag,Preis CHF,Preis USD,Beleg',
+  'metamask,ethereum,OPN,1000,2025-12-31,,,',
+].join('\n');
+
+/** By-ticker closes (Binance) in the user's cache, one per day of the period. */
+function wrongSeries(asset: string) {
+  return ['2025-12-31', '2026-01-01', '2026-01-02', '2026-01-03'].map(
+    (date) => ({
+      kind: 'price' as const,
+      asset,
+      currency: 'USD',
+      date,
+      value: '900',
+      source: 'binance' as const,
+    }),
+  );
+}
+
+const FROM = '2025-12-31';
+const TO = '2026-01-03';
+
+describe('dashboard: OPN priced as another coin (regression, F7.4)', () => {
+  it('an ambiguous ticker without a chosen coin is "kein Kurs" on every day — never 0, never Binance', async () => {
+    const t = await setup();
+    await t.addFile('metamask.csv', OPN_CSV);
+    await t.userRates.upsertMany('anna', wrongSeries('OPN'));
+    const view = await t.get.execute(new GetDashboardQuery('anna', FROM, TO));
+    const opn = view.holdings.find((h) => h.asset === 'OPN');
+    expect(opn).toMatchObject({
+      status: 'missingPrice',
+      priceChf: null,
+      priceSource: null,
+      valueChf: null,
+      pricing: 'ambiguous',
+      coin: null,
+    });
+    expect(opn?.sparkline.every((p) => p === null)).toBe(true);
+    for (const day of view.series) expect(day.missing).toContain('OPN');
+    // "Kurse aktualisieren" asks nobody for it and drops the cached by-ticker rows.
+    const summary = await t.refresh.execute(
+      new RefreshDashboardRatesCommand('anna', FROM, TO, ['OPN'], true),
+    );
+    expect(summary.assets).toEqual([
+      { asset: 'OPN', status: 'ambiguous', source: null, points: 0 },
+    ]);
+    expect(t.usd.calls.map((c) => c.symbol)).not.toContain('OPN');
+    expect(t.fiat.calls).toEqual([]);
+    expect(
+      (await t.userRates.listByUser('anna')).filter((r) => r.asset === 'OPN'),
+    ).toEqual([]);
+  });
+
+  it('a ticker the market list shows without a clear leader: the cached Binance series counts on no day either', async () => {
+    const t = await setup();
+    await t.addFile(
+      'dot-wallet.csv',
+      [
+        'Plattform,Konto,Asset,Menge,Stichtag,Preis CHF,Preis USD,Beleg',
+        'metamask,polkadot,DOT,10,2025-12-31,,,',
+      ].join('\n'),
+    );
+    await t.userRates.upsertMany('anna', wrongSeries('DOT'));
+    const before = await t.get.execute(new GetDashboardQuery('anna', FROM, TO));
+    expect(before.holdings.find((h) => h.asset === 'DOT')?.status).toBe('ok');
+    const coin = (id: string, rank: number) => ({
+      provider: 'coingecko' as const,
+      id,
+      name: id,
+      symbol: 'DOT',
+      marketCapRank: rank,
+      priceUsd: null,
+    });
+    await t.market.replace(
+      'coingecko',
+      [coin('polkadot', 400), coin('dot-rival', 700)],
+      '2026-10-07T00:00:00.000Z',
+    );
+    const after = await t.get.execute(new GetDashboardQuery('anna', FROM, TO));
+    expect(after.holdings.find((h) => h.asset === 'DOT')).toMatchObject({
+      status: 'missingPrice',
+      priceChf: null,
+      valueChf: null,
+    });
+    for (const day of after.series) expect(day.missing).toContain('DOT');
+  });
+
+  it('a chosen coin: the cached Binance series stops counting on every day at once; the refetch prices it from CoinGecko', async () => {
+    const t = await setup();
+    await t.addFile(
+      'dot-wallet.csv',
+      [
+        'Plattform,Konto,Asset,Menge,Stichtag,Preis CHF,Preis USD,Beleg',
+        'metamask,polkadot,DOT,10,2025-12-31,,,',
+      ].join('\n'),
+    );
+    await t.userRates.upsertMany('anna', wrongSeries('DOT'));
+    const before = await t.get.execute(new GetDashboardQuery('anna', FROM, TO));
+    expect(before.holdings.find((h) => h.asset === 'DOT')).toMatchObject({
+      status: 'ok',
+      priceSource: 'binance',
+      pricing: 'ticker',
+    });
+    await t.userSettings.save('anna', {
+      coinChoices: {
+        DOT: {
+          provider: 'coingecko',
+          id: 'polkadot',
+          name: 'Polkadot',
+          symbol: 'DOT',
+        },
+      },
+    });
+    // Same files, same cache rows — the answer changes at once (cache key = input hash).
+    const chosen = await t.get.execute(new GetDashboardQuery('anna', FROM, TO));
+    expect(chosen.holdings.find((h) => h.asset === 'DOT')).toMatchObject({
+      status: 'missingPrice',
+      priceSource: null,
+      pricing: 'chosen',
+      coin: { id: 'polkadot' },
+    });
+    for (const day of chosen.series) expect(day.missing).toContain('DOT');
+
+    await t.userSettings.save('anna', {
+      sealedKeys: { coingecko: t.secrets.box.seal('CG-key') },
+    });
+    const summary = await t.refresh.execute(
+      new RefreshDashboardRatesCommand('anna', FROM, TO, ['DOT'], true),
+    );
+    expect(summary.assets).toMatchObject([
+      { asset: 'DOT', status: 'fetched', source: 'coingecko' },
+    ]);
+    expect(t.usd.calls.map((c) => c.symbol)).not.toContain('DOT');
+    // The Binance rows are gone from the cache; only CoinGecko's count.
+    const dotSources = (await t.userRates.listByUser('anna'))
+      .filter((r) => r.asset === 'DOT')
+      .map((r) => r.source);
+    expect(dotSources.length).toBeGreaterThan(0);
+    expect(new Set(dotSources)).toEqual(new Set(['coingecko']));
+    const after = await t.get.execute(new GetDashboardQuery('anna', FROM, TO));
+    expect(after.holdings.find((h) => h.asset === 'DOT')).toMatchObject({
+      status: 'ok',
+      priceSource: 'coingecko',
+    });
   });
 });

@@ -13,6 +13,10 @@ import {
 import { CalculationService } from '../../calculation/calculation.service';
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import { ExportsService } from '../../exports/exports.service';
+import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
 import { FileViews } from '../../files/application/file-views';
 import {
   ListProjectFilesHandler,
@@ -91,6 +95,7 @@ export const PLANTED_SECRETS = {
   aiCipher: 'enc:v1:planted-ai-key-cipher',
   aiHint: '…AIK9',
   mailHint: '…PW42',
+  coinmarketcapHint: '…CMC7',
 } as const;
 
 /**
@@ -108,6 +113,7 @@ export async function toolSetup() {
       ListProjectFilesQuery,
       new ListProjectFilesHandler(t.projects, t.files, views),
     )
+    .on(SetFileActiveCommand, new SetFileActiveHandler(t.projects, t.files))
     .on(CalculateProjectCommand, t.calculate)
     .on(GetResultQuery, t.result)
     .on(GetFigureRecordsQuery, t.records)
@@ -138,8 +144,14 @@ export async function toolSetup() {
           numberFormat: 'de-CH',
           dateFormat: 'dd.MM.yyyy',
           onlineRates: false,
-          keys: { coingecko: PLANTED_SECRETS.coingeckoHint, etherscan: null },
-          coingeckoIds: {},
+          keys: {
+            coingecko: PLANTED_SECRETS.coingeckoHint,
+            etherscan: null,
+            coinmarketcap: PLANTED_SECRETS.coinmarketcapHint,
+          },
+          coinChoices: {},
+          coinDismissed: [],
+          priceSources: [{ id: 'coinmarketcap', enabled: true }],
           keyStorageAvailable: true,
         };
       },

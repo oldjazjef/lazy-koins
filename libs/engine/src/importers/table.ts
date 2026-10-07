@@ -92,6 +92,37 @@ export function findTable(
   return undefined;
 }
 
+/**
+ * The row (within `maxScan` rows of the chosen sheets, or exactly `headerRow`) that holds the
+ * most of `wanted` columns — for near matches (F5.19 suggestions), where `findTable` needs all of
+ * them. Earliest row wins a tie; `undefined` when no row holds any.
+ */
+export function bestHeaderRow(
+  file: SourceFile,
+  wanted: readonly string[],
+  options: FindTableOptions = {},
+): { readonly table: Table; readonly found: ReadonlySet<string> } | undefined {
+  const names = [...new Set(wanted.map(normaliseHeader))];
+  let best: { table: Table; found: Set<string> } | undefined;
+  for (const sheet of sheetsOf(file, options.sheet)) {
+    const indexes =
+      options.headerRow !== undefined
+        ? options.headerRow >= 1 && options.headerRow <= sheet.rows.length
+          ? [options.headerRow - 1]
+          : []
+        : Array.from(
+            { length: Math.min(sheet.rows.length, options.maxScan ?? 50) },
+            (_, index) => index,
+          );
+    for (const index of indexes) {
+      const table = tableAt(sheet, index);
+      const found = new Set(names.filter((name) => table.columns.has(name)));
+      if (found.size > (best?.found.size ?? 0)) best = { table, found };
+    }
+  }
+  return best;
+}
+
 /** Whether the header row is exactly these columns (order included, loosely compared). */
 export function headerIs(table: Table, columns: readonly string[]): boolean {
   const actual = table.header

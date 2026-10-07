@@ -122,6 +122,7 @@ describe('matching project assets to the Kursliste (F7.4a)', () => {
     expect(result.ambiguous).toEqual([
       {
         asset: 'UNI',
+        reason: 'several',
         candidates: [
           { symbol: 'UNI', name: 'Unicorn', valorNumber: '8' },
           { symbol: 'UNI', name: 'Uniswap Protocol Token', valorNumber: '7' },

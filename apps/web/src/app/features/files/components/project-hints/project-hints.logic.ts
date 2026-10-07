@@ -6,6 +6,7 @@ import {
   lucideScanText,
   lucideSparkles,
   lucideUpload,
+  lucideCoins,
 } from '@ng-icons/lucide';
 import type { ProjectFile, ProjectHint } from '../../../../core/api/api.types';
 
@@ -18,7 +19,8 @@ export interface HintAction {
     | 'manualHolding'
     | 'template'
     | 'assign'
-    | 'rowErrors';
+    | 'rowErrors'
+    | 'rates';
   /** i18n key. */
   readonly label: string;
   /** The lucide SVG (import), as `RowAction` takes it. */
@@ -86,6 +88,11 @@ export function hintActions(
         },
         { ...TEMPLATE, label: 'hints.actions.holdingsTemplate' },
       ];
+    case 'sharedTicker':
+      // "Coin wählen" / "Passt so" live in the Kurse tab.
+      return [
+        { kind: 'rates', label: 'hints.actions.rates', icon: lucideCoins },
+      ];
     case 'unrecognisedFile':
       return hint.fileId
         ? [
@@ -127,6 +134,7 @@ const KIND_ORDER: Record<ProjectHint['kind'], number> = {
   endsEarly: 3,
   noYearEndBalance: 4,
   rowErrors: 5,
+  sharedTicker: 6,
 };
 
 function compareText(a: string, b: string): number {
@@ -164,10 +172,14 @@ export interface HintGroup {
 }
 
 /** Groups by platform (alphabetical, unread files last), keeping the order inside a group. */
+/** The group of the F7.4 shared-ticker hints (not a platform). */
+export const RATES_GROUP = '#rates';
+
 export function hintsByPlatform(hints: readonly ProjectHint[]): HintGroup[] {
   const groups = new Map<string, ProjectHint[]>();
   for (const hint of hints) {
-    const key = hint.platform ?? '';
+    const key =
+      hint.kind === 'sharedTicker' ? RATES_GROUP : (hint.platform ?? '');
     groups.set(key, [...(groups.get(key) ?? []), hint]);
   }
   return [...groups.entries()]

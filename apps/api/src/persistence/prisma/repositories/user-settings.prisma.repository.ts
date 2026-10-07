@@ -10,18 +10,47 @@ import {
   type UserSettings,
 } from '../../../settings/domain/user-settings';
 import { UserSettingsRepositoryPort } from '../../../settings/ports/user-settings.repository.port';
+import {
+  type CoinChoices,
+  parseCoinChoices,
+} from '../../../rates/domain/coin-choice';
+import {
+  normalisePriceProviders,
+  type PriceProviderSetting,
+} from '../../../rates/domain/price-providers';
 import { toIsoString } from '../mappers/scalar.mapper';
+
+/** The stored JSON array of `{ id, enabled }` (empty = the default order). */
+function parseProviders(text: string): PriceProviderSetting[] {
+  try {
+    return normalisePriceProviders(JSON.parse(text));
+  } catch {
+    return normalisePriceProviders([]);
+  }
+}
 import { PrismaService } from '../prisma.service';
 
-function parseIds(text: string): Record<string, string> {
+/** The stored JSON array of upper-case tickers. */
+function parseSymbols(text: string): string[] {
   try {
     const value: unknown = JSON.parse(text);
-    if (typeof value !== 'object' || value === null) return {};
-    return Object.fromEntries(
-      Object.entries(value).filter(
-        (entry): entry is [string, string] => typeof entry[1] === 'string',
+    if (!Array.isArray(value)) return [];
+    return [
+      ...new Set(
+        value
+          .filter((v): v is string => typeof v === 'string')
+          .map((v) => v.toUpperCase()),
       ),
-    );
+    ].sort();
+  } catch {
+    return [];
+  }
+}
+
+/** The stored JSON; also reads the older symbol → CoinGecko id shape. */
+function parseChoices(text: string): CoinChoices {
+  try {
+    return parseCoinChoices(JSON.parse(text));
   } catch {
     return {};
   }
@@ -44,8 +73,14 @@ function toSettings(row: UserSettingsRow): UserSettings {
       ? (row.dateFormat as DateFormat)
       : 'dd.MM.yyyy',
     onlineRates: row.onlineRates,
-    sealedKeys: { coingecko: row.coingeckoKey, etherscan: row.etherscanKey },
-    coingeckoIds: parseIds(row.coingeckoIds),
+    sealedKeys: {
+      coingecko: row.coingeckoKey,
+      etherscan: row.etherscanKey,
+      coinmarketcap: row.coinmarketcapKey,
+    },
+    coinChoices: parseChoices(row.coinChoices),
+    coinDismissed: parseSymbols(row.coinDismissed),
+    priceSources: parseProviders(row.priceSources),
     updatedAt: toIsoString(row.updatedAt),
   };
 }
@@ -78,10 +113,21 @@ export class UserSettingsPrismaRepository extends UserSettingsRepositoryPort {
       onlineRates: input.onlineRates,
       coingeckoKey: input.sealedKeys?.coingecko,
       etherscanKey: input.sealedKeys?.etherscan,
-      coingeckoIds:
-        input.coingeckoIds === undefined
+      coinmarketcapKey: input.sealedKeys?.coinmarketcap,
+      priceSources:
+        input.priceSources === undefined
           ? undefined
-          : JSON.stringify(input.coingeckoIds),
+          : JSON.stringify(
+              input.priceSources.map((p) => ({ id: p.id, enabled: p.enabled })),
+            ),
+      coinChoices:
+        input.coinChoices === undefined
+          ? undefined
+          : JSON.stringify(input.coinChoices),
+      coinDismissed:
+        input.coinDismissed === undefined
+          ? undefined
+          : JSON.stringify([...input.coinDismissed]),
     };
     const row = await this.prisma.userSettings.upsert({
       where: { userId },

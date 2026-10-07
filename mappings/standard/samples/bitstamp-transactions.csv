@@ -1,0 +1,12 @@
+ID,Account,Type,Subtype,Datetime,Amount,Amount currency,Value,Value currency,Rate,Rate currency,Fee,Fee currency,Order ID
+300000000,Main Account,Deposit,,2025-08-01T09:00:00Z,5000.00,EUR,,,,,,,
+300000001,Main Account,Market,Buy,2025-08-01T10:00:00Z,0.05000000,BTC,4400.00,EUR,88000.00,EUR,8.80,EUR,1800000000001
+300000002,Main Account,Market,Sell,2025-08-01T11:00:00Z,0.01000000,BTC,890.00,EUR,89000.00,EUR,1.78,EUR,1800000000002
+300000003,Main Account,Withdrawal,,2025-08-01T12:00:00Z,0.02000000,BTC,,,,,0.00010000,BTC,
+300000004,Main Account,Ripple deposit,,2025-08-01T13:00:00Z,100.000000,XRP,,,,,,,
+300000005,Main Account,Ripple payment,,2025-08-01T14:00:00Z,50.000000,XRP,,,,,,,
+300000006,Main Account,Staked assets,,2025-08-01T15:00:00Z,1.00000000,ETH,,,,,,,
+300000007,Main Account,Staking reward,,2025-08-01T16:00:00Z,0.00230000,ETH,,,,,,,
+300000008,Main Account,Unstaked assets,,2025-08-01T17:00:00Z,0.50000000,ETH,,,,,,,
+300000009,Main Account,Sub Account Transfer,,2025-08-01T18:00:00Z,-100.00,EUR,,,,,,,
+300000010,Savings,Sub Account Transfer,,2025-08-01T19:00:00Z,100.00,EUR,,,,,,,

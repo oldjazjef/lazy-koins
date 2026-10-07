@@ -1,63 +1,178 @@
-<div class="flex h-dvh flex-col overflow-hidden">
-  <header class="bg-card z-40 shrink-0 border-b">
-    <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-6">
+<!--
+  The signed-in frame (ported from etx-working-time-manager's shell): the spartan sidebar at the
+  left — collapsible to icons on desktop widths, an off-canvas sheet below `md` — and the content
+  at the right with a slim top bar, the only scrolling area and the assistant's panel.
+-->
+<div hlmSidebarWrapper class="h-dvh overflow-hidden">
+  <hlm-sidebar collapsible="icon">
+    <div hlmSidebarHeader class="py-3">
       <a
         routerLink="/app"
-        class="lk-brand flex items-center"
+        class="flex min-w-0 items-center gap-2 rounded-md p-1 outline-hidden focus-visible:ring-2"
         [attr.aria-label]="'app.name' | translate"
-        [attr.title]="'app.name' | translate"
       >
-        <img [src]="logo" alt="" class="size-7" />
+        <img [src]="logo" alt="" class="size-6 shrink-0" />
+        <span
+          class="flex min-w-0 items-center gap-1.5 group-data-[collapsible=icon]:hidden"
+        >
+          <span class="lk-brand truncate text-base">
+            {{ 'app.name' | translate }}
+          </span>
+          @if (version.info(); as build) {
+          <!-- The release next to the name (etx); never cut — the name gives way first. -->
+          <span
+            hlmBadge
+            variant="outline"
+            class="text-muted-foreground shrink-0 font-normal"
+            data-app-version
+            [attr.title]="'app.version' | translate: { version: build.version, commit: build.commit }"
+          >
+            {{ 'app.versionBadge' | translate: { version: build.version } }}
+          </span>
+          }
+        </span>
       </a>
+    </div>
 
-      <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
-        <ul class="flex items-center gap-1">
-          @if (!setup.incomplete()) { @for (item of items; track item.path) {
-          <li>
-            @if (item.children; as children) {
-            <!-- An entry with sub-items (Mappings: Meine Mappings · Bibliothek) opens a menu. -->
-            <button
-              type="button"
-              class="lk-nav-link"
-              [class.lk-nav-active]="isActive(item)"
-              [hlmDropdownMenuTrigger]="submenu"
-              align="start"
-            >
-              <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
-              <span>{{ item.labelKey | translate }}</span>
-              <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
-            </button>
-            <ng-template #submenu>
-              <hlm-dropdown-menu class="min-w-48">
+    <div hlmSidebarContent>
+      <!-- F11.0s: no main navigation until the setup wizard is finished. -->
+      @if (!setup.incomplete()) {
+      <nav
+        hlmSidebarGroup
+        data-main-nav
+        [attr.aria-label]="'nav.label' | translate"
+      >
+        <div hlmSidebarGroupContent>
+          <ul hlmSidebarMenu>
+            @for (item of items(); track item.path) {
+            <li hlmSidebarMenuItem>
+              @let rowActive = isRowActive(item);
+              <a
+                hlmSidebarMenuButton
+                [routerLink]="item.path"
+                [isActive]="rowActive"
+                [attr.aria-current]="rowActive ? 'page' : null"
+                [tooltip]="item.labelKey | translate"
+              >
+                <ng-icon [name]="item.icon" aria-hidden="true" />
+                <span>{{ item.labelKey | translate }}</span>
+              </a>
+              @if (item.children; as children) {
+              <!-- Sub-items (Mappings: Meine Mappings · Bibliothek), expandable inline like etx. -->
+              <button
+                type="button"
+                hlmSidebarMenuAction
+                [attr.aria-expanded]="isExpanded(item)"
+                [attr.aria-controls]="subMenuId(item)"
+                [attr.aria-label]="'nav.toggleSection' | translate: { section: (item.labelKey | translate) }"
+                (click)="toggleExpanded(item)"
+              >
+                <ng-icon
+                  name="lucideChevronRight"
+                  class="transition-transform motion-reduce:transition-none"
+                  [class.rotate-90]="isExpanded(item)"
+                  aria-hidden="true"
+                />
+              </button>
+              @if (isExpanded(item)) {
+              <ul hlmSidebarMenuSub [id]="subMenuId(item)">
                 @for (child of children; track child.path) {
-                <a
-                  hlmDropdownMenuItem
-                  [routerLink]="child.path"
-                  [class.lk-nav-active]="isActive(child, children)"
-                  [attr.aria-current]="isActive(child, children) ? 'page' : null"
-                >
-                  <ng-icon [name]="child.icon" size="16" aria-hidden="true" />
-                  {{ child.labelKey | translate }}
-                </a>
+                <li hlmSidebarMenuSubItem>
+                  @let childActive = isActive(child, children);
+                  <a
+                    hlmSidebarMenuSubButton
+                    [routerLink]="child.path"
+                    [isActive]="childActive"
+                    [attr.aria-current]="childActive ? 'page' : null"
+                  >
+                    <ng-icon [name]="child.icon" aria-hidden="true" />
+                    <span>{{ child.labelKey | translate }}</span>
+                  </a>
+                </li>
                 }
-              </hlm-dropdown-menu>
-            </ng-template>
-            } @else {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="lk-nav-active"
-              ariaCurrentWhenActive="page"
-              class="lk-nav-link"
-            >
-              <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
-              <span>{{ item.labelKey | translate }}</span>
-            </a>
+              </ul>
+              } }
+            </li>
             }
-          </li>
-          } }
-        </ul>
+          </ul>
+        </div>
       </nav>
+      }
+    </div>
 
+    <div hlmSidebarFooter>
+      <ul hlmSidebarMenu>
+        <li hlmSidebarMenuItem>
+          <button
+            hlmSidebarMenuButton
+            size="lg"
+            type="button"
+            class="group-data-[collapsible=icon]:p-2!"
+            data-user-menu
+            [hlmDropdownMenuTrigger]="userMenu"
+            side="right"
+            align="end"
+            [tooltip]="'nav.userMenu' | translate"
+          >
+            <ng-icon name="lucideCircleUserRound" aria-hidden="true" />
+            <span class="flex min-w-0 flex-1 flex-col leading-tight">
+              <span class="truncate text-sm font-medium">
+                @if (userName(); as name) { {{ name }} } @else { {{
+                'nav.userMenu' | translate }} }
+              </span>
+              <!-- The address only with an account (hidden on the desktop, F11.0a). -->
+              @if (auth.hasAccount && auth.email(); as email) {
+              <span class="text-muted-foreground truncate text-xs">
+                {{ email }}
+              </span>
+              }
+            </span>
+            <ng-icon
+              name="lucideChevronsUpDown"
+              class="text-muted-foreground ml-auto"
+              aria-hidden="true"
+            />
+          </button>
+          <ng-template #userMenu>
+            <hlm-dropdown-menu class="w-56" [sideOffset]="8">
+              @for (item of userItems; track item.path) {
+              <a hlmDropdownMenuItem [routerLink]="item.path">
+                <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+                {{ item.labelKey | translate }}
+              </a>
+              } @if (pin.status()?.hasPin) {
+              <hlm-dropdown-menu-separator />
+              <button hlmDropdownMenuItem type="button" (click)="lockNow()">
+                <ng-icon name="lucideLock" size="16" aria-hidden="true" />
+                {{ 'pin.lockNow' | translate }}
+              </button>
+              } @if (auth.hasAccount) {
+              <hlm-dropdown-menu-separator />
+              <button hlmDropdownMenuItem type="button" (click)="signOut()">
+                <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
+                {{ 'nav.signOut' | translate }}
+              </button>
+              }
+            </hlm-dropdown-menu>
+          </ng-template>
+        </li>
+      </ul>
+    </div>
+  </hlm-sidebar>
+
+  <main hlmSidebarInset class="min-h-0 min-w-0 overflow-hidden">
+    <!-- The slim top bar: the sidebar trigger at the left, the global actions at the right. -->
+    <header
+      class="bg-background flex h-12 shrink-0 items-center gap-1 border-b px-3"
+    >
+      <button
+        hlmSidebarTrigger
+        data-sidebar-trigger
+        [srOnlyText]="'nav.toggleSidebar' | translate"
+        [attr.aria-expanded]="sidebarOpen()"
+        [attr.title]="'nav.toggleSidebar' | translate"
+      ></button>
+      <span class="flex-1"></span>
       <lk-notification-bell />
       <button
         hlmBtn
@@ -80,101 +195,40 @@
         type="button"
         (click)="theme.toggle()"
         [attr.aria-label]="'nav.toggleTheme' | translate"
+        [attr.title]="'nav.toggleTheme' | translate"
       >
         <ng-icon
           [name]="theme.current() === 'dark' ? 'lucideSun' : 'lucideMoon'"
           size="18"
+          aria-hidden="true"
         />
       </button>
-      <div class="relative" data-user-menu>
-        <button
-          hlmBtn
-          variant="ghost"
-          size="sm"
-          type="button"
-          [attr.aria-haspopup]="'menu'"
-          [attr.aria-expanded]="menuOpen()"
-          [attr.aria-label]="'nav.userMenu' | translate"
-          (click)="toggleMenu()"
-        >
-          <ng-icon name="lucideCircleUserRound" size="18" aria-hidden="true" />
-          @if (auth.hasAccount && auth.email(); as email) {
-          <span class="hidden max-w-48 truncate md:inline">{{ email }}</span>
-          }
-          <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
-        </button>
-        @if (menuOpen()) {
-        <div class="lk-menu" role="menu">
-          @for (item of userItems; track item.path) {
-          <a
-            role="menuitem"
-            class="lk-menu-item"
-            [routerLink]="item.path"
-            routerLinkActive="lk-nav-active"
-            (click)="menuOpen.set(false)"
-          >
-            <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
-            {{ item.labelKey | translate }}
-          </a>
-          } @if (pin.status()?.hasPin) {
-          <button
-            role="menuitem"
-            type="button"
-            class="lk-menu-item border-t"
-            (click)="lockNow()"
-          >
-            <ng-icon name="lucideLock" size="16" aria-hidden="true" />
-            {{ 'pin.lockNow' | translate }}
-          </button>
-          } @if (auth.hasAccount) {
-          <button
-            role="menuitem"
-            type="button"
-            class="lk-menu-item border-t"
-            (click)="signOut()"
-          >
-            <ng-icon name="lucideLogOut" size="16" aria-hidden="true" />
-            {{ 'nav.signOut' | translate }}
-          </button>
-          }
+    </header>
+
+    <div class="relative flex min-h-0 flex-1">
+      <!-- Only this area scrolls (user rule): the top bar above stays put. -->
+      <div
+        class="lk-scroll-area flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
+      >
+        <!-- The container for full-width page headers: its width excludes the scrollbar. -->
+        <div class="lk-scroll-content flex flex-1 flex-col">
+          <div class="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6">
+            <router-outlet />
+          </div>
         </div>
-        }
       </div>
+
+      <!-- The assistant (F11.14): beside the page on wide screens, an overlay on narrow ones -->
+      @if (chat.open()) {
+      <button
+        type="button"
+        class="lk-chat-backdrop"
+        tabindex="-1"
+        [attr.aria-label]="'chat.close' | translate"
+        (click)="chat.close()"
+      ></button>
+      <lk-chat-sidebar id="lk-chat" class="lk-chat-panel" />
+      }
     </div>
-  </header>
-
-  <div class="relative flex min-h-0 flex-1">
-    <!-- Only this area scrolls (user rule): the header above stays put. -->
-    <div
-      class="lk-scroll-area flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
-    >
-      <!-- The container for full-width page headers: its width excludes the scrollbar. -->
-      <div class="lk-scroll-content flex flex-1 flex-col">
-        <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
-          <router-outlet />
-        </main>
-
-        @if (version.info(); as build) {
-        <footer
-          class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
-        >
-          {{ 'app.version' | translate: { version: build.version, commit:
-          build.commit } }}
-        </footer>
-        }
-      </div>
-    </div>
-
-    <!-- The assistant (F11.14): beside the page on wide screens, an overlay on narrow ones -->
-    @if (chat.open()) {
-    <button
-      type="button"
-      class="lk-chat-backdrop"
-      tabindex="-1"
-      [attr.aria-label]="'chat.close' | translate"
-      (click)="chat.close()"
-    ></button>
-    <lk-chat-sidebar id="lk-chat" class="lk-chat-panel" />
-    }
-  </div>
+  </main>
 </div>

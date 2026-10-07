@@ -15,6 +15,95 @@
     </div>
   </section>
 
+  <section hlmCard aria-labelledby="price-sources-title">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle id="price-sources-title">
+        {{ 'settings.priceSources.title' | translate }}
+      </h2>
+    </div>
+    <div hlmCardContent>
+      <lk-price-sources-form />
+    </div>
+  </section>
+
+  <section hlmCard aria-labelledby="coin-choices-title">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle id="coin-choices-title">
+        {{ 'coins.settings.title' | translate }}
+      </h2>
+      <p hlmCardDescription>{{ 'coins.settings.hint' | translate }}</p>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      @if (coinRows().length === 0) {
+      <p class="text-muted-foreground text-sm">
+        {{ 'coins.settings.empty' | translate }}
+      </p>
+      } @else {
+      <div hlmTableContainer class="lk-panel">
+        <table hlmTable class="table-fixed">
+          <colgroup>
+            <col class="w-28" />
+            <col />
+            <col class="hidden w-32 md:table-column" />
+            <col class="w-14" />
+          </colgroup>
+          <thead hlmTHead>
+            <tr hlmTr>
+              <th hlmTh>{{ 'coins.fields.symbol' | translate }}</th>
+              <th hlmTh>{{ 'coins.fields.coin' | translate }}</th>
+              <th hlmTh class="hidden md:table-cell">
+                {{ 'coins.fields.provider' | translate }}
+              </th>
+              <th hlmTh class="lk-sticky-actions text-right">
+                <span class="sr-only">{{ 'common.actions' | translate }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody hlmTBody>
+            @for (row of coinRows(); track row.symbol) {
+            <tr hlmTr>
+              <td hlmTd class="font-medium">{{ row.symbol }}</td>
+              <td hlmTd class="max-w-0">
+                @let name = row.coin.name ?? row.coin.id;
+                <span [lkTruncate]="name">{{ name }}</span>
+                <span
+                  class="text-muted-foreground text-xs"
+                  [lkTruncate]="row.coin.id"
+                  >{{ row.coin.id }}</span
+                >
+              </td>
+              <td hlmTd class="hidden md:table-cell">
+                {{ 'coins.provider.' + row.coin.provider | translate }}
+              </td>
+              <td hlmTd class="lk-sticky-actions text-right">
+                <lk-row-actions
+                  [actions]="coinActions"
+                  (selected)="coinAction($event, row)"
+                />
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+      <div class="flex justify-end">
+        <button hlmBtn variant="outline" type="button" (click)="addCoin()">
+          {{ 'coins.add' | translate }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <lk-coin-picker
+    [symbol]="picking()"
+    [current]="pickingCurrent()"
+    [editableSymbol]="picking() === ''"
+    [busy]="savingCoin()"
+    (picked)="pickCoin($event)"
+    (closed)="picking.set(null)"
+  />
+
   <section hlmCard aria-labelledby="estv-auto-title">
     <div hlmCardHeader>
       <h2 hlmCardTitle id="estv-auto-title">{{ 'estv.title' | translate }}</h2>

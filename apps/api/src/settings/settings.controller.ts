@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
@@ -12,14 +20,14 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
 import {
   KeyCheckResponseDto,
+  PriceSourceParamsDto,
+  PriceSourcesResponseDto,
+  PriceSourceTestResponseDto,
   SettingsResponseDto,
   TestKeyDto,
   UpdateSettingsDto,
 } from './dto/settings.dto';
 import { SettingsService } from './settings.service';
-
-const SYMBOL = /^[A-Za-z0-9.]{1,40}$/;
-const COINGECKO_ID = /^[a-z0-9-]{1,100}$/;
 
 @ApiTags('settings')
 @ApiBearerAuth(BEARER_SCHEME)
@@ -48,18 +56,6 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateSettingsDto,
   ): Promise<SettingsResponseDto> {
-    const coingeckoIds = dto.coingeckoIds
-      ? Object.fromEntries(
-          Object.entries(dto.coingeckoIds)
-            .filter(
-              ([symbol, id]) =>
-                typeof id === 'string' &&
-                SYMBOL.test(symbol) &&
-                COINGECKO_ID.test(id),
-            )
-            .map(([symbol, id]) => [symbol.toUpperCase(), id]),
-        )
-      : undefined;
     return SettingsResponseDto.from(
       await this.settings.update(user.userId, {
         displayName: dto.displayName,
@@ -71,9 +67,45 @@ export class SettingsController {
         dateFormat: dto.dateFormat,
         onlineRates: dto.onlineRates,
         keys: dto.keys,
-        coingeckoIds,
+        priceSources: dto.priceSources,
       }),
     );
+  }
+
+  @Get('price-sources')
+  @ApiOperation({
+    summary:
+      'Price sources: the crypto price providers in my order — on/off, what each offers, key hints (never a key)',
+  })
+  @ApiOkResponse({ type: PriceSourcesResponseDto })
+  async priceSources(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<PriceSourcesResponseDto> {
+    return PriceSourcesResponseDto.from(
+      await this.settings.priceSources(user.userId),
+    );
+  }
+
+  @Post('price-sources/:provider/test')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Test one price provider — plan, history depth or the error; with the typed key (never stored) or the stored one',
+  })
+  @ApiOkResponse({ type: PriceSourceTestResponseDto })
+  @ApiConflictResponse({ description: '`noKey` or `offline`' })
+  async testPriceSource(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() params: PriceSourceParamsDto,
+    @Body() dto: TestKeyDto,
+  ): Promise<PriceSourceTestResponseDto> {
+    return {
+      ...(await this.settings.testPriceSource(
+        user.userId,
+        params.provider,
+        dto.key,
+      )),
+    };
   }
 
   @Post('keys/coingecko/test')

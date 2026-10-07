@@ -11,7 +11,7 @@ export interface AppVersion {
 }
 
 /**
- * The version shown in the app (footer). Read from the API rather than baked into the web
+ * The version shown in the app (badge next to the name in the sidebar). Read from the API rather than baked into the web
  * bundle: web and API are always built from the same commit (one image pair per commit, one
  * desktop package), so the API's answer is the app's version — and env.js-style runtime config
  * stays free of build data. Absent (older API, offline) = nothing shown.

@@ -19,6 +19,7 @@ export * from './mapping/apply-mapping';
 export * from './mapping/sample';
 export * from './mapping/spec-skeleton';
 export * from './mapping/privacy-scan';
+export * from './mapping/similarity';
 export * from './coverage/missing-files';
 export * from './rules/country-rules';
 export * from './rates/rate-table';

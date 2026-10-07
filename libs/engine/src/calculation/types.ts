@@ -63,6 +63,12 @@ export interface CalculationInput {
   readonly previous?: PreviousYear;
   /** The project's wallets (F6.4); absent or empty = the wallet check is not applicable. */
   readonly wallets?: readonly WalletState[];
+  /**
+   * F7.4: tickers that stand for several coins and for which the user has not chosen one — each
+   * such asset of the year gets an open item (`ambiguousPrice:<asset>`). The caller also keeps
+   * by-ticker prices of them out of `rates`.
+   */
+  readonly ambiguousAssets?: readonly string[];
 }
 
 /** Where a figure came from — a record of a file (F7.5) or of a correction. */
@@ -234,6 +240,8 @@ export const OPEN_ITEM_REASONS = [
   'positionWithoutPrice',
   'incomeWithoutPrice',
   'oneOffWithoutPrice',
+  /** The ticker stands for several coins and none is chosen: "Kurs mehrdeutig – Coin wählen". */
+  'ambiguousPrice',
   'unclassifiedBookings',
   /** The placeholder of engine version 1 — kept so stored snapshots still read. */
   'walletNetworksNotAvailable',

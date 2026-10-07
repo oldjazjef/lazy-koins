@@ -1,3 +1,4 @@
+import { FakePriceHistorySources } from '../../rates/testing/fake-price-history';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { BadGatewayException } from '@nestjs/common';
@@ -30,6 +31,10 @@ import {
   RemoveProjectFileCommand,
   RemoveProjectFileHandler,
 } from '../../files/application/commands/remove-project-file.command';
+import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
 import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
@@ -85,7 +90,6 @@ import {
   InMemoryEstvRepository,
 } from '../../rates/testing/in-memory-estv';
 import {
-  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../../rates/testing/in-memory-project-rate.repository';
@@ -293,6 +297,33 @@ describe('notification triggers (F11.12)', () => {
     expect(open(t, Topics.fileNeedsMapping(second.id))).toBeUndefined();
   });
 
+  it('a deactivated file nags no more; activated again, it does (F5.7a)', async () => {
+    const t = await setup();
+    const toggle = new SetFileActiveHandler(
+      t.projects,
+      t.files,
+      t.projectNotifications,
+    );
+    const file = await t.upload.execute(
+      new UploadProjectFileCommand(
+        'anna',
+        t.project.id,
+        'a.csv',
+        fixture(KRAKEN),
+      ),
+    );
+    const topic = Topics.fileNeedsMapping(file.id);
+    expect(open(t, topic)).toBeDefined();
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, file.id, false),
+    );
+    expect(open(t, topic)).toBeUndefined();
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, file.id, true),
+    );
+    expect(open(t, topic)).toBeDefined();
+  });
+
   it('a calculation raises open items and missing prices; ticking the last one resolves it', async () => {
     const t = await setup();
     await t.calculateNotified.execute(
@@ -360,7 +391,7 @@ describe('notification triggers (F11.12)', () => {
       sealedKeys: { coingecko: secrets.box.seal('cg-key') },
     });
     const usd = new FakeUsdSource({ DOT: '5' });
-    const chf = new FakeFiatSource();
+    const chf = new FakePriceHistorySources();
     const store = new InMemoryEstvRepository();
     const refresh = new RefreshRatesHandler(
       t.projects,
@@ -377,19 +408,25 @@ describe('notification triggers (F11.12)', () => {
     );
     const topic = Topics.ratesFetchFailed(t.project.id);
 
+    // Binance fails for DOT and CoinGecko (the fallback) is unreachable: nobody priced it.
     usd.failFor.add('DOT');
+    chf.fake('coingecko').failWith = { code: 'network', status: null };
     await refresh.execute(new RefreshRatesCommand('anna', t.project.id, true));
     expect(open(t, topic)).toMatchObject({
       kind: 'error',
-      params: { assets: 'DOT', count: 1 },
+      params: { count: 3, provider: 'coingecko', priceError: 'network' },
       action: { named: 'retry:rates', query: { tab: 'rates' } },
     });
     expect(open(t, Topics.keyInvalid('coingecko'))).toBeUndefined();
 
+    // Binance works again (DOT priced), CoinGecko refuses the key (BTC, ETH fail).
     usd.failFor.clear();
-    chf.failWithStatus = 401;
+    chf.fake('coingecko').failWith = { code: 'invalidKey', status: 401 };
     await refresh.execute(new RefreshRatesCommand('anna', t.project.id, true));
-    expect(open(t, topic)?.params).toMatchObject({ count: 2 });
+    expect(open(t, topic)?.params).toMatchObject({
+      count: 2,
+      priceError: 'invalidKey',
+    });
     expect(open(t, Topics.keyInvalid('coingecko'))).toMatchObject({
       kind: 'action',
       action: {
@@ -399,7 +436,7 @@ describe('notification triggers (F11.12)', () => {
     });
     expect(JSON.stringify(t.repository.all())).not.toContain('cg-key');
 
-    chf.failWithStatus = undefined;
+    chf.fake('coingecko').failWith = undefined;
     await refresh.execute(new RefreshRatesCommand('anna', t.project.id, true));
     expect(open(t, topic)).toBeUndefined();
     expect(open(t, Topics.keyInvalid('coingecko'))).toBeUndefined();

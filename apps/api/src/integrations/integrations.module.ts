@@ -15,6 +15,8 @@ import { ChainSources } from './chains/chain-sources';
 import { ProviderSwitchingAiCompletion } from './ai/provider-switching.adapter';
 import { DevIdentityTokenVerifier } from './dev-identity-token.verifier';
 import { FirebaseIdentityTokenVerifier } from './firebase/firebase-identity-token.verifier';
+import { HttpRemoteLibrary } from './library/http-remote-library.adapter';
+import { RemoteLibraryPort } from './library/remote-library.port';
 import { LocalIdentityVerifier } from './local-identity.verifier';
 import { MailTransportPort } from './mail/mail-transport.port';
 import { NodemailerTransport } from './mail/nodemailer.transport';
@@ -22,15 +24,25 @@ import { registeredHostPdfPrinter } from './pdf/host-pdf.renderer';
 import { selectPdfRenderer } from './pdf/select-pdf-renderer';
 import { BinanceKlinesSource } from './rates/binance-klines.source';
 import { CoinGeckoSource } from './rates/coingecko.source';
+import { CoinGeckoDirectory } from './rates/coingecko-directory';
+import { ProviderCoinDirectory } from './rates/provider-coin-directory';
+import { SerialGate } from './rates/http-rate-client';
+import { CoinDirectoryPort } from '../rates/ports/coin-directory.port';
+
+/** One CoinGecko gate per process: the free plan allows ~30 calls a minute. */
+const COINGECKO_GATE = new SerialGate(2500);
 import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
 import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
+import { PriceHistorySourcesPort } from './rates/price-history/price-history-source.port';
+import { PriceHistorySources } from './rates/price-history/price-history-sources';
 
 /**
  * External services behind ports, the counterpart of `PersistenceModule` for everything that is
  * not the database. The only place that decides *which* adapter backs a port — and the only code
  * that imports firebase-admin. The AI plugin's `AiCompletionPort` (F5.13) dispatches per call to
  * the OpenAI-compatible or the Anthropic adapter, from the user's settings. Rate sources
- * (Binance, CoinGecko, ECB/Frankfurter) and the PDF renderer (Chromium) live here too, and so does
+ * (Binance, CoinGecko, ECB/Frankfurter; the selectable price-history adapters behind
+ * `PriceHistorySourcesPort`) and the PDF renderer (Chromium) live here too, and so does
  * the mailer (`MailTransportPort` → nodemailer, F11.10). Later: one `ChainDataPort` adapter per
  * wallet network.
  */
@@ -57,8 +69,28 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
       provide: UsdPriceSourcePort,
       useFactory: () => new BinanceKlinesSource(),
     },
-    { provide: FiatPriceSourcePort, useFactory: () => new CoinGeckoSource() },
+    // CoinGecko prices and its coin directory ("Coin wählen") share one gate (rate limit).
+    {
+      provide: FiatPriceSourcePort,
+      useFactory: () => new CoinGeckoSource(fetch, COINGECKO_GATE),
+    },
+    {
+      // "Coin wählen": CoinGecko's directory, CoinMarketCap through its price-history adapter.
+      provide: CoinDirectoryPort,
+      inject: [PriceHistorySourcesPort],
+      useFactory: (sources: PriceHistorySourcesPort) =>
+        new ProviderCoinDirectory(
+          new CoinGeckoDirectory(COINGECKO_GATE),
+          sources,
+        ),
+    },
     { provide: FxRateSourcePort, useFactory: () => new FrankfurterFxSource() },
+    {
+      // The selectable price providers (price sources phase 2): the provider chain of "Kurse
+      // aktualisieren", "Testen" per provider, CoinMarketCap's coin directory.
+      provide: PriceHistorySourcesPort,
+      useFactory: () => PriceHistorySources.real(),
+    },
     {
       provide: EstvKurslisteSourcePort,
       inject: [ConfigService],
@@ -93,17 +125,23 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
           : ChainSources.real(),
     },
     { provide: MailTransportPort, useFactory: () => new NodemailerTransport() },
+    // F5.18: a web deployment's public mapping library, read by the desktop app. `useFactory`:
+    // the adapter's defaulted `fetchImpl` parameter cannot be resolved by DI.
+    { provide: RemoteLibraryPort, useFactory: () => new HttpRemoteLibrary() },
   ],
   exports: [
     IdentityTokenVerifierPort,
     AiCompletionPort,
     UsdPriceSourcePort,
     FiatPriceSourcePort,
+    CoinDirectoryPort,
     FxRateSourcePort,
+    PriceHistorySourcesPort,
     EstvKurslisteSourcePort,
     PdfRendererPort,
     ChainDataSourcesPort,
     MailTransportPort,
+    RemoteLibraryPort,
   ],
 })
 export class IntegrationsModule {}

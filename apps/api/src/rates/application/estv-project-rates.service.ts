@@ -9,11 +9,17 @@ import { CalculationInputService } from '../../calculation/application/calculati
 import type { Project } from '../../projects/domain/project';
 import {
   ESTV_LABEL_PREFIX,
+  type EstvAmbiguity,
   type EstvCandidate,
   estvProjectRates,
   estvSourceLabel,
   matchEstvAssets,
 } from '../domain/estv';
+import {
+  type CoinChoices,
+  requiredCoinName,
+  unresolvedAmbiguous,
+} from '../domain/coin-choice';
 import { COINGECKO_IDS, RATE_ALIASES } from '../domain/project-rate';
 import { EstvKurslisteRepositoryPort } from '../ports/estv.port';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
@@ -30,9 +36,10 @@ export interface EstvApplySummary {
     readonly name: string;
     readonly value: string;
   }[];
-  /** Several Kursliste entries fit: no value, set an override (open item suggestion). */
+  /** No safe Kursliste entry (several, another coin, ticker ambiguous): no value — choose a coin or override. */
   readonly ambiguous: readonly {
     readonly asset: string;
+    readonly reason: EstvAmbiguity;
     readonly candidates: readonly EstvCandidate[];
   }[];
   /** Year-end exchange rates taken (USD, EUR). */
@@ -78,7 +85,10 @@ export class EstvProjectRatesService {
     project: Project,
     options: {
       readonly assets?: readonly string[];
-      readonly coingeckoIds?: Readonly<Record<string, string>>;
+      /** The user's coin per ticker (F7.4): decides which Kursliste entry may be taken. */
+      readonly coinChoices?: CoinChoices;
+      /** Tickers the market list shows without a clear leader: no ESTV value by ticker either. */
+      readonly marketAmbiguous?: readonly string[];
     } = {},
   ): Promise<EstvApplySummary> {
     const year = project.taxYear;
@@ -99,10 +109,24 @@ export class EstvProjectRatesService {
       assets = estvAssetsOf(calculate(assembled.input), assembled.input.rules);
     }
     const list = await this.store.listRates(year);
-    const knownNames = { ...COINGECKO_IDS, ...(options.coingeckoIds ?? {}) };
+    const choices = options.coinChoices ?? {};
+    // A chosen coin with a known name is binding (also for a single ticker hit); a choice stored
+    // before names were kept only helps among several entries, like the built-in ids.
+    const knownNames: Record<string, string> = { ...COINGECKO_IDS };
+    const requiredNames: Record<string, string> = {};
+    for (const [symbol, choice] of Object.entries(choices)) {
+      knownNames[symbol] = choice.name ?? choice.id;
+      const required = requiredCoinName(symbol, choices);
+      if (required !== undefined) requiredNames[symbol] = required;
+    }
     const match = matchEstvAssets(assets, list, {
       knownNames,
       extraAliases: RATE_ALIASES,
+      requiredNames,
+      unresolved: [
+        ...unresolvedAmbiguous(choices),
+        ...(options.marketAmbiguous ?? []),
+      ],
     });
     const entries = estvProjectRates(year, version, match.matched, list);
     const keyOf = (r: {

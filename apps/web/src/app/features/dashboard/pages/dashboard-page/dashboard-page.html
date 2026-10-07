@@ -191,7 +191,14 @@
       {{ 'dashboard.missing.afterRefresh' | translate: { count: results.length }
       }}
     </p>
-    }
+    @for (asset of results; track asset.asset) { @if (asset.status === 'failed'
+    && asset.error; as error) {
+    <p class="text-destructive text-xs" role="note">
+      {{ asset.asset }} · {{ 'rates.failedVia' | translate: { provider:
+      ('rates.source.' + error.provider | translate), error:
+      ('rates.sourceErrors.' + error.code | translate) } }}
+    </p>
+    } } }
   </section>
   }
 
@@ -205,6 +212,21 @@
           }}
         </p>
       </div>
+      <select
+        hlmInput
+        class="w-48"
+        [attr.aria-label]="'dashboard.holdings.filter.label' | translate"
+        [value]="service.reviewOnly() ? 'review' : 'all'"
+        (change)="filter($event)"
+      >
+        <option value="all">
+          {{ 'dashboard.holdings.filter.all' | translate }}
+        </option>
+        <option value="review">
+          {{ 'dashboard.holdings.filter.review' | translate: { count:
+          service.reviewCount() } }}
+        </option>
+      </select>
       <input
         hlmInput
         type="search"
@@ -217,7 +239,9 @@
     </div>
     <div hlmCardContent>
       @if (service.holdings().length === 0) {
-      <lk-empty-state [message]="'dashboard.holdings.empty' | translate" />
+      <lk-empty-state
+        [message]="(service.reviewOnly() ? 'dashboard.holdings.filter.none' : 'dashboard.holdings.empty') | translate"
+      />
       } @else {
       <div hlmTableContainer class="lk-panel">
         <table hlmTable class="w-full table-fixed">
@@ -268,12 +292,16 @@
               <th hlmTh class="hidden w-32 md:table-cell">
                 {{ 'dashboard.holdings.trend' | translate }}
               </th>
+              <th hlmTh class="lk-sticky-actions w-14 text-right">
+                <span class="sr-only">{{ 'common.actions' | translate }}</span>
+              </th>
             </tr>
           </thead>
           <tbody hlmTBody>
-            @for (holding of service.holdings(); track holding.asset) {
+            @for (holding of service.holdings(); track holding.asset) { @let
+            source = sourceLine(holding); @let shared = sharedLine(holding);
             <tr hlmTr>
-              <td hlmTd class="min-w-0">
+              <td hlmTd class="max-w-0">
                 <button
                   type="button"
                   class="flex max-w-full items-center gap-1 font-medium"
@@ -287,6 +315,28 @@
                   />
                   <span [lkTruncate]="holding.asset">{{ holding.asset }}</span>
                 </button>
+                @if (source) { @let unpriced = holding.pricing === 'ambiguous'
+                && holding.priceSource === null;
+                <span
+                  class="text-xs"
+                  [class.text-muted-foreground]="!unpriced"
+                  [class.text-destructive]="unpriced"
+                  [lkTruncate]="source"
+                  >{{ source }}</span
+                >
+                } @if (shared) { @let coins = candidatesLine(holding);
+                <span
+                  class="text-xs"
+                  role="note"
+                  [class.text-destructive]="holding.shared?.level === 'ambiguous'"
+                  [lkTruncate]="shared"
+                  >{{ shared }}</span
+                >
+                @if (coins) {
+                <span class="text-muted-foreground text-xs" [lkTruncate]="coins"
+                  >{{ coins }}</span
+                >
+                } }
               </td>
               <td hlmTd class="truncate text-right tabular-nums">
                 {{ holding.quantity | lkQuantity: 8 }}
@@ -314,6 +364,12 @@
                   [label]="'dashboard.holdings.trendOf' | translate: { asset: holding.asset }"
                 />
               </td>
+              <td hlmTd class="lk-sticky-actions text-right">
+                <lk-row-actions
+                  [actions]="holdingActions().get(holding.asset) ?? []"
+                  (selected)="holdingAction($event, holding)"
+                />
+              </td>
             </tr>
             @if (service.expanded().has(holding.asset)) { @for (account of
             holding.accounts; track account.platform + account.accountId) {
@@ -332,11 +388,13 @@
                 {{ account.valueChf | lkChf }}
               </td>
               <td hlmTd class="hidden md:table-cell"></td>
+              <td hlmTd></td>
             </tr>
             } } }
           </tbody>
         </table>
       </div>
+      <lk-price-attribution [sources]="holdingSources()" />
       }
     </div>
   </section>
@@ -370,4 +428,12 @@
   [title]="service.recordsOf()?.title ?? null"
   [data]="service.records()"
   (closed)="service.closeRecords()"
+/>
+
+<lk-coin-picker
+  [symbol]="picking()?.asset ?? null"
+  [current]="picking()?.coin ?? null"
+  [busy]="savingCoin()"
+  (picked)="pickCoin($event)"
+  (closed)="picking.set(null)"
 />

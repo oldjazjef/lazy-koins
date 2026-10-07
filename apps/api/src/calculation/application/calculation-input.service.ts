@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
   applyMapping,
   type Booking,
@@ -10,6 +10,7 @@ import {
   ENGINE_VERSION,
   type Holding,
   parseStandardFile,
+  preferFetchedSources,
   type PreviousYear,
   type RateEntry,
   type WalletState,
@@ -22,13 +23,28 @@ import {
   SourceFileReader,
   UnreadableFileError,
 } from '../../files/application/source-file-reader';
-import type { ProjectFile } from '../../files/domain/project-file';
+import {
+  type ProjectFile,
+  readsRecords,
+} from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import type { ImportMapping } from '../../mappings/domain/import-mapping';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
+import { marketAmbiguityOf } from '../../rates/application/coin-market.service';
+import {
+  ambiguousSymbols,
+  type CoinChoices,
+  priceSourceUsable,
+} from '../../rates/domain/coin-choice';
+import {
+  DEFAULT_PRICE_PROVIDERS,
+  providerOrder,
+} from '../../rates/domain/price-providers';
+import { CoinMarketRepositoryPort } from '../../rates/ports/coin-market.repository.port';
 import { ProjectRateRepositoryPort } from '../../rates/ports/project-rate.repository.port';
+import { UserSettingsRepositoryPort } from '../../settings/ports/user-settings.repository.port';
 import type { FileRef, StoredCorrection } from '../domain/calculation';
 import {
   CalculationSnapshotRepositoryPort,
@@ -53,6 +69,8 @@ interface Sources {
   readonly previousRef: string | null;
   /** F6.4: the project's wallets per network (only the wallet check reads them). */
   readonly wallets: readonly WalletState[];
+  /** F7.4: tickers of several coins without a chosen coin (open item, no by-ticker price). */
+  readonly ambiguousAssets: readonly string[];
 }
 
 function compareText(a: string, b: string): number {
@@ -60,9 +78,10 @@ function compareText(a: string, b: string): number {
 }
 
 /**
- * Collects the calculation's input for a project: the standard records of every readable file
- * (standard format or its mapping — read again from the original bytes, bookings are not stored
- * as rows), the active corrections, the stored rates and the previous year's closing figures.
+ * Collects the calculation's input for a project: the standard records of every readable, active
+ * file (standard format or its mapping — read again from the original bytes, bookings are not
+ * stored as rows; deactivated files are skipped, F5.7a), the active corrections, the stored
+ * rates and the previous year's closing figures.
  *
  * The **input hash** covers what decides the result without reading file contents: the files'
  * SHA-256 + how they are read (mapping id + version time), corrections, rates, the previous
@@ -81,6 +100,9 @@ export class CalculationInputService {
     private readonly snapshots: CalculationSnapshotRepositoryPort,
     private readonly reader: SourceFileReader,
     private readonly wallets: WalletRepositoryPort,
+    private readonly settings: UserSettingsRepositoryPort,
+    /** F7.4: the deployment-wide market list (shared tickers); absent in older specs. */
+    @Optional() private readonly market?: CoinMarketRepositoryPort,
   ) {}
 
   /** The input hash alone — cheap (no file is read); tells whether a snapshot is stale. */
@@ -141,6 +163,7 @@ export class CalculationInputService {
         rates: sources.rates,
         previous: sources.previous,
         wallets: sources.wallets,
+        ambiguousAssets: sources.ambiguousAssets,
       },
       files: sources.files.map((f) => ({
         projectFileId: f.id,
@@ -162,8 +185,9 @@ export class CalculationInputService {
   }
 
   private async sources(project: Project): Promise<Sources> {
+    // F5.7a: a deactivated file is not read — and leaves the input hash, so the snapshot is stale.
     const files = (await this.files.listByProject(project.id))
-      .filter((f) => f.status === 'standard' || f.status === 'mapped')
+      .filter(readsRecords)
       .sort((a, b) => compareText(a.sha256, b.sha256));
     const mappings = new Map<string, ImportMapping>();
     for (const file of files) {
@@ -175,15 +199,31 @@ export class CalculationInputService {
         }
       }
     }
-    const rates: RateEntry[] = (await this.rates.listByProject(project.id)).map(
-      (r) => ({
-        kind: r.kind,
-        asset: r.asset,
-        currency: r.currency,
-        date: r.date,
-        value: r.value,
-        source: r.source,
-      }),
+    // F7.4: the owner's coin per ticker — a by-ticker price (Binance) of a chosen or ambiguous
+    // ticker may be another coin's and never counts (filtered here, so it is out of the hash too).
+    // Ambiguous = the hand-kept list + tickers the stored market list shows without a clear
+    // leader (local data, works offline).
+    const owner = await this.settings.find(project.ownerId);
+    const choices: CoinChoices = owner?.coinChoices ?? {};
+    const marketAmbiguous = await marketAmbiguityOf(this.market, choices);
+    // Price sources phase 2: among fetched series, the owner's provider order decides per day
+    // (`preferFetchedSources`) — before the hash, so a new order that changes a value is stale.
+    const rates: RateEntry[] = preferFetchedSources(
+      (await this.rates.listByProject(project.id))
+        .filter(
+          (r) =>
+            r.kind !== 'price' ||
+            priceSourceUsable(r.asset, r.source, choices, marketAmbiguous),
+        )
+        .map((r) => ({
+          kind: r.kind,
+          asset: r.asset,
+          currency: r.currency,
+          date: r.date,
+          value: r.value,
+          source: r.source,
+        })),
+      providerOrder(owner?.priceSources ?? DEFAULT_PRICE_PROVIDERS),
     );
     const corrections = await this.corrections.listByProject(project.id);
     const { previous, ref } = await this.previousYear(project);
@@ -195,6 +235,7 @@ export class CalculationInputService {
       previous,
       previousRef: ref,
       wallets: await this.walletStates(project),
+      ambiguousAssets: ambiguousSymbols(choices, marketAmbiguous),
     };
   }
 
@@ -310,6 +351,8 @@ function hashOf(project: Project, sources: Sources): string {
       .sort(compareText),
     previous: sources.previousRef,
     wallets: sources.wallets,
+    // F7.4: choosing a coin for an ambiguous ticker settles its open item.
+    ambiguous: sources.ambiguousAssets,
   };
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }

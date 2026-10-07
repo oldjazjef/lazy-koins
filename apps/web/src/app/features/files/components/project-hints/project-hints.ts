@@ -56,6 +56,7 @@ import {
   type HintAction,
   hintActions,
   hintsByPlatform,
+  RATES_GROUP,
   type HintSort,
   sortHints,
 } from './project-hints.logic';
@@ -128,6 +129,8 @@ export class ProjectHints {
   readonly showChecks = output<string | null>();
   /** The mapping assignment lives in the files tab. */
   readonly showFiles = output<void>();
+  /** F7.4: "Coin wählen" / "Passt so" live in the Kurse tab. */
+  readonly showRates = output<void>();
 
   protected readonly kinds = HINT_KINDS;
   protected readonly statuses = HINT_STATUSES;
@@ -279,13 +282,26 @@ export class ProjectHints {
   }
 
   /** The account(s) or file of a hint; "ganze Plattform" when it names none. */
+  protected groupLabel(platform: string): string {
+    if (platform === RATES_GROUP)
+      return this.translate.instant('hints.ratesGroup');
+    return platform || this.translate.instant('hints.unreadFiles');
+  }
+
   protected whereOf(hint: ProjectHint): string {
+    if (hint.asset) return hint.asset;
     if (hint.fileName) return hint.fileName;
     return (
       hint.accountId ||
       hint.accounts.join(', ') ||
       this.translate.instant('hints.wholePlatform')
     );
+  }
+
+  /** F5.7a: the deactivated files that would cover this hint, as one text; null when none. */
+  protected disabledNamesOf(hint: ProjectHint): string | null {
+    const files = hint.disabledFiles ?? [];
+    return files.length > 0 ? files.map((file) => file.name).join(', ') : null;
   }
 
   protected openItemsOf(hint: ProjectHint): number {
@@ -351,6 +367,9 @@ export class ProjectHints {
         return;
       case 'rowErrors':
         void this.openRowErrors(hint);
+        return;
+      case 'rates':
+        this.showRates.emit();
         return;
     }
   }

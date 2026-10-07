@@ -51,7 +51,8 @@ type LibraryAction = 'view' | 'take' | 'rate' | 'newVersion' | 'delete';
  * F5.15–F5.17: the mapping library page (`/app/mappings/library`, web only) — the shared mappings of all
  * users with search, platform filter and sort; per row: Ansehen, Übernehmen (a private copy),
  * Bewerten, and for my own entries Neue Version and Löschen. "Mapping veröffentlichen" opens
- * the review dialog.
+ * the review dialog. On the desktop (F5.18) the linked web library, read-only: Ansehen and
+ * Übernehmen only.
  */
 @Component({
   selector: 'lk-library-page',
@@ -110,7 +111,8 @@ export class LibraryPage {
           id: 'rate',
           labelKey: 'library.actions.rate',
           icon: lucideStar,
-          hidden: entry.mine,
+          // F5.18: a linked web library is read-only on the desktop.
+          hidden: entry.mine || this.service.readOnly(),
         },
         {
           id: 'newVersion',

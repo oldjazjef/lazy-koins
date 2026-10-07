@@ -1,0 +1,95 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Bybit Unified Trading Account – Transaction Log (CSV)",
+  "platform": "bybit",
+  "description": "Bybit 'Transaction Log' of the Unified Trading Account (bybit.com: Assets > Unified Trading Account > History / Transaction Log > Export, CSV; derivatives/USDC accounts of older accounts export the same columns). Header (order may vary): Time, Currency, Contract, Type, Direction, Quantity, Position, Filled Price, Funding, Fee Paid, Cash Flow, Change, Wallet Balance, Fee Rate, Trade ID, Order ID — some exports add Uid/Action or name the time column 'Time(UTC)'. Change (= cash flow + funding − fee) is the signed balance change, so fees are not booked again; Wallet Balance gives the balance per currency (lastPerAsset). Times are UTC unless the export dialog was set otherwise (a zone in the time header is honoured). A spot trade writes one row per currency, linked by Order ID. Type values follow Bybit's transaction-log enum (TRADE, TRANSFER_IN, CURRENCY_BUY, …; older exports lower case: trade, deposit, exchangeIn, …). Known limits: the Funding account (deposits/withdrawals land there first, P2P, Earn) has its own history that is NOT covered — its moves into the UTA appear here as transfers; derivatives PnL and funding are booked as trade/fee; BONUS_RECOLLECT and PEF_PROFIT_SHARE are left unknown.",
+  "match": {
+    "headers": [
+      "Currency",
+      "Contract",
+      "Type",
+      "Direction",
+      "Fee Paid",
+      "Cash Flow",
+      "Change",
+      "Wallet Balance"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [], "nullValues": ["--"] },
+  "bookings": {
+    "timestamp": {
+      "column": "Time",
+      "format": "ymd",
+      "timeZone": "UTC",
+      "headerPattern": "^Time\\s*(?:\\((UTC[^)]*)\\))?$"
+    },
+    "account": { "value": "unified" },
+    "asset": { "column": "Currency" },
+    "quantity": { "mode": "signed", "column": "Change" },
+    "group": { "column": "Order ID" },
+    "kind": {
+      "columns": ["Type"],
+      "rules": [
+        { "equals": ["TRADE"], "kind": "trade" },
+        { "equals": ["exchangeIn"], "kind": "trade" },
+        { "equals": ["exchangeOut"], "kind": "trade" },
+        { "equals": ["CURRENCY_BUY"], "kind": "trade" },
+        { "equals": ["CURRENCY_SELL"], "kind": "trade" },
+        { "equals": ["CONVERT"], "kind": "trade" },
+        { "equals": ["SPOT_REPAYMENT_BUY"], "kind": "trade" },
+        { "equals": ["SPOT_REPAYMENT_SELL"], "kind": "trade" },
+        { "equals": ["EARNING_REDEMPTION_BUY"], "kind": "trade" },
+        { "equals": ["EARNING_REDEMPTION_SELL"], "kind": "trade" },
+        { "equals": ["DELIVERY"], "kind": "trade" },
+        { "equals": ["LIQUIDATION"], "kind": "trade" },
+        { "equals": ["ADL"], "kind": "trade" },
+        { "equals": ["FORWARD_SPLIT_SETTLE"], "kind": "trade" },
+        { "equals": ["REVERSE_SPLIT_SETTLE"], "kind": "trade" },
+        { "equals": ["SETTLEMENT"], "kind": "fee" },
+        { "equals": ["funding"], "kind": "fee" },
+        { "equals": ["FEE_REFUND"], "kind": "fee" },
+        { "equals": ["INTEREST"], "kind": "fee" },
+        { "equals": ["CUSTODY_NETWORK_FEE"], "kind": "fee" },
+        { "equals": ["CUSTODY_SETTLE_FEE"], "kind": "fee" },
+        { "equals": ["deposit"], "kind": "deposit" },
+        { "equals": ["withdraw"], "kind": "withdrawal" },
+        { "equals": ["TRANSFER_IN"], "kind": "transfer" },
+        { "equals": ["TRANSFER_OUT"], "kind": "transfer" },
+        { "equals": ["transferIn"], "kind": "transfer" },
+        { "equals": ["transferOut"], "kind": "transfer" },
+        { "equals": ["BONUS_TRANSFER_IN"], "kind": "transfer" },
+        { "equals": ["BONUS_TRANSFER_OUT"], "kind": "transfer" },
+        { "equals": ["PEF_TRANSFER_IN"], "kind": "transfer" },
+        { "equals": ["PEF_TRANSFER_OUT"], "kind": "transfer" },
+        { "equals": ["BORROW"], "kind": "transfer" },
+        { "equals": ["REPAY"], "kind": "transfer" },
+        { "equals": ["FLOATING_TO_FIXED_BORROW"], "kind": "transfer" },
+        { "equals": ["FLOATING_TO_FIXED_REPAY"], "kind": "transfer" },
+        { "equals": ["LOANS_BORROW_FUNDS"], "kind": "transfer" },
+        { "equals": ["LOANS_PLEDGE_ASSET"], "kind": "transfer" },
+        { "equals": ["PRINCIPAL_REPAYMENT_INS_LOAN"], "kind": "transfer" },
+        { "equals": ["INSTITUTION_LOAN_TRANSFER_OUT"], "kind": "transfer" },
+        { "equals": ["INSTITUTION_LOAN_WITHOUT_WITHDRAW"], "kind": "transfer" },
+        {
+          "pattern": "^CUSTODY_(LOCK|UNLOCK|UNLOCK_REFUND)$",
+          "kind": "transfer"
+        },
+        { "pattern": "_(SUBSCRIPTION|REDEMPTION|REFUND)$", "kind": "transfer" },
+        { "equals": ["BYUSDT_MINT"], "kind": "transfer" },
+        { "equals": ["BYUSDT_INTEREST"], "kind": "income_interest" },
+        { "equals": ["DIVIDEND_SETTLEMENT"], "kind": "income_interest" },
+        { "equals": ["AIRDROP"], "kind": "income_airdrop" },
+        { "equals": ["BONUS"], "kind": "income_airdrop" }
+      ],
+      "default": "unknown"
+    }
+  },
+  "holdings": {
+    "mode": "lastPerAsset",
+    "asset": { "column": "Currency" },
+    "quantity": { "column": "Wallet Balance" },
+    "account": { "value": "unified" }
+  }
+}

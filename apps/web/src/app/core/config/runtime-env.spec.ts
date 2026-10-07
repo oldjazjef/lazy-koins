@@ -10,6 +10,8 @@ describe('runtimeEnv', () => {
       apiBaseUrl: '',
       authMode: 'dev',
       firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+      umamiUrl: '',
+      umamiWebsiteId: '',
     });
   });
 

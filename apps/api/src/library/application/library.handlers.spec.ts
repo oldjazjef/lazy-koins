@@ -44,6 +44,8 @@ import {
   GetLibraryMappingQuery,
   ProjectLibraryMatchesHandler,
   ProjectLibraryMatchesQuery,
+  PublishQuotaHandler,
+  PublishQuotaQuery,
   ReviewPublicationHandler,
   ReviewPublicationQuery,
   SearchLibraryHandler,
@@ -131,6 +133,10 @@ async function setup(enabled = true) {
     ) =>
       new ReviewPublicationHandler(library, mappings, runtime).execute(
         new ReviewPublicationQuery(user, input),
+      ),
+    quota: (user: string) =>
+      new PublishQuotaHandler(library, runtime).execute(
+        new PublishQuotaQuery(user),
       ),
     search: (user: string) =>
       new SearchLibraryHandler(library, runtime).execute(
@@ -340,6 +346,53 @@ describe('publish (F5.15): review, privacy scan, confirmation', () => {
         confirmed: true,
       }),
     ).resolves.toMatchObject({ name: 'Next day' });
+  });
+
+  it('tells how many new entries are left today (F5.20) — the same count the publish enforces', async () => {
+    const t = await setup();
+    expect(await t.quota('anna')).toEqual({
+      newPerDay: LIBRARY_LIMITS.publishesPerDay,
+      usedToday: 0,
+      remainingToday: LIBRARY_LIMITS.publishesPerDay,
+      publishesPer10Min: 10,
+    });
+    const entry = await published(t);
+    // A new version is not a new entry.
+    await t.publish('anna', {
+      spec: { ...KRAKEN_SPEC, name: 'Kraken v2' },
+      libraryId: entry.id,
+      confirmed: true,
+    });
+    expect(await t.quota('anna')).toMatchObject({
+      usedToday: 1,
+      remainingToday: LIBRARY_LIMITS.publishesPerDay - 1,
+    });
+    expect((await t.quota('bob')).usedToday).toBe(0);
+    t.setNow('2026-10-09T10:00:01.000Z');
+    expect((await t.quota('anna')).usedToday).toBe(0);
+  });
+
+  it('refuses a copy taken from the library as a new entry (409 libraryCopy) — the review says so', async () => {
+    const t = await setup();
+    const entry = await published(t);
+    const copy = await t.take('bob', entry.id);
+    const review = await t.review('bob', { mappingId: copy.mapping.id });
+    expect(review.libraryCopy).toBe(true);
+    const refused = await t
+      .publish('bob', {
+        mappingId: copy.mapping.id,
+        confirmed: true,
+        acknowledgeFindings: true,
+      })
+      .catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(ConflictException);
+    expect((refused as ConflictException).getResponse()).toMatchObject({
+      code: 'libraryCopy',
+    });
+    expect((await t.review('anna', { mappingId: t.own.id })).libraryCopy).toBe(
+      false,
+    );
+    expect((await t.quota('bob')).usedToday).toBe(0);
   });
 
   it('publishes only my own mapping, and new versions only of my own entry (404, like missing)', async () => {

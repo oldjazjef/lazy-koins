@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CalculationModule } from '../calculation/calculation.module';
+import { RatesModule } from '../rates/rates.module';
 import { SettingsModule } from '../settings/settings.module';
 import { DashboardInputService } from './application/dashboard-input.service';
 import {
@@ -18,7 +19,8 @@ import { DashboardService } from './dashboard.service';
  * per input hash; its own rate cache (`user_rate`) filled by "Kurse aktualisieren".
  */
 @Module({
-  imports: [CqrsModule, CalculationModule, SettingsModule],
+  // RatesModule: the shared-ticker market list (CoinMarketService, F7.4).
+  imports: [CqrsModule, CalculationModule, SettingsModule, RatesModule],
   controllers: [DashboardController],
   providers: [
     DashboardService,

@@ -36,6 +36,23 @@ export const API_ERROR_CODES = [
   'publishLimit',
   'privacyFindings',
   'specTooLarge',
+  // F5.18: the desktop's link to a web deployment's mapping library.
+  'libraryNotConfigured',
+  'libraryNetwork',
+  'libraryTimeout',
+  'libraryBadResponse',
+  'libraryDisabled',
+  'libraryRateLimited',
+  'libraryUrlInvalid',
+  'incompatibleSpec',
+  // F11.0u / F5.20: several mappings at once.
+  'duplicateMapping',
+  'libraryCopy',
+  // F7.4 "Coin wählen": the provider does not know the id / could not be reached.
+  'unknownCoin',
+  'coinProviderFailed',
+  // Price sources: a provider that needs the user's key (CoinMarketCap) has none stored.
+  'noKey',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

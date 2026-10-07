@@ -476,5 +476,9 @@ function verifyIgnoringHints(http: HttpTestingController): void {
       request.flush({ taxYear: 2025, hints: [], open: 0 });
     }
   }
+  // F5.19: the suggestions reload with the files as well.
+  for (const request of http.match('/api/projects/p1/mapping-suggestions')) {
+    if (!request.cancelled) request.flush({ files: [], library: 'off' });
+  }
   http.verify();
 }

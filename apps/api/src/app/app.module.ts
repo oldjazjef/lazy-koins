@@ -25,6 +25,7 @@ import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { MailModule } from '../mail/mail.module';
 import { LibraryModule } from '../library/library.module';
+import { SuggestionsModule } from '../suggestions/suggestions.module';
 import { MappingsModule } from '../mappings/mappings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PersistenceModule } from '../persistence/persistence.module';
@@ -61,6 +62,7 @@ import { AppController } from './app.controller';
     FilesModule,
     MappingsModule,
     LibraryModule,
+    SuggestionsModule,
     SettingsModule,
     CalculationModule,
     RatesModule,

@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "lazy-koins",
-    "version": "lazy-koins v{{version}} ({{commit}})"
+    "version": "lazy-koins v{{version}} ({{commit}})",
+    "versionBadge": "v{{version}}"
   },
   "actions": {
     "undo": "Undo"
@@ -63,7 +64,9 @@
     "dashboard": "Dashboard",
     "chat": "Assistant",
     "library": "Library",
-    "myMappings": "My mappings"
+    "myMappings": "My mappings",
+    "toggleSidebar": "Show or hide the sidebar",
+    "toggleSection": "{{section}}: expand or collapse the sub-items"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
@@ -162,7 +165,7 @@
       "defaultName": "Taxes {{year}}",
       "existing": "There is already a project for this year ({{names}}).",
       "files": "Files",
-      "filesHint": "Linked, not copied. Preselected: files whose period extends into the new year.",
+      "filesHint": "Linked, not copied. Preselected: files whose period extends into the new year. Deactivated files are offered but not preselected.",
       "noPlatform": "No platform",
       "noFiles": "This project has no files.",
       "wallets": "Wallets",
@@ -183,7 +186,8 @@
       "created": "Follow-up project created",
       "createFailed": "Could not create the follow-up project",
       "walletsHint": "The project's wallets are linked to the new project (preselected); their fetched data appears there as derived files. Manual balances at 31.12. belong to the year and stay here.",
-      "noWallets": "This project has no wallets."
+      "noWallets": "This project has no wallets.",
+      "disabledFile": "Deactivated in the project – therefore not preselected. If ticked, it is taken over as active in the new project."
     },
     "import": {
       "button": "Import project",
@@ -288,7 +292,9 @@
         "uploading": "uploading …",
         "done": "done",
         "failed": "failed"
-      }
+      },
+      "needsMapping": "needs a mapping",
+      "showSuggestion": "See suggestion"
     },
     "template": {
       "label": "Template in the standard format:",
@@ -338,7 +344,9 @@
       "assign": "Assign",
       "remove": "Remove",
       "aiMapping": "Create mapping with AI",
-      "aiStatement": "Read with AI"
+      "aiStatement": "Read with AI",
+      "deactivate": "Deactivate",
+      "activate": "Activate"
     },
     "preview": {
       "description": "The first rows of the file, unchanged.",
@@ -376,7 +384,49 @@
       "confirm": "Take over {{count}}",
       "done": "{{count}} file(s) taken over",
       "failed": "Could not take over the files",
-      "loadFailed": "Could not load the other projects"
+      "loadFailed": "Could not load the other projects",
+      "disabledFile": "Deactivated in the source project – it is taken over as active here."
+    },
+    "suggestions": {
+      "title": "Suggestions for {{count}} file(s) without a mapping",
+      "body": "No mapping was found automatically for these files. Here are the closest ones – nothing is assigned until you click.",
+      "dialogTitle": "Suggestions for this file",
+      "libraryUnavailable": "The library could not be reached just now – the suggestions come only from your mappings and the standard mappings.",
+      "suggestion": "Suggestion:",
+      "coverage": "{{percent}} % match",
+      "revision": "revision {{revision}}",
+      "near": "{{matched}} of {{required}} columns found.",
+      "missing": "Missing: {{columns}}.",
+      "fileName": "The file name does not fit the mapping's pattern.",
+      "showPreview": "Show preview",
+      "hidePreview": "Hide preview",
+      "previewFailed": "The preview could not be created.",
+      "take": "Take",
+      "adapt": "Adapt as a template",
+      "others": "Other suggestions ({{count}})",
+      "show": "Show",
+      "takeFailed": "The mapping could not be taken",
+      "takenStandard": "Standard mapping taken as your own copy and assigned to the file",
+      "source": {
+        "own": "your mapping",
+        "standard": "standard mapping",
+        "library": "library"
+      }
+    },
+    "disabled": {
+      "badge": "Deactivated",
+      "count": "{{count}} deactivated",
+      "explain": "Deactivated files stay stored but are ignored by the calculation, dashboard, hints, checks and exports.",
+      "hide": "Hide",
+      "show": "Show",
+      "tooltip": "Deactivated since {{date}} – ignored by the calculation",
+      "title": "Deactivate file",
+      "body": "“{{name}}” stays stored in the project, downloadable and previewable, but the calculation, dashboard, hints, checks and exports ignore it. The result needs to be recalculated afterwards. You can activate the file again at any time.",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g. duplicate of the account statement",
+      "deactivated": "File deactivated – the result needs to be recalculated",
+      "activated": "File activated – the result needs to be recalculated",
+      "failed": "The file could not be changed"
     }
   },
   "mappings": {
@@ -393,7 +443,7 @@
     "reapplyLater": "Later",
     "reapply": "Re-read",
     "upload": {
-      "button": "Upload mapping (.json)",
+      "button": "Upload mappings (.json)",
       "notJson": "The file is not JSON",
       "invalid": "The mapping is invalid"
     },
@@ -535,6 +585,33 @@
       "notTable": "This is not a readable table (CSV or XLSX)",
       "empty": "The file is empty",
       "loadFailed": "The file could not be loaded"
+    },
+    "import": {
+      "drop": "Drag mapping files (.json) here – several at once are possible.",
+      "title": "Mappings uploaded",
+      "summary": "{{stored}} saved, {{duplicate}} already there (skipped), {{problems}} with problems.",
+      "state": {
+        "stored": "saved",
+        "duplicate": "already there",
+        "invalid": "invalid",
+        "notJson": "not JSON",
+        "tooLarge": "too large",
+        "tooMany": "not uploaded",
+        "failed": "failed"
+      },
+      "open": "Open \"{{name}}\"",
+      "existing": "You already have it as \"{{name}}\"",
+      "moreIssues": "… and {{count}} more problems",
+      "tooLargeHint": "The file is larger than 1 MB – that is not a mapping.",
+      "tooManyHint": "At most {{limit}} files at once – upload the rest in a second step."
+    },
+    "selection": {
+      "label": "Selection",
+      "count": "{{count}} selected",
+      "publish": "Publish to the library",
+      "clear": "Clear selection",
+      "page": "Select all mappings on this page",
+      "row": "Select {{name}}"
     }
   },
   "ai": {
@@ -764,7 +841,8 @@
       "storage": "Storage location",
       "system": "System",
       "mail": "Mail",
-      "mcp": "MCP"
+      "mcp": "MCP",
+      "library": "Library"
     },
     "system": {
       "title": "System",
@@ -786,7 +864,7 @@
     },
     "rates": {
       "title": "Rate lookups",
-      "subtitle": "Rates from the internet, CoinGecko key, ESTV rate list (Kursliste)",
+      "subtitle": "Price providers and their order, keys, ESTV rate list (Kursliste)",
       "hint": "When off, lazy-koins fetches no rates from the internet; stored and manually entered rates still apply.",
       "coingeckoHint": "For assets without a Binance rate (CoinGecko demo key). Stored encrypted.",
       "estvTitle": "Import ESTV rate list (Kursliste) manually",
@@ -927,6 +1005,45 @@
         "timeout": "Try again later.",
         "providerError": "The provider's message below may help; otherwise try again later."
       }
+    },
+    "priceSources": {
+      "title": "Price providers",
+      "hint": "lazy-koins asks the enabled providers from top to bottom and takes the first with a price history. If one does not have a coin, does not reach that far back or does not price in your currency, the next one is asked. With several stored prices, the one higher up counts.",
+      "compactHint": "Default: Binance, then CoinGecko. You can switch on and order more free providers here.",
+      "enabled": "Use {{name}}",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "keyRequired": "key required",
+      "keyStored": "key {{hint}}",
+      "keyMissing": "no key",
+      "usdOnly": "USD only (× exchange rate)",
+      "history": "{{days}} days of history (free)",
+      "historyAll": "full history",
+      "byTicker": "by ticker",
+      "personalUse": "personal use only",
+      "attribution": "Attribution: \"{{text}}\"",
+      "save": "Save order",
+      "saved": "Price providers saved.",
+      "saveFailed": "The price providers could not be saved.",
+      "chosenNote": "A chosen coin (\"Choose coin\") always comes from its provider first.",
+      "test": {
+        "button": "Test",
+        "label": "Test {{name}}",
+        "testing": "Checking …",
+        "ok": "Works ({{millis}} ms).",
+        "failed": "Error: {{error}}",
+        "plan": "Plan: {{plan}}",
+        "historyDays": "Daily history: {{days}} days",
+        "status": "HTTP {{status}}",
+        "detail": "Provider's answer: {{detail}}",
+        "noKey": "Enter a key first.",
+        "offline": "Rate lookups on the internet are switched off on this server.",
+        "error": "The test could not be run."
+      },
+      "keyOptional": "Key optional",
+      "keyLabel": "Key for {{name}}",
+      "keyPlaceholderRequired": "Enter key (required)",
+      "keyPlaceholderOptional": "Enter key (optional – without: public API, slower)"
     }
   },
   "workspace": {
@@ -1093,7 +1210,8 @@
       "walletNetworkNotSelected": "Used on this network, but not selected for the wallet",
       "walletNetworkNotFetched": "Not fetched yet – use “Fetch” in the Wallets tab",
       "walletManualBalanceMissing": "Balance at 31.12. missing – enter it manually with a receipt",
-      "walletFetchFailed": "Fetch failed – check the key/plan or enter the balance manually with a receipt"
+      "walletFetchFailed": "Fetch failed – check the key/plan or enter the balance manually with a receipt",
+      "ambiguousPrice": "Ambiguous price – the ticker stands for several coins. Choose the coin in the Rates tab."
     },
     "comparison": {
       "title": "Comparison with {{year}}",
@@ -1213,20 +1331,69 @@
       "estv": "ESTV rate list (Kursliste)",
       "binance": "Binance",
       "coingecko": "CoinGecko",
-      "ecb": "ECB"
+      "ecb": "ECB",
+      "coinmarketcap": "CoinMarketCap",
+      "defillama": "DefiLlama",
+      "coinpaprika": "CoinPaprika",
+      "kraken": "Kraken",
+      "bitfinex": "Bitfinex",
+      "coinbase": "Coinbase"
     },
     "status": {
       "fetched": "fetched",
       "cached": "already stored",
       "notFound": "not found",
-      "failed": "Error"
+      "failed": "Error",
+      "ambiguous": "ambiguous – choose the coin",
+      "noKey": "provider's key missing"
     },
     "errors": {
       "asset": "Please enter an asset symbol.",
       "date": "Please choose a date.",
       "value": "Please enter a positive value with a period as the decimal separator."
     },
-    "estvNotApplicable": "The ESTV rate list (Kursliste) only applies to projects in CHF – this project is in {{currency}}. Rates come from the ECB, Binance and CoinGecko."
+    "estvNotApplicable": "The ESTV rate list (Kursliste) only applies to projects in CHF – this project is in {{currency}}. Rates come from the ECB, Binance and CoinGecko.",
+    "overrideOnlyDay": "Applies to this date only; if the price history is wrong, use \"Choose coin\".",
+    "contracts": "Identified by contract: {{assets}}",
+    "pricing": {
+      "title": "Price source per asset",
+      "hint": "A ticker is not a coin. If a price history is wrong, choose the coin you hold: its price then replaces the price by ticker – on the dashboard, too.",
+      "empty": "No assets with a price yet – calculate first.",
+      "byTicker": "by ticker",
+      "chosen": "{{name}} ({{provider}})",
+      "byContract": "identified by contract ({{network}})",
+      "ambiguous": "Ambiguous price – choose the coin",
+      "noSource": "no price yet",
+      "ignored": "not used: {{sources}}",
+      "overridden": "+ override",
+      "shared": "Ticker {{symbol}} is used by several coins — used: {{name}} ({{source}}). Check?",
+      "sharedAmbiguous": "Ticker {{symbol}} is used by several coins — no price until you choose the coin.",
+      "candidates": "Coins with this ticker: {{coins}}",
+      "choose": "Wrong price? Choose coin",
+      "dismiss": "Looks right",
+      "removeCoin": "Remove coin assignment",
+      "fields": {
+        "asset": "Asset",
+        "source": "Price source",
+        "note": "Note"
+      }
+    },
+    "failedVia": "{{provider}}: {{error}}",
+    "sourceErrors": {
+      "invalidKey": "key refused",
+      "planLacksHistory": "plan doesn't reach that far back",
+      "rateLimited": "provider's limit reached",
+      "notFound": "coin not found",
+      "unsupportedQuote": "currency not offered",
+      "network": "not reachable",
+      "timeout": "no timely answer",
+      "badResponse": "unexpected answer"
+    },
+    "attribution": {
+      "label": "Price data",
+      "coingecko": "Data provided by CoinGecko",
+      "coinmarketcap": "Data provided by CoinMarketCap.com"
+    }
   },
   "exports": {
     "createTitle": "Create statement",
@@ -1282,7 +1449,7 @@
     },
     "data": {
       "title": "Data",
-      "hint": "Bookings and holdings in the standard format – with corrections applied, the rate used and rate source, as well as source file and row. The file can be imported again unchanged.",
+      "hint": "Bookings and holdings in the standard format – with corrections applied, the rate used and rate source, as well as source file and row. The file can be imported again unchanged. Only active files – deactivated ones are not included.",
       "platform": "Platform",
       "account": "Account",
       "asset": "Asset",
@@ -1585,7 +1752,8 @@
       "endsEarly": "Gap at the end",
       "noYearEndBalance": "No holdings at 31.12.",
       "unrecognisedFile": "Unrecognised file",
-      "rowErrors": "File with row errors"
+      "rowErrors": "File with row errors",
+      "sharedTicker": "Ticker used by several coins"
     },
     "severity": {
       "info": "Info",
@@ -1605,11 +1773,14 @@
       "endsEarlyZero": "Bookings end on {{date}}; balance 0 afterwards – nothing can be missing.",
       "noYearEndBalance": "No account statement at 31.12.{{year}} – the balance according to the bookings is not checked.",
       "unrecognisedFile": "No mapping – the file is not included in the calculation.",
-      "rowErrors": "{{count}} rows could not be read."
+      "rowErrors": "{{count}} rows could not be read.",
+      "sharedTicker": "{{asset}}: {{count}} coins use this ticker – check the price."
     },
     "howTo": {
       "unrecognisedFile": "There is no mapping yet for the structure of this file. Have the AI create one, assign an existing one, or mark the file as “evidence only”.",
-      "rowErrors": "Some rows have missing or invalid values (e.g. a timestamp without a time zone). Look at the rows, correct the file or the mapping, and upload it again."
+      "rowErrors": "Some rows have missing or invalid values (e.g. a timestamp without a time zone). Look at the rows, correct the file or the mapping, and upload it again.",
+      "sharedTicker": "The ticker {{asset}} is used by several coins. The price comes by ticker (Binance) from the best-known coin. Check it? In the Rates tab, \"Choose coin\" or \"Looks right\".",
+      "sharedTickerAmbiguous": "The ticker {{asset}} is used by several coins of similar size – no price is fetched by ticker. In the Rates tab, \"Choose coin\"."
     },
     "actions": {
       "upload": "Upload file",
@@ -1621,7 +1792,8 @@
       "assign": "Assign mapping",
       "rowErrors": "View row errors",
       "markOk": "Mark as OK",
-      "reopen": "Reopen"
+      "reopen": "Reopen",
+      "rates": "Go to rates"
     },
     "dismiss": {
       "title": "Mark hint as OK",
@@ -1638,7 +1810,10 @@
       "count": "{{shown}} of {{total}} errors",
       "column": "Column",
       "problem": "Problem"
-    }
+    },
+    "coins": "Coins with this ticker: {{coins}}",
+    "ratesGroup": "Rates",
+    "disabledFiles": "Deactivated and therefore not counted: {{names}}"
   },
   "notifications": {
     "heading": "Notifications",
@@ -1784,7 +1959,8 @@
       "ai": "AI",
       "coingecko": "CoinGecko",
       "mail": "mail (SMTP)",
-      "chain": "network lookups"
+      "chain": "network lookups",
+      "coinmarketcap": "CoinMarketCap"
     }
   },
   "activity": {
@@ -1809,7 +1985,11 @@
       "mappingReady": "Mapping suggestion for {{name}} is ready",
       "statementReady": "Account statement {{name}} has been read"
     },
-    "libraryTake": "Taking mapping from the library"
+    "libraryTake": "Taking mapping from the library",
+    "suggestionTake": "Taking the suggested mapping",
+    "mappingImport": "Uploading mappings",
+    "libraryBulkPublish": "Publishing mappings",
+    "coin": "Saving the coin for {{asset}}"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1870,6 +2050,18 @@
         "ok": "valued",
         "missingPrice": "no rate",
         "negative": "negative"
+      },
+      "source": "Price source",
+      "sourceOf": "Price from {{source}}",
+      "priceSource": {
+        "record": "price from the file",
+        "fixed": "tax currency"
+      },
+      "filter": {
+        "label": "Filter holdings",
+        "all": "All holdings",
+        "review": "To check ({{count}})",
+        "none": "Nothing to check: every holding has an unambiguous price."
       }
     },
     "card": {
@@ -2070,7 +2262,7 @@
       },
       "rates": {
         "title": "Rates",
-        "intro": "For valuation, lazy-koins needs rates: exchange rates (ECB), daily closing prices (Binance) and, with a free CoinGecko key, also coins that Binance doesn't list. The ESTV rate list (Kursliste) with the tax values as of 31.12. is fetched automatically."
+        "intro": "For valuation, lazy-koins needs rates: exchange rates (ECB), daily closing prices (Binance) and from CoinGecko also coins that Binance doesn't list – without a key through the public API, faster with a free key. You can switch on further providers. The ESTV rate list (Kursliste) with the tax values as of 31.12. is fetched automatically."
       },
       "wallets": {
         "title": "Wallets & networks",
@@ -2367,7 +2559,8 @@
         "libraryEntry": "Library",
         "stars": "Stars",
         "privacyFindings": "Values that look personal",
-        "pseudonym": "Display name"
+        "pseudonym": "Display name",
+        "active": "Active"
       },
       "value": {
         "noPrice": "no price",
@@ -2382,7 +2575,9 @@
       "publishMappingVersion": "Publish version {{version}} of \"{{name}}\" to the library",
       "takeLibraryMapping": "Take mapping \"{{name}}\" (version {{version}}) from the library",
       "rateLibraryMapping": "Rate mapping \"{{name}}\"",
-      "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library"
+      "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library",
+      "deactivateFile": "Deactivate file “{{file}}” (ignored by the calculation)",
+      "activateFile": "Activate file “{{file}}” again"
     },
     "event": {
       "executed": "Done: {{title}}",
@@ -2564,7 +2759,20 @@
       "ownEntry": "You cannot rate your own mappings.",
       "publishLimit": "You have published enough mappings today – try again tomorrow.",
       "privacyFindings": "The mapping contains values that look personal – remove or confirm them.",
-      "specTooLarge": "The mapping is too large for the library."
+      "specTooLarge": "The mapping is too large for the library.",
+      "libraryNotConfigured": "No library linked – enter its address under Settings › Library.",
+      "libraryNetwork": "The library server cannot be reached.",
+      "libraryTimeout": "The library server does not answer.",
+      "libraryBadResponse": "The server did not send a valid answer of a lazy-koins library.",
+      "libraryDisabled": "This server offers no public library.",
+      "libraryRateLimited": "Too many requests to the library server – wait a moment.",
+      "libraryUrlInvalid": "This address cannot be used.",
+      "incompatibleSpec": "This mapping needs a newer version of the app – update lazy-koins.",
+      "duplicateMapping": "You already have exactly this mapping.",
+      "libraryCopy": "A copy taken from the library cannot be published as a new entry.",
+      "unknownCoin": "The price provider does not know this coin.",
+      "coinProviderFailed": "The price provider cannot be reached right now.",
+      "noKey": "No key is stored for this provider – enter it under Settings › Rates."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -2654,16 +2862,13 @@
       "fingerprint": "Recognises files with the columns",
       "notFound": "This mapping is not (or no longer) in the library."
     },
-    "matches": {
-      "title": "Found in the library: {{count}} matching mappings",
-      "body": "Others have already published mappings for this file layout. \"Take\" creates your own copy and reads the file with it – without AI."
-    },
     "origin": {
       "label": "Library",
       "version": "taken, version {{version}}",
       "newer": "New version available: version {{version}}",
       "takeNewer": "Take new version",
-      "gone": "Version {{version}} – no longer in the library, your copy still applies"
+      "gone": "Version {{version}} – no longer in the library, your copy still applies",
+      "server": "from {{server}}"
     },
     "publish": {
       "button": "Publish mapping",
@@ -2705,6 +2910,120 @@
         "personName": "Name",
         "secret": "Secret key"
       }
+    },
+    "remote": {
+      "subtitle": "Library of {{server}} – view and take over",
+      "entrySubtitle": "{{platform}} · from the library of {{server}}",
+      "empty": "There are no mappings in this library yet.",
+      "truncated": "Showing the first {{count}} results – narrow the search down.",
+      "source": "From the library of {{server}}",
+      "settingsSubtitle": "Library – mappings from a lazy-koins server",
+      "title": "Global mapping library",
+      "intro": "Link this app to the mapping library of a lazy-koins server (web version). You can search it, view mappings and take them over as your own copy – publishing, rating and deleting only work on the web.",
+      "state": {
+        "on": "connected",
+        "off": "off"
+      },
+      "url": "Server address",
+      "urlPlaceholder": "https://lazykoins.example.ch",
+      "urlHint": "Only https:// (http:// only for this computer, e.g. localhost). Empty = no connection.",
+      "urlProblems": {
+        "invalidUrl": "That is not a valid address (only https://…, without ? or #).",
+        "httpsRequired": "Only https:// – unencrypted http:// only works for this computer (localhost).",
+        "credentialsInUrl": "The address must not contain a user name or a password.",
+        "tooLong": "The address is too long."
+      },
+      "enabled": "Use the library",
+      "suggestions": "Suggestions in the Files tab (sends the header row and file name of files without a mapping)",
+      "offline": "Online lookups are switched off – meanwhile the app does not go online for the library either.",
+      "offlineLink": "Settings › Rates",
+      "test": "Test connection",
+      "testing": "Testing the connection …",
+      "testOk": "Connected to {{server}} – {{count}} mappings in the library.",
+      "testFailed": "Connection failed:",
+      "saved": "Library settings saved",
+      "privacy": {
+        "title": "What leaves this device",
+        "reads": "Searching and viewing: only your search text or the entry id – no projects, files or amounts.",
+        "suggestions": "Suggestions (when switched on): for each file that still needs a mapping, its header row (the column names) and its file name – never rows, amounts, addresses or folders. Cells that look like data or personal details are left out.",
+        "take": "Taking over: only the entry id. The mapping is stored as your own copy; the server does not learn what you use it for.",
+        "never": "Never: sign-in data, your e-mail, projects, file contents, ratings or publications.",
+        "offline": "Without an address, switched off, or with online lookups switched off, the app never goes online for the library."
+      }
+    },
+    "bulk": {
+      "title": "Publish {{count}} mappings",
+      "description": "Each mapping is reviewed on its own: remove what looks personal, check the JSON – nothing is published before you confirm, and then one after the other.",
+      "quota": "Today you can still publish {{remaining}} of {{perDay}} new entries; {{count}} new ones are selected (new versions do not count).",
+      "exceedsToday": "That is more new entries than are left today: only {{remaining}} of {{count}} will be accepted, the rest will be refused. Try again tomorrow or select fewer.",
+      "exceedsBudget": "At most {{max}} publications per 10 minutes – anything beyond that is refused; try again afterwards.",
+      "doneSummary": "{{published}} published, {{already}} already published, {{refused}} refused.",
+      "state": {
+        "published": "published",
+        "version": "version {{version}} published",
+        "already": "already published",
+        "refused": "refused",
+        "blocked": "not possible"
+      },
+      "alreadyHint": "Exactly this mapping is already in the library.",
+      "newVersion": "Publish as a new version",
+      "refused": {
+        "publishLimit": "No more new entries today (at most 10 per day) – try again tomorrow.",
+        "rateLimited": "Too many publications in a short time – wait a few minutes and try again."
+      },
+      "block": {
+        "libraryCopy": "This mapping is a copy taken from the library. Someone else's work cannot be published as a new entry – rate the original instead, or publish a mapping of your own.",
+        "tooLarge": "The mapping is too large for the library.",
+        "reviewFailed": "The review of this mapping failed."
+      },
+      "mode": "Publish as",
+      "modeNew": "new entry",
+      "modeVersion": "new version {{version}} of my entry",
+      "modeSkip": "do not publish",
+      "authorHint": "Applies to all selected mappings. Empty = \"Anonymous\"; never your name or e-mail.",
+      "confirm": "I have reviewed the {{count}} mappings and want to publish them exactly like this.",
+      "submit": "Publish {{count}}"
     }
+  },
+  "coins": {
+    "settings": {
+      "title": "Coin per ticker",
+      "hint": "A ticker is not a coin: \"OPN\" stands for OPEN Ticketing Ecosystem and for Opinion, for example. With a coin set here, its price comes only from the chosen provider – never by ticker from Binance. lazy-koins checks the coin with the provider when saving.",
+      "empty": "No coin set yet – the ticker applies."
+    },
+    "fields": {
+      "symbol": "Ticker",
+      "coin": "Coin",
+      "provider": "Provider"
+    },
+    "provider": {
+      "coingecko": "CoinGecko",
+      "coinmarketcap": "CoinMarketCap"
+    },
+    "add": "Set a coin",
+    "change": "Change coin",
+    "remove": "Remove assignment",
+    "picker": {
+      "title": "Choose the coin for {{asset}}",
+      "description": "Search the price provider by ticker, name or id and pick the coin you actually hold. Its price history replaces the previous one.",
+      "query": "Search (ticker, name, id)",
+      "search": "Search",
+      "ambiguous": "This ticker stands for several coins – check name and rank.",
+      "searching": "Searching …",
+      "none": "No coins found.",
+      "results": "Coins found",
+      "suggested": "Suggestion",
+      "current": "Current",
+      "rank": "Rank {{rank}}",
+      "noRank": "no rank",
+      "use": "Use this coin"
+    },
+    "searchFailed": "The search at the price provider failed.",
+    "saved": "Coin saved",
+    "saveFailed": "The coin could not be saved",
+    "removed": "Assignment removed",
+    "removeFailed": "The assignment could not be removed",
+    "chosen": "Coin saved, prices fetched again",
+    "dismissed": "Note hidden"
   }
 }

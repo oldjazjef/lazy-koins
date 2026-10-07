@@ -10,15 +10,14 @@ import {
   SettingsReader,
   SettingsSecrets,
 } from '../../settings/application/settings.handlers';
-import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
 import type { EstvVersion } from '../domain/estv';
 import {
   crypto,
   fx as estvFx,
   InMemoryEstvRepository,
 } from '../testing/in-memory-estv';
+import { FakePriceHistorySources } from '../testing/fake-price-history';
 import {
-  FakeFiatSource,
   FakeFxSource,
   FakeUsdSource,
 } from '../testing/in-memory-project-rate.repository';
@@ -43,7 +42,7 @@ import { RefreshProgress } from './refresh-progress';
 
 async function setup(online: 'true' | 'false' = 'true') {
   const t = await calculationSetup();
-  const settingsRepo = new InMemoryUserSettingsRepository();
+  const settingsRepo = t.userSettings;
   const config = {
     get: (key: string) =>
       key === 'RATES_ONLINE'
@@ -55,7 +54,7 @@ async function setup(online: 'true' | 'false' = 'true') {
   const secrets = new SettingsSecrets(config);
   const settings = new SettingsReader(settingsRepo, secrets);
   const usd = new FakeUsdSource({ DOT: '5', POL: '0.2' });
-  const chf = new FakeFiatSource();
+  const chf = new FakePriceHistorySources();
   const fx = new FakeFxSource();
   const progress = new RefreshProgress();
   const estvStore = new InMemoryEstvRepository();
@@ -74,6 +73,7 @@ async function setup(online: 'true' | 'false' = 'true') {
       settings,
       config,
       estvStore,
+      t.snapshots,
     ),
     refresh: new RefreshRatesHandler(
       t.projects,
@@ -129,8 +129,8 @@ describe('rates (F7.4)', () => {
       from: '2024-12-01',
       to: '2026-01-15',
     });
-    expect(t.chf.calls[0]).toMatchObject({
-      coinId: 'ethereum',
+    expect(t.chf.callsOf('coingecko')[0]).toMatchObject({
+      coin: 'ethereum',
       apiKey: 'cg-key',
     });
 
@@ -438,11 +438,11 @@ describe('a project in another tax currency (F4.1a)', () => {
     );
     expect(t.fx.calls).toEqual(['USD>EUR']);
     expect(summary.estv).toMatchObject({ label: null, matched: [] });
-    expect(t.chf.calls.map((c) => [c.coinId, c.currency])).toContainEqual([
+    expect(t.chf.calls.map((c) => [c.coin, c.quote])).toContainEqual([
       'ethereum',
       'EUR',
     ]);
-    expect(t.chf.calls.every((c) => c.currency === 'EUR')).toBe(true);
+    expect(t.chf.calls.every((c) => c.quote === 'EUR')).toBe(true);
     const view = (await t.getRates.execute(
       new GetRatesQuery('anna', t.project.id),
     )) as RatesView;
@@ -495,5 +495,88 @@ describe('a project in another tax currency (F4.1a)', () => {
       usdChf: '0.85',
       usdChfSource: 'manual 2025-12-31',
     });
+  });
+});
+
+describe('price sources (phase 2): the provider order of the user', () => {
+  it('refreshes through the enabled providers in order; the calculation prefers the order and goes stale when it changes', async () => {
+    const t = await setup();
+    // Default order: DOT from Binance (5 USD).
+    await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, false),
+    );
+    t.chf.fake('kraken').prices = { DOT: '6' };
+    await t.settingsRepo.save('anna', {
+      priceSources: [
+        { id: 'kraken', enabled: true },
+        { id: 'binance', enabled: true },
+      ],
+    });
+    const summary = await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, true, ['DOT']),
+    );
+    expect(summary.assets).toMatchObject([
+      { asset: 'DOT', status: 'fetched', source: 'kraken' },
+    ]);
+    // Kraken prices CHF directly.
+    expect(t.chf.callsOf('kraken')[0]).toMatchObject({
+      coin: 'DOT',
+      quote: 'CHF',
+    });
+    const dot = async () =>
+      (
+        await t.calculate.execute(
+          new CalculateProjectCommand('anna', t.project.id),
+        )
+      ).result?.positions.find((p) => p.asset === 'DOT');
+    // Both series are stored for the same days — the user's first provider wins (1.5 × 6 CHF).
+    expect(await dot()).toMatchObject({
+      valueChf: '9',
+      priceOrigin: 'tableChf',
+    });
+    await t.settingsRepo.save('anna', {
+      priceSources: [
+        { id: 'binance', enabled: true },
+        { id: 'kraken', enabled: true },
+      ],
+    });
+    expect(
+      (await t.result.execute(new GetResultQuery('anna', t.project.id))).stale,
+    ).toBe(true);
+    // 1.5 × 5 USD × 0.8.
+    expect(await dot()).toMatchObject({
+      valueChf: '6',
+      priceOrigin: 'tableUsd',
+    });
+  });
+
+  it('a failed provider is reported with its code and falls back to the next', async () => {
+    const t = await setup();
+    await t.settingsRepo.save('anna', {
+      priceSources: [
+        { id: 'kraken', enabled: true },
+        { id: 'binance', enabled: true },
+      ],
+    });
+    t.chf.fake('kraken').failWith = { code: 'timeout', status: null };
+    const fellBack = await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, true, ['DOT']),
+    );
+    expect(fellBack.assets).toMatchObject([
+      { asset: 'DOT', status: 'fetched', source: 'binance' },
+    ]);
+    t.usd.failFor.add('DOT');
+    const failed = await t.refresh.execute(
+      new RefreshRatesCommand('anna', t.project.id, true, ['DOT']),
+    );
+    expect(failed.assets).toEqual([
+      {
+        asset: 'DOT',
+        status: 'failed',
+        source: null,
+        points: 0,
+        error: { provider: 'kraken', code: 'timeout' },
+      },
+    ]);
   });
 });

@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "lazy-koins",
-    "version": "lazy-koins v{{version}} ({{commit}})"
+    "version": "lazy-koins v{{version}} ({{commit}})",
+    "versionBadge": "v{{version}}"
   },
   "actions": {
     "undo": "Rückgängig"
@@ -63,7 +64,9 @@
     "dashboard": "Dashboard",
     "chat": "Assistent",
     "library": "Bibliothek",
-    "myMappings": "Meine Mappings"
+    "myMappings": "Meine Mappings",
+    "toggleSidebar": "Seitenleiste ein- oder ausblenden",
+    "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -162,7 +165,7 @@
       "defaultName": "Steuern {{year}}",
       "existing": "Für dieses Jahr gibt es schon ein Projekt ({{names}}).",
       "files": "Dateien",
-      "filesHint": "Werden verknüpft, nicht kopiert. Vorausgewählt: Dateien, deren Zeitraum ins neue Jahr reicht.",
+      "filesHint": "Werden verknüpft, nicht kopiert. Vorausgewählt: Dateien, deren Zeitraum ins neue Jahr reicht. Deaktivierte Dateien werden angeboten, aber nicht vorausgewählt.",
       "noPlatform": "Ohne Plattform",
       "noFiles": "Dieses Projekt hat keine Dateien.",
       "wallets": "Wallets",
@@ -183,7 +186,8 @@
       "created": "Folgeprojekt erstellt",
       "createFailed": "Folgeprojekt konnte nicht erstellt werden",
       "walletsHint": "Die Wallets des Projekts werden mit dem neuen Projekt verknüpft (vorausgewählt); ihre abgerufenen Daten erscheinen dort als abgeleitete Dateien. Manuelle Saldi per 31.12. gehören zum Jahr und bleiben hier.",
-      "noWallets": "Dieses Projekt hat keine Wallets."
+      "noWallets": "Dieses Projekt hat keine Wallets.",
+      "disabledFile": "Im Projekt deaktiviert – deshalb nicht vorausgewählt. Angehakt wird sie im neuen Projekt aktiv übernommen."
     },
     "import": {
       "button": "Projekt importieren",
@@ -288,7 +292,9 @@
         "uploading": "wird hochgeladen …",
         "done": "fertig",
         "failed": "fehlgeschlagen"
-      }
+      },
+      "needsMapping": "braucht ein Mapping",
+      "showSuggestion": "Vorschlag ansehen"
     },
     "template": {
       "label": "Vorlage im Standardformat:",
@@ -338,7 +344,9 @@
       "assign": "Zuordnen",
       "remove": "Entfernen",
       "aiMapping": "Mapping mit AI erstellen",
-      "aiStatement": "Mit AI auslesen"
+      "aiStatement": "Mit AI auslesen",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren"
     },
     "preview": {
       "description": "Die ersten Zeilen der Datei, unverändert.",
@@ -376,7 +384,49 @@
       "confirm": "{{count}} übernehmen",
       "done": "{{count}} Datei(en) übernommen",
       "failed": "Die Dateien konnten nicht übernommen werden",
-      "loadFailed": "Die anderen Projekte konnten nicht geladen werden"
+      "loadFailed": "Die anderen Projekte konnten nicht geladen werden",
+      "disabledFile": "Im Quellprojekt deaktiviert – übernommen wird sie hier aktiv."
+    },
+    "suggestions": {
+      "title": "Vorschläge für {{count}} Datei(en) ohne Mapping",
+      "body": "Für diese Dateien wurde kein Mapping automatisch gefunden. Hier sind die passendsten – nichts wird zugeordnet, bevor du klickst.",
+      "dialogTitle": "Vorschläge für diese Datei",
+      "libraryUnavailable": "Die Bibliothek war gerade nicht erreichbar – die Vorschläge kommen nur aus deinen Mappings und den Standard-Mappings.",
+      "suggestion": "Vorschlag:",
+      "coverage": "Übereinstimmung {{percent}} %",
+      "revision": "Stand {{revision}}",
+      "near": "{{matched}} von {{required}} Spalten gefunden.",
+      "missing": "Es fehlen: {{columns}}.",
+      "fileName": "Der Dateiname passt nicht zum Muster des Mappings.",
+      "showPreview": "Vorschau anzeigen",
+      "hidePreview": "Vorschau ausblenden",
+      "previewFailed": "Die Vorschau konnte nicht erstellt werden.",
+      "take": "Übernehmen",
+      "adapt": "Als Vorlage anpassen",
+      "others": "Andere Vorschläge ({{count}})",
+      "show": "Anzeigen",
+      "takeFailed": "Das Mapping konnte nicht übernommen werden",
+      "takenStandard": "Standard-Mapping als eigene Kopie übernommen und der Datei zugeordnet",
+      "source": {
+        "own": "eigenes Mapping",
+        "standard": "Standard-Mapping",
+        "library": "Bibliothek"
+      }
+    },
+    "disabled": {
+      "badge": "Deaktiviert",
+      "count": "{{count}} deaktiviert",
+      "explain": "Deaktivierte Dateien bleiben gespeichert, werden aber bei Berechnung, Dashboard, Hinweisen, Prüfungen und Exporten ignoriert.",
+      "hide": "Ausblenden",
+      "show": "Anzeigen",
+      "tooltip": "Deaktiviert seit {{date}} – wird bei der Berechnung ignoriert",
+      "title": "Datei deaktivieren",
+      "body": "«{{name}}» bleibt im Projekt gespeichert, herunterladbar und in der Vorschau sichtbar, wird aber bei Berechnung, Dashboard, Hinweisen, Prüfungen und Exporten ignoriert. Das Ergebnis muss danach neu berechnet werden. Du kannst die Datei jederzeit wieder aktivieren.",
+      "note": "Notiz (optional)",
+      "notePlaceholder": "z. B. doppelt mit dem Kontoauszug",
+      "deactivated": "Datei deaktiviert – das Ergebnis muss neu berechnet werden",
+      "activated": "Datei aktiviert – das Ergebnis muss neu berechnet werden",
+      "failed": "Die Datei konnte nicht geändert werden"
     }
   },
   "mappings": {
@@ -393,7 +443,7 @@
     "reapplyLater": "Später",
     "reapply": "Neu lesen",
     "upload": {
-      "button": "Mapping hochladen (.json)",
+      "button": "Mappings hochladen (.json)",
       "notJson": "Die Datei ist kein JSON",
       "invalid": "Das Mapping ist ungültig"
     },
@@ -535,6 +585,33 @@
       "notTable": "Das ist keine lesbare Tabelle (CSV oder XLSX)",
       "empty": "Die Datei ist leer",
       "loadFailed": "Die Datei konnte nicht geladen werden"
+    },
+    "import": {
+      "drop": "Mapping-Dateien (.json) hierher ziehen – mehrere gleichzeitig möglich.",
+      "title": "Mappings hochgeladen",
+      "summary": "{{stored}} gespeichert, {{duplicate}} schon vorhanden (übersprungen), {{problems}} mit Problemen.",
+      "state": {
+        "stored": "gespeichert",
+        "duplicate": "schon vorhanden",
+        "invalid": "ungültig",
+        "notJson": "kein JSON",
+        "tooLarge": "zu gross",
+        "tooMany": "nicht hochgeladen",
+        "failed": "fehlgeschlagen"
+      },
+      "open": "«{{name}}» öffnen",
+      "existing": "Du hast es schon als «{{name}}»",
+      "moreIssues": "… und {{count}} weitere Probleme",
+      "tooLargeHint": "Die Datei ist grösser als 1 MB – das ist kein Mapping.",
+      "tooManyHint": "Höchstens {{limit}} Dateien auf einmal – lade den Rest in einem zweiten Schritt hoch."
+    },
+    "selection": {
+      "label": "Auswahl",
+      "count": "{{count}} ausgewählt",
+      "publish": "In Bibliothek veröffentlichen",
+      "clear": "Auswahl aufheben",
+      "page": "Alle Mappings dieser Seite auswählen",
+      "row": "{{name}} auswählen"
     }
   },
   "ai": {
@@ -764,7 +841,8 @@
       "storage": "Speicherort",
       "system": "System",
       "mail": "Mail",
-      "mcp": "MCP"
+      "mcp": "MCP",
+      "library": "Bibliothek"
     },
     "system": {
       "title": "System",
@@ -786,7 +864,7 @@
     },
     "rates": {
       "title": "Kursabfragen",
-      "subtitle": "Kurse aus dem Internet, CoinGecko-Schlüssel, ESTV-Kursliste",
+      "subtitle": "Kursanbieter und Reihenfolge, Schlüssel, ESTV-Kursliste",
       "hint": "Ausgeschaltet holt lazy-koins keine Kurse aus dem Internet; gespeicherte und manuell erfasste Kurse gelten weiter.",
       "coingeckoHint": "Für Assets ohne Binance-Kurs (CoinGecko Demo-Schlüssel). Wird verschlüsselt gespeichert.",
       "estvTitle": "ESTV-Kursliste manuell importieren",
@@ -927,6 +1005,45 @@
         "timeout": "Versuche es später noch einmal.",
         "providerError": "Die Meldung des Anbieters unten hilft weiter; sonst später erneut versuchen."
       }
+    },
+    "priceSources": {
+      "title": "Kursanbieter",
+      "hint": "lazy-koins fragt die eingeschalteten Anbieter von oben nach unten und nimmt den ersten mit einem Kursverlauf. Hat einer einen Coin nicht, nicht so weit zurück oder nicht in deiner Währung, kommt der nächste. Bei mehreren gespeicherten Kursen zählt der weiter oben.",
+      "compactHint": "Standard: Binance, dann CoinGecko. Weitere kostenlose Anbieter kannst du hier zuschalten und ordnen.",
+      "enabled": "{{name}} verwenden",
+      "moveUp": "{{name}} nach oben",
+      "moveDown": "{{name}} nach unten",
+      "keyRequired": "Schlüssel nötig",
+      "keyStored": "Schlüssel {{hint}}",
+      "keyMissing": "kein Schlüssel",
+      "usdOnly": "nur USD (× Wechselkurs)",
+      "history": "{{days}} Tage Verlauf (gratis)",
+      "historyAll": "ganzer Verlauf",
+      "byTicker": "nach Kürzel",
+      "personalUse": "nur private Nutzung",
+      "attribution": "Quellenangabe: «{{text}}»",
+      "save": "Reihenfolge speichern",
+      "saved": "Kursanbieter gespeichert.",
+      "saveFailed": "Die Kursanbieter konnten nicht gespeichert werden.",
+      "chosenNote": "Ein gewählter Coin («Coin wählen») kommt immer zuerst von seinem Anbieter.",
+      "test": {
+        "button": "Testen",
+        "label": "{{name}} testen",
+        "testing": "Wird geprüft …",
+        "ok": "Funktioniert ({{millis}} ms).",
+        "failed": "Fehler: {{error}}",
+        "plan": "Tarif: {{plan}}",
+        "historyDays": "Tagesverlauf: {{days}} Tage",
+        "status": "HTTP {{status}}",
+        "detail": "Antwort des Anbieters: {{detail}}",
+        "noKey": "Gib zuerst einen Schlüssel ein.",
+        "offline": "Kursabfragen aus dem Internet sind auf diesem Server ausgeschaltet.",
+        "error": "Der Test konnte nicht ausgeführt werden."
+      },
+      "keyOptional": "Schlüssel optional",
+      "keyLabel": "Schlüssel für {{name}}",
+      "keyPlaceholderRequired": "Schlüssel eingeben (nötig)",
+      "keyPlaceholderOptional": "Schlüssel eingeben (optional – ohne: öffentliche API, langsamer)"
     }
   },
   "workspace": {
@@ -1093,7 +1210,8 @@
       "walletNetworkNotSelected": "Auf diesem Netzwerk genutzt, aber für die Wallet nicht ausgewählt",
       "walletNetworkNotFetched": "Noch nicht abgerufen – im Tab Wallets „Abrufen“",
       "walletManualBalanceMissing": "Saldo per 31.12. fehlt – manuell mit Beleg erfassen",
-      "walletFetchFailed": "Abruf fehlgeschlagen – Schlüssel/Plan prüfen oder Saldo manuell mit Beleg erfassen"
+      "walletFetchFailed": "Abruf fehlgeschlagen – Schlüssel/Plan prüfen oder Saldo manuell mit Beleg erfassen",
+      "ambiguousPrice": "Kurs mehrdeutig – das Kürzel steht für mehrere Coins. Im Tab Kurse den Coin wählen."
     },
     "comparison": {
       "title": "Vergleich mit {{year}}",
@@ -1213,20 +1331,69 @@
       "estv": "ESTV-Kursliste",
       "binance": "Binance",
       "coingecko": "CoinGecko",
-      "ecb": "EZB"
+      "ecb": "EZB",
+      "coinmarketcap": "CoinMarketCap",
+      "defillama": "DefiLlama",
+      "coinpaprika": "CoinPaprika",
+      "kraken": "Kraken",
+      "bitfinex": "Bitfinex",
+      "coinbase": "Coinbase"
     },
     "status": {
       "fetched": "abgerufen",
       "cached": "schon gespeichert",
       "notFound": "nicht gefunden",
-      "failed": "Fehler"
+      "failed": "Fehler",
+      "ambiguous": "mehrdeutig – Coin wählen",
+      "noKey": "Schlüssel des Anbieters fehlt"
     },
     "errors": {
       "asset": "Bitte ein Asset-Kürzel eingeben.",
       "date": "Bitte ein Datum wählen.",
       "value": "Bitte einen positiven Wert mit Punkt als Dezimaltrennzeichen eingeben."
     },
-    "estvNotApplicable": "Die ESTV-Kursliste gilt nur für Projekte in CHF – dieses Projekt ist in {{currency}}. Kurse kommen von der EZB, Binance und CoinGecko."
+    "estvNotApplicable": "Die ESTV-Kursliste gilt nur für Projekte in CHF – dieses Projekt ist in {{currency}}. Kurse kommen von der EZB, Binance und CoinGecko.",
+    "overrideOnlyDay": "Gilt nur für dieses Datum; bei falschem Kursverlauf „Coin wählen“.",
+    "contracts": "Per Contract erkannt: {{assets}}",
+    "pricing": {
+      "title": "Kursquelle je Asset",
+      "hint": "Ein Kürzel ist kein Coin. Stimmt ein Kursverlauf nicht, wähle den Coin, den du hältst: Sein Kurs ersetzt dann den Kurs per Kürzel – auch im Dashboard.",
+      "empty": "Noch keine Assets mit Kurs – zuerst berechnen.",
+      "byTicker": "nach Kürzel",
+      "chosen": "{{name}} ({{provider}})",
+      "byContract": "per Contract erkannt ({{network}})",
+      "ambiguous": "Kurs mehrdeutig – Coin wählen",
+      "noSource": "noch kein Kurs",
+      "ignored": "nicht verwendet: {{sources}}",
+      "overridden": "+ Überschreibung",
+      "shared": "Kürzel {{symbol}} wird von mehreren Coins verwendet — verwendet: {{name}} ({{source}}). Prüfen?",
+      "sharedAmbiguous": "Kürzel {{symbol}} wird von mehreren Coins verwendet — kein Kurs, bis du den Coin wählst.",
+      "candidates": "Coins mit diesem Kürzel: {{coins}}",
+      "choose": "Falscher Kurs? Coin wählen",
+      "dismiss": "Passt so",
+      "removeCoin": "Coin-Zuordnung entfernen",
+      "fields": {
+        "asset": "Asset",
+        "source": "Kursquelle",
+        "note": "Hinweis"
+      }
+    },
+    "failedVia": "{{provider}}: {{error}}",
+    "sourceErrors": {
+      "invalidKey": "Schlüssel abgelehnt",
+      "planLacksHistory": "Tarif reicht nicht so weit zurück",
+      "rateLimited": "Limit des Anbieters erreicht",
+      "notFound": "Coin nicht gefunden",
+      "unsupportedQuote": "Währung nicht angeboten",
+      "network": "nicht erreichbar",
+      "timeout": "keine rechtzeitige Antwort",
+      "badResponse": "unerwartete Antwort"
+    },
+    "attribution": {
+      "label": "Kursdaten",
+      "coingecko": "Data provided by CoinGecko",
+      "coinmarketcap": "Data provided by CoinMarketCap.com"
+    }
   },
   "exports": {
     "createTitle": "Auszug erstellen",
@@ -1282,7 +1449,7 @@
     },
     "data": {
       "title": "Daten",
-      "hint": "Buchungen und Bestände im Standardformat – mit angewendeten Korrekturen, verwendetem Kurs und Kursquelle sowie Quelldatei und Zeile. Die Datei lässt sich unverändert wieder importieren.",
+      "hint": "Buchungen und Bestände im Standardformat – mit angewendeten Korrekturen, verwendetem Kurs und Kursquelle sowie Quelldatei und Zeile. Die Datei lässt sich unverändert wieder importieren. Nur aktive Dateien – deaktivierte sind nicht enthalten.",
       "platform": "Plattform",
       "account": "Konto",
       "asset": "Asset",
@@ -1585,7 +1752,8 @@
       "endsEarly": "Lücke am Ende",
       "noYearEndBalance": "Kein Bestand per 31.12.",
       "unrecognisedFile": "Nicht erkannte Datei",
-      "rowErrors": "Datei mit Zeilenfehlern"
+      "rowErrors": "Datei mit Zeilenfehlern",
+      "sharedTicker": "Kürzel mehrfach vergeben"
     },
     "severity": {
       "info": "Info",
@@ -1605,11 +1773,14 @@
       "endsEarlyZero": "Buchungen enden am {{date}}; danach Saldo 0 – nichts kann fehlen.",
       "noYearEndBalance": "Kein Kontoauszug per 31.12.{{year}} – der Saldo laut Buchungen wird nicht geprüft.",
       "unrecognisedFile": "Kein Mapping – die Datei fliesst nicht in die Berechnung ein.",
-      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden."
+      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden.",
+      "sharedTicker": "{{asset}}: {{count}} Coins verwenden dieses Kürzel – Kurs prüfen."
     },
     "howTo": {
       "unrecognisedFile": "Für den Aufbau dieser Datei gibt es noch kein Mapping. Lass es von der AI erstellen, ordne ein vorhandenes zu oder markiere die Datei als «nur Beleg».",
-      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch."
+      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch.",
+      "sharedTicker": "Das Kürzel {{asset}} wird von mehreren Coins verwendet. Der Kurs kommt per Kürzel (Binance) vom bekanntesten Coin. Prüfen? Im Tab Kurse „Coin wählen“ oder „Passt so“.",
+      "sharedTickerAmbiguous": "Das Kürzel {{asset}} wird von mehreren ähnlich grossen Coins verwendet – es wird kein Kurs per Kürzel abgerufen. Im Tab Kurse „Coin wählen“."
     },
     "actions": {
       "upload": "Datei hochladen",
@@ -1621,7 +1792,8 @@
       "assign": "Mapping zuordnen",
       "rowErrors": "Zeilenfehler ansehen",
       "markOk": "Als in Ordnung markieren",
-      "reopen": "Wieder öffnen"
+      "reopen": "Wieder öffnen",
+      "rates": "Zu den Kursen"
     },
     "dismiss": {
       "title": "Hinweis als in Ordnung markieren",
@@ -1638,7 +1810,10 @@
       "count": "{{shown}} von {{total}} Fehlern",
       "column": "Spalte",
       "problem": "Problem"
-    }
+    },
+    "coins": "Coins mit diesem Kürzel: {{coins}}",
+    "ratesGroup": "Kurse",
+    "disabledFiles": "Deaktiviert und deshalb nicht berücksichtigt: {{names}}"
   },
   "notifications": {
     "heading": "Benachrichtigungen",
@@ -1784,7 +1959,8 @@
       "ai": "AI",
       "coingecko": "CoinGecko",
       "mail": "Mail (SMTP)",
-      "chain": "Netzwerk-Abfragen"
+      "chain": "Netzwerk-Abfragen",
+      "coinmarketcap": "CoinMarketCap"
     }
   },
   "activity": {
@@ -1809,7 +1985,11 @@
       "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
       "statementReady": "Kontoauszug {{name}} ist ausgelesen"
     },
-    "libraryTake": "Mapping aus der Bibliothek übernehmen"
+    "libraryTake": "Mapping aus der Bibliothek übernehmen",
+    "suggestionTake": "Vorgeschlagenes Mapping übernehmen",
+    "mappingImport": "Mappings werden hochgeladen",
+    "libraryBulkPublish": "Mappings werden veröffentlicht",
+    "coin": "Coin für {{asset}} wird gespeichert"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1870,6 +2050,18 @@
         "ok": "bewertet",
         "missingPrice": "kein Kurs",
         "negative": "negativ"
+      },
+      "source": "Kursquelle",
+      "sourceOf": "Kurs von {{source}}",
+      "priceSource": {
+        "record": "Preis aus der Datei",
+        "fixed": "Steuerwährung"
+      },
+      "filter": {
+        "label": "Bestände filtern",
+        "all": "Alle Bestände",
+        "review": "Zu prüfen ({{count}})",
+        "none": "Nichts zu prüfen: Alle Bestände haben einen eindeutigen Kurs."
       }
     },
     "card": {
@@ -2070,7 +2262,7 @@
       },
       "rates": {
         "title": "Kurse",
-        "intro": "Für die Bewertung braucht lazy-koins Kurse: Wechselkurse (EZB), Tagesschlusskurse (Binance) und mit einem kostenlosen CoinGecko-Schlüssel auch Coins, die Binance nicht führt. Die ESTV-Kursliste mit den Steuerwerten per 31.12. wird automatisch bezogen."
+        "intro": "Für die Bewertung braucht lazy-koins Kurse: Wechselkurse (EZB), Tagesschlusskurse (Binance) und von CoinGecko auch Coins, die Binance nicht führt – ohne Schlüssel über die öffentliche API, mit einem kostenlosen Schlüssel schneller. Weitere Anbieter kannst du zuschalten. Die ESTV-Kursliste mit den Steuerwerten per 31.12. wird automatisch bezogen."
       },
       "wallets": {
         "title": "Wallets & Netzwerke",
@@ -2367,7 +2559,8 @@
         "libraryEntry": "Bibliothek",
         "stars": "Sterne",
         "privacyFindings": "Persönlich wirkende Werte",
-        "pseudonym": "Anzeigename"
+        "pseudonym": "Anzeigename",
+        "active": "Aktiv"
       },
       "value": {
         "noPrice": "kein Kurs",
@@ -2382,7 +2575,9 @@
       "publishMappingVersion": "Version {{version}} von «{{name}}» in der Bibliothek veröffentlichen",
       "takeLibraryMapping": "Mapping «{{name}}» (Version {{version}}) aus der Bibliothek übernehmen",
       "rateLibraryMapping": "Mapping «{{name}}» bewerten",
-      "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen"
+      "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen",
+      "deactivateFile": "Datei «{{file}}» deaktivieren (wird bei der Berechnung ignoriert)",
+      "activateFile": "Datei «{{file}}» wieder aktivieren"
     },
     "event": {
       "executed": "Ausgeführt: {{title}}",
@@ -2564,7 +2759,20 @@
       "ownEntry": "Eigene Mappings kannst du nicht bewerten.",
       "publishLimit": "Heute hast du schon genug Mappings veröffentlicht – versuch es morgen wieder.",
       "privacyFindings": "Das Mapping enthält Werte, die persönlich aussehen – entferne oder bestätige sie.",
-      "specTooLarge": "Das Mapping ist zu gross für die Bibliothek."
+      "specTooLarge": "Das Mapping ist zu gross für die Bibliothek.",
+      "libraryNotConfigured": "Keine Bibliothek verbunden – trage die Adresse unter Einstellungen › Bibliothek ein.",
+      "libraryNetwork": "Der Bibliothek-Server ist nicht erreichbar.",
+      "libraryTimeout": "Der Bibliothek-Server antwortet nicht.",
+      "libraryBadResponse": "Der Server hat keine gültige Antwort einer lazy-koins-Bibliothek geschickt.",
+      "libraryDisabled": "Dieser Server bietet keine öffentliche Bibliothek an.",
+      "libraryRateLimited": "Zu viele Anfragen an den Bibliothek-Server – warte einen Moment.",
+      "libraryUrlInvalid": "Diese Adresse kann nicht verwendet werden.",
+      "incompatibleSpec": "Dieses Mapping braucht eine neuere Version der App – aktualisiere lazy-koins.",
+      "duplicateMapping": "Genau dieses Mapping hast du schon.",
+      "libraryCopy": "Eine Kopie aus der Bibliothek kann nicht als neuer Eintrag veröffentlicht werden.",
+      "unknownCoin": "Diesen Coin kennt der Kursanbieter nicht.",
+      "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar.",
+      "noKey": "Für diesen Anbieter ist kein Schlüssel gespeichert – trage ihn unter Einstellungen › Kurse ein."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -2654,16 +2862,13 @@
       "fingerprint": "Erkennt Dateien mit den Spalten",
       "notFound": "Dieses Mapping gibt es in der Bibliothek nicht (mehr)."
     },
-    "matches": {
-      "title": "In der Bibliothek gefunden: {{count}} passende Mappings",
-      "body": "Andere haben schon Mappings für diesen Dateiaufbau veröffentlicht. «Übernehmen» legt eine eigene Kopie an und liest die Datei damit – ohne AI."
-    },
     "origin": {
       "label": "Bibliothek",
       "version": "übernommen, Version {{version}}",
       "newer": "Neue Version verfügbar: Version {{version}}",
       "takeNewer": "Neue Version übernehmen",
-      "gone": "Version {{version}} – nicht mehr in der Bibliothek, deine Kopie gilt weiter"
+      "gone": "Version {{version}} – nicht mehr in der Bibliothek, deine Kopie gilt weiter",
+      "server": "von {{server}}"
     },
     "publish": {
       "button": "Mapping veröffentlichen",
@@ -2705,6 +2910,120 @@
         "personName": "Name",
         "secret": "Geheimer Schlüssel"
       }
+    },
+    "remote": {
+      "subtitle": "Bibliothek von {{server}} – ansehen und übernehmen",
+      "entrySubtitle": "{{platform}} · aus der Bibliothek von {{server}}",
+      "empty": "In dieser Bibliothek gibt es noch keine Mappings.",
+      "truncated": "Es werden die ersten {{count}} Treffer angezeigt – grenze die Suche ein.",
+      "source": "Aus der Bibliothek von {{server}}",
+      "settingsSubtitle": "Bibliothek – Mappings von einem lazy-koins-Server",
+      "title": "Globale Mapping-Bibliothek",
+      "intro": "Verknüpfe diese App mit der Mapping-Bibliothek eines lazy-koins-Servers (Web-Version). Du kannst dort suchen, Mappings ansehen und als eigene Kopie übernehmen – veröffentlichen, bewerten und löschen geht nur im Web.",
+      "state": {
+        "on": "verbunden",
+        "off": "aus"
+      },
+      "url": "Adresse des Servers",
+      "urlPlaceholder": "https://lazykoins.example.ch",
+      "urlHint": "Nur https:// (http:// nur für diesen Computer, z. B. localhost). Leer = keine Verbindung.",
+      "urlProblems": {
+        "invalidUrl": "Das ist keine gültige Adresse (nur https://…, ohne ? oder #).",
+        "httpsRequired": "Nur https:// – unverschlüsseltes http:// geht nur für diesen Computer (localhost).",
+        "credentialsInUrl": "Die Adresse darf keinen Benutzernamen und kein Passwort enthalten.",
+        "tooLong": "Die Adresse ist zu lang."
+      },
+      "enabled": "Bibliothek verwenden",
+      "suggestions": "Vorschläge im Dateien-Tab (sendet Kopfzeile und Dateiname von Dateien ohne Mapping)",
+      "offline": "Online-Abfragen sind ausgeschaltet – solange geht die App auch für die Bibliothek nicht ins Internet.",
+      "offlineLink": "Einstellungen › Kurse",
+      "test": "Verbindung testen",
+      "testing": "Verbindung wird getestet …",
+      "testOk": "Verbunden mit {{server}} – {{count}} Mappings in der Bibliothek.",
+      "testFailed": "Verbindung fehlgeschlagen:",
+      "saved": "Bibliothek-Einstellungen gespeichert",
+      "privacy": {
+        "title": "Was dieses Gerät verlässt",
+        "reads": "Suchen und Ansehen: nur dein Suchbegriff bzw. die ID des Eintrags – keine Projekte, Dateien oder Beträge.",
+        "suggestions": "Vorschläge (wenn eingeschaltet): pro Datei, die noch ein Mapping braucht, ihre Kopfzeile (die Spaltennamen) und ihr Dateiname – nie Zeilen, Beträge, Adressen oder Ordner. Zellen, die nach Daten oder persönlichen Angaben aussehen, werden weggelassen.",
+        "take": "Übernehmen: nur die ID des Eintrags. Das Mapping wird als deine eigene Kopie gespeichert; der Server erfährt nicht, wofür du es verwendest.",
+        "never": "Nie: Anmeldedaten, deine E-Mail, Projekte, Dateiinhalte, Bewertungen oder Veröffentlichungen.",
+        "offline": "Ohne Adresse, ausgeschaltet oder mit ausgeschalteten Online-Abfragen geht die App für die Bibliothek nie ins Internet."
+      }
+    },
+    "bulk": {
+      "title": "{{count}} Mappings veröffentlichen",
+      "description": "Jedes Mapping wird einzeln geprüft: entferne, was persönlich aussieht, kontrolliere das JSON – veröffentlicht wird erst nach deiner Bestätigung, eines nach dem anderen.",
+      "quota": "Heute kannst du noch {{remaining}} von {{perDay}} neuen Einträgen veröffentlichen; ausgewählt sind {{count}} neue (neue Versionen zählen nicht).",
+      "exceedsToday": "Das sind mehr neue Einträge, als heute noch möglich sind: nur {{remaining}} von {{count}} werden angenommen, der Rest wird abgelehnt. Versuch es morgen wieder oder wähle weniger aus.",
+      "exceedsBudget": "Höchstens {{max}} Veröffentlichungen pro 10 Minuten – was darüber liegt, wird abgelehnt; versuch es danach noch einmal.",
+      "doneSummary": "{{published}} veröffentlicht, {{already}} schon veröffentlicht, {{refused}} abgelehnt.",
+      "state": {
+        "published": "veröffentlicht",
+        "version": "Version {{version}} veröffentlicht",
+        "already": "schon veröffentlicht",
+        "refused": "abgelehnt",
+        "blocked": "nicht möglich"
+      },
+      "alreadyHint": "Genau dieses Mapping ist schon in der Bibliothek.",
+      "newVersion": "Als neue Version veröffentlichen",
+      "refused": {
+        "publishLimit": "Heute sind keine neuen Einträge mehr möglich (höchstens 10 pro Tag) – versuch es morgen wieder.",
+        "rateLimited": "Zu viele Veröffentlichungen in kurzer Zeit – warte ein paar Minuten und versuch es nochmals."
+      },
+      "block": {
+        "libraryCopy": "Dieses Mapping ist eine Kopie aus der Bibliothek. Fremde Arbeit kann nicht als neuer Eintrag veröffentlicht werden – bewerte stattdessen das Original oder veröffentliche ein eigenes Mapping.",
+        "tooLarge": "Das Mapping ist zu gross für die Bibliothek.",
+        "reviewFailed": "Die Prüfung dieses Mappings ist fehlgeschlagen."
+      },
+      "mode": "Veröffentlichen als",
+      "modeNew": "neuer Eintrag",
+      "modeVersion": "neue Version {{version}} meines Eintrags",
+      "modeSkip": "nicht veröffentlichen",
+      "authorHint": "Gilt für alle ausgewählten Mappings. Leer = «Anonym»; nie dein Name oder deine E-Mail.",
+      "confirm": "Ich habe die {{count}} Mappings geprüft und will sie genau so veröffentlichen.",
+      "submit": "{{count}} veröffentlichen"
     }
+  },
+  "coins": {
+    "settings": {
+      "title": "Coin je Kürzel",
+      "hint": "Ein Kürzel ist kein Coin: „OPN“ steht z. B. für OPEN Ticketing Ecosystem und für Opinion. Ist hier ein Coin hinterlegt, kommt sein Kurs nur vom gewählten Anbieter – nie per Kürzel von Binance. Beim Speichern prüft lazy-koins den Coin beim Anbieter.",
+      "empty": "Noch kein Coin hinterlegt – es gilt das Kürzel."
+    },
+    "fields": {
+      "symbol": "Kürzel",
+      "coin": "Coin",
+      "provider": "Anbieter"
+    },
+    "provider": {
+      "coingecko": "CoinGecko",
+      "coinmarketcap": "CoinMarketCap"
+    },
+    "add": "Coin hinterlegen",
+    "change": "Coin ändern",
+    "remove": "Zuordnung entfernen",
+    "picker": {
+      "title": "Coin für {{asset}} wählen",
+      "description": "Suche beim Kursanbieter nach Kürzel, Name oder ID und wähle den Coin, den du wirklich hältst. Sein Kursverlauf ersetzt den bisherigen.",
+      "query": "Suche (Kürzel, Name, ID)",
+      "search": "Suchen",
+      "ambiguous": "Dieses Kürzel steht für mehrere Coins – prüfe Name und Rang.",
+      "searching": "Suche läuft …",
+      "none": "Keine Coins gefunden.",
+      "results": "Gefundene Coins",
+      "suggested": "Vorschlag",
+      "current": "Aktuell",
+      "rank": "Rang {{rank}}",
+      "noRank": "ohne Rang",
+      "use": "Diesen Coin verwenden"
+    },
+    "searchFailed": "Die Suche beim Kursanbieter ist fehlgeschlagen.",
+    "saved": "Coin gespeichert",
+    "saveFailed": "Coin konnte nicht gespeichert werden",
+    "removed": "Zuordnung entfernt",
+    "removeFailed": "Zuordnung konnte nicht entfernt werden",
+    "chosen": "Coin gespeichert, Kurse neu abgerufen",
+    "dismissed": "Hinweis ausgeblendet"
   }
 }

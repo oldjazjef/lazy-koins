@@ -10,6 +10,7 @@ import { HintStateRepositoryPort } from '../files/ports/hint-state.repository.po
 import { ProjectFileRepositoryPort } from '../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../mappings/ports/import-mapping.repository.port';
 import { LibraryRepositoryPort } from '../library/ports/library.repository.port';
+import { RemoteLibrarySettingsRepositoryPort } from '../library/ports/remote-library-settings.repository.port';
 import {
   MailLogRepositoryPort,
   MailSettingsRepositoryPort,
@@ -19,6 +20,8 @@ import { NotificationRepositoryPort } from '../notifications/ports/notification.
 import { ProjectRepositoryPort } from '../projects/ports/project.repository.port';
 import { ProjectSentRepositoryPort } from '../projects/ports/project-sent.repository.port';
 import { EstvKurslisteRepositoryPort } from '../rates/ports/estv.port';
+import { CoinMarketRepositoryPort } from '../rates/ports/coin-market.repository.port';
+import { CoinMarketPrismaRepository } from './prisma/repositories/coin-market.prisma.repository';
 import { ProjectRateRepositoryPort } from '../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
@@ -62,6 +65,7 @@ import { AiSettingsPrismaRepository } from './prisma/repositories/ai-settings.pr
 import { HintStatePrismaRepository } from './prisma/repositories/hint-state.prisma.repository';
 import { ImportMappingPrismaRepository } from './prisma/repositories/import-mapping.prisma.repository';
 import { LibraryPrismaRepository } from './prisma/repositories/library.prisma.repository';
+import { RemoteLibrarySettingsPrismaRepository } from './prisma/repositories/remote-library-settings.prisma.repository';
 import {
   MailLogPrismaRepository,
   MailSettingsPrismaRepository,
@@ -102,6 +106,10 @@ import {
     },
     { provide: LibraryRepositoryPort, useClass: LibraryPrismaRepository },
     {
+      provide: RemoteLibrarySettingsRepositoryPort,
+      useClass: RemoteLibrarySettingsPrismaRepository,
+    },
+    {
       provide: UserSettingsRepositoryPort,
       useClass: UserSettingsPrismaRepository,
     },
@@ -113,6 +121,7 @@ import {
       provide: EstvKurslisteRepositoryPort,
       useClass: EstvKurslistePrismaRepository,
     },
+    { provide: CoinMarketRepositoryPort, useClass: CoinMarketPrismaRepository },
     {
       provide: CalculationSnapshotRepositoryPort,
       useClass: CalculationSnapshotPrismaRepository,
@@ -175,9 +184,11 @@ import {
     ProjectFileRepositoryPort,
     ImportMappingRepositoryPort,
     LibraryRepositoryPort,
+    RemoteLibrarySettingsRepositoryPort,
     UserSettingsRepositoryPort,
     ProjectRateRepositoryPort,
     EstvKurslisteRepositoryPort,
+    CoinMarketRepositoryPort,
     CalculationSnapshotRepositoryPort,
     CorrectionRepositoryPort,
     OpenItemStateRepositoryPort,

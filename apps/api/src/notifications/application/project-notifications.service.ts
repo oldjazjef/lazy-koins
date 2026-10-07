@@ -4,6 +4,7 @@ import {
   CalculationSnapshotRepositoryPort,
   OpenItemStateRepositoryPort,
 } from '../../calculation/ports/calculation.repository.port';
+import { isActive, readsRecords } from '../../files/domain/project-file';
 import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import {
@@ -103,6 +104,8 @@ export class ProjectNotifications {
     const mapping: string[] = [];
     const errors: string[] = [];
     for (const file of files) {
+      // F5.7a: a deactivated file is ignored on purpose — its topics are resolved below.
+      if (!isActive(file)) continue;
       if (
         file.status === 'needs_mapping' &&
         !settled.has(`unrecognisedFile:${file.id}`)
@@ -154,7 +157,7 @@ export class ProjectNotifications {
   /** Open F5.8 coverage hints (warnings and errors; file hints have their own topics). */
   private async openHints(userId: string, project: Project): Promise<void> {
     const coverage = (await this.files.listByProject(project.id))
-      .filter((file) => file.status === 'standard' || file.status === 'mapped')
+      .filter(readsRecords)
       .flatMap((file) => file.coverage);
     const settled = new Set(
       (await this.hintStates.listByProject(project.id)).map((s) => s.hintKey),

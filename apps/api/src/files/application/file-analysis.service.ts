@@ -5,8 +5,10 @@ import {
   coverageOf,
   defaultImporterRegistry,
   type ImportResult,
+  type MappingSimilarity,
   type MappingSpec,
   mappingConfidence,
+  mappingSimilarity,
   mappingImporter,
   STANDARD_IMPORTER_ID,
 } from '@lazykoins/engine';
@@ -114,6 +116,23 @@ export class FileAnalysisService {
       }))
       .filter((match) => match.confidence > 0)
       .sort((a, b) => b.confidence - a.confidence || compare(a.id, b.id));
+  }
+
+  /**
+   * F5.19: how close each spec comes to reading the file (suggestions) — read like an upload,
+   * once for all specs. Nothing is applied or stored; a PDF matches nothing.
+   */
+  async similarities(
+    file: ReadableFile,
+    specs: readonly { readonly id: string; readonly spec: MappingSpec }[],
+  ): Promise<Map<string, MappingSimilarity>> {
+    const out = new Map<string, MappingSimilarity>();
+    if (file.kind === 'pdf' || specs.length === 0) return out;
+    const source = await this.reader.read(file);
+    for (const { id, spec } of specs) {
+      out.set(id, mappingSimilarity(spec, source));
+    }
+    return out;
   }
 
   /** The standard format's full result (row errors of a standard file, F5.10). */

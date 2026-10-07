@@ -1,53 +1,12 @@
-@if (service.settings.hasValue()) { @let settings = service.settings.value();
+@if (service.settings.hasValue()) {
 <form class="flex flex-col gap-4" [formGroup]="form" (ngSubmit)="save()">
   <label class="flex items-center gap-2 text-sm" for="set-online">
     <input id="set-online" type="checkbox" formControlName="onlineRates" />
     {{ 'settings.fields.onlineRates' | translate }}
   </label>
-  @if (!settings.keyStorageAvailable) {
-  <p class="text-destructive text-sm" role="note">
-    {{ 'settings.keysUnavailable' | translate }}
-  </p>
-  }
-  <div class="flex flex-col gap-2">
-    <label hlmLabel for="set-cg"
-      >{{ 'settings.fields.coingeckoKey' | translate }}</label
-    >
-    <input
-      hlmInput
-      id="set-cg"
-      type="password"
-      autocomplete="off"
-      formControlName="coingeckoKey"
-      [placeholder]="settings.keys.coingecko ?? ('settings.noKey' | translate)"
-    />
-    <p class="text-muted-foreground text-xs">
-      {{ 'settings.rates.coingeckoHint' | translate }}
-      <a
-        class="text-primary hover:underline"
-        [href]="keyPage"
-        target="_blank"
-        rel="noopener noreferrer"
-        >{{ 'setup.whereKey' | translate }}</a
-      >
-    </p>
-  </div>
+  <!-- Provider keys (CoinGecko, CoinMarketCap) live in their row of "Kursanbieter". -->
+  @if (!embedded()) {
   <div class="flex flex-wrap justify-end gap-2">
-    @if (settings.keys.coingecko) {
-    <button hlmBtn variant="ghost" type="button" (click)="removeKey()">
-      {{ 'settings.removeKey' | translate }}
-    </button>
-    }
-    <button
-      hlmBtn
-      variant="outline"
-      type="button"
-      [disabled]="service.coingeckoTesting() || (!settings.keys.coingecko && !form.controls.coingeckoKey.value.trim())"
-      (click)="test()"
-    >
-      {{ 'settings.keyTest.button' | translate }}
-    </button>
-    @if (!embedded()) {
     <button
       hlmBtn
       type="submit"
@@ -55,14 +14,7 @@
     >
       {{ 'common.save' | translate }}
     </button>
-    }
   </div>
-  @if (service.coingeckoTesting()) {
-  <p class="text-muted-foreground text-sm" aria-live="polite">
-    {{ 'settings.keyTest.testing' | translate }}
-  </p>
-  } @if (service.coingeckoTest(); as result) {
-  <lk-key-check-result [result]="result" />
   }
 </form>
 }

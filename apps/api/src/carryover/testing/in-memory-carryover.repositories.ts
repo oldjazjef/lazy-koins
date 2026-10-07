@@ -113,6 +113,9 @@ export class InMemoryProjectBundleRepository extends ProjectBundleRepositoryPort
             f.analysis.status === 'mapped' ? (mappingId ?? null) : null,
         },
       });
+      if ('created' in result && f.deactivation) {
+        await r.files.setDeactivation(result.created.id, f.deactivation);
+      }
       fileIds.set(
         f.key,
         'created' in result ? result.created.id : result.duplicate.id,
@@ -199,6 +202,21 @@ export class InMemoryUserRateRepository extends UserRateRepositoryPort {
         { ...e, userId },
       );
       count += 1;
+    }
+    return count;
+  }
+
+  async deletePrices(userId: string, asset: string): Promise<number> {
+    let count = 0;
+    for (const [key, row] of this.rows) {
+      if (
+        row.userId === userId &&
+        row.kind === 'price' &&
+        row.asset === asset
+      ) {
+        this.rows.delete(key);
+        count += 1;
+      }
     }
     return count;
   }

@@ -113,12 +113,9 @@ describe('profile and rate settings forms (F11)', () => {
     ).toBe(false);
   });
 
-  it('sends the CoinGecko key only when one was typed', () => {
-    expect(
-      ratesSettingsChanges({ onlineRates: false, coingeckoKey: '' }),
-    ).toEqual({ onlineRates: false });
-    expect(
-      ratesSettingsChanges({ onlineRates: true, coingeckoKey: 'CG' }),
-    ).toEqual({ onlineRates: true, keys: { coingecko: 'CG' } });
+  it('sends the online switch (the keys live in "Kursanbieter")', () => {
+    expect(ratesSettingsChanges({ onlineRates: false })).toEqual({
+      onlineRates: false,
+    });
   });
 });

@@ -35,7 +35,8 @@ import { HlmButtonImports } from '@lazykoins/ui/button';
             <ng-icon name="lucideChevronLeft" size="20" />
           </button>
         }
-        <div class="min-w-0 flex-1">
+        <!-- basis-48: on a narrow screen the actions wrap below the title instead of squeezing it. -->
+        <div class="min-w-0 flex-1 basis-48">
           <h1 class="truncate text-2xl font-semibold">{{ title() }}</h1>
           @if (subtitle(); as text) {
             <p class="text-muted-foreground text-sm">{{ text }}</p>

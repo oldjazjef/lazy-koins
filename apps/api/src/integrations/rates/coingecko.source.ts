@@ -23,9 +23,10 @@ const DAY_MS = 86_400_000;
  */
 export class CoinGeckoSource extends FiatPriceSourcePort {
   readonly name = 'coingecko' as const;
-  private readonly gate = new SerialGate(2500);
-
-  constructor(private readonly fetcher: Fetcher = fetch) {
+  constructor(
+    private readonly fetcher: Fetcher = fetch,
+    private readonly gate: SerialGate = new SerialGate(2500),
+  ) {
     super();
   }
 
