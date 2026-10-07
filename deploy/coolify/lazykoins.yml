@@ -56,6 +56,9 @@ services:
       - LK_FIREBASE_AUTH_DOMAIN=${LK_FIREBASE_AUTH_DOMAIN:-}
       - LK_FIREBASE_PROJECT_ID=${LK_FIREBASE_PROJECT_ID:-}
       - LK_FIREBASE_APP_ID=${LK_FIREBASE_APP_ID:-}
+      # Optional: Umami statistics (shared instance, one website per environment). Empty = off.
+      - LK_UMAMI_URL=${LK_UMAMI_URL:-}
+      - LK_UMAMI_WEBSITE_ID=${LK_UMAMI_WEBSITE_ID:-}
     depends_on:
       api:
         condition: service_healthy

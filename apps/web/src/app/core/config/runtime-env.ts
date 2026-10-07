@@ -24,6 +24,10 @@ export interface RuntimeEnv {
   /** Must match the API's AUTH_MODE. `dev` shows an e-mail field instead of the Firebase sign-in. */
   authMode: AuthMode;
   firebase: FirebaseWebConfig;
+  /** Base URL of the Umami instance (`https://stats.…`). Empty disables statistics. */
+  umamiUrl: string;
+  /** This deployment's website ID in Umami. Empty disables statistics. */
+  umamiWebsiteId: string;
 }
 
 /**
@@ -34,6 +38,8 @@ const DEFAULTS: RuntimeEnv = {
   apiBaseUrl: '',
   authMode: 'dev',
   firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+  umamiUrl: '',
+  umamiWebsiteId: '',
 };
 
 declare global {
@@ -62,6 +68,14 @@ export function runtimeEnv(): RuntimeEnv {
       projectId: readString(firebase.projectId, DEFAULTS.firebase.projectId),
       appId: readString(firebase.appId, DEFAULTS.firebase.appId),
     },
+    umamiUrl: readString(provided.umamiUrl, DEFAULTS.umamiUrl).replace(
+      /\/+$/,
+      '',
+    ),
+    umamiWebsiteId: readString(
+      provided.umamiWebsiteId,
+      DEFAULTS.umamiWebsiteId,
+    ),
   };
 }
 

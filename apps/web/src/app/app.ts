@@ -9,6 +9,7 @@ import { RouterOutlet } from '@angular/router';
 import { HlmToasterImports } from '@lazykoins/ui/sonner';
 import { ActivityIndicator } from './core/activity/activity-indicator';
 import { ActivityService } from './core/activity/activity.service';
+import { AnalyticsService } from './core/analytics/analytics.service';
 import { AuthService } from './core/auth/auth.service';
 import { LockScreen } from './core/pin/lock-screen/lock-screen';
 import { PinLockService } from './core/pin/pin-lock.service';
@@ -37,4 +38,9 @@ export class App {
   protected readonly showLock = computed(
     () => this.auth.isSignedIn() && this.pin.locked(),
   );
+
+  constructor() {
+    // Umami page views when the deployment configured it; never on the desktop.
+    inject(AnalyticsService).init();
+  }
 }
