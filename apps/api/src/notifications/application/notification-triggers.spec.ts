@@ -31,6 +31,10 @@ import {
   RemoveProjectFileHandler,
 } from '../../files/application/commands/remove-project-file.command';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
@@ -291,6 +295,33 @@ describe('notification triggers (F11.12)', () => {
       new RemoveProjectFileCommand('anna', t.project.id, second.id),
     );
     expect(open(t, Topics.fileNeedsMapping(second.id))).toBeUndefined();
+  });
+
+  it('a deactivated file nags no more; activated again, it does (F5.7a)', async () => {
+    const t = await setup();
+    const toggle = new SetFileActiveHandler(
+      t.projects,
+      t.files,
+      t.projectNotifications,
+    );
+    const file = await t.upload.execute(
+      new UploadProjectFileCommand(
+        'anna',
+        t.project.id,
+        'a.csv',
+        fixture(KRAKEN),
+      ),
+    );
+    const topic = Topics.fileNeedsMapping(file.id);
+    expect(open(t, topic)).toBeDefined();
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, file.id, false),
+    );
+    expect(open(t, topic)).toBeUndefined();
+    await toggle.execute(
+      new SetFileActiveCommand('anna', t.project.id, file.id, true),
+    );
+    expect(open(t, topic)).toBeDefined();
   });
 
   it('a calculation raises open items and missing prices; ticking the last one resolves it', async () => {

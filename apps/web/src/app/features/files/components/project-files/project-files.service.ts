@@ -31,6 +31,7 @@ import type {
   ProjectFileStatus,
   ProjectMapping,
   ProjectSuggestions,
+  SetFileActiveRequest,
   SpecIssue,
   StandardMapping,
   SuggestionPreview,
@@ -151,6 +152,11 @@ export class ProjectFilesService {
     this.files().filter((file) => file.kind !== 'pdf'),
   );
 
+  /** F5.7a: how many files of the project are deactivated ("2 deaktiviert"). */
+  readonly disabledCount = computed(
+    () => this.files().filter((file) => file.active === false).length,
+  );
+
   private readonly uploadQueue = signal<UploadItem[]>([]);
   readonly uploads = this.uploadQueue.asReadonly();
   readonly uploading = computed(() =>
@@ -193,6 +199,30 @@ export class ProjectFilesService {
       ),
     messages: { success: 'files.assigned', error: 'files.assignFailed' },
   });
+
+  /** F5.7a: "Deaktivieren" (optional note) / "Aktivieren" — one action per toast. */
+  private readonly deactivateAction = this.activeAction(
+    'files.disabled.deactivated',
+  );
+  private readonly activateAction = this.activeAction(
+    'files.disabled.activated',
+  );
+
+  private activeAction(success: string) {
+    return defineAction<
+      { file: ProjectFile; body: SetFileActiveRequest },
+      ProjectFile
+    >({
+      run: ({ file, body }) =>
+        firstValueFrom(
+          this.http.patch<ProjectFile>(
+            apiUrl(`/projects/${this.requireId()}/files/${file.id}/active`),
+            body,
+          ),
+        ),
+      messages: { success, error: 'files.disabled.failed' },
+    });
+  }
 
   private readonly hintAction = defineAction<
     { key: string; status: HintStatus; note: string },
@@ -319,6 +349,25 @@ export class ProjectFilesService {
     await this.actions.run(
       this.assignAction,
       { file, assignment },
+      { key: 'project-files' },
+    );
+  }
+
+  /**
+   * F5.7a: deactivate (`active: false`, optional note) or activate a file. The calculation turns
+   * stale, dashboard, hints and notifications follow (`dataChangesInterceptor`).
+   */
+  async setActive(
+    file: ProjectFile,
+    active: boolean,
+    note = '',
+  ): Promise<void> {
+    const trimmed = note.trim();
+    const body: SetFileActiveRequest =
+      active || trimmed === '' ? { active } : { active, note: trimmed };
+    await this.actions.run(
+      active ? this.activateAction : this.deactivateAction,
+      { file, body },
       { key: 'project-files' },
     );
   }

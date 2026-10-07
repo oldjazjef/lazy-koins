@@ -7,6 +7,7 @@ import {
 } from '../../../generated/prisma/client';
 import type {
   FileAnalysis,
+  FileDeactivation,
   ProjectFile,
   StoredFileContent,
   StoredFileMeta,
@@ -78,6 +79,8 @@ function toProjectFile(row: EntryRow): ProjectFile {
     coverage: parseCoverage(row.coverage),
     origin: row.origin,
     addedAt: toIsoString(row.addedAt),
+    disabledAt: row.disabledAt ? toIsoString(row.disabledAt) : null,
+    disabledNote: row.disabledAt ? row.disabledNote : null,
   };
 }
 
@@ -268,6 +271,19 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
     const { count } = await this.prisma.projectFile.updateMany({
       where: { id },
       data: analysisColumns(analysis),
+    });
+    return count === 0 ? undefined : this.findById(id);
+  }
+
+  async setDeactivation(
+    id: string,
+    state: FileDeactivation | null,
+  ): Promise<ProjectFile | undefined> {
+    const { count } = await this.prisma.projectFile.updateMany({
+      where: { id },
+      data: state
+        ? { disabledAt: new Date(state.at), disabledNote: state.note }
+        : { disabledAt: null, disabledNote: null },
     });
     return count === 0 ? undefined : this.findById(id);
   }

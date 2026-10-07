@@ -83,6 +83,17 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F5.5** Dateiübersicht gruppiert nach Plattform/Wallet mit Typ, erkanntem Zeitraum, Anzahl Buchungen, Upload-Datum und Herkunft (neu / aus Projekt X).
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
 - **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
+- **F5.7a Datei deaktivieren** (Wunsch 09.10.2026: „Ich möchte Dateien deaktivieren können, somit
+  werden sie bei Rechnung / Neuberechnung ignoriert.“): Eine Datei lässt sich pro Projekt
+  deaktivieren (optional mit Notiz) und wieder aktivieren. Deaktiviert bleibt sie gespeichert,
+  herunterladbar und in der Vorschau sichtbar, ihr Mapping-Status bleibt; ignoriert wird sie von
+  Berechnung (das Ergebnis wird „veraltet“), Dashboard, Hinweisen (sie deckt nichts ab – der
+  Hinweis sagt das), Prüfungen, internem Prüfbericht und Datenexport. Dieselbe Datei in einem
+  anderen Projekt bleibt unberührt. Dateiliste: Abzeichen „Deaktiviert“, Zeile abgeschwächt,
+  „N deaktiviert“ mit Ein-/Ausblenden. Folgeprojekt/Übernahme bieten sie nicht vorausgewählt an
+  (angehakt wird sie aktiv übernommen); Projekt-Pakete behalten den Zustand; ein neuer
+  Wallet-Abruf aktiviert eine deaktivierte abgeleitete Datei nicht wieder. Abgeschlossene
+  Projekte: nicht änderbar (F4.5).
 - **F5.8** Fehlende Dateien anzeigen, z. B. „Kraken-Kontoauszug Dezember fehlt“ oder „Binance-Historie endet am 30.06.“, mit Anleitung, wo der Export zu finden ist.
   - **Hinweise** als eigener Bereich im Projekt (Reiter mit Anzahl offener Hinweise; im
     Dateibereich nur eine kurze Zusammenfassung „7 Hinweise → anzeigen“): Tabelle mit **Typ**

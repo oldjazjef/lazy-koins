@@ -256,6 +256,11 @@ model ProjectFile {
   /// `wallet:<wallet id>` for the standard-format records a wallet fetch derived (F6.3).
   origin       String   @default("uploaded")
   addedAt      DateTime @default(now()) @map("added_at")
+  /// F5.7a: set = deactivated in THIS project — ignored by calculation, dashboard, hints,
+  /// checks and exports; the file stays stored, downloadable and previewable. Null = active.
+  disabledAt   DateTime? @map("disabled_at")
+  /// Optional reason for the deactivation (≤ 500, only with `disabled_at`). CHECK in the migration.
+  disabledNote String?   @map("disabled_note")
 
   project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)

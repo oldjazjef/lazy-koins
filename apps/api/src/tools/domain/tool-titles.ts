@@ -29,6 +29,7 @@ export const TOOL_TITLES_EN: Readonly<Record<string, string>> = {
   list_hints: 'Hints',
   set_hint_status: 'Settle hint',
   assign_file: 'Assign file',
+  set_file_active: 'Deactivate / activate file',
   remove_file: 'Remove file',
   upload_file: 'Upload file',
   request_file_upload: 'Request file',

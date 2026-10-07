@@ -16,7 +16,7 @@ import {
   readableOf,
 } from '../../files/application/file-access';
 import { SourceFileReader } from '../../files/application/source-file-reader';
-import type { ProjectFile } from '../../files/domain/project-file';
+import { isActive, type ProjectFile } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import type { RemoteEntry } from '../../integrations/library/remote-library.port';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
@@ -204,7 +204,7 @@ export class RemoteProjectLibraryMatchesHandler implements IQueryHandler<
     if (!status.suggestions || status.server === null) return [];
     const server = status.server;
     const waiting = (await this.files.listByProject(project.id))
-      .filter((file) => file.status === 'needs_mapping')
+      .filter((file) => file.status === 'needs_mapping' && isActive(file))
       .slice(0, MAX_FILES);
     const out: LibraryFileMatches[] = [];
     for (const file of waiting) {

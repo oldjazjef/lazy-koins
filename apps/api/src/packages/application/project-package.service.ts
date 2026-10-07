@@ -28,6 +28,7 @@ import { FileAnalysisService } from '../../files/application/file-analysis.servi
 import {
   derivedFromId,
   type FileAnalysis,
+  FILE_NOTE_MAX,
   MAX_FILE_BYTES,
   MEDIA_TYPES,
   PROJECT_FILE_STATUSES,
@@ -108,6 +109,14 @@ const ManifestSchema = z.object({
         derivedFromKey: z.string().nullable(),
         mappingKey: z.string().nullable(),
         analysis: AnalysisSchema,
+        // F5.7a: deactivated in the project. Older packages have no such field = active.
+        disabled: z
+          .object({
+            at: ISO_TS,
+            note: z.string().max(FILE_NOTE_MAX).nullable(),
+          })
+          .nullable()
+          .default(null),
       }),
     )
     .max(5000),
@@ -288,6 +297,9 @@ export class ProjectPackageService {
           holdingCount: file.holdingCount,
           errorCount: file.errorCount,
         },
+        disabled: file.disabledAt
+          ? { at: file.disabledAt, note: file.disabledNote }
+          : null,
       });
     }
     const manifestMappings: ProjectManifest['mappings'] = [];
@@ -521,6 +533,7 @@ export class ProjectPackageService {
         derivedFromKey: f.derivedFromKey ?? undefined,
         analysis,
         mappingKey,
+        deactivation: f.disabled,
       });
     }
 

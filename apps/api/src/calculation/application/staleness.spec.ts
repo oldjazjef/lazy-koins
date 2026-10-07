@@ -13,6 +13,10 @@ import {
   RemoveProjectFileHandler,
 } from '../../files/application/commands/remove-project-file.command';
 import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
+import {
   UploadProjectFileCommand,
   UploadProjectFileHandler,
 } from '../../files/application/commands/upload-project-file.command';
@@ -253,6 +257,42 @@ describe('stale snapshot after every relevant change (F7.6)', () => {
       note: '',
     });
     expect(await staleEverywhere()).toBe(true);
+  });
+
+  it('a file deactivated and activated again (F5.7a): ignored, stale, then back', async () => {
+    const { t, id, recalculate, staleEverywhere } = await setup();
+    const toggle = new SetFileActiveHandler(t.projects, t.files);
+    const before = await recalculate();
+    const sha = t.bookingsFile.sha256;
+    // Record ids are `<file sha>:<row>` — every figure names the records behind it (F7.5).
+    expect(JSON.stringify(before.result)).toContain(sha);
+    expect(before.result?.income.length).toBeGreaterThan(0);
+
+    await toggle.execute(
+      new SetFileActiveCommand('anna', id, t.bookingsFile.id, false, 'doppelt'),
+    );
+    expect(await staleEverywhere()).toBe(true);
+    const without = await recalculate();
+    // Nothing of the deactivated file is in the result — so no drill-down shows its records.
+    expect(JSON.stringify(without.result)).not.toContain(sha);
+    expect(without.result?.income).toEqual([]);
+    expect(await staleEverywhere()).toBe(false);
+
+    // The file stays in the project, its mapping status unchanged.
+    const stored = await t.files.findById(t.bookingsFile.id);
+    expect(stored).toMatchObject({
+      status: 'standard',
+      disabledNote: 'doppelt',
+    });
+    expect(stored?.disabledAt).not.toBeNull();
+
+    await toggle.execute(
+      new SetFileActiveCommand('anna', id, t.bookingsFile.id, true),
+    );
+    expect(await staleEverywhere()).toBe(true);
+    const again = await recalculate();
+    expect(again.result?.totals).toEqual(before.result?.totals);
+    expect(again.snapshot?.inputHash).toBe(before.snapshot?.inputHash);
   });
 
   it('stays fresh when an open item is ticked off', async () => {

@@ -288,6 +288,12 @@ export class ProjectHints {
     );
   }
 
+  /** F5.7a: the deactivated files that would cover this hint, as one text; null when none. */
+  protected disabledNamesOf(hint: ProjectHint): string | null {
+    const files = hint.disabledFiles ?? [];
+    return files.length > 0 ? files.map((file) => file.name).join(', ') : null;
+  }
+
   protected openItemsOf(hint: ProjectHint): number {
     const items = this.openItems();
     if (!hint.platform) return 0;

@@ -3,7 +3,7 @@ import type { ProjectFileView } from '../../files/application/file-views';
 import { PROJECT_FILE_STATUSES } from '../../files/domain/project-file';
 import { HINT_STATUSES } from '../../files/domain/project-hint';
 import { type AnyTool, defineTool, ToolError } from '../domain/tool';
-import { enumText, previewText } from '../domain/preview-texts';
+import { enumText, previewText, yesNo } from '../domain/preview-texts';
 import {
   fileLink,
   id,
@@ -31,6 +31,10 @@ const fileOut = z.object({
   rowErrors: z.number(),
   origin: z.string(),
   addedAt: z.string(),
+  /** F5.7a: false = deactivated in this project (ignored by calculation, dashboard, exports). */
+  active: z.boolean(),
+  disabledAt: z.string().nullable(),
+  disabledNote: z.string().nullable(),
   link,
 });
 
@@ -49,6 +53,9 @@ function fileOf(file: ProjectFileView) {
     rowErrors: file.errorCount,
     origin: file.origin,
     addedAt: file.addedAt,
+    active: file.disabledAt === null,
+    disabledAt: file.disabledAt,
+    disabledNote: file.disabledNote,
     link: fileLink(file.projectId, file.id),
   };
 }
@@ -74,7 +81,7 @@ export function fileTools(s: ToolServices): AnyTool[] {
       name: 'list_files',
       title: 'Dateien auflisten',
       description:
-        'The files of a project: status (standard | mapped | needs_mapping | evidence_only), platform, mapping, period, counts of bookings/holdings/row errors, and a link to the file in the app.',
+        'The files of a project: status (standard | mapped | needs_mapping | evidence_only), platform, mapping, period, counts of bookings/holdings/row errors, whether it is active (a deactivated file is ignored by calculation, dashboard, hints, checks and exports) and a link to the file in the app.',
       area: 'files',
       effect: 'readOnly',
       input: z.object({ projectId }),
@@ -281,6 +288,63 @@ export function fileTools(s: ToolServices): AnyTool[] {
             : { mode: input.mode },
         );
         return fileOf(file);
+      },
+    }),
+    defineTool({
+      name: 'set_file_active',
+      title: 'Datei deaktivieren / aktivieren',
+      description:
+        'Deactivates a file in a project (active = false, optional note: the file stays stored and downloadable, but calculation, dashboard, hints, checks and exports ignore it — the result becomes stale) or activates it again (active = true). Only this project is affected.',
+      area: 'files',
+      effect: 'write',
+      input: z.object({
+        projectId,
+        fileId: id('project file'),
+        active: z.boolean(),
+        note: z
+          .string()
+          .max(500)
+          .default('')
+          .describe('Optional reason for a deactivation.'),
+      }),
+      output: fileOut,
+      async run(ctx, input) {
+        return fileOf(
+          await s.files.setActive(
+            ctx.userId,
+            input.projectId,
+            input.fileId,
+            input.active,
+            input.note,
+          ),
+        );
+      },
+      async preview(ctx, input) {
+        const overview = await s.files.list(ctx.userId, input.projectId);
+        const file = overview.files.find((f) => f.id === input.fileId);
+        const name = file?.displayName ?? input.fileId;
+        return {
+          summary: input.active
+            ? previewText('chat.preview.activateFile', { file: name })
+            : previewText('chat.preview.deactivateFile', { file: name }),
+          changes: [
+            {
+              label: previewText('chat.preview.label.active'),
+              before: file ? yesNo(file.disabledAt === null) : null,
+              after: yesNo(input.active),
+            },
+            ...(!input.active && input.note
+              ? [
+                  {
+                    label: previewText('chat.preview.label.note'),
+                    before: file?.disabledNote ?? null,
+                    after: input.note,
+                  },
+                ]
+              : []),
+          ],
+          projectId: input.projectId,
+        };
       },
     }),
     defineTool({

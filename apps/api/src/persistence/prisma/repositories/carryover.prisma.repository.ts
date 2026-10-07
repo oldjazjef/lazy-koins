@@ -242,6 +242,11 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
               holdingCount: analysis.holdingCount,
               errorCount: analysis.errorCount,
               coverage: JSON.stringify(analysis.coverage),
+              // F5.7a: a package keeps a file deactivated; carry-over links active.
+              disabledAt: file.deactivation
+                ? new Date(file.deactivation.at)
+                : null,
+              disabledNote: file.deactivation?.note ?? null,
             },
             select: { id: true },
           });

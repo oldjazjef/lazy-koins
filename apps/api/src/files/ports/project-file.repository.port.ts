@@ -1,6 +1,7 @@
 import type { FileKind } from '@lazykoins/engine';
 import type {
   FileAnalysis,
+  FileDeactivation,
   ProjectFile,
   StoredFileContent,
   StoredFileMeta,
@@ -85,6 +86,15 @@ export abstract class ProjectFileRepositoryPort {
   abstract updateAnalysis(
     id: string,
     analysis: FileAnalysis,
+  ): Promise<ProjectFile | undefined>;
+
+  /**
+   * F5.7a: deactivates the project file (`state`) or activates it again (`null`). Only this
+   * project's entry changes — the stored file and its other projects are untouched.
+   */
+  abstract setDeactivation(
+    id: string,
+    state: FileDeactivation | null,
   ): Promise<ProjectFile | undefined>;
 
   /**

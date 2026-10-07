@@ -22,7 +22,10 @@ import {
   SourceFileReader,
   UnreadableFileError,
 } from '../../files/application/source-file-reader';
-import type { ProjectFile } from '../../files/domain/project-file';
+import {
+  type ProjectFile,
+  readsRecords,
+} from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import type { ImportMapping } from '../../mappings/domain/import-mapping';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
@@ -60,9 +63,10 @@ function compareText(a: string, b: string): number {
 }
 
 /**
- * Collects the calculation's input for a project: the standard records of every readable file
- * (standard format or its mapping — read again from the original bytes, bookings are not stored
- * as rows), the active corrections, the stored rates and the previous year's closing figures.
+ * Collects the calculation's input for a project: the standard records of every readable, active
+ * file (standard format or its mapping — read again from the original bytes, bookings are not
+ * stored as rows; deactivated files are skipped, F5.7a), the active corrections, the stored
+ * rates and the previous year's closing figures.
  *
  * The **input hash** covers what decides the result without reading file contents: the files'
  * SHA-256 + how they are read (mapping id + version time), corrections, rates, the previous
@@ -162,8 +166,9 @@ export class CalculationInputService {
   }
 
   private async sources(project: Project): Promise<Sources> {
+    // F5.7a: a deactivated file is not read — and leaves the input hash, so the snapshot is stale.
     const files = (await this.files.listByProject(project.id))
-      .filter((f) => f.status === 'standard' || f.status === 'mapped')
+      .filter(readsRecords)
       .sort((a, b) => compareText(a.sha256, b.sha256));
     const mappings = new Map<string, ImportMapping>();
     for (const file of files) {

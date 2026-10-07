@@ -13,6 +13,10 @@ import {
 import { CalculationService } from '../../calculation/calculation.service';
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import { ExportsService } from '../../exports/exports.service';
+import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
 import { FileViews } from '../../files/application/file-views';
 import {
   ListProjectFilesHandler,
@@ -108,6 +112,7 @@ export async function toolSetup() {
       ListProjectFilesQuery,
       new ListProjectFilesHandler(t.projects, t.files, views),
     )
+    .on(SetFileActiveCommand, new SetFileActiveHandler(t.projects, t.files))
     .on(CalculateProjectCommand, t.calculate)
     .on(GetResultQuery, t.result)
     .on(GetFigureRecordsQuery, t.records)

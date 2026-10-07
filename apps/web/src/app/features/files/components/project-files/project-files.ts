@@ -22,6 +22,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideChevronRight,
+  lucideCircleCheck,
+  lucideCircleOff,
   lucideDownload,
   lucideEye,
   lucideLightbulb,
@@ -40,6 +42,7 @@ import { HlmDialogImports } from '@lazykoins/ui/dialog';
 import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
+import { HlmTextareaImports } from '@lazykoins/ui/textarea';
 import type {
   FilePreview,
   MappingPreview,
@@ -64,12 +67,23 @@ import {
   RowActions,
 } from '../../../../shared/components/row-actions';
 
-type FileAction = 'preview' | 'download' | 'ai' | 'assign' | 'remove';
+type FileAction =
+  | 'preview'
+  | 'download'
+  | 'ai'
+  | 'assign'
+  | 'deactivate'
+  | 'activate'
+  | 'remove';
 
 type Dialog =
   | { readonly kind: 'preview'; readonly file: ProjectFile }
   | { readonly kind: 'remove'; readonly file: ProjectFile }
-  | { readonly kind: 'assign'; readonly file: ProjectFile };
+  | { readonly kind: 'assign'; readonly file: ProjectFile }
+  | { readonly kind: 'deactivate'; readonly file: ProjectFile };
+
+/** F5.7a: the longest deactivation note (the API's limit). */
+export const FILE_NOTE_MAX = 500;
 
 /**
  * The files of a project (F5): upload by drag & drop or picker, the overview grouped by
@@ -101,6 +115,7 @@ type Dialog =
     ...HlmInputImports,
     ...HlmSkeletonImports,
     ...HlmTableImports,
+    ...HlmTextareaImports,
   ],
   // ProjectFilesService, MappingEditorState and AiAssistState come from the workspace, which
   // shares them with the Hinweise tab (F5.8: its actions open these dialogs).
@@ -141,6 +156,26 @@ export class ProjectFiles implements OnDestroy {
   });
   protected readonly selectedMappingId = signal('');
   protected readonly assignPreview = signal<MappingPreview | null>(null);
+  /** F5.7a: the optional note of a deactivation (dialog). */
+  protected readonly disableNote = signal('');
+  protected readonly noteMax = FILE_NOTE_MAX;
+  /** F5.7a: "N deaktiviert · ausblenden" — deactivated rows hidden from the tables. */
+  protected readonly hideDisabled = signal(false);
+
+  /** The platform groups as shown (deactivated files left out while hidden; empty groups go). */
+  protected readonly groups = computed(() => {
+    if (!this.service.overview.hasValue()) return [];
+    const hide = this.hideDisabled();
+    return this.service.overview
+      .value()
+      .groups.map((group) => ({
+        platform: group.platform,
+        files: hide
+          ? group.files.filter((file) => file.active !== false)
+          : group.files,
+      }))
+      .filter((group) => group.files.length > 0);
+  });
 
   protected readonly skeletonRows = [1, 2, 3];
 
@@ -182,7 +217,12 @@ export class ProjectFiles implements OnDestroy {
     effect(() => {
       const id = this.highlighted();
       if (!id || !this.service.overview.hasValue()) return;
-      for (const group of this.service.overview.value().groups) {
+      // A link to a deactivated file shows it even while those are hidden.
+      const linked = this.service.files().find((file) => file.id === id);
+      if (linked?.active === false) {
+        untracked(() => this.hideDisabled.set(false));
+      }
+      for (const group of this.groups()) {
         if (group.files.some((file) => file.id === id)) {
           this.pagerFor(group.platform).reveal((file) => file.id === id);
         }
@@ -210,15 +250,12 @@ export class ProjectFiles implements OnDestroy {
     let pager = this.pagers.get(key);
     if (!pager) {
       pager = paginate(
-        computed(() =>
-          this.service.overview.hasValue()
-            ? (this.service.overview
-                .value()
-                .groups.find((group) => (group.platform ?? '') === key)
-                ?.files ?? [])
-            : [],
+        computed(
+          () =>
+            this.groups().find((group) => (group.platform ?? '') === key)
+              ?.files ?? [],
         ),
-        { storageKey: 'files' },
+        { storageKey: 'files', resetOn: () => this.hideDisabled() },
       );
       this.pagers.set(key, pager);
     }
@@ -242,6 +279,13 @@ export class ProjectFiles implements OnDestroy {
         return;
       case 'assign':
         this.openAssign(file);
+        return;
+      case 'deactivate':
+        this.disableNote.set('');
+        this.dialog.set({ kind: 'deactivate', file });
+        return;
+      case 'activate':
+        void this.service.setActive(file, true).catch(() => undefined);
         return;
       case 'remove':
         this.dialog.set({ kind: 'remove', file });
@@ -371,6 +415,13 @@ export class ProjectFiles implements OnDestroy {
     void this.ai.start(file, file.kind === 'pdf' ? 'statement' : 'mapping');
   }
 
+  /** F5.7a: "Deaktivieren" in the dialog, with the optional note. */
+  protected confirmDeactivate(file: ProjectFile): void {
+    const note = this.disableNote().slice(0, FILE_NOTE_MAX);
+    this.dialog.set(null);
+    void this.service.setActive(file, false, note).catch(() => undefined);
+  }
+
   protected confirmRemove(file: ProjectFile): void {
     this.dialog.set(null);
     void this.service.remove(file).catch(() => undefined);
@@ -401,12 +452,14 @@ export class ProjectFiles implements OnDestroy {
 
 /**
  * Vorschau, Herunterladen, Mit AI auslesen (a PDF) / Mit AI erstellen (a table without a
- * mapping), Zuordnen, Entfernen — the last three only while the project is open (F4.5).
+ * mapping), Zuordnen, Deaktivieren / Aktivieren (F5.7a), Entfernen — all but the first two only
+ * while the project is open (F4.5).
  */
 export function fileActions(
   file: ProjectFile,
   closed: boolean,
 ): RowAction<FileAction>[] {
+  const inactive = file.active === false;
   const ai =
     file.kind === 'pdf'
       ? { labelKey: 'files.actions.aiStatement', icon: lucideScanText }
@@ -429,6 +482,18 @@ export function fileActions(
       labelKey: 'files.actions.assign',
       icon: lucideLink2,
       hidden: closed,
+    },
+    {
+      id: 'deactivate',
+      labelKey: 'files.actions.deactivate',
+      icon: lucideCircleOff,
+      hidden: closed || inactive,
+    },
+    {
+      id: 'activate',
+      labelKey: 'files.actions.activate',
+      icon: lucideCircleCheck,
+      hidden: closed || !inactive,
     },
     {
       id: 'remove',

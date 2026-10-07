@@ -30,7 +30,18 @@ import { WalletRepositoryPort } from '../ports/wallet.repository.port';
  * Both carry the origin `wallet:<walletId>`. Same content → same SHA-256 → the file stays; new
  * content → the new file is added and the old one removed (its bytes go when nothing else uses
  * them, F5.7). Closed projects are never touched (F4.5).
+ *
+ * F5.7a: a deactivated derived file stays deactivated — kept as it is with the same bytes, and
+ * a new file that replaces it (same kind: bookings or balances) takes over its deactivation
+ * (date + note). A sync never re-enables a file; only "Aktivieren" does.
  */
+const DERIVED_KINDS = ['.wallet-buchungen.csv', '.wallet-bestaende.csv'];
+
+/** Which derived file a name is (bookings or balances) — the label part may change. */
+function derivedKind(name: string): string {
+  return DERIVED_KINDS.find((suffix) => name.endsWith(suffix)) ?? name;
+}
+
 @Injectable()
 export class WalletDerivedFiles {
   private readonly logger = new Logger(WalletDerivedFiles.name);
@@ -124,6 +135,7 @@ export class WalletDerivedFiles {
       const sha256 = createHash('sha256').update(file.bytes).digest('hex');
       const same = existing.find((f) => f.sha256 === sha256);
       if (same) {
+        // Same bytes: the file stays as it is — a deactivation included (F5.7a).
         keep.add(same.id);
         continue;
       }
@@ -137,6 +149,19 @@ export class WalletDerivedFiles {
           origin,
         });
         keep.add(created.id);
+        // F5.7a: new bytes replacing a deactivated file of the same kind (bookings / balances)
+        // stay deactivated — a fetch never re-enables what the user switched off.
+        const replaced = existing.find(
+          (f) =>
+            f.disabledAt !== null &&
+            derivedKind(f.displayName) === derivedKind(file.name),
+        );
+        if (replaced?.disabledAt) {
+          await this.files.setDeactivation(created.id, {
+            at: replaced.disabledAt,
+            note: replaced.disabledNote,
+          });
+        }
       } catch (error) {
         // The same bytes are already in the project as another file: nothing to add.
         if (!(error instanceof DuplicateFileException)) throw error;

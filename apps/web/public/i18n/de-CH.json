@@ -162,7 +162,7 @@
       "defaultName": "Steuern {{year}}",
       "existing": "Für dieses Jahr gibt es schon ein Projekt ({{names}}).",
       "files": "Dateien",
-      "filesHint": "Werden verknüpft, nicht kopiert. Vorausgewählt: Dateien, deren Zeitraum ins neue Jahr reicht.",
+      "filesHint": "Werden verknüpft, nicht kopiert. Vorausgewählt: Dateien, deren Zeitraum ins neue Jahr reicht. Deaktivierte Dateien werden angeboten, aber nicht vorausgewählt.",
       "noPlatform": "Ohne Plattform",
       "noFiles": "Dieses Projekt hat keine Dateien.",
       "wallets": "Wallets",
@@ -183,7 +183,8 @@
       "created": "Folgeprojekt erstellt",
       "createFailed": "Folgeprojekt konnte nicht erstellt werden",
       "walletsHint": "Die Wallets des Projekts werden mit dem neuen Projekt verknüpft (vorausgewählt); ihre abgerufenen Daten erscheinen dort als abgeleitete Dateien. Manuelle Saldi per 31.12. gehören zum Jahr und bleiben hier.",
-      "noWallets": "Dieses Projekt hat keine Wallets."
+      "noWallets": "Dieses Projekt hat keine Wallets.",
+      "disabledFile": "Im Projekt deaktiviert – deshalb nicht vorausgewählt. Angehakt wird sie im neuen Projekt aktiv übernommen."
     },
     "import": {
       "button": "Projekt importieren",
@@ -340,7 +341,9 @@
       "assign": "Zuordnen",
       "remove": "Entfernen",
       "aiMapping": "Mapping mit AI erstellen",
-      "aiStatement": "Mit AI auslesen"
+      "aiStatement": "Mit AI auslesen",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren"
     },
     "preview": {
       "description": "Die ersten Zeilen der Datei, unverändert.",
@@ -378,7 +381,8 @@
       "confirm": "{{count}} übernehmen",
       "done": "{{count}} Datei(en) übernommen",
       "failed": "Die Dateien konnten nicht übernommen werden",
-      "loadFailed": "Die anderen Projekte konnten nicht geladen werden"
+      "loadFailed": "Die anderen Projekte konnten nicht geladen werden",
+      "disabledFile": "Im Quellprojekt deaktiviert – übernommen wird sie hier aktiv."
     },
     "suggestions": {
       "title": "Vorschläge für {{count}} Datei(en) ohne Mapping",
@@ -405,6 +409,21 @@
         "standard": "Standard-Mapping",
         "library": "Bibliothek"
       }
+    },
+    "disabled": {
+      "badge": "Deaktiviert",
+      "count": "{{count}} deaktiviert",
+      "explain": "Deaktivierte Dateien bleiben gespeichert, werden aber bei Berechnung, Dashboard, Hinweisen, Prüfungen und Exporten ignoriert.",
+      "hide": "Ausblenden",
+      "show": "Anzeigen",
+      "tooltip": "Deaktiviert seit {{date}} – wird bei der Berechnung ignoriert",
+      "title": "Datei deaktivieren",
+      "body": "«{{name}}» bleibt im Projekt gespeichert, herunterladbar und in der Vorschau sichtbar, wird aber bei Berechnung, Dashboard, Hinweisen, Prüfungen und Exporten ignoriert. Das Ergebnis muss danach neu berechnet werden. Du kannst die Datei jederzeit wieder aktivieren.",
+      "note": "Notiz (optional)",
+      "notePlaceholder": "z. B. doppelt mit dem Kontoauszug",
+      "deactivated": "Datei deaktiviert – das Ergebnis muss neu berechnet werden",
+      "activated": "Datei aktiviert – das Ergebnis muss neu berechnet werden",
+      "failed": "Die Datei konnte nicht geändert werden"
     }
   },
   "mappings": {
@@ -1338,7 +1357,7 @@
     },
     "data": {
       "title": "Daten",
-      "hint": "Buchungen und Bestände im Standardformat – mit angewendeten Korrekturen, verwendetem Kurs und Kursquelle sowie Quelldatei und Zeile. Die Datei lässt sich unverändert wieder importieren.",
+      "hint": "Buchungen und Bestände im Standardformat – mit angewendeten Korrekturen, verwendetem Kurs und Kursquelle sowie Quelldatei und Zeile. Die Datei lässt sich unverändert wieder importieren. Nur aktive Dateien – deaktivierte sind nicht enthalten.",
       "platform": "Plattform",
       "account": "Konto",
       "asset": "Asset",
@@ -1694,7 +1713,8 @@
       "count": "{{shown}} von {{total}} Fehlern",
       "column": "Spalte",
       "problem": "Problem"
-    }
+    },
+    "disabledFiles": "Deaktiviert und deshalb nicht berücksichtigt: {{names}}"
   },
   "notifications": {
     "heading": "Benachrichtigungen",
@@ -2426,7 +2446,8 @@
         "libraryEntry": "Bibliothek",
         "stars": "Sterne",
         "privacyFindings": "Persönlich wirkende Werte",
-        "pseudonym": "Anzeigename"
+        "pseudonym": "Anzeigename",
+        "active": "Aktiv"
       },
       "value": {
         "noPrice": "kein Kurs",
@@ -2441,7 +2462,9 @@
       "publishMappingVersion": "Version {{version}} von «{{name}}» in der Bibliothek veröffentlichen",
       "takeLibraryMapping": "Mapping «{{name}}» (Version {{version}}) aus der Bibliothek übernehmen",
       "rateLibraryMapping": "Mapping «{{name}}» bewerten",
-      "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen"
+      "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen",
+      "deactivateFile": "Datei «{{file}}» deaktivieren (wird bei der Berechnung ignoriert)",
+      "activateFile": "Datei «{{file}}» wieder aktivieren"
     },
     "event": {
       "executed": "Ausgeführt: {{title}}",

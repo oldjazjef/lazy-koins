@@ -17,7 +17,10 @@ import {
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CorrectionRepositoryPort } from '../../calculation/ports/calculation.repository.port';
 import { UnreadableFileError } from '../../files/application/source-file-reader';
-import type { ProjectFile } from '../../files/domain/project-file';
+import {
+  type ProjectFile,
+  readsRecords,
+} from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import type { ImportMapping } from '../../mappings/domain/import-mapping';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
@@ -125,7 +128,9 @@ export class DashboardInputService {
     const projectRates: DashboardSources['projectRates'][number][] = [];
     for (const project of projects) {
       for (const file of await this.files.listByProject(project.id)) {
-        if (file.status !== 'standard' && file.status !== 'mapped') continue;
+        // F5.7a: a deactivated entry never counts and never wins rule 1 — the same stored file
+        // still counts through an active entry in another project.
+        if (!readsRecords(file)) continue;
         const current = bySha.get(file.sha256);
         if (
           !current ||
@@ -198,6 +203,8 @@ export class DashboardInputService {
       ]),
       files: sources.files.map((f) => [
         f.sha256,
+        // The entry read (rule 1): another one after a deactivation → other links, maybe mapping.
+        f.id,
         f.status,
         f.mappingId,
         f.mappingId

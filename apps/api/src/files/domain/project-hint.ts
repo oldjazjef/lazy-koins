@@ -3,7 +3,13 @@ import {
   type MissingFileHint,
   type MissingFileKind,
 } from '@lazykoins/engine';
-import type { ProjectFile } from './project-file';
+import { isActive, type ProjectFile } from './project-file';
+
+/** A deactivated file of the project (F5.7a) that would cover a hint's platform/account. */
+export interface DisabledFileRef {
+  readonly id: string;
+  readonly name: string;
+}
 
 /**
  * F5.8 hints of a project ("Hinweise"): the engine's coverage gaps (`missingFileHints`) plus what
@@ -48,6 +54,11 @@ export interface ProjectHint {
   readonly fileName: string | null;
   /** rowErrors: how many rows failed. */
   readonly count: number | null;
+  /**
+   * Coverage hints: deactivated files (F5.7a) with records for this platform (and account) —
+   * they cover nothing while deactivated, the hint says so. Empty for file hints.
+   */
+  readonly disabledFiles: readonly DisabledFileRef[];
   readonly status: HintStatus;
   readonly note: string;
 }
@@ -59,11 +70,31 @@ export interface HintState {
   readonly updatedAt: string;
 }
 
-/** The engine's coverage hint in the shape of the hints table. */
+/**
+ * The engine's coverage hint in the shape of the hints table. `files`: the project's files — the
+ * deactivated ones with records for the hint's platform (and its account, unless the hint is
+ * about the whole platform) are named on the hint (F5.7a: "deaktiviert, deckt nichts ab").
+ */
 export function fromCoverage(
   hint: MissingFileHint,
+  files: readonly ProjectFile[] = [],
 ): Omit<ProjectHint, 'status' | 'note'> {
+  const disabledFiles = files
+    .filter(
+      (file) =>
+        !isActive(file) &&
+        file.coverage.some(
+          (entry) =>
+            entry.platform === hint.platform &&
+            (hint.accountId === '' ||
+              entry.accountId === hint.accountId ||
+              // A platform-wide statement (balances only) covers every account.
+              (entry.bookings === 0 && entry.holdingDates.length > 0)),
+        ),
+    )
+    .map((file) => ({ id: file.id, name: file.displayName }));
   return {
+    disabledFiles,
     key: hint.key,
     kind: hint.kind,
     severity: hint.severity,
@@ -79,13 +110,18 @@ export function fromCoverage(
   };
 }
 
-/** A table without a mapping (its data is not in the calculation) and files with row errors. */
+/**
+ * A table without a mapping (its data is not in the calculation) and files with row errors. A
+ * deactivated file (F5.7a) has neither — it is ignored on purpose, nothing to remind of.
+ */
 export function fileHints(
   files: readonly ProjectFile[],
 ): Omit<ProjectHint, 'status' | 'note'>[] {
   const hints: Omit<ProjectHint, 'status' | 'note'>[] = [];
   for (const file of files) {
+    if (!isActive(file)) continue;
     const base = {
+      disabledFiles: [],
       platform: file.platform,
       accountId: '',
       accounts: [],

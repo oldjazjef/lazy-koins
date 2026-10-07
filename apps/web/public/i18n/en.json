@@ -162,7 +162,7 @@
       "defaultName": "Taxes {{year}}",
       "existing": "There is already a project for this year ({{names}}).",
       "files": "Files",
-      "filesHint": "Linked, not copied. Preselected: files whose period extends into the new year.",
+      "filesHint": "Linked, not copied. Preselected: files whose period extends into the new year. Deactivated files are offered but not preselected.",
       "noPlatform": "No platform",
       "noFiles": "This project has no files.",
       "wallets": "Wallets",
@@ -183,7 +183,8 @@
       "created": "Follow-up project created",
       "createFailed": "Could not create the follow-up project",
       "walletsHint": "The project's wallets are linked to the new project (preselected); their fetched data appears there as derived files. Manual balances at 31.12. belong to the year and stay here.",
-      "noWallets": "This project has no wallets."
+      "noWallets": "This project has no wallets.",
+      "disabledFile": "Deactivated in the project – therefore not preselected. If ticked, it is taken over as active in the new project."
     },
     "import": {
       "button": "Import project",
@@ -340,7 +341,9 @@
       "assign": "Assign",
       "remove": "Remove",
       "aiMapping": "Create mapping with AI",
-      "aiStatement": "Read with AI"
+      "aiStatement": "Read with AI",
+      "deactivate": "Deactivate",
+      "activate": "Activate"
     },
     "preview": {
       "description": "The first rows of the file, unchanged.",
@@ -378,7 +381,8 @@
       "confirm": "Take over {{count}}",
       "done": "{{count}} file(s) taken over",
       "failed": "Could not take over the files",
-      "loadFailed": "Could not load the other projects"
+      "loadFailed": "Could not load the other projects",
+      "disabledFile": "Deactivated in the source project – it is taken over as active here."
     },
     "suggestions": {
       "title": "Suggestions for {{count}} file(s) without a mapping",
@@ -405,6 +409,21 @@
         "standard": "standard mapping",
         "library": "library"
       }
+    },
+    "disabled": {
+      "badge": "Deactivated",
+      "count": "{{count}} deactivated",
+      "explain": "Deactivated files stay stored but are ignored by the calculation, dashboard, hints, checks and exports.",
+      "hide": "Hide",
+      "show": "Show",
+      "tooltip": "Deactivated since {{date}} – ignored by the calculation",
+      "title": "Deactivate file",
+      "body": "“{{name}}” stays stored in the project, downloadable and previewable, but the calculation, dashboard, hints, checks and exports ignore it. The result needs to be recalculated afterwards. You can activate the file again at any time.",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g. duplicate of the account statement",
+      "deactivated": "File deactivated – the result needs to be recalculated",
+      "activated": "File activated – the result needs to be recalculated",
+      "failed": "The file could not be changed"
     }
   },
   "mappings": {
@@ -1338,7 +1357,7 @@
     },
     "data": {
       "title": "Data",
-      "hint": "Bookings and holdings in the standard format – with corrections applied, the rate used and rate source, as well as source file and row. The file can be imported again unchanged.",
+      "hint": "Bookings and holdings in the standard format – with corrections applied, the rate used and rate source, as well as source file and row. The file can be imported again unchanged. Only active files – deactivated ones are not included.",
       "platform": "Platform",
       "account": "Account",
       "asset": "Asset",
@@ -1694,7 +1713,8 @@
       "count": "{{shown}} of {{total}} errors",
       "column": "Column",
       "problem": "Problem"
-    }
+    },
+    "disabledFiles": "Deactivated and therefore not counted: {{names}}"
   },
   "notifications": {
     "heading": "Notifications",
@@ -2426,7 +2446,8 @@
         "libraryEntry": "Library",
         "stars": "Stars",
         "privacyFindings": "Values that look personal",
-        "pseudonym": "Display name"
+        "pseudonym": "Display name",
+        "active": "Active"
       },
       "value": {
         "noPrice": "no price",
@@ -2441,7 +2462,9 @@
       "publishMappingVersion": "Publish version {{version}} of \"{{name}}\" to the library",
       "takeLibraryMapping": "Take mapping \"{{name}}\" (version {{version}}) from the library",
       "rateLibraryMapping": "Rate mapping \"{{name}}\"",
-      "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library"
+      "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library",
+      "deactivateFile": "Deactivate file “{{file}}” (ignored by the calculation)",
+      "activateFile": "Activate file “{{file}}” again"
     },
     "event": {
       "executed": "Done: {{title}}",

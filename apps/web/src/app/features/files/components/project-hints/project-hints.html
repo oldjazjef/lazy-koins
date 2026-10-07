@@ -170,7 +170,16 @@
               </td>
               <td hlmTd class="max-w-0">
                 <span [lkTruncate]="short">{{ short }}</span>
-                @if (openItemsOf(hint) > 0) {
+                @if (disabledNamesOf(hint); as names) {
+                <!-- F5.7a: a deactivated file covers nothing — say so -->
+                @let disabledText = 'hints.disabledFiles' | translate: { names
+                };
+                <span
+                  class="text-muted-foreground block text-xs"
+                  [lkTruncate]="disabledText"
+                  >{{ disabledText }}</span
+                >
+                } @if (openItemsOf(hint) > 0) {
                 <button
                   hlmBtn
                   variant="link"

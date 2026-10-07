@@ -113,6 +113,9 @@ export class InMemoryProjectBundleRepository extends ProjectBundleRepositoryPort
             f.analysis.status === 'mapped' ? (mappingId ?? null) : null,
         },
       });
+      if ('created' in result && f.deactivation) {
+        await r.files.setDeactivation(result.created.id, f.deactivation);
+      }
       fileIds.set(
         f.key,
         'created' in result ? result.created.id : result.duplicate.id,

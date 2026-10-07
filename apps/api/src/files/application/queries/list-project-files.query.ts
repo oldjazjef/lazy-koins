@@ -2,6 +2,7 @@ import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { missingFileHints, type MissingFileHint } from '@lazykoins/engine';
 import { loadOwnProject } from '../../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
+import { readsRecords } from '../../domain/project-file';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
 import { FileViews, type ProjectFileView } from '../file-views';
 
@@ -38,7 +39,7 @@ export class ListProjectFilesHandler implements IQueryHandler<
     const project = await loadOwnProject(this.projects, userId, projectId);
     const files = await this.files.listByProject(project.id);
     const coverage = files
-      .filter((file) => file.status === 'standard' || file.status === 'mapped')
+      .filter(readsRecords)
       .flatMap((file) => file.coverage);
     return {
       files: await this.views.of(userId, files),

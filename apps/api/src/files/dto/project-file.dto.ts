@@ -10,6 +10,7 @@ import {
 } from '@lazykoins/engine';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsObject,
@@ -24,6 +25,7 @@ import {
 } from 'class-validator';
 import {
   derivedFromId,
+  FILE_NOTE_MAX,
   FROM_PROJECT,
   PROJECT_FILE_STATUSES,
   type ProjectFileStatus,
@@ -56,6 +58,25 @@ export class ChangeProjectFileDto {
   @ValidateIf((dto: ChangeProjectFileDto) => dto.mode === 'mapping')
   @IsUUID()
   mappingId?: string;
+}
+
+export class SetFileActiveDto {
+  @ApiProperty({
+    description:
+      'false = deactivate ("Deaktivieren": ignored by calculation, dashboard, hints, checks and exports); true = activate again',
+  })
+  @IsBoolean()
+  active!: boolean;
+
+  @ApiPropertyOptional({
+    maxLength: FILE_NOTE_MAX,
+    description:
+      'Optional reason for the deactivation (ignored when activating)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(FILE_NOTE_MAX)
+  note?: string;
 }
 
 export class PreviewQueryDto {
@@ -131,6 +152,14 @@ export class ProjectFileResponseDto {
   @ApiProperty({ type: String, nullable: true })
   derivedFromName!: string | null;
   @ApiProperty({ format: 'date-time' }) addedAt!: string;
+  @ApiProperty({
+    description:
+      'F5.7a: false = deactivated in this project — ignored by calculation, dashboard, hints, checks and exports',
+  })
+  active!: boolean;
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
+  disabledAt!: string | null;
+  @ApiProperty({ type: String, nullable: true }) disabledNote!: string | null;
 
   static from(file: ProjectFileView): ProjectFileResponseDto {
     const fromProject = file.origin.startsWith(FROM_PROJECT);
@@ -165,6 +194,9 @@ export class ProjectFileResponseDto {
       derivedFromFileId: derivedFrom,
       derivedFromName: file.derivedFromName,
       addedAt: file.addedAt,
+      active: file.disabledAt === null,
+      disabledAt: file.disabledAt,
+      disabledNote: file.disabledNote,
     };
   }
 }

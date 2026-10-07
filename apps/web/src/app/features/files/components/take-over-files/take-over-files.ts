@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { Truncate } from '../../../../shared/components/truncate';
 import { TranslatePipe } from '@ngx-translate/core';
+import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmDialogImports } from '@lazykoins/ui/dialog';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
@@ -23,6 +24,7 @@ import { TakeOverFilesService } from './take-over-files.service';
     Truncate,
     LkDatePipe,
     TranslatePipe,
+    ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
     ...HlmSkeletonImports,

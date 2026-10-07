@@ -26,7 +26,7 @@ import {
   readableOf,
 } from '../../files/application/file-access';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
-import type { ProjectFile } from '../../files/domain/project-file';
+import { isActive, type ProjectFile } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import type { LibraryEntryView } from '../../library/domain/library-mapping';
 import { LibraryService } from '../../library/library.service';
@@ -257,7 +257,13 @@ export class ProjectMappingSuggestionsHandler implements IQueryHandler<
     const project = await loadOwnProject(this.projects, userId, projectId);
     if (project.status === 'closed') return { files: [], library: 'off' };
     const waiting = (await this.files.listByProject(project.id))
-      .filter((file) => file.status === 'needs_mapping' && file.kind !== 'pdf')
+      // F5.7a: a deactivated file gets no suggestions (it is ignored on purpose).
+      .filter(
+        (file) =>
+          file.status === 'needs_mapping' &&
+          file.kind !== 'pdf' &&
+          isActive(file),
+      )
       .sort((a, b) => compare(b.addedAt, a.addedAt))
       .slice(0, MAX_SUGGESTION_FILES);
     if (waiting.length === 0) return { files: [], library: 'off' };

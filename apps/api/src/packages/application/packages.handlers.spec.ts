@@ -10,6 +10,10 @@ import {
   UpdateOpenItemCommand,
 } from '../../calculation/application/calculation.handlers';
 import { bundleSetup } from '../../carryover/testing/bundle-fixture';
+import {
+  SetFileActiveCommand,
+  SetFileActiveHandler,
+} from '../../files/application/commands/set-file-active.command';
 import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
 import {
   isSafePath,
@@ -238,6 +242,65 @@ describe('project package (F10.8)', () => {
       new ImportProjectPackageCommand('carl', older),
     );
     expect((await t.projects.findById(old.projectId))?.taxCurrency).toBe('CHF');
+  });
+
+  it('carries a deactivated file as deactivated; an older package imports every file active (F5.7a)', async () => {
+    const t = await setup();
+    await new SetFileActiveHandler(t.projects, t.files).execute(
+      new SetFileActiveCommand(
+        'anna',
+        t.project.id,
+        t.bookingsFile.id,
+        false,
+        'doppelt',
+      ),
+    );
+    const file = await t.exportPackage.execute(
+      new ExportProjectPackageQuery('anna', t.project.id, NOW),
+    );
+    const entries = unzipSync(file.bytes);
+    const manifest = JSON.parse(
+      strFromU8(entries['manifest.json'] as Uint8Array),
+    ) as { files: { displayName: string; disabled?: unknown }[] };
+    expect(
+      manifest.files.map((f) => [f.displayName, f.disabled !== null]),
+    ).toEqual([
+      ['buchungen.csv', true],
+      ['bestaende.csv', false],
+    ]);
+    const imported = await t.importPackage.execute(
+      new ImportProjectPackageCommand('bob', file.bytes),
+    );
+    const files = await t.files.listByProject(imported.projectId);
+    expect(
+      files.map((f) => [f.displayName, f.disabledAt !== null, f.disabledNote]),
+    ).toEqual([
+      ['buchungen.csv', true, 'doppelt'],
+      ['bestaende.csv', false, null],
+    ]);
+    // Calculated without it, as in the source.
+    const source = await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    const copy = await t.calculate.execute(
+      new CalculateProjectCommand('bob', imported.projectId),
+    );
+    expect(copy.result?.totals).toEqual(source.result?.totals);
+
+    // A package from before F5.7a has no `disabled`: every file is active.
+    for (const f of manifest.files) delete f.disabled;
+    const older = zipSync({
+      ...entries,
+      'manifest.json': strToU8(JSON.stringify(manifest)),
+    });
+    const old = await t.importPackage.execute(
+      new ImportProjectPackageCommand('carl', older),
+    );
+    expect(
+      (await t.files.listByProject(old.projectId)).every(
+        (f) => f.disabledAt === null,
+      ),
+    ).toBe(true);
   });
 
   it('refuses tampered packages, unsafe paths and things that are no package', async () => {

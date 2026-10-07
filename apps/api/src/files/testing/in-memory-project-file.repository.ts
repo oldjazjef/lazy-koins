@@ -1,5 +1,6 @@
 import type {
   FileAnalysis,
+  FileDeactivation,
   ProjectFile,
   StoredFileContent,
   StoredFileMeta,
@@ -18,6 +19,7 @@ interface Entry {
   readonly origin: string;
   readonly addedAt: string;
   analysis: FileAnalysis;
+  deactivation: FileDeactivation | null;
 }
 
 /**
@@ -131,6 +133,7 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
       origin: input.origin,
       addedAt: this.tick(),
       analysis: input.analysis,
+      deactivation: null,
     };
     this.entries.set(entry.id, entry);
     return { created: this.toFile(entry) };
@@ -143,6 +146,16 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     const entry = this.entries.get(id);
     if (!entry) return undefined;
     entry.analysis = analysis;
+    return this.toFile(entry);
+  }
+
+  async setDeactivation(
+    id: string,
+    state: FileDeactivation | null,
+  ): Promise<ProjectFile | undefined> {
+    const entry = this.entries.get(id);
+    if (!entry) return undefined;
+    entry.deactivation = state;
     return this.toFile(entry);
   }
 
@@ -174,6 +187,8 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
       displayName: entry.displayName,
       origin: entry.origin,
       addedAt: entry.addedAt,
+      disabledAt: entry.deactivation?.at ?? null,
+      disabledNote: entry.deactivation?.note ?? null,
     };
   }
 
