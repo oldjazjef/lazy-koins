@@ -4,7 +4,7 @@ import {
   AiProviderError,
 } from './ai-completion.port';
 import { extractJson, type FetchLike } from './ai-http';
-import { AnthropicAdapter } from './anthropic.adapter';
+import { AnthropicAdapter, structuredOutputSchema } from './anthropic.adapter';
 import { OpenAiCompatibleAdapter } from './openai-compatible.adapter';
 import { ProviderSwitchingAiCompletion } from './provider-switching.adapter';
 import { redactSecrets, safeUrl } from './redact';
@@ -198,18 +198,11 @@ describe('AnthropicAdapter', () => {
     apiKey: 'sk-ant-test-9876',
   };
 
-  it('forces a tool call with the schema as input_schema and reads its input', async () => {
+  it('asks for structured outputs (output_config.format) and parses the JSON text', async () => {
     const { fetchImpl, calls } = fakeFetch(
       json(200, {
         model: 'claude-sonnet-5-5',
-        content: [
-          { type: 'text', text: 'Sure.' },
-          {
-            type: 'tool_use',
-            name: 'mapping_spec',
-            input: { name: 'Bitfinex' },
-          },
-        ],
+        content: [{ type: 'text', text: '{"name":"Bitfinex"}' }],
         usage: { input_tokens: 900, output_tokens: 200 },
       }),
     );
@@ -230,20 +223,66 @@ describe('AnthropicAdapter', () => {
     expect(call?.body).toMatchObject({
       model: 'claude-sonnet-5-5',
       system: 'You write mappings.',
-      tool_choice: { type: 'tool', name: 'mapping_spec' },
-      tools: [
-        {
-          name: 'mapping_spec',
-          input_schema: { type: 'object', properties: { name: {} } },
+      output_config: {
+        format: {
+          type: 'json_schema',
+          schema: { properties: { name: {} }, additionalProperties: false },
         },
-      ],
+      },
     });
-    expect(typeof call?.body['max_tokens']).toBe('number');
+    // Regression: Claude Sonnet 5.5 / Opus 5.5 answer forced tool use with a 400.
+    expect(call?.body).not.toHaveProperty('tool_choice');
+    expect(call?.body['max_tokens']).toBeGreaterThanOrEqual(2048);
   });
 
-  it('fails with badResponse when the model answers without the tool', async () => {
+  it('falls back to a forced tool call when the endpoint does not know output_config', async () => {
+    const { fetchImpl, calls } = fakeFetch(
+      json(400, {
+        type: 'error',
+        error: {
+          type: 'invalid_request_error',
+          message: 'output_config: Extra inputs are not permitted',
+        },
+      }),
+      json(200, {
+        content: [
+          { type: 'tool_use', name: 'mapping_spec', input: { name: 'Kraken' } },
+        ],
+      }),
+    );
+    const answer = await new AnthropicAdapter(fetchImpl).complete(
+      anthropic,
+      request,
+    );
+    expect(answer.json).toEqual({ name: 'Kraken' });
+    expect(calls[1]?.body).toMatchObject({
+      tool_choice: { type: 'tool', name: 'mapping_spec' },
+    });
+  });
+
+  it('does not fall back on other 400s (e.g. forced tool use refused)', async () => {
+    const { fetchImpl, calls } = fakeFetch(
+      json(400, {
+        type: 'error',
+        error: {
+          type: 'invalid_request_error',
+          message:
+            'tool_choice: type "tool" and "any" are not supported for this model.',
+        },
+      }),
+    );
+    await expect(
+      new AnthropicAdapter(fetchImpl).complete(anthropic, request),
+    ).rejects.toMatchObject({ code: 'providerError' });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('fails with badResponse when the answer is not JSON', async () => {
     const { fetchImpl } = fakeFetch(
-      json(200, { content: [{ type: 'text', text: 'no' }] }),
+      json(200, {
+        content: [{ type: 'text', text: 'no' }],
+        stop_reason: 'end_turn',
+      }),
     );
     await expect(
       new AnthropicAdapter(fetchImpl).complete(anthropic, request),
@@ -264,7 +303,7 @@ describe('ProviderSwitchingAiCompletion', () => {
   it('routes by provider kind', async () => {
     const { fetchImpl, calls } = fakeFetch(
       json(200, {
-        content: [{ type: 'tool_use', name: 'mapping_spec', input: {} }],
+        content: [{ type: 'text', text: '{}' }],
       }),
       json(200, { choices: [{ message: { content: '{}' } }] }),
     );
@@ -275,6 +314,46 @@ describe('ProviderSwitchingAiCompletion', () => {
       'https://api.anthropic.com/v1/messages',
       'http://localhost:11434/v1/chat/completions',
     ]);
+  });
+});
+
+describe('structuredOutputSchema', () => {
+  it('drops unsupported constraints and closes every object', () => {
+    expect(
+      structuredOutputSchema({
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        type: 'object',
+        properties: {
+          name: { type: 'string', minLength: 1, maxLength: 80 },
+          count: { type: 'integer', minimum: 0 },
+          at: { type: 'string', format: 'date-time' },
+          odd: { type: 'string', format: 'regex' },
+          items: {
+            type: 'array',
+            minItems: 1,
+            items: { type: 'object', properties: { a: { enum: ['x'] } } },
+          },
+        },
+        additionalProperties: true,
+      }),
+    ).toEqual({
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        count: { type: 'integer' },
+        at: { type: 'string', format: 'date-time' },
+        odd: { type: 'string' },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { a: { enum: ['x'] } },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    });
   });
 });
 
