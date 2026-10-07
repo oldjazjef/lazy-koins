@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -37,6 +37,7 @@ import {
   type TokenExpiry,
   type ToolEffect,
 } from '../../../../core/api/assistant.types';
+import { LanguageService } from '../../../../core/i18n/language.service';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
@@ -81,7 +82,7 @@ const EFFECT_VARIANTS: Record<
 @Component({
   selector: 'lk-mcp-settings-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     ReactiveFormsModule,
     NgIcon,
     TranslatePipe,
@@ -105,6 +106,8 @@ const EFFECT_VARIANTS: Record<
 })
 export class McpSettingsPage {
   protected readonly service = inject(McpSettingsPageService);
+  /** F11.2: tool titles in the app's language. */
+  protected readonly language = inject(LanguageService);
   private readonly fb = inject(FormBuilder).nonNullable;
   protected readonly areas = MCP_AREAS;
   protected readonly sources = AUDIT_SOURCES;

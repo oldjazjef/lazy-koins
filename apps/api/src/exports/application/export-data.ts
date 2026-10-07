@@ -3,7 +3,9 @@ import type {
   MissingFileHint,
   OpenItem,
 } from '@lazykoins/engine';
+import type { Locale } from '../../common/i18n/locale';
 import type { StoredResult } from '../../calculation/domain/calculation';
+import { type DocumentFormat, EXPORT_TEXTS } from './export-texts';
 
 /** Everything a document shows — assembled once, rendered as Excel, HTML/PDF or mail text. */
 export interface ExportData {
@@ -19,6 +21,10 @@ export interface ExportData {
   readonly calculatedAt: string;
   /** The app that made it, `X.Y.Z+<commit>` (src/app/build-info.ts) — shown under Methodik. */
   readonly appVersion: string;
+  /** F11.2: the language of the document (the user's) and its number/date format. */
+  readonly locale: Locale;
+  readonly format: DocumentFormat;
+  /** The country rules with their labels in `locale` (F10.3, `rulesInLanguage`). */
   readonly rules: CountryRules;
   readonly result: StoredResult;
   /**
@@ -35,9 +41,13 @@ export interface ExportData {
 
 export type ExportVariant = 'einfach' | 'ausfuehrlich' | 'pruefbericht-intern';
 
-/** `Steuern-2025_einfach_2026-01-15.xlsx` — no characters a file system dislikes. */
+/**
+ * `Steuern-2025_einfach_2026-01-15.xlsx` — no characters a file system dislikes; the variant in
+ * the document's language (`…_simple_…` in English).
+ */
 export function exportFileName(
-  data: Pick<ExportData, 'projectName' | 'createdAt'>,
+  data: Pick<ExportData, 'projectName' | 'createdAt'> &
+    Partial<Pick<ExportData, 'locale'>>,
   variant: ExportVariant,
   extension: 'pdf' | 'xlsx',
 ): string {
@@ -48,5 +58,6 @@ export function exportFileName(
       .trim()
       .replace(/\s+/g, '-')
       .slice(0, 60) || 'lazy-koins';
-  return `${base}_${variant}_${data.createdAt.slice(0, 10)}.${extension}`;
+  const name = EXPORT_TEXTS[data.locale ?? 'de-CH'].fileVariants[variant];
+  return `${base}_${name}_${data.createdAt.slice(0, 10)}.${extension}`;
 }

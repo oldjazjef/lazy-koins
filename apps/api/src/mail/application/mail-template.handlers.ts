@@ -15,7 +15,7 @@ import {
   placeholdersIn,
   renderMail,
   type RenderedMail,
-  SAMPLE_MAIL_VALUES,
+  SAMPLE_MAIL_VALUES_BY_LANGUAGE,
 } from '../domain/mail-template';
 import { MailTemplateRepositoryPort } from '../ports/mail.repository.port';
 import { mailUnprocessable } from './mail-gate';
@@ -61,8 +61,11 @@ export function templateView(template: MailTemplate): MailTemplateView {
     defaultSubject: defaults.subject,
     defaultBody: defaults.body,
     placeholders: MAIL_PLACEHOLDERS,
-    sampleValues: SAMPLE_MAIL_VALUES,
-    preview: renderMail(template, SAMPLE_MAIL_VALUES),
+    sampleValues: SAMPLE_MAIL_VALUES_BY_LANGUAGE[template.language],
+    preview: renderMail(
+      template,
+      SAMPLE_MAIL_VALUES_BY_LANGUAGE[template.language],
+    ),
   };
 }
 
@@ -164,7 +167,10 @@ export class ResetMailTemplateHandler implements ICommandHandler<
 }
 
 export class PreviewMailTemplateQuery {
-  constructor(readonly text: MailTemplateText) {}
+  constructor(
+    readonly text: MailTemplateText,
+    readonly language: MailLanguage = 'de-CH',
+  ) {}
 }
 
 /** The live preview of unsaved text with the sample values — nothing stored, no user data. */
@@ -173,7 +179,10 @@ export class PreviewMailTemplateHandler implements IQueryHandler<
   PreviewMailTemplateQuery,
   RenderedMail
 > {
-  async execute({ text }: PreviewMailTemplateQuery): Promise<RenderedMail> {
-    return renderMail(text, SAMPLE_MAIL_VALUES);
+  async execute({
+    text,
+    language,
+  }: PreviewMailTemplateQuery): Promise<RenderedMail> {
+    return renderMail(text, SAMPLE_MAIL_VALUES_BY_LANGUAGE[language]);
   }
 }

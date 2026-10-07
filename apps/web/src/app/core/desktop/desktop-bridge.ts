@@ -50,6 +50,13 @@ export interface DesktopBridge {
     onLocked(listener: (reason: string) => void): () => void;
     setIdleMinutes(minutes: number): Promise<void>;
   };
+  /**
+   * F11.2: the app's language for the shell's menus and dialogs (stored in the desktop config).
+   * Absent in desktop builds older than the language setting.
+   */
+  readonly locale?: {
+    set(locale: string): Promise<void>;
+  };
   /** Absent in desktop builds older than the notification centre. */
   readonly notifications?: {
     /** Einstellungen › System › "System-Benachrichtigungen" (default on). */

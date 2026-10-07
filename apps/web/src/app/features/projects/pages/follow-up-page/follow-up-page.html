@@ -102,9 +102,9 @@
             >{{ file.displayName }}</span
           >
           <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
-            @if (file.periodFrom && file.periodTo) { {{ file.periodFrom | date:
-            'dd.MM.yyyy' }} – {{ file.periodTo | date: 'dd.MM.yyyy' }} } @else {
-            {{ 'files.status.' + file.status | translate }} }
+            @if (file.periodFrom && file.periodTo) { {{ file.periodFrom | lkDate
+            }} – {{ file.periodTo | lkDate }} } @else { {{ 'files.status.' +
+            file.status | translate }} }
           </span>
         </label>
         }

@@ -1,11 +1,7 @@
 import { INCOME_CATEGORIES } from '@lazykoins/engine';
 import ExcelJS from 'exceljs';
 import type { ExportData } from '../export-data';
-import {
-  categoryLabel,
-  platformLine,
-  unpricedPositions,
-} from '../export-texts';
+import { kitOf } from '../export-texts';
 import { headerLines } from './detailed-workbook';
 import {
   CHF_FORMAT,
@@ -19,17 +15,20 @@ import {
 /**
  * The simple statement (F10.1) as one sheet: Steuerwert per 31.12., Ertrag, the securities list
  * with one line per platform/wallet (main positions, number of small positions, value) and the
- * income table. For the tax authority: no open items or instructions (F10.2a has them).
+ * income table. For the tax authority: no open items or instructions (F10.2a has them). Texts in
+ * the user's language (F11.2).
  */
 export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
   const { result, rules } = data;
+  const k = kitOf(data);
+  const { col } = k.t;
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'lazy-koins';
   workbook.created = new Date(data.createdAt);
   workbook.calcProperties.fullCalcOnLoad = true;
-  const sheet = workbook.addWorksheet('Auszug');
+  const sheet = workbook.addWorksheet(k.t.statementSheet);
 
-  const [title, line, note] = headerLines(data, 'einfach');
+  const [title, line, note] = headerLines(data, k.t.variantSimple);
   sheet.addRow([title]).font = { bold: true, size: 14 };
   sheet.addRow([line]);
   sheet.addRow([note]).font = { italic: true, color: { argb: 'FF666666' } };
@@ -49,14 +48,14 @@ export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
 
   section(rules.labels.securitiesList);
   header([
-    'Plattform / Wallet',
-    'Hauptpositionen',
-    'Kleinpositionen',
-    `Steuerwert ${data.rules.homeCurrency}`,
+    col.platformWallet,
+    col.mainPositions,
+    col.smallPositions,
+    col.taxValue(data.rules.homeCurrency),
   ]);
   const first = sheet.rowCount + 1;
   for (const platform of result.platforms) {
-    const { main, smallCount } = platformLine(
+    const { main, smallCount } = k.platformLine(
       result.positions.filter((p) => p.platform === platform.platform),
     );
     const row = sheet.addRow([platform.platform, main, smallCount]);
@@ -71,23 +70,23 @@ export async function simpleWorkbook(data: ExportData): Promise<Uint8Array> {
     num(result.totals.wealthChf),
     CHF_FORMAT,
   );
-  const unpriced = unpricedPositions(result.positions);
+  const unpriced = k.unpricedPositions(result.positions);
   if (unpriced.length > 0) {
     sheet.addRow([`${unpriced.join(', ')}: ${rules.labels.noPriceNote}`]).font =
       { italic: true, color: { argb: 'FF666666' } };
   }
 
   section(`${rules.labels.incomeTitle} ${data.taxYear}`);
-  header(['Kategorie', '', '', `Ertrag ${data.rules.homeCurrency}`]);
+  header([col.category, '', '', col.income(data.rules.homeCurrency)]);
   const firstIncome = sheet.rowCount + 1;
   for (const category of INCOME_CATEGORIES) {
     const total = result.categories.find((c) => c.category === category);
     if (!total || (total.lines === 0 && total.valueChf === '0')) continue;
-    const row = sheet.addRow([categoryLabel(rules, category)]);
+    const row = sheet.addRow([rules.labels.categories[category]]);
     input(row.getCell(4), num(total.valueChf), CHF_FORMAT);
   }
   const lastIncome = sheet.rowCount;
-  const incomeTotal = sheet.addRow(['Total Ertrag']);
+  const incomeTotal = sheet.addRow([col.totalIncome]);
   incomeTotal.font = { bold: true };
   formula(
     incomeTotal.getCell(4),

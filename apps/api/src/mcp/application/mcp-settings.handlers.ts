@@ -15,6 +15,8 @@ import {
   defaultAssistantSettings,
 } from '../../assistant/domain/assistant-settings';
 import { AssistantSettingsRepositoryPort } from '../../assistant/ports/assistant.repository.port';
+import type { Locale } from '../../common/i18n/locale';
+import { toolTitles } from '../../tools/domain/tool-titles';
 import { ToolRegistry } from '../../tools/application/tool-registry';
 import {
   availableIn,
@@ -53,6 +55,8 @@ export class McpRuntime {
 export interface McpToolInfo {
   readonly name: string;
   readonly title: string;
+  /** F11.2: the title per language — the app shows the one of its language. */
+  readonly titles: Readonly<Record<Locale, string>>;
   readonly description: string;
   readonly area: ToolArea;
   readonly effect: ToolEffect;
@@ -93,6 +97,7 @@ function view(
       .map((tool) => ({
         name: tool.name,
         title: tool.title,
+        titles: toolTitles(tool),
         description: tool.description,
         area: tool.area as ToolArea,
         effect: tool.effect,

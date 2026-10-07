@@ -1270,8 +1270,8 @@
     "subtitle": "Angaben für die Auszüge und den Mail-Entwurf.",
     "personalTitle": "Persönliche Angaben",
     "personalHint": "Erscheinen im Kopf der Auszüge und im Mail-Entwurf an den Treuhänder.",
-    "formatTitle": "Format",
-    "formatHint": "Zahlen und Daten wie in der Schweiz; weitere Sprachen folgen.",
+    "formatTitle": "Sprache und Format",
+    "formatHint": "Gilt sofort für die ganze App, für neue Exporte und die Mail an den Treuhänder.",
     "noCanton": "Kein Kanton",
     "fields": {
       "displayName": "Name",
@@ -1279,13 +1279,18 @@
       "advisorName": "Treuhänder",
       "advisorEmail": "E-Mail Treuhänder",
       "numberFormat": "Zahlenformat",
-      "dateFormat": "Datumsformat"
+      "dateFormat": "Datumsformat",
+      "language": "Sprache"
     },
     "numberFormats": {
-      "deCH": "1’234.56"
+      "deCH": "1’234.56",
+      "en": "1,234.56"
     },
     "dateFormats": {
-      "ddMMyyyy": "31.12.2025"
+      "ddMMyyyy": "31.12.2025",
+      "yyyyMMdd": "2025-12-31",
+      "ddMMyyyySlash": "31/12/2025",
+      "MMddyyyySlash": "12/31/2025"
     },
     "errors": {
       "tooLong": "Der Text ist zu lang.",
@@ -2057,9 +2062,10 @@
       "nameRequired": "Gib deinen Namen ein.",
       "cantonRequired": "Wähle deinen Wohnkanton.",
       "language": "Sprache",
-      "languageDeCH": "Deutsch (Schweiz)",
-      "languageHint": "Weitere Sprachen folgen.",
-      "format": "Zahlen- und Datumsformat"
+      "languageHint": "Gilt sofort; im Profil jederzeit änderbar.",
+      "format": "Zahlen- und Datumsformat",
+      "number": "Zahlenformat",
+      "date": "Datumsformat"
     },
     "ai": {
       "consent": "Ich bin einverstanden, dass Kopfzeile und wenige Beispielzeilen einer Datei an den gewählten Anbieter gesendet werden, wenn ich «Mit AI erstellen» wähle.",

@@ -63,6 +63,10 @@ export interface DesktopBridge {
     /** The user's auto-lock time, so the shell's system-idle check uses it. */
     setIdleMinutes(minutes: number): Promise<void>;
   };
+  /** F11.2: the app's language for the shell's menus and dialogs (stored in the desktop config). */
+  readonly locale: {
+    set(locale: string): Promise<void>;
+  };
   readonly notifications: {
     /** Einstellungen › System › "System-Benachrichtigungen" (default on). */
     enabled(): Promise<boolean>;
@@ -85,4 +89,5 @@ export const IPC = {
   notificationsEnabled: 'lk:notifications:enabled',
   notificationsSetEnabled: 'lk:notifications:set-enabled',
   notificationsShow: 'lk:notifications:show',
+  localeSet: 'lk:locale:set',
 } as const;

@@ -75,8 +75,8 @@
         </h3>
         <p class="text-sm">
           @if (settings.chatConsentAt) { {{ 'assistant.consent.given' |
-          translate: { date: (settings.chatConsentAt | date: 'dd.MM.yyyy HH:mm')
-          } }} } @else { {{ 'assistant.consent.none' | translate }} }
+          translate: { date: (settings.chatConsentAt | lkDate: 'dateTime') } }}
+          } @else { {{ 'assistant.consent.none' | translate }} }
         </p>
       </div>
       @if (settings.chatConsentAt) {

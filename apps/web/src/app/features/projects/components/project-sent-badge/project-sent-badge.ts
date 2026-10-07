@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
@@ -9,12 +9,12 @@ import { HlmBadgeImports } from '@lazykoins/ui/badge';
  */
 @Component({
   selector: 'lk-project-sent-badge',
-  imports: [DatePipe, TranslatePipe, ...HlmBadgeImports],
+  imports: [LkDatePipe, TranslatePipe, ...HlmBadgeImports],
   template: `
     @if (sentAt(); as at) {
       <span class="inline-flex flex-wrap items-center gap-1">
         <span hlmBadge variant="secondary">{{
-          'projects.sent.badge' | translate: { date: (at | date: 'dd.MM.yyyy') }
+          'projects.sent.badge' | translate: { date: (at | lkDate) }
         }}</span>
         @if (changedSince()) {
           <span hlmBadge variant="outline" class="lk-warning-text">{{

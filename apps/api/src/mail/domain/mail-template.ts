@@ -1,3 +1,5 @@
+import { type Locale, SUPPORTED_LOCALES } from '../../common/i18n/locale';
+
 /**
  * The text template of the mail to the Treuhänder (F11.10): subject and body with `{{name}}`-style
  * placeholders, rendered by a **logic-less** renderer — no expressions, no loops, no code: a known
@@ -5,9 +7,9 @@
  * again), an unknown one stays as typed and is reported. The result is plain text.
  */
 
-/** Languages with a built-in template (F11.2); mirrored by a CHECK in the migration. */
-export const MAIL_LANGUAGES = ['de-CH'] as const;
-export type MailLanguage = (typeof MAIL_LANGUAGES)[number];
+/** Languages with a built-in template (F11.2) = the app's; mirrored by a CHECK in the migration. */
+export const MAIL_LANGUAGES = SUPPORTED_LOCALES;
+export type MailLanguage = Locale;
 
 /** Every placeholder there is; the app explains each (`mail.placeholders.<name>`). */
 export const MAIL_PLACEHOLDERS = [
@@ -62,6 +64,28 @@ export const DEFAULT_MAIL_TEMPLATES: Readonly<
       '{{name}}',
     ].join('\n'),
   },
+  en: {
+    subject: 'Taxes {{steuerjahr}}: crypto wealth and income',
+    body: [
+      'Dear {{treuhaender}}',
+      '',
+      'Please find attached my documents on cryptocurrencies for the tax year {{steuerjahr}} (canton {{kanton}}):',
+      '',
+      '- Tax value at 31.12.{{steuerjahr}}: {{vermoegen}}',
+      '- Income from movable assets {{steuerjahr}}: {{ertrag}}',
+      '',
+      'Attachments:',
+      '{{anhaenge}}',
+      '',
+      'Open questions:',
+      '{{offene_punkte}}',
+      '- Assumption: Launchpool/HODLer airdrops declared as income (conservative).',
+      '- Assumption: income declared net after fees.',
+      '',
+      'Kind regards',
+      '{{name}}',
+    ].join('\n'),
+  },
 };
 
 /** Values for the live preview in the settings — invented, never a user's data. */
@@ -79,6 +103,28 @@ export const SAMPLE_MAIL_VALUES: MailValues = {
   offene_punkte: '- kraken / spot / DOT: negative Earn-Lücke – bitte prüfen',
   datum: '01.02.2026',
   projekt: 'Steuern 2025',
+};
+
+/** The preview's sample values per language (F11.2). */
+export const SAMPLE_MAIL_VALUES_BY_LANGUAGE: Readonly<
+  Record<MailLanguage, MailValues>
+> = {
+  'de-CH': SAMPLE_MAIL_VALUES,
+  en: {
+    name: 'Anna Muster',
+    treuhaender: 'Beat Treuhand',
+    steuerjahr: '2025',
+    kanton: 'ZH',
+    vermoegen: 'CHF 12,345.65',
+    ertrag: 'CHF 234.10',
+    anhaenge: [
+      '- Taxes-2025_simple_2026-02-01.pdf',
+      '- Taxes-2025_detailed_2026-02-01.xlsx',
+    ].join('\n'),
+    offene_punkte: '- kraken / spot / DOT: negative Earn gap – please check',
+    datum: '2026-02-01',
+    projekt: 'Taxes 2025',
+  },
 };
 
 const TOKEN = /\{\{\s*([^{}]*?)\s*\}\}/g;

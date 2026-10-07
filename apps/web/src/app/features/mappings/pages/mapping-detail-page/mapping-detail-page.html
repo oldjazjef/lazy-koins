@@ -91,9 +91,9 @@
         <dt>{{ 'mappings.detail.fingerprint' | translate }}</dt>
         <dd class="break-words">{{ service.columns() }}</dd>
         <dt>{{ 'mappings.detail.created' | translate }}</dt>
-        <dd>{{ mapping.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dd>{{ mapping.createdAt | lkDate: 'dateTime' }}</dd>
         <dt>{{ 'mappings.fields.updated' | translate }}</dt>
-        <dd>{{ mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dd>{{ mapping.updatedAt | lkDate: 'dateTime' }}</dd>
         <dt>{{ 'mappings.list.usedBy' | translate }}</dt>
         <dd>
           @if (service.filesUsing() > 0) { {{ 'mappings.list.usage' | translate:

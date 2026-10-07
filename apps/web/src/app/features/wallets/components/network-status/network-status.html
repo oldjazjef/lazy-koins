@@ -69,7 +69,7 @@
           @if (net.status === 'ok') {
           <span
             >{{ 'wallets.fetchStatus.ok' | translate: { date: (net.fetchedAt |
-            date: 'dd.MM.yyyy HH:mm') } }}</span
+            lkDate: 'dateTime') } }}</span
           >
           } @else if (net.status === 'error') { @let errorText =
           'wallets.errors.' + (net.errorCode ?? 'failed') | translate;

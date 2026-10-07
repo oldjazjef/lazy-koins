@@ -10,6 +10,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { type Locale, SUPPORTED_LOCALES } from '../../common/i18n/locale';
 import type { SettingsView } from '../application/settings.handlers';
 import {
   DATE_FORMATS,
@@ -62,6 +63,14 @@ export class UpdateSettingsDto {
   })
   @MaxLength(200)
   advisorEmail?: string;
+
+  @ApiPropertyOptional({
+    enum: SUPPORTED_LOCALES,
+    description: 'F11.2: the language of the app and the exports',
+  })
+  @IsOptional()
+  @IsIn(SUPPORTED_LOCALES)
+  locale?: Locale;
 
   @ApiPropertyOptional({ enum: NUMBER_FORMATS })
   @IsOptional()
@@ -122,6 +131,12 @@ export class SettingsResponseDto {
   @ApiProperty() canton!: string;
   @ApiProperty() advisorName!: string;
   @ApiProperty() advisorEmail!: string;
+  @ApiProperty({
+    enum: SUPPORTED_LOCALES,
+    nullable: true,
+    description: 'null = not chosen yet (the app takes the browser language)',
+  })
+  locale!: Locale | null;
   @ApiProperty({ enum: NUMBER_FORMATS }) numberFormat!: NumberFormat;
   @ApiProperty({ enum: DATE_FORMATS }) dateFormat!: DateFormat;
   @ApiProperty() onlineRates!: boolean;

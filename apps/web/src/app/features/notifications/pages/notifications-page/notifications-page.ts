@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -54,7 +54,7 @@ type RowActionId = 'open' | 'read' | 'dismiss';
 @Component({
   selector: 'lk-notifications-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     FormsModule,
     NgIcon,
     TranslatePipe,

@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
+  signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -10,6 +12,12 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
 import { z } from 'zod';
 import { CH_CANTONS } from '../../../../core/api/api.types';
+import { LanguageService } from '../../../../core/i18n/language.service';
+import { LanguageFields } from '../../../../shared/components/language-fields';
+import {
+  type LanguageChoice,
+  languageChoiceOf,
+} from '../../../../shared/format/format-options';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { UserSettingsService } from '../../../settings/user-settings.service';
 import { provideSetupStep, SetupStepComponent } from '../setup-step';
@@ -25,14 +33,16 @@ export const ProfileStepSchema = z.object({
 });
 
 /**
- * Profil (F11.1, F11.2): name and Wohnkanton (required), the language — Deutsch (Schweiz) only so
- * far — and the number/date format (de-CH). Saved through the settings (`PUT /api/settings`).
+ * Profil (F11.1, F11.2): name and Wohnkanton (required), the language — the browser's until
+ * changed; a change switches the wizard at once — and the number/date format. Saved through the
+ * settings (`PUT /api/settings`) with "Weiter".
  */
 @Component({
   selector: 'lk-setup-profile-step',
   imports: [
     ReactiveFormsModule,
     TranslatePipe,
+    LanguageFields,
     ...HlmInputImports,
     ...HlmLabelImports,
   ],
@@ -84,27 +94,16 @@ export const ProfileStepSchema = z.object({
           </p>
         }
       </div>
-      <div class="flex flex-col gap-2">
-        <label hlmLabel for="setup-language">{{
-          'setup.profile.language' | translate
-        }}</label>
-        <select hlmInput id="setup-language" disabled>
-          <option>{{ 'setup.profile.languageDeCH' | translate }}</option>
-        </select>
-        <p class="text-muted-foreground text-xs">
+      <!-- F11.2: the wizard switches language at once; saved with "Weiter" -->
+      <div class="grid gap-5 sm:col-span-2 sm:grid-cols-3">
+        <lk-language-fields
+          [idPrefix]="'setup'"
+          [choice]="choice()"
+          (choiceChange)="changeLanguage($event)"
+        />
+        <p class="text-muted-foreground text-xs sm:col-span-3">
           {{ 'setup.profile.languageHint' | translate }}
         </p>
-      </div>
-      <div class="flex flex-col gap-2">
-        <label hlmLabel for="setup-format">{{
-          'setup.profile.format' | translate
-        }}</label>
-        <select hlmInput id="setup-format" disabled>
-          <option>
-            {{ 'profile.numberFormats.deCH' | translate }} ·
-            {{ 'profile.dateFormats.ddMMyyyy' | translate }}
-          </option>
-        </select>
       </div>
     </form>
   `,
@@ -112,6 +111,7 @@ export const ProfileStepSchema = z.object({
 })
 export class ProfileStep extends SetupStepComponent {
   private readonly settings = inject(UserSettingsService);
+  private readonly language = inject(LanguageService);
   protected readonly cantons = CH_CANTONS;
 
   readonly form = inject(FormBuilder).nonNullable.group(
@@ -139,12 +139,39 @@ export class ProfileStep extends SetupStepComponent {
     return parsed.success ? null : (parsed.error.issues[0]?.message ?? null);
   }
 
+  /** F11.2: the language (and its formats) chosen here — the browser's until changed. */
+  private readonly chosen = signal<LanguageChoice | null>(null);
+  protected readonly choice = computed<LanguageChoice>(
+    () =>
+      this.chosen() ??
+      languageChoiceOf(
+        this.settings.settings.hasValue()
+          ? this.settings.settings.value()
+          : null,
+        this.language.locale(),
+      ),
+  );
+
+  /** The wizard is in the new language at once. */
+  protected changeLanguage(choice: LanguageChoice): void {
+    this.chosen.set(choice);
+    this.language.preview(
+      choice.locale,
+      choice.numberFormat,
+      choice.dateFormat,
+    );
+  }
+
   async submit(): Promise<boolean> {
     this.form.markAllAsTouched();
     const parsed = ProfileStepSchema.safeParse(this.form.getRawValue());
     if (!parsed.success) return false;
+    const { locale, numberFormat, dateFormat } = this.choice();
     try {
-      await this.settings.save(parsed.data, { quiet: true });
+      await this.settings.save(
+        { ...parsed.data, locale, numberFormat, dateFormat },
+        { quiet: true },
+      );
       this.form.markAsPristine();
       return true;
     } catch {

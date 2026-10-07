@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -37,7 +37,7 @@ import {
 @Component({
   selector: 'lk-project-result',
   imports: [
-    DatePipe,
+    LkDatePipe,
     TranslatePipe,
     Paginator,
     Truncate,

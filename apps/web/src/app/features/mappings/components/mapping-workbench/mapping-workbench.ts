@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { NumberPipe } from '../../../../shared/format/number-format';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -38,7 +38,7 @@ import { MappingWorkbenchService } from './mapping-workbench.service';
 @Component({
   selector: 'lk-mapping-workbench',
   imports: [
-    DecimalPipe,
+    NumberPipe,
     FormsModule,
     RouterLink,
     NgIcon,

@@ -240,9 +240,7 @@
             translate);
             <span [lkTruncate]="label">{{ label }}</span>
           </td>
-          <td hlmTd class="tabular-nums">
-            {{ rate.date | date: 'dd.MM.yyyy' }}
-          </td>
+          <td hlmTd class="tabular-nums">{{ rate.date | lkDate }}</td>
           <td hlmTd class="max-w-0 text-right tabular-nums">
             @let value = (rate.value | lkQuantity: 10) + ' ' + rate.currency;
             <span [lkTruncate]="value">{{ value }}</span>
@@ -336,14 +334,14 @@
             {{ s.points }}
           </td>
           <td hlmTd class="hidden tabular-nums md:table-cell">
-            {{ s.from | date: 'dd.MM.yyyy' }} – {{ s.to | date: 'dd.MM.yyyy' }}
+            {{ s.from | lkDate }} – {{ s.to | lkDate }}
           </td>
           <td hlmTd class="max-w-0 text-right tabular-nums">
             @if (s.yearEnd; as point) { @let value = point.value | lkQuantity:
             8;
             <span [lkTruncate]="value">{{ value }}</span>
             <span class="text-muted-foreground block text-xs"
-              >{{ point.date | date: 'dd.MM.yyyy' }}</span
+              >{{ point.date | lkDate }}</span
             >
             } @else {
             <span hlmBadge variant="destructive"
@@ -352,7 +350,7 @@
             }
           </td>
           <td hlmTd class="text-muted-foreground hidden text-xs lg:table-cell">
-            {{ s.fetchedAt | date: 'dd.MM.yyyy HH:mm' }}
+            {{ s.fetchedAt | lkDate: 'dateTime' }}
           </td>
           <td hlmTd class="lk-sticky-actions text-right">
             <lk-row-actions

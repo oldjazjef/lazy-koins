@@ -140,6 +140,8 @@ export type McpArea = (typeof MCP_AREAS)[number];
 export interface McpTool {
   name: string;
   title: string;
+  /** F11.2: the title per language (`de-CH`, `en`). */
+  titles?: Record<string, string>;
   description: string;
   area: McpArea;
   effect: ToolEffect;

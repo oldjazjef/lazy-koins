@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -58,7 +58,7 @@ type Confirm = 'reopen' | 'delete' | 'currency';
 @Component({
   selector: 'lk-project-detail-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,

@@ -68,7 +68,7 @@
             <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
               @if (file.inTarget) { {{ 'files.takeOver.already' | translate }} }
               @else if (file.periodFrom && file.periodTo) { {{ file.periodFrom |
-              date: 'dd.MM.yyyy' }} – {{ file.periodTo | date: 'dd.MM.yyyy' }} }
+              lkDate }} – {{ file.periodTo | lkDate }} }
             </span>
           </label>
           }

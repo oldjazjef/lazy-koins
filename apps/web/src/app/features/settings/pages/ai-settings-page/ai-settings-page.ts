@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -24,7 +24,7 @@ import { AssistantSettingsSection } from './assistant-settings-section';
 @Component({
   selector: 'lk-ai-settings-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     TranslatePipe,
     PageHeader,
     AssistantSettingsSection,

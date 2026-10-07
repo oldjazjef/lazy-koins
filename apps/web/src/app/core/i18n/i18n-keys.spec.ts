@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locales';
 import { SETTINGS_SECTIONS } from '../../features/settings/settings-shell';
 import { WORKSPACE_TABS } from '../../features/calculation/components/project-workspace/project-workspace.service';
 import {
@@ -328,12 +329,76 @@ function has(messages: unknown, key: string): boolean {
   return typeof node === 'string';
 }
 
+/** Every `key → text` of a message file, flattened (`a.b.c`). */
+function flatten(
+  node: unknown,
+  prefix = '',
+  out = new Map<string, string>(),
+): Map<string, string> {
+  if (typeof node === 'string') {
+    out.set(prefix, node);
+  } else if (typeof node === 'object' && node !== null) {
+    for (const [key, value] of Object.entries(node)) {
+      flatten(value, prefix ? `${prefix}.${key}` : key, out);
+    }
+  }
+  return out;
+}
+
+/** `{{ name }}` placeholders of a text, sorted. */
+function placeholders(text: string): string[] {
+  return [...text.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)]
+    .map((match) => match[1] ?? '')
+    .sort();
+}
+
+function messagesOf(locale: string): Map<string, string> {
+  return flatten(
+    JSON.parse(readFileSync(join(I18N_DIR, `${locale}.json`), 'utf8')),
+  );
+}
+
 describe('i18n message files', () => {
   const keys = [...referencedKeys()];
 
   it('finds the keys it is supposed to check', () => {
     expect(keys.length).toBeGreaterThan(40);
   });
+
+  it('has exactly one file per supported locale (F11.2)', () => {
+    expect(
+      readdirSync(I18N_DIR)
+        .filter((name) => name.endsWith('.json'))
+        .map((name) => name.replace(/\.json$/, ''))
+        .sort(),
+    ).toEqual([...SUPPORTED_LOCALES].sort());
+  });
+
+  const reference = messagesOf(DEFAULT_LOCALE);
+  for (const locale of SUPPORTED_LOCALES.filter((l) => l !== DEFAULT_LOCALE)) {
+    it(`${locale}.json has the same keys as ${DEFAULT_LOCALE}.json — none missing, none extra`, () => {
+      const messages = messagesOf(locale);
+      expect([...reference.keys()].filter((key) => !messages.has(key))).toEqual(
+        [],
+      );
+      expect([...messages.keys()].filter((key) => !reference.has(key))).toEqual(
+        [],
+      );
+    });
+
+    it(`${locale}.json keeps every placeholder and translates every text`, () => {
+      const messages = messagesOf(locale);
+      const wrong = [...reference].filter(
+        ([key, text]) =>
+          placeholders(messages.get(key) ?? '').join() !==
+          placeholders(text).join(),
+      );
+      expect(wrong.map(([key]) => key)).toEqual([]);
+      expect(
+        [...messages].filter(([, text]) => text.trim() === '').map(([k]) => k),
+      ).toEqual([]);
+    });
+  }
 
   for (const file of readdirSync(I18N_DIR).filter((name) =>
     name.endsWith('.json'),

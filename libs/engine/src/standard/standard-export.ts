@@ -32,11 +32,39 @@ export const EXPORT_EXTRA_COLUMNS = {
   row: 'Zeile',
 } as const;
 
+/**
+ * F11.2: the information columns in English. Only these are translated — the standard format's
+ * own columns are a file format (German names) and stay, so the file re-imports in any language.
+ */
+export const EXPORT_EXTRA_COLUMNS_EN: Readonly<
+  Record<keyof typeof EXPORT_EXTRA_COLUMNS, string>
+> = {
+  originalType: 'Type (original)',
+  corrections: 'Corrections',
+  priceChf: 'Price CHF used',
+  priceSource: 'Price source',
+  valueChf: 'Value CHF',
+  sourceFile: 'Source file',
+  row: 'Row',
+};
+
+/** Languages of the information columns (F11.2); anything else is German. */
+export type StandardExportLanguage = 'de-CH' | 'en';
+
+function extraColumnNames(
+  language: StandardExportLanguage,
+): Readonly<Record<keyof typeof EXPORT_EXTRA_COLUMNS, string>> {
+  return language === 'en' ? EXPORT_EXTRA_COLUMNS_EN : EXPORT_EXTRA_COLUMNS;
+}
+
 /** The information columns with the project's tax currency in the names (F4.1a: "Wert EUR"). */
-export function exportExtraColumns(currency: string): readonly string[] {
-  return Object.values(EXPORT_EXTRA_COLUMNS).map((name) =>
-    name === EXPORT_EXTRA_COLUMNS.priceChf ||
-    name === EXPORT_EXTRA_COLUMNS.valueChf
+export function exportExtraColumns(
+  currency: string,
+  language: StandardExportLanguage = 'de-CH',
+): readonly string[] {
+  const names = extraColumnNames(language);
+  return Object.values(names).map((name) =>
+    name === names.priceChf || name === names.valueChf
       ? name.replace('CHF', currency)
       : name,
   );
@@ -62,6 +90,8 @@ export interface StandardExportInput {
   /** SHA-256 → file name, for the "Quelldatei" column. */
   readonly fileNames: Readonly<Record<string, string>>;
   readonly filter?: StandardExportFilter;
+  /** F11.2: the language of the information columns; default German. */
+  readonly language?: StandardExportLanguage;
 }
 
 export interface ExportTable {
@@ -126,7 +156,9 @@ export function standardExport(input: StandardExportInput): StandardExport {
       : (notes.get(id) ?? []).join('; ');
   const fileOf = (sourceFileId: string) =>
     isCorrectionRecord(sourceFileId)
-      ? 'Korrektur'
+      ? input.language === 'en'
+        ? 'Correction'
+        : 'Korrektur'
       : (input.fileNames[sourceFileId] ?? sourceFileId);
 
   const bookings = [...corrected.bookings]
@@ -197,7 +229,10 @@ export function standardExport(input: StandardExportInput): StandardExport {
     ];
   });
 
-  const extras = exportExtraColumns(input.rules.homeCurrency);
+  const extras = exportExtraColumns(
+    input.rules.homeCurrency,
+    input.language ?? 'de-CH',
+  );
   return {
     bookings: {
       header: [...columnNames(BOOKING_COLUMNS), ...extras],

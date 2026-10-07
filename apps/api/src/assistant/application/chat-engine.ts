@@ -3,8 +3,11 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { AiGate, aiConflict } from '../../ai/application/ai-gate';
+import { type Locale, localeOr } from '../../common/i18n/locale';
+import { SettingsReader } from '../../settings/application/settings.handlers';
 import {
   type AiChatMessage,
   AiCompletionPort,
@@ -14,6 +17,7 @@ import {
 import { ProjectsService } from '../../projects/projects.service';
 import { ToolExecutor } from '../../tools/application/tool-executor';
 import { availableIn, type ToolContext } from '../../tools/domain/tool';
+import { toolTitle } from '../../tools/domain/tool-titles';
 import {
   buildSystemPrompt,
   type ChatPageContext,
@@ -73,7 +77,13 @@ export class ChatEngine {
     private readonly chats: ChatRepositoryPort,
     private readonly settings: AssistantSettingsRepositoryPort,
     private readonly projects: ProjectsService,
+    @Optional() private readonly userSettings?: SettingsReader,
   ) {}
+
+  /** F11.2: the user's language — the default prompt and the fixed rules follow it. */
+  async localeOf(userId: string): Promise<Locale> {
+    return localeOr((await this.userSettings?.resolve(userId))?.locale);
+  }
 
   async assistantSettings(userId: string): Promise<AssistantSettings> {
     return (
@@ -132,10 +142,12 @@ export class ChatEngine {
       ? toAiHistory(await this.chats.messages(existing.id))
       : [];
     const context = await this.enrich(userId, question.context);
+    const locale = await this.localeOf(userId);
     const system = buildSystemPrompt(
       settings.systemPrompt,
       context,
       new Date().toISOString().slice(0, 10),
+      locale,
     );
     const toolContext: ToolContext = { userId, source: 'chat' };
     const tools = this.toolSpecs();
@@ -192,6 +204,7 @@ export class ChatEngine {
           call.input,
           proposals,
           attachments,
+          locale,
         );
         const content = cut(JSON.stringify(result), MAX_TOOL_RESULT_CHARS);
         messages.push({
@@ -304,6 +317,7 @@ export class ChatEngine {
     args: unknown,
     proposals: NewChatProposal[],
     attachments: ChatAttachment[],
+    locale: Locale = 'de-CH',
   ): Promise<{ result: unknown; isError: boolean }> {
     const tool = this.executor.registry.get(name);
     if (tool && availableIn(tool, 'chat') && tool.effect !== 'readOnly') {
@@ -327,7 +341,12 @@ export class ChatEngine {
         id,
         tool: tool.name,
         args: input as Record<string, unknown>,
-        preview: { ...preview, title: tool.title, effect: tool.effect },
+        // F11.2: the card's title in the user's language (summary and changes: the tool's).
+        preview: {
+          ...preview,
+          title: toolTitle(tool, locale),
+          effect: tool.effect,
+        },
       });
       await this.executor.proposed(context, tool.name, input);
       return {

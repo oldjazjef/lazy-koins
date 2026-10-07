@@ -252,15 +252,15 @@
                 >
               </td>
               <td hlmTd class="hidden align-top tabular-nums md:table-cell">
-                @if (token.expiresAt) { {{ token.expiresAt | date: 'dd.MM.yyyy'
-                }} } @else { {{ 'mcp.tokens.never' | translate }} }
+                @if (token.expiresAt) { {{ token.expiresAt | lkDate }} } @else {
+                {{ 'mcp.tokens.never' | translate }} }
               </td>
               <td hlmTd class="hidden align-top tabular-nums lg:table-cell">
-                @if (token.lastUsedAt) { {{ token.lastUsedAt | date: 'dd.MM.yyyy
-                HH:mm' }} } @else { {{ 'mcp.tokens.unused' | translate }} }
+                @if (token.lastUsedAt) { {{ token.lastUsedAt | lkDate:
+                'dateTime' }} } @else { {{ 'mcp.tokens.unused' | translate }} }
               </td>
               <td hlmTd class="hidden align-top tabular-nums lg:table-cell">
-                {{ token.createdAt | date: 'dd.MM.yyyy' }}
+                {{ token.createdAt | lkDate }}
               </td>
               <td hlmTd class="lk-sticky-actions text-right align-top">
                 <lk-row-actions
@@ -303,8 +303,9 @@
           @for (tool of group.tools; track tool.name) {
           <li class="flex min-w-0 flex-col gap-0.5 px-3 py-2">
             <div class="flex min-w-0 items-center gap-2">
-              <span class="min-w-0 flex-1" [lkTruncate]="tool.title"
-                >{{ tool.title }}</span
+              @let title = tool.titles?.[language.locale()] ?? tool.title;
+              <span class="min-w-0 flex-1" [lkTruncate]="title"
+                >{{ title }}</span
               >
               <span
                 hlmBadge
@@ -398,7 +399,7 @@
             @for (entry of auditPager.visible(); track entry.id) {
             <tr hlmTr>
               <td hlmTd class="align-top tabular-nums">
-                {{ entry.createdAt | date: 'dd.MM.yyyy HH:mm:ss' }}
+                {{ entry.createdAt | lkDate: 'dateTimeSeconds' }}
               </td>
               <td hlmTd class="hidden align-top md:table-cell">
                 {{ 'mcp.audit.source.' + entry.source | translate }}

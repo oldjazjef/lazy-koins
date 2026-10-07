@@ -1,0 +1,432 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`export language (F11.2) > keeps the German documents exactly as they were 1`] = `
+{
+  "detailedHtml": "<!doctype html><html lang="de-CH"><head><meta charset="utf-8"><title>Steuerauszug 2025 (ausführlich)</title><style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; color: #1d2433; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 4pt; }
+  h2 { font-size: 11.5pt; margin: 16pt 0 6pt; border-bottom: 1px solid #c9d1de; padding-bottom: 3pt; }
+  .meta { color: #4a5568; margin: 0 0 2pt; }
+  .note { color: #6b7280; font-style: italic; margin: 0 0 10pt; }
+  .figures { display: flex; gap: 12pt; margin: 10pt 0; }
+  .figure { flex: 1; border: 1px solid #c9d1de; border-radius: 6pt; padding: 8pt 10pt; }
+  .figure .label { color: #4a5568; font-size: 9pt; }
+  .figure .value { font-size: 15pt; font-weight: 600; margin-top: 2pt; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+  th, td { text-align: left; padding: 3pt 5pt; border-bottom: 1px solid #e5e9f0; vertical-align: top; }
+  th { background: #eef1f6; font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.total td { font-weight: 600; border-top: 1.5px solid #1d2433; }
+  h1.internal { color: #b42318; }
+  .footnote { font-size: 8.5pt; color: #4a5568; font-style: italic; margin: 3pt 0 0; }
+  .light { display: inline-block; padding: 0 6pt; border-radius: 8pt; }
+  .light.green { background: #b7e4c7; } .light.yellow { background: #fff2a8; }
+  .light.red { background: #f4b6b6; } .light.grey { background: #e0e0e0; }
+  .small { font-size: 8.5pt; color: #4a5568; }
+  footer { margin-top: 16pt; color: #6b7280; font-size: 8.5pt; }
+</style></head><body>
+    <h1>Steuerauszug Kryptowährungen 2025 (ausführlich)</h1>
+    <p class="meta">Anna Muster · Steuerjahr 2025 · Kanton ZH · erstellt am 15.01.2026 · berechnet am 14.01.2026</p>
+    <p class="note">Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.</p>
+    <div class="figures">
+      <div class="figure"><div class="label">Steuerwert per 31.12.2025</div><div class="value">CHF 858.70</div></div>
+      <div class="figure"><div class="label">Ertrag aus beweglichem Vermögen 2025</div><div class="value">CHF 6.75</div></div>
+    </div>
+    <h2>Wertschriften- und Guthabenverzeichnis</h2>
+    <table><thead><tr><th>Plattform / Wallet</th><th>Hauptpositionen</th><th class="num">Kleinpositionen</th><th class="num">Steuerwert CHF</th></tr></thead>
+    <tbody><tr><td>kraken</td><td>CHF 498.7, BTC 0.005, DOT 1.5</td><td class="num">1</td><td class="num">858.70</td></tr><tr class="total"><td colspan="3">Total</td><td class="num">858.70</td></tr></tbody></table><p class="footnote">kraken DOT 1.5, kraken ETH 1: Kein Kurswert verfügbar; nicht im Total enthalten.</p>
+    <h2>Ertrag aus beweglichem Vermögen 2025</h2>
+    <table><thead><tr><th>Kategorie</th><th class="num">Buchungen</th><th class="num">Ertrag CHF</th></tr></thead>
+    <tbody><tr><td>Staking</td><td class="num">1</td><td class="num">6.75</td></tr><tr class="total"><td colspan="2">Total</td><td class="num">6.75</td></tr></tbody></table><h2>Parameter</h2><p>USD/CHF per 31.12.: <b>0.8</b> (ecb 2025-12-31) · EUR/CHF per 31.12.: <b>–</b> (–)</p><h2>Bestand per 31.12.2025</h2><table><thead><tr><th>Plattform</th><th>Konto</th><th>Asset</th><th class="num">Menge</th><th class="num">Kurs CHF</th><th class="num">Wert CHF</th><th>Status</th><th>Quelle</th></tr></thead><tbody><tr><td>kraken</td><td>spot</td><td>BTC</td><td class="num">0.005</td><td class="num">72’000</td><td class="num">360.00</td><td>ok</td><td class="small">Kontoauszug<br>Tagesschluss USD × USD/CHF (binance 2025-12-31)</td></tr><tr><td>kraken</td><td>spot</td><td>CHF</td><td class="num">498.7</td><td class="num">1</td><td class="num">498.70</td><td>ok</td><td class="small">Kontoauszug<br>CHF (2025-12-31)</td></tr><tr><td>kraken</td><td>spot</td><td>DOT</td><td class="num">1.5</td><td class="num">–</td><td class="num">–</td><td>ohne Kurswert</td><td class="small">Kontoauszug<br>–</td></tr><tr><td>kraken</td><td>spot</td><td>ETH</td><td class="num">1</td><td class="num">–</td><td class="num">–</td><td>ohne Kurswert</td><td class="small">Kontoauszug<br>–</td></tr></tbody></table><p class="footnote">ohne Kurswert: Kein Kurswert verfügbar; nicht im Total enthalten.</p><h2>Ertrag Detail</h2><table><thead><tr><th>Datum</th><th>Plattform</th><th>Kategorie</th><th>Asset</th><th class="num">Menge netto</th><th class="num">Wert CHF</th><th class="num">Brutto</th><th>Art</th></tr></thead><tbody><tr><td>01.03.2025</td><td>kraken</td><td>Staking</td><td>DOT</td><td class="num">1.5</td><td class="num">6.75</td><td class="num small">9.00</td><td class="small">income_staking</td></tr></tbody></table><h2>Methodik</h2><p>Vermögen: Bestand per 31.12.2025 je Plattform/Konto und Asset. Hat ein Konto einen Kontoauszug per Stichtag, gilt dieser; sonst der Saldo aus dem Ledger (Σ Menge − Σ Gebühr aller Buchungen bis Jahresende). Positionen mit |Menge| &lt; 0.0000001 entfallen.</p><p>Kurse (erste vorhandene gilt): 1. ESTV-Kurs bzw. Override, 2. Kurs CHF direkt (z. B. aus dem Kontoauszug), 3. Kurs USD × USD/CHF des Stichtags.</p><p>Stablecoins (USD, USDT, USDC, BUSD, FDUSD, USDD) = 1 USD; CHF = 1; EUR über EUR/CHF. USD-Kurse: Tagesschluss (Binance, UTC), höchstens 14 Tage alt, sonst erster Kurs danach (≤ 14 Tage). Devisen: EZB-Referenzkurse, letztes Fixing.</p><p>Ertrag: zum Zuflusszeitpunkt (Tag in UTC) bewertet, netto nach Gebühr im gleichen Asset; Brutto als Information. Liefert die Plattform einen USD-Wert (z. B. Kraken amountusd − feeusd), gilt dieser × USD/CHF des Tages.</p><p>Earn-Lücke (Differenzmethode): (Bestand Ende − Bestand Anfang) − Σ Historie ohne interne Umbuchungen, je Konto und Asset; nur positive Lücken sind Ertrag, bewertet zum Jahresmittel. Ausgenommen: EUR, USDT.</p><p>Einmalereignisse (Hardforks, Airdrops, Verluste) werden separat ausgewiesen.</p><p>Positionen und Ereignisse ohne verfügbaren Kurswert werden mit ihrer Menge, ohne Wert aufgeführt und sind nicht im Total enthalten.</p><p>Spam-/Scam-Token (z. B. mit „Claim“ im Namen) haben keinen Marktwert und sind nicht im Total enthalten.</p><p>Annahmen (konservativ): Launchpool-/HODLer-Airdrops sind Ertrag; Kraken-Erträge netto nach Gebühr.</p><p>Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar.</p><p>Erstellt mit lazy-koins 1.0.0+test.</p><p>Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.</p><footer>Wertschriftenverzeichnis (Kanton ZH): Kryptowährungen als Vermögen ohne Verrechnungssteuer; Ertrag als Einkommen aus beweglichem Vermögen.<br>Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.<br>lazy-koins 1.0.0+test</footer></body></html>",
+  "detailedXlsx": [
+    "# Übersicht",
+    "Steuerauszug Kryptowährungen 2025 (ausführlich)",
+    "Anna Muster · Steuerjahr 2025 · Kanton ZH · erstellt am 15.01.2026 · berechnet am 14.01.2026",
+    "Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.",
+    "Vermögen per 31.12.2025 je Plattform",
+    "Plattform",
+    "Steuerwert CHF",
+    "kraken",
+    "=SUMIFS('Bestand 31.12.'!J:J,'Bestand 31.12.'!B:B,A7,'Bestand 31.12.'!K:K,"<>Spam",'Bestand 31.12.'!K:K,"<>Negativ")",
+    "Total Vermögen",
+    "=SUM(B7:B7)",
+    "Positionen ohne Kurswert (nicht im Total)",
+    "=COUNTIFS('Bestand 31.12.'!K:K,"ohne Kurswert")",
+    "Ertrag 2025 je Kategorie",
+    "Kategorie",
+    "Ertrag CHF",
+    "Zinsen / Earn",
+    "=SUMIFS('Ertrag Detail'!K:K,'Ertrag Detail'!D:D,A13)",
+    "Staking",
+    "=SUMIFS('Ertrag Detail'!K:K,'Ertrag Detail'!D:D,A14)",
+    "Airdrop",
+    "=SUMIFS('Ertrag Detail'!K:K,'Ertrag Detail'!D:D,A15)",
+    "Launchpool",
+    "=SUMIFS('Ertrag Detail'!K:K,'Ertrag Detail'!D:D,A16)",
+    "Hardfork",
+    "=SUMIFS('Ertrag Detail'!K:K,'Ertrag Detail'!D:D,A17)",
+    "Earn-Lücke (Differenzmethode)",
+    "=SUM('Earn-Lücke'!I:I)",
+    "Total Ertrag",
+    "=SUM(B13:B18)",
+    "Hinweise",
+    "Wertschriftenverzeichnis (Kanton ZH): Kryptowährungen als Vermögen ohne Verrechnungssteuer; Ertrag als Einkommen aus beweglichem Vermögen.",
+    "Farben: blau = Eingabe, schwarz = Formel, grün = Verweis auf Parameter.",
+    "# Parameter",
+    "Parameter",
+    "USD/CHF per 31.12.2025",
+    "0.8",
+    "ecb 2025-12-31",
+    "EUR/CHF per 31.12.2025",
+    "–",
+    "Die Formeln der übrigen Blätter rechnen mit diesen Werten (benannte Zellen USDCHF, EURCHF).",
+    "# Bestand 31.12.",
+    "Jahr",
+    "Plattform",
+    "Konto",
+    "Asset",
+    "Menge",
+    "Kurs USD",
+    "USD/CHF",
+    "Kurs CHF direkt",
+    "ESTV-Kurs (Override)",
+    "Wert CHF",
+    "Status",
+    "Quelle Menge",
+    "Quelle Kurs",
+    "Menge exakt",
+    "2025",
+    "kraken",
+    "spot",
+    "BTC",
+    "0.005",
+    "90000",
+    "=USDCHF",
+    "=IF(I2<>"",E2*I2,IF(H2<>"",E2*H2,IF(F2<>"",E2*F2*G2,"")))",
+    "ok",
+    "Kontoauszug",
+    "Tagesschluss USD × USD/CHF (binance 2025-12-31)",
+    "0.005",
+    "2025",
+    "kraken",
+    "spot",
+    "CHF",
+    "498.7",
+    "1",
+    "=IF(I3<>"",E3*I3,IF(H3<>"",E3*H3,IF(F3<>"",E3*F3*G3,"")))",
+    "ok",
+    "Kontoauszug",
+    "CHF (2025-12-31)",
+    "498.7",
+    "2025",
+    "kraken",
+    "spot",
+    "DOT",
+    "1.5",
+    "=IF(I4<>"",E4*I4,IF(H4<>"",E4*H4,IF(F4<>"",E4*F4*G4,"")))",
+    "ohne Kurswert",
+    "Kontoauszug",
+    "–",
+    "1.5",
+    "2025",
+    "kraken",
+    "spot",
+    "ETH",
+    "1",
+    "=IF(I5<>"",E5*I5,IF(H5<>"",E5*H5,IF(F5<>"",E5*F5*G5,"")))",
+    "ohne Kurswert",
+    "Kontoauszug",
+    "–",
+    "1",
+    "ohne Kurswert: Kein Kurswert verfügbar; nicht im Total enthalten.",
+    "# Ertrag Detail",
+    "Datum (UTC)",
+    "Plattform",
+    "Art",
+    "Kategorie",
+    "Asset",
+    "Menge netto",
+    "Kurs USD",
+    "Wert USD",
+    "USD/CHF Tag",
+    "Kurs CHF",
+    "Wert CHF",
+    "Brutto CHF (Info)",
+    "Referenz",
+    "Status",
+    "2025-03-01 00:00:00",
+    "kraken",
+    "income_staking",
+    "Staking",
+    "DOT",
+    "1.5",
+    "5",
+    "=IF(G2<>"",F2*G2,"")",
+    "0.9",
+    "=IF(H2<>"",H2*I2,IF(J2<>"",F2*J2,""))",
+    "9",
+    "d530c635e44c699fdbb360f7cd40d940dd651dde232ff8ba47582d28bc29c454::5",
+    "Kurs USD laut Beleg × USD/CHF (record)",
+    "# Earn-Lücke",
+    "Differenzmethode: Lücke = (Bestand Ende − Bestand Anfang) − Σ Historie (ohne interne Umbuchungen); nur positive Lücken sind Ertrag, bewertet zum Jahresmittel.",
+    "Plattform",
+    "Konto",
+    "Asset",
+    "Bestand Anfang",
+    "Bestand Ende",
+    "Σ Historie",
+    "Lücke",
+    "Ø Kurs CHF",
+    "Wert CHF",
+    "Status",
+    "# Einmalereignisse",
+    "Datum",
+    "Ereignis",
+    "Plattform",
+    "Asset",
+    "Menge",
+    "Wert CHF",
+    "Hinweis",
+    "# Methodik",
+    "Methodik",
+    "",
+    "Vermögen: Bestand per 31.12.2025 je Plattform/Konto und Asset. Hat ein Konto einen Kontoauszug per Stichtag, gilt dieser; sonst der Saldo aus dem Ledger (Σ Menge − Σ Gebühr aller Buchungen bis Jahresende). Positionen mit |Menge| < 0.0000001 entfallen.",
+    "Kurse (erste vorhandene gilt): 1. ESTV-Kurs bzw. Override, 2. Kurs CHF direkt (z. B. aus dem Kontoauszug), 3. Kurs USD × USD/CHF des Stichtags.",
+    "Stablecoins (USD, USDT, USDC, BUSD, FDUSD, USDD) = 1 USD; CHF = 1; EUR über EUR/CHF. USD-Kurse: Tagesschluss (Binance, UTC), höchstens 14 Tage alt, sonst erster Kurs danach (≤ 14 Tage). Devisen: EZB-Referenzkurse, letztes Fixing.",
+    "Ertrag: zum Zuflusszeitpunkt (Tag in UTC) bewertet, netto nach Gebühr im gleichen Asset; Brutto als Information. Liefert die Plattform einen USD-Wert (z. B. Kraken amountusd − feeusd), gilt dieser × USD/CHF des Tages.",
+    "Earn-Lücke (Differenzmethode): (Bestand Ende − Bestand Anfang) − Σ Historie ohne interne Umbuchungen, je Konto und Asset; nur positive Lücken sind Ertrag, bewertet zum Jahresmittel. Ausgenommen: EUR, USDT.",
+    "Einmalereignisse (Hardforks, Airdrops, Verluste) werden separat ausgewiesen.",
+    "Positionen und Ereignisse ohne verfügbaren Kurswert werden mit ihrer Menge, ohne Wert aufgeführt und sind nicht im Total enthalten.",
+    "Spam-/Scam-Token (z. B. mit „Claim“ im Namen) haben keinen Marktwert und sind nicht im Total enthalten.",
+    "Annahmen (konservativ): Launchpool-/HODLer-Airdrops sind Ertrag; Kraken-Erträge netto nach Gebühr.",
+    "Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar.",
+    "Erstellt mit lazy-koins 1.0.0+test.",
+    "",
+    "Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.",
+  ],
+  "internalHtml": "<!doctype html><html lang="de-CH"><head><meta charset="utf-8"><title>Interner Prüfbericht – nicht für die Steuerbehörde</title><style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; color: #1d2433; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 4pt; }
+  h2 { font-size: 11.5pt; margin: 16pt 0 6pt; border-bottom: 1px solid #c9d1de; padding-bottom: 3pt; }
+  .meta { color: #4a5568; margin: 0 0 2pt; }
+  .note { color: #6b7280; font-style: italic; margin: 0 0 10pt; }
+  .figures { display: flex; gap: 12pt; margin: 10pt 0; }
+  .figure { flex: 1; border: 1px solid #c9d1de; border-radius: 6pt; padding: 8pt 10pt; }
+  .figure .label { color: #4a5568; font-size: 9pt; }
+  .figure .value { font-size: 15pt; font-weight: 600; margin-top: 2pt; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+  th, td { text-align: left; padding: 3pt 5pt; border-bottom: 1px solid #e5e9f0; vertical-align: top; }
+  th { background: #eef1f6; font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.total td { font-weight: 600; border-top: 1.5px solid #1d2433; }
+  h1.internal { color: #b42318; }
+  .footnote { font-size: 8.5pt; color: #4a5568; font-style: italic; margin: 3pt 0 0; }
+  .light { display: inline-block; padding: 0 6pt; border-radius: 8pt; }
+  .light.green { background: #b7e4c7; } .light.yellow { background: #fff2a8; }
+  .light.red { background: #f4b6b6; } .light.grey { background: #e0e0e0; }
+  .small { font-size: 8.5pt; color: #4a5568; }
+  footer { margin-top: 16pt; color: #6b7280; font-size: 8.5pt; }
+</style></head><body><h1 class="internal">Interner Prüfbericht – nicht für die Steuerbehörde</h1>
+     <p class="meta">Steuern 2025 · Anna Muster · Steuerjahr 2025 · Kanton ZH · erstellt am 15.01.2026 · berechnet am 14.01.2026 · lazy-koins 1.0.0+test</p>
+     <p class="note">Arbeitsunterlage für dich und deinen Treuhänder – nicht der Steuererklärung beilegen. Die Auszüge für die Steuerbehörde enthalten diese Punkte nicht.</p>
+     <div class="figures"><div class="figure"><div class="label">Steuerwert per 31.12.2025</div><div class="value">CHF 858.70</div></div><div class="figure"><div class="label">Ertrag aus beweglichem Vermögen 2025</div><div class="value">CHF 6.75</div></div><div class="figure"><div class="label">Offene Punkte</div><div class="value">3 offen, 0 erledigt</div></div></div><h2>Prüfungen</h2><table><thead><tr><th>Prüfung</th><th>Ampel</th><th class="num">Punkte</th><th class="num">Auswirkung CHF</th></tr></thead><tbody><tr><td>Saldo laut Ledger = Saldo laut Kontoauszug</td><td><span class="light green">grün</span></td><td class="num">0</td><td class="num">0.00</td></tr><tr><td>Fehlende Earn-Erträge (Differenzmethode)</td><td><span class="light grey">nicht anwendbar</span></td><td class="num">0</td><td class="num">0.00</td></tr><tr><td>Auszahlungen ohne Gegenbuchung</td><td><span class="light grey">nicht anwendbar</span></td><td class="num">0</td><td class="num">0.00</td></tr><tr><td>Zuflüsse ohne Gegenbuchung (möglicher Ertrag)</td><td><span class="light grey">nicht anwendbar</span></td><td class="num">0</td><td class="num">0.00</td></tr><tr><td>Anfangsbestand = Endbestand des Vorjahres</td><td><span class="light grey">nicht anwendbar</span></td><td class="num">0</td><td class="num">0.00</td></tr><tr><td>Positionen ohne Kurs</td><td><span class="light yellow">gelb</span></td><td class="num">2</td><td class="num">0.00</td></tr><tr><td>Nicht zugeordnete Buchungen</td><td><span class="light yellow">gelb</span></td><td class="num">1</td><td class="num">0.00</td></tr><tr><td>Wallets auf allen Netzwerken geprüft</td><td><span class="light grey">nicht anwendbar</span></td><td class="num">0</td><td class="num">0.00</td></tr></tbody></table><h2>Offene Punkte</h2><table><thead><tr><th>Status</th><th>Thema</th><th>Beschreibung</th><th class="num">Geschätzte Auswirkung CHF</th><th>Notiz</th></tr></thead><tbody><tr><td>offen</td><td>Positionen ohne Kurs</td><td>kraken / spot / DOT: kein Kurs per 31.12. – ESTV-Kurs nachtragen</td><td class="num">–</td><td></td></tr><tr><td>offen</td><td>Positionen ohne Kurs</td><td>kraken / spot / ETH: kein Kurs per 31.12. – ESTV-Kurs nachtragen</td><td class="num">–</td><td></td></tr><tr><td>offen</td><td>Nicht zugeordnete Buchungen</td><td>kraken / spot / ETH: 1 Buchungen „unknown“ nicht zugeordnet</td><td class="num">–</td><td></td></tr></tbody></table><h2>Ohne Kurs</h2><table><thead><tr><th>Art</th><th>Datum</th><th>Plattform</th><th>Konto</th><th>Asset</th><th class="num">Menge</th><th>Hinweis</th></tr></thead><tbody><tr><td>Position 31.12.</td><td>31.12.2025</td><td>kraken</td><td>spot</td><td>DOT</td><td class="num">1.5</td><td>kein Kurs per 31.12. – ESTV-Kurs nachtragen</td></tr><tr><td>Position 31.12.</td><td>31.12.2025</td><td>kraken</td><td>spot</td><td>ETH</td><td class="num">1</td><td>kein Kurs per 31.12. – ESTV-Kurs nachtragen</td></tr></tbody></table><h2>Earn-Lücke</h2><p>Keine Warnungen zur Earn-Lücke.</p><h2>Dateien</h2><table><thead><tr><th>Hinweis zu fehlenden Dateien</th></tr></thead><tbody><tr><td>kraken / spot: Buchungen erst ab 03.01.2025 – Export ab 01.01. fehlt</td></tr><tr><td>kraken / spot: Buchungen nur bis 01.04.2025 – Export bis 31.12. fehlt</td></tr></tbody></table><footer>Interner Prüfbericht – nicht für die Steuerbehörde</footer></body></html>",
+  "internalXlsx": [
+    "# Übersicht",
+    "Interner Prüfbericht – nicht für die Steuerbehörde",
+    "Steuern 2025 · Anna Muster · Steuerjahr 2025 · Kanton ZH · erstellt am 15.01.2026 · berechnet am 14.01.2026 · lazy-koins 1.0.0+test",
+    "Arbeitsunterlage für dich und deinen Treuhänder – nicht der Steuererklärung beilegen. Die Auszüge für die Steuerbehörde enthalten diese Punkte nicht.",
+    "Steuerwert per 31.12.2025",
+    "CHF 858.70",
+    "Ertrag aus beweglichem Vermögen 2025",
+    "CHF 6.75",
+    "Offene Punkte",
+    "3 offen, 0 erledigt",
+    "# Prüfungen",
+    "Interner Prüfbericht – nicht für die Steuerbehörde",
+    "Prüfung",
+    "Ampel",
+    "Punkte",
+    "Auswirkung CHF",
+    "Saldo laut Ledger = Saldo laut Kontoauszug",
+    "grün",
+    "0",
+    "0.00",
+    "Fehlende Earn-Erträge (Differenzmethode)",
+    "nicht anwendbar",
+    "0",
+    "0.00",
+    "Auszahlungen ohne Gegenbuchung",
+    "nicht anwendbar",
+    "0",
+    "0.00",
+    "Zuflüsse ohne Gegenbuchung (möglicher Ertrag)",
+    "nicht anwendbar",
+    "0",
+    "0.00",
+    "Anfangsbestand = Endbestand des Vorjahres",
+    "nicht anwendbar",
+    "0",
+    "0.00",
+    "Positionen ohne Kurs",
+    "gelb",
+    "2",
+    "0.00",
+    "Nicht zugeordnete Buchungen",
+    "gelb",
+    "1",
+    "0.00",
+    "Wallets auf allen Netzwerken geprüft",
+    "nicht anwendbar",
+    "0",
+    "0.00",
+    "# Offene Punkte",
+    "Interner Prüfbericht – nicht für die Steuerbehörde",
+    "Status",
+    "Thema",
+    "Beschreibung",
+    "Geschätzte Auswirkung CHF",
+    "Notiz",
+    "offen",
+    "Positionen ohne Kurs",
+    "kraken / spot / DOT: kein Kurs per 31.12. – ESTV-Kurs nachtragen",
+    "–",
+    "",
+    "offen",
+    "Positionen ohne Kurs",
+    "kraken / spot / ETH: kein Kurs per 31.12. – ESTV-Kurs nachtragen",
+    "–",
+    "",
+    "offen",
+    "Nicht zugeordnete Buchungen",
+    "kraken / spot / ETH: 1 Buchungen „unknown“ nicht zugeordnet",
+    "–",
+    "",
+    "# Ohne Kurs",
+    "Interner Prüfbericht – nicht für die Steuerbehörde",
+    "Art",
+    "Datum",
+    "Plattform",
+    "Konto",
+    "Asset",
+    "Menge",
+    "Hinweis",
+    "Position 31.12.",
+    "31.12.2025",
+    "kraken",
+    "spot",
+    "DOT",
+    "1.5",
+    "kein Kurs per 31.12. – ESTV-Kurs nachtragen",
+    "Position 31.12.",
+    "31.12.2025",
+    "kraken",
+    "spot",
+    "ETH",
+    "1",
+    "kein Kurs per 31.12. – ESTV-Kurs nachtragen",
+    "# Earn-Lücke",
+    "Interner Prüfbericht – nicht für die Steuerbehörde",
+    "Plattform",
+    "Konto",
+    "Asset",
+    "Lücke",
+    "Hinweis",
+    "Keine Warnungen zur Earn-Lücke.",
+    "# Dateien",
+    "Interner Prüfbericht – nicht für die Steuerbehörde",
+    "Hinweis zu fehlenden Dateien",
+    "kraken / spot: Buchungen erst ab 03.01.2025 – Export ab 01.01. fehlt",
+    "kraken / spot: Buchungen nur bis 01.04.2025 – Export bis 31.12. fehlt",
+  ],
+  "mail": {
+    "body": "Guten Tag Treuhand Beispiel AG
+
+Anbei meine Unterlagen zu den Kryptowährungen für das Steuerjahr 2025 (Kanton ZH):
+
+- Steuerwert per 31.12.2025: CHF 858.70
+- Ertrag aus beweglichem Vermögen 2025: CHF 6.75
+
+Anhänge:
+- (noch kein Auszug erstellt)
+
+Offene Fachfragen (in den Auszügen nicht enthalten):
+- kraken / spot / DOT: kein Kurs per 31.12. – ESTV-Kurs nachtragen
+- kraken / spot / ETH: kein Kurs per 31.12. – ESTV-Kurs nachtragen
+- kraken / spot / ETH: 1 Buchungen „unknown“ nicht zugeordnet
+- Annahme: Launchpool-/HODLer-Airdrops als Ertrag deklariert (konservativ).
+- Annahme: Erträge netto nach Gebühr deklariert.
+
+Freundliche Grüsse
+Anna Muster",
+    "subject": "Steuern 2025: Krypto-Vermögen und Ertrag",
+    "to": "treuhand@example.ch",
+  },
+  "simpleHtml": "<!doctype html><html lang="de-CH"><head><meta charset="utf-8"><title>Steuerauszug 2025</title><style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; font-size: 9.5pt; color: #1d2433; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 4pt; }
+  h2 { font-size: 11.5pt; margin: 16pt 0 6pt; border-bottom: 1px solid #c9d1de; padding-bottom: 3pt; }
+  .meta { color: #4a5568; margin: 0 0 2pt; }
+  .note { color: #6b7280; font-style: italic; margin: 0 0 10pt; }
+  .figures { display: flex; gap: 12pt; margin: 10pt 0; }
+  .figure { flex: 1; border: 1px solid #c9d1de; border-radius: 6pt; padding: 8pt 10pt; }
+  .figure .label { color: #4a5568; font-size: 9pt; }
+  .figure .value { font-size: 15pt; font-weight: 600; margin-top: 2pt; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+  th, td { text-align: left; padding: 3pt 5pt; border-bottom: 1px solid #e5e9f0; vertical-align: top; }
+  th { background: #eef1f6; font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.total td { font-weight: 600; border-top: 1.5px solid #1d2433; }
+  h1.internal { color: #b42318; }
+  .footnote { font-size: 8.5pt; color: #4a5568; font-style: italic; margin: 3pt 0 0; }
+  .light { display: inline-block; padding: 0 6pt; border-radius: 8pt; }
+  .light.green { background: #b7e4c7; } .light.yellow { background: #fff2a8; }
+  .light.red { background: #f4b6b6; } .light.grey { background: #e0e0e0; }
+  .small { font-size: 8.5pt; color: #4a5568; }
+  footer { margin-top: 16pt; color: #6b7280; font-size: 8.5pt; }
+</style></head><body>
+    <h1>Steuerauszug Kryptowährungen 2025 (einfach)</h1>
+    <p class="meta">Anna Muster · Steuerjahr 2025 · Kanton ZH · erstellt am 15.01.2026 · berechnet am 14.01.2026</p>
+    <p class="note">Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.</p>
+    <div class="figures">
+      <div class="figure"><div class="label">Steuerwert per 31.12.2025</div><div class="value">CHF 858.70</div></div>
+      <div class="figure"><div class="label">Ertrag aus beweglichem Vermögen 2025</div><div class="value">CHF 6.75</div></div>
+    </div>
+    <h2>Wertschriften- und Guthabenverzeichnis</h2>
+    <table><thead><tr><th>Plattform / Wallet</th><th>Hauptpositionen</th><th class="num">Kleinpositionen</th><th class="num">Steuerwert CHF</th></tr></thead>
+    <tbody><tr><td>kraken</td><td>CHF 498.7, BTC 0.005, DOT 1.5</td><td class="num">1</td><td class="num">858.70</td></tr><tr class="total"><td colspan="3">Total</td><td class="num">858.70</td></tr></tbody></table><p class="footnote">kraken DOT 1.5, kraken ETH 1: Kein Kurswert verfügbar; nicht im Total enthalten.</p>
+    <h2>Ertrag aus beweglichem Vermögen 2025</h2>
+    <table><thead><tr><th>Kategorie</th><th class="num">Buchungen</th><th class="num">Ertrag CHF</th></tr></thead>
+    <tbody><tr><td>Staking</td><td class="num">1</td><td class="num">6.75</td></tr><tr class="total"><td colspan="2">Total</td><td class="num">6.75</td></tr></tbody></table><footer>Wertschriftenverzeichnis (Kanton ZH): Kryptowährungen als Vermögen ohne Verrechnungssteuer; Ertrag als Einkommen aus beweglichem Vermögen.<br>Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.<br>lazy-koins 1.0.0+test</footer></body></html>",
+  "simpleXlsx": [
+    "# Auszug",
+    "Steuerauszug Kryptowährungen 2025 (einfach)",
+    "Anna Muster · Steuerjahr 2025 · Kanton ZH · erstellt am 15.01.2026 · berechnet am 14.01.2026",
+    "Keine Steuerberatung: Hilfsmittel zur Deklaration, ohne Gewähr. Massgebend sind die Weisungen der Steuerverwaltung.",
+    "Wertschriften- und Guthabenverzeichnis",
+    "Plattform / Wallet",
+    "Hauptpositionen",
+    "Kleinpositionen",
+    "Steuerwert CHF",
+    "kraken",
+    "CHF 498.7, BTC 0.005, DOT 1.5",
+    "1",
+    "858.7",
+    "Steuerwert per 31.12.2025",
+    "=SUM(D8:D8)",
+    "kraken DOT 1.5, kraken ETH 1: Kein Kurswert verfügbar; nicht im Total enthalten.",
+    "Ertrag aus beweglichem Vermögen 2025",
+    "Kategorie",
+    "",
+    "",
+    "Ertrag CHF",
+    "Staking",
+    "6.75",
+    "Total Ertrag",
+    "=SUM(D14:D14)",
+    "Wertschriftenverzeichnis (Kanton ZH): Kryptowährungen als Vermögen ohne Verrechnungssteuer; Ertrag als Einkommen aus beweglichem Vermögen.",
+  ],
+}
+`;

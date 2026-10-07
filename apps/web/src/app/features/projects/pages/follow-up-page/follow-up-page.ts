@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -54,7 +54,7 @@ const FollowUpSchema = z.object({
   selector: 'lk-follow-up-page',
   imports: [
     Truncate,
-    DatePipe,
+    LkDatePipe,
     ReactiveFormsModule,
     TranslatePipe,
     ChfPipe,

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -41,7 +41,7 @@ type WalletAction = 'check' | 'fetch';
 @Component({
   selector: 'lk-wallets-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     FormsModule,
     RouterLink,
     NgIcon,

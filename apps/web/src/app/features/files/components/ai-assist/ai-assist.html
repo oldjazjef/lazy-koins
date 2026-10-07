@@ -325,9 +325,7 @@
                     >{{ holding.quantityAsPrinted }}</span
                   >
                 </td>
-                <td hlmTd class="tabular-nums">
-                  {{ holding.asOf | date: 'dd.MM.yyyy' }}
-                </td>
+                <td hlmTd class="tabular-nums">{{ holding.asOf | lkDate }}</td>
                 <td hlmTd class="hidden max-w-0 md:table-cell">
                   @let where = holding.platform + ' · ' + holding.account;
                   <span [lkTruncate]="where">{{ where }}</span>

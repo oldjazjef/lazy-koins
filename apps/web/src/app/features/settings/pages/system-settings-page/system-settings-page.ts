@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,7 +18,7 @@ export const SUPPORT_URL = 'https://buymeacoffee.com/oldjazjef';
 /** Einstellungen › System: the running version (number + commit), build time and the repository. */
 @Component({
   selector: 'lk-system-settings-page',
-  imports: [TranslatePipe, DatePipe, RouterLink, ...HlmButtonImports],
+  imports: [TranslatePipe, LkDatePipe, RouterLink, ...HlmButtonImports],
   templateUrl: './system-settings-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,4 +1,5 @@
-import { DatePipe, JsonPipe } from '@angular/common';
+import { JsonPipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -37,7 +38,7 @@ import { Truncate } from '../../../../shared/components/truncate';
 @Component({
   selector: 'lk-mapping-detail-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     JsonPipe,
     RouterLink,
     NgIcon,

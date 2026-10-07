@@ -300,7 +300,13 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   gespeichert (Web: am Benutzer; Desktop: lokal) und gilt sofort, ohne Neuladen. Vorgabe beim
   ersten Login: Browsersprache, sonst Deutsch. Exporte erscheinen in der eingestellten Sprache;
   steuerliche Fachbegriffe und Formularverweise kommen aus den Landesregeln (F10.3). Weitere
-  Sprachen = eine neue Übersetzungsdatei.
+  Sprachen = eine neue Übersetzungsdatei. Präzisiert (07.10.2026): Zahlenformat 1’234.56
+  (de-CH) oder 1,234.56 (en), Datumsformat TT.MM.JJJJ, JJJJ-MM-TT, TT/MM/JJJJ oder MM/TT/JJJJ;
+  eine neue Sprache bringt ihre Formate mit (Englisch: 1,234.56 und JJJJ-MM-TT), solange keine
+  eigenen gewählt sind. Im Englischen behalten Schweizer Fachbegriffe ohne Entsprechung den
+  amtlichen deutschen Begriff in Klammern (z. B. „securities list (Wertschriftenverzeichnis)“).
+  Der Datenexport im Standardformat (F10.7) behält seine deutschen Spaltennamen (Dateiformat,
+  wieder importierbar); nur die Info-Spalten folgen der Sprache.
 - **F11.3** Kursabfragen aus dem Internet ein-/ausschaltbar.
 
 ## 11a. Dashboard

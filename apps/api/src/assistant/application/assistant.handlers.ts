@@ -7,9 +7,11 @@ import {
 } from '@nestjs/cqrs';
 import { AiGate } from '../../ai/application/ai-gate';
 import { aiReady } from '../../ai/domain/ai-settings';
+import type { Locale } from '../../common/i18n/locale';
 import {
-  DEFAULT_SYSTEM_PROMPT,
-  SAFETY_RULES,
+  defaultSystemPrompt,
+  isDefaultPrompt,
+  safetyRules,
 } from '../domain/assistant-prompt';
 import {
   type AssistantSettings,
@@ -40,12 +42,16 @@ export interface AssistantSettingsView {
   readonly chatConsentAt: string | null;
 }
 
-function settingsView(settings: AssistantSettings): AssistantSettingsView {
+/** In the user's language (F11.2): the default prompt and the fixed rules exist per language. */
+function settingsView(
+  settings: AssistantSettings,
+  locale: Locale,
+): AssistantSettingsView {
   return {
-    systemPrompt: settings.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
+    systemPrompt: settings.systemPrompt ?? defaultSystemPrompt(locale),
     isDefault: settings.systemPrompt === null,
-    defaultPrompt: DEFAULT_SYSTEM_PROMPT,
-    safetyRules: SAFETY_RULES,
+    defaultPrompt: defaultSystemPrompt(locale),
+    safetyRules: safetyRules(locale),
     maxLength: MAX_SYSTEM_PROMPT,
     chatConsentAt: settings.chatConsentAt,
   };
@@ -65,7 +71,10 @@ export class GetAssistantSettingsHandler implements IQueryHandler<
   async execute({
     userId,
   }: GetAssistantSettingsQuery): Promise<AssistantSettingsView> {
-    return settingsView(await this.engine.assistantSettings(userId));
+    return settingsView(
+      await this.engine.assistantSettings(userId),
+      await this.engine.localeOf(userId),
+    );
   }
 }
 
@@ -109,8 +118,7 @@ export class SaveAssistantSettingsHandler implements ICommandHandler<
         });
       }
       // An empty text or the default itself = the default (it then follows future updates).
-      systemPrompt =
-        text === '' || text === DEFAULT_SYSTEM_PROMPT.trim() ? null : text;
+      systemPrompt = text === '' || isDefaultPrompt(text) ? null : text;
     }
     const { userId: _id, updatedAt: _at, ...rest } = current;
     return settingsView(
@@ -119,6 +127,7 @@ export class SaveAssistantSettingsHandler implements ICommandHandler<
         systemPrompt,
         chatConsentAt: input.revokeChatConsent ? null : current.chatConsentAt,
       }),
+      await this.engine.localeOf(userId),
     );
   }
 }

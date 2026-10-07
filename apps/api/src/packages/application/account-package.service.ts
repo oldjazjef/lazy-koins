@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { mappingFingerprint, validateMappingSpec } from '@lazykoins/engine';
 import { z } from 'zod';
+import { SUPPORTED_LOCALES } from '../../common/i18n/locale';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
 import {
@@ -32,6 +33,8 @@ const SettingsSchema = z.object({
   canton: z.string().regex(/^([A-Z]{2})?$/),
   advisorName: z.string().max(120),
   advisorEmail: z.string().max(200),
+  /** F11.2; absent in packages from before the language setting. */
+  locale: z.enum(SUPPORTED_LOCALES).optional(),
   numberFormat: z.enum(NUMBER_FORMATS),
   dateFormat: z.enum(DATE_FORMATS),
   onlineRates: z.boolean(),
@@ -113,6 +116,7 @@ export class AccountPackageService {
         canton: stored.canton,
         advisorName: stored.advisorName,
         advisorEmail: stored.advisorEmail,
+        ...(stored.locale ? { locale: stored.locale } : {}),
         numberFormat: stored.numberFormat,
         dateFormat: stored.dateFormat,
         onlineRates: stored.onlineRates,

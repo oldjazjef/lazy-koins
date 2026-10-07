@@ -144,8 +144,8 @@
             @for (hint of pager.visible(); track hint.key) { @let more =
             expanded().has(hint.key); @let where = whereOf(hint); @let short =
             'hints.short.' + hint.kind + (hint.zeroBalance ? 'Zero' : '') |
-            translate: { date: (hint.date | date: 'dd.MM.yyyy'), year:
-            view.taxYear, count: hint.count ?? hint.accounts.length };
+            translate: { date: (hint.date | lkDate), year: view.taxYear, count:
+            hint.count ?? hint.accounts.length };
             <tr
               hlmTr
               class="align-top"
@@ -185,7 +185,7 @@
                 }
               </td>
               <td hlmTd class="hidden tabular-nums lg:table-cell">
-                {{ hint.date ? (hint.date | date: 'dd.MM.yyyy') : '–' }}
+                {{ hint.date ? (hint.date | lkDate) : '–' }}
               </td>
               <td hlmTd class="max-w-0">
                 {{ 'hints.status.' + hint.status | translate }} @if (hint.note)

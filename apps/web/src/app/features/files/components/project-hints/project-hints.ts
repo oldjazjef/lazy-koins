@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -85,7 +85,7 @@ export interface ManualHoldingRequest {
 @Component({
   selector: 'lk-project-hints',
   imports: [
-    DatePipe,
+    LkDatePipe,
     FormsModule,
     NgIcon,
     TranslatePipe,

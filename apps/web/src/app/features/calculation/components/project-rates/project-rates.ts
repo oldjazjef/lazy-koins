@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -56,7 +56,7 @@ const ManualRateSchema = z.object({
 @Component({
   selector: 'lk-project-rates',
   imports: [
-    DatePipe,
+    LkDatePipe,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,

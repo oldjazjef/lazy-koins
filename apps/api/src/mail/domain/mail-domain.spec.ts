@@ -15,6 +15,7 @@ import {
   renderMail,
   renderTemplate,
   SAMPLE_MAIL_VALUES,
+  SAMPLE_MAIL_VALUES_BY_LANGUAGE,
 } from './mail-template';
 
 const values = (over: Partial<MailValues> = {}): MailValues => ({
@@ -198,5 +199,25 @@ describe('mailer settings', () => {
     expect(isInternalExportKind('internal_report_pdf')).toBe(true);
     expect(isInternalExportKind('internal_report_xlsx')).toBe(true);
     expect(isInternalExportKind('simple_pdf')).toBe(false);
+  });
+});
+
+describe('default templates per language (F11.10, F11.2)', () => {
+  it('has one for every language, with the same placeholders', () => {
+    expect(Object.keys(DEFAULT_MAIL_TEMPLATES).sort()).toEqual(['de-CH', 'en']);
+    const used = (language: keyof typeof DEFAULT_MAIL_TEMPLATES) => {
+      const { subject, body } = DEFAULT_MAIL_TEMPLATES[language];
+      return placeholdersIn(`${subject}\n${body}`);
+    };
+    expect(used('en').unknown).toEqual([]);
+    expect(used('en').known.sort()).toEqual(used('de-CH').known.sort());
+    const english = renderMail(
+      DEFAULT_MAIL_TEMPLATES.en,
+      SAMPLE_MAIL_VALUES_BY_LANGUAGE.en,
+    );
+    expect(english.subject).toBe('Taxes 2025: crypto wealth and income');
+    expect(english.body).toContain('Dear Beat Treuhand');
+    expect(english.body).toContain('Tax value at 31.12.2025: CHF 12,345.65');
+    expect(english.unknownPlaceholders).toEqual([]);
   });
 });

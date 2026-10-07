@@ -216,7 +216,7 @@
         @for (item of pagers[group.key].visible(); track item.id) {
         <tr hlmTr>
           <td hlmTd class="align-top tabular-nums">
-            {{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+            {{ item.createdAt | lkDate: 'dateTime' }}
           </td>
           <td hlmTd class="max-w-0">
             @let kind = 'exports.kind.' + item.kind | translate;

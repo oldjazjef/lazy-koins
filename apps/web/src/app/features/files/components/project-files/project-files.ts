@@ -1,4 +1,6 @@
-import { DatePipe, DecimalPipe, UpperCasePipe } from '@angular/common';
+import { UpperCasePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
+import { NumberPipe } from '../../../../shared/format/number-format';
 import {
   afterRenderEffect,
   ChangeDetectionStrategy,
@@ -74,8 +76,8 @@ type Dialog =
   selector: 'lk-project-files',
   imports: [
     TakeOverFiles,
-    DatePipe,
-    DecimalPipe,
+    LkDatePipe,
+    NumberPipe,
     UpperCasePipe,
     FormsModule,
     RouterLink,

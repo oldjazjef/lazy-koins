@@ -4,8 +4,7 @@
     {{ 'mappings.preview.totals' | translate: { bookings: p.totals.bookings,
     holdings: p.totals.holdings, errors: p.totals.errors, notes: p.totals.notes
     } }} @if (p.period) { {{ 'mappings.preview.period' | translate: { from:
-    (p.period.from | date: 'dd.MM.yyyy'), to: (p.period.to | date: 'dd.MM.yyyy')
-    } }} }
+    (p.period.from | lkDate), to: (p.period.to | lkDate) } }} }
   </p>
 
   @if (p.bookings.length > 0) {
@@ -45,7 +44,7 @@
           <tr hlmTr>
             <td hlmTd class="tabular-nums">{{ booking.row }}</td>
             <td hlmTd class="tabular-nums">
-              {{ booking.timestamp | date: 'dd.MM.yyyy HH:mm:ss' : 'UTC' }}
+              {{ booking.timestamp | lkDate: 'dateTimeSeconds' : 'UTC' }}
             </td>
             <td hlmTd class="max-w-0">
               <span [lkTruncate]="booking.accountId"
@@ -92,8 +91,8 @@
     <ul class="text-muted-foreground flex flex-col gap-1">
       @for (holding of p.holdings; track holding.row + holding.asset) {
       <li class="font-mono tabular-nums">
-        {{ holding.asOf | date: 'dd.MM.yyyy' }} · {{ holding.accountId }} · {{
-        holding.asset }} {{ holding.quantity }}
+        {{ holding.asOf | lkDate }} · {{ holding.accountId }} · {{ holding.asset
+        }} {{ holding.quantity }}
       </li>
       }
     </ul>

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,7 +18,7 @@ import { Truncate } from '../../../../shared/components/truncate';
  */
 @Component({
   selector: 'lk-mapping-preview',
-  imports: [DatePipe, TranslatePipe, Paginator, Truncate, ...HlmTableImports],
+  imports: [LkDatePipe, TranslatePipe, Paginator, Truncate, ...HlmTableImports],
   templateUrl: './mapping-preview.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

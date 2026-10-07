@@ -71,7 +71,25 @@ export interface CountryRules {
   readonly transferTolerance: string;
   /** … that arrives at most this many hours later (or 1 hour earlier). */
   readonly transferWindowHours: number;
+  /** The labels in the country's own language (CH: German). */
   readonly labels: ExportLabels;
+  /**
+   * F11.2 / F10.3: the labels in other languages, by locale code (`en`). Official terms without
+   * an equivalent keep the German term in parentheses. `rulesInLanguage` picks them.
+   */
+  readonly translatedLabels?: Readonly<Record<string, ExportLabels>>;
+}
+
+/**
+ * The rules with their labels in `locale` (F11.2): the translated labels when the country has
+ * them, else its own. Everything else is unchanged, so the figures stay the same in every language.
+ */
+export function rulesInLanguage(
+  rules: CountryRules,
+  locale: string,
+): CountryRules {
+  const labels = rules.translatedLabels?.[locale];
+  return labels ? { ...rules, labels } : rules;
 }
 
 export const chRules: CountryRules = {
@@ -102,6 +120,27 @@ export const chRules: CountryRules = {
       launchpool: 'Launchpool',
       hardfork: 'Hardfork',
       earn_gap: 'Earn-Lücke (Differenzmethode)',
+    },
+  },
+  translatedLabels: {
+    en: {
+      wealthTitle: 'Tax value at 31.12.',
+      incomeTitle: 'Income from movable assets',
+      securitiesList:
+        'Securities and assets list (Wertschriften- und Guthabenverzeichnis)',
+      noTaxAdvice:
+        'No tax advice: an aid for the tax return, without guarantee. The instructions of the tax administration are authoritative.',
+      noPriceNote: 'No price available; not included in the total.',
+      formReference: (canton) =>
+        `Securities list (Wertschriftenverzeichnis, canton ${canton}): cryptocurrencies as assets without withholding tax (Verrechnungssteuer); income as income from movable assets.`,
+      categories: {
+        interest: 'Interest / Earn',
+        staking: 'Staking',
+        airdrop: 'Airdrop',
+        launchpool: 'Launchpool',
+        hardfork: 'Hardfork',
+        earn_gap: 'Earn gap (difference method)',
+      },
     },
   },
 };

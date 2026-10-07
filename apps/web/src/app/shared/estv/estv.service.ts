@@ -92,6 +92,7 @@ export class EstvService {
   }
 
   private readonly activityParams = computed(() => {
+    this.translate.currentLang(); // F11.2: re-translate on a language switch
     const running = this.running();
     return {
       year: running?.year ?? '',

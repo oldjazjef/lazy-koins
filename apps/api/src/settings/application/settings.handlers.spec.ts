@@ -40,6 +40,7 @@ describe('settings (F11, F6.7)', () => {
       canton: '',
       advisorName: '',
       advisorEmail: '',
+      locale: null,
       numberFormat: 'de-CH',
       dateFormat: 'dd.MM.yyyy',
       onlineRates: true,
@@ -47,6 +48,25 @@ describe('settings (F11, F6.7)', () => {
       coingeckoIds: {},
       keyStorageAvailable: true,
     });
+  });
+
+  it('stores the language and the number/date format (F11.2)', async () => {
+    const t = setup();
+    const view = await t.update.execute(
+      new UpdateSettingsCommand('anna', {
+        locale: 'en',
+        numberFormat: 'en',
+        dateFormat: 'yyyy-MM-dd',
+      }),
+    );
+    expect(view).toMatchObject({
+      locale: 'en',
+      numberFormat: 'en',
+      dateFormat: 'yyyy-MM-dd',
+    });
+    // Other changes keep it.
+    await t.update.execute(new UpdateSettingsCommand('anna', { canton: 'BE' }));
+    expect((await t.reader.resolve('anna')).locale).toBe('en');
   });
 
   it('stores keys sealed, answers with a hint only, and opens them for the API', async () => {

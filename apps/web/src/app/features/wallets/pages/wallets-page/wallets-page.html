@@ -104,8 +104,8 @@
           }
         </td>
         <td hlmTd class="hidden text-sm tabular-nums md:table-cell">
-          @if (fetchedAt(wallet); as at) { {{ at | date: 'dd.MM.yyyy HH:mm' }} }
-          @else {
+          @if (fetchedAt(wallet); as at) { {{ at | lkDate: 'dateTime' }} } @else
+          {
           <span class="text-muted-foreground"
             >{{ 'wallets.fetchStatus.none' | translate }}</span
           >

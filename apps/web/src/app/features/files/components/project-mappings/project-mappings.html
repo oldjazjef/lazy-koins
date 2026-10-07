@@ -101,7 +101,7 @@
               <span [lkTruncate]="names">{{ names }}</span>
             </td>
             <td hlmTd class="hidden tabular-nums lg:table-cell">
-              {{ entry.mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}
+              {{ entry.mapping.updatedAt | lkDate: 'dateTime' }}
             </td>
             <td hlmTd class="lk-sticky-actions text-right">
               <lk-row-actions

@@ -1,5 +1,7 @@
 import { app } from 'electron';
-import { MESSAGES } from './messages';
+import { isDesktopLocale, systemLocale } from './lib/messages';
+import { readConfig } from './lib/storage';
+import { messages, setMessagesLocale } from './messages';
 import { reportError } from './report';
 
 /**
@@ -11,12 +13,22 @@ import { reportError } from './report';
  */
 let failed = false;
 
+// F11.2: dialogs in the app's language from the first moment (the config), else the system's.
+try {
+  const stored = readConfig(app.getPath('userData')).locale;
+  setMessagesLocale(
+    isDesktopLocale(stored) ? stored : systemLocale(app.getLocale()),
+  );
+} catch {
+  // German, as before.
+}
+
 function fatal(error: unknown): void {
   if (failed) return;
   failed = true;
   const reason = error instanceof Error ? error.message : String(error);
   try {
-    reportError(MESSAGES.fatal.title, MESSAGES.fatal.detail(reason), error);
+    reportError(messages().fatal.title, messages().fatal.detail(reason), error);
   } finally {
     app.exit(1);
   }

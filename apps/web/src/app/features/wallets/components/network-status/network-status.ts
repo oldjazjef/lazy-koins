@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
@@ -15,7 +15,7 @@ import { QuantityPipe } from '../../../../shared/format/number-format';
 @Component({
   selector: 'lk-network-status',
   imports: [
-    DatePipe,
+    LkDatePipe,
     TranslatePipe,
     QuantityPipe,
     Truncate,

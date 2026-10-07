@@ -27,6 +27,9 @@ const bridge: DesktopBridge = {
     setIdleMinutes: (minutes) =>
       ipcRenderer.invoke(IPC.lockIdleMinutes, minutes),
   },
+  locale: {
+    set: (locale) => ipcRenderer.invoke(IPC.localeSet, locale),
+  },
   notifications: {
     enabled: () => ipcRenderer.invoke(IPC.notificationsEnabled),
     setEnabled: (on) => ipcRenderer.invoke(IPC.notificationsSetEnabled, on),

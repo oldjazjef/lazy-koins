@@ -47,6 +47,8 @@ export interface SettingsView {
   readonly canton: string;
   readonly advisorName: string;
   readonly advisorEmail: string;
+  /** F11.2; `null` = not chosen yet — the app takes the browser language. */
+  readonly locale: UserSettings['locale'];
   readonly numberFormat: UserSettings['numberFormat'];
   readonly dateFormat: UserSettings['dateFormat'];
   readonly onlineRates: boolean;
@@ -88,6 +90,7 @@ export class SettingsReader {
       canton: resolved.canton,
       advisorName: resolved.advisorName,
       advisorEmail: resolved.advisorEmail,
+      locale: resolved.locale,
       numberFormat: resolved.numberFormat,
       dateFormat: resolved.dateFormat,
       onlineRates: resolved.onlineRates,

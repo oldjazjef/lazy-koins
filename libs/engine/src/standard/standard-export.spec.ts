@@ -182,3 +182,26 @@ describe('standard export (F10.7)', () => {
     expect(h?.priceChf && toDecimalString(h.priceChf)).toBe('3000');
   });
 });
+
+describe('standard export in English (F11.2)', () => {
+  it('names only the information columns in English and still re-imports', () => {
+    const out = standardExport({ ...input, language: 'en' });
+    expect(out.bookings.header.slice(0, 3)).toEqual([
+      'Zeitpunkt',
+      'Plattform',
+      'Konto',
+    ]);
+    expect(out.bookings.header.slice(12)).toEqual([
+      'Type (original)',
+      'Corrections',
+      'Price CHF used',
+      'Price source',
+      'Value CHF',
+      'Source file',
+      'Row',
+    ]);
+    const again = reimport(out.bookings.header, out.bookings.rows);
+    expect(again.errors).toEqual([]);
+    expect(again.bookings).toHaveLength(out.bookings.rows.length);
+  });
+});

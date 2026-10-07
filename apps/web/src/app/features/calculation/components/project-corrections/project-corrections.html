@@ -283,7 +283,7 @@
         @for (correction of historyPager.visible(); track correction.id) {
         <tr hlmTr [class.text-muted-foreground]="correction.undoneAt">
           <td hlmTd class="align-top tabular-nums">
-            {{ correction.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+            {{ correction.createdAt | lkDate: 'dateTime' }}
           </td>
           <td hlmTd class="max-w-0 align-top">
             @let type = 'corrections.type.' + correction.type | translate;

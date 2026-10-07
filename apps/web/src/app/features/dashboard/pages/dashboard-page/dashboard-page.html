@@ -132,8 +132,7 @@
   <section hlmCard>
     <div hlmCardHeader>
       <p class="text-muted-foreground text-sm">
-        {{ 'dashboard.total' | translate: { date: (view.to | date: 'dd.MM.yyyy')
-        } }}
+        {{ 'dashboard.total' | translate: { date: (view.to | lkDate) } }}
       </p>
       <p class="text-3xl font-semibold tabular-nums">
         {{ view.endValueChf | lkChf: view.currency }}
@@ -149,8 +148,8 @@
           }})</span
         >
         <span class="text-muted-foreground">
-          {{ 'dashboard.sinceStart' | translate: { date: (view.from | date:
-          'dd.MM.yyyy') } }}</span
+          {{ 'dashboard.sinceStart' | translate: { date: (view.from | lkDate) }
+          }}</span
         >
         } @else {
         <span class="text-muted-foreground"
@@ -243,8 +242,8 @@
       <div class="min-w-0 flex-1">
         <h2 hlmCardTitle>{{ 'dashboard.holdings.title' | translate }}</h2>
         <p hlmCardDescription>
-          {{ 'dashboard.holdings.asOf' | translate: { date: (view.to | date:
-          'dd.MM.yyyy') } }}
+          {{ 'dashboard.holdings.asOf' | translate: { date: (view.to | lkDate) }
+          }}
         </p>
       </div>
       <input

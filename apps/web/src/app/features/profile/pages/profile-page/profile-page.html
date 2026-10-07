@@ -71,23 +71,14 @@
       <h2 hlmCardTitle>{{ 'profile.formatTitle' | translate }}</h2>
       <p hlmCardDescription>{{ 'profile.formatHint' | translate }}</p>
     </div>
-    <div hlmCardContent class="grid gap-4 sm:grid-cols-2">
-      <div class="flex flex-col gap-2">
-        <label hlmLabel for="profile-number"
-          >{{ 'profile.fields.numberFormat' | translate }}</label
-        >
-        <select hlmInput id="profile-number" disabled>
-          <option>{{ 'profile.numberFormats.deCH' | translate }}</option>
-        </select>
-      </div>
-      <div class="flex flex-col gap-2">
-        <label hlmLabel for="profile-date"
-          >{{ 'profile.fields.dateFormat' | translate }}</label
-        >
-        <select hlmInput id="profile-date" disabled>
-          <option>{{ 'profile.dateFormats.ddMMyyyy' | translate }}</option>
-        </select>
-      </div>
+    <div hlmCardContent class="grid gap-4 sm:grid-cols-3">
+      <!-- F11.2: applies at once and is saved right away -->
+      <lk-language-fields
+        [idPrefix]="'profile'"
+        [choice]="languageChoice()"
+        [disabled]="service.isSaving()"
+        (choiceChange)="changeLanguage($event)"
+      />
     </div>
   </section>
 

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -55,7 +55,7 @@ function today(): string {
 @Component({
   selector: 'lk-send-to-advisor',
   imports: [
-    DatePipe,
+    LkDatePipe,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,

@@ -14,9 +14,11 @@ import {
 import {
   countryRules,
   missingFileHints,
+  rulesInLanguage,
   withTaxCurrency,
 } from '@lazykoins/engine';
 import { BUILD_INFO } from '../../app/build-info';
+import { localeOr } from '../../common/i18n/locale';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CalculationService } from '../../calculation/calculation.service';
 import type { Snapshot } from '../../calculation/domain/calculation';
@@ -105,8 +107,13 @@ export class ExportDataService {
     if (!countryRule)
       throw new Error(`No country rules for ${project.country}`);
     // F4.1a: the statement is in the currency the snapshot was calculated in.
-    const rules = withTaxCurrency(countryRule, snapshot.result.currency);
     const settings = await this.settings.resolve(userId);
+    // F11.2: the document in the user's language and format; labels from the rules (F10.3).
+    const locale = localeOr(settings.locale);
+    const rules = rulesInLanguage(
+      withTaxCurrency(countryRule, snapshot.result.currency),
+      locale,
+    );
     const user = await this.users.findById(userId);
     const states = new Map(
       (await this.states.listByProject(project.id)).map((s) => [s.itemKey, s]),
@@ -128,6 +135,11 @@ export class ExportDataService {
       createdAt,
       calculatedAt: snapshot.createdAt,
       appVersion: BUILD_INFO.full,
+      locale,
+      format: {
+        numberFormat: settings.numberFormat,
+        dateFormat: settings.dateFormat,
+      },
       rules,
       result: snapshot.result,
       items: snapshot.result.openItems.map((item) => ({

@@ -74,8 +74,8 @@
                 {{ record.row }}
               </td>
               <td hlmTd class="align-top tabular-nums">
-                {{ record.type === 'holding' ? (record.at | date: 'dd.MM.yyyy')
-                : (record.at | date: 'dd.MM.yyyy HH:mm' : 'UTC') }}
+                {{ record.type === 'holding' ? (record.at | lkDate) : (record.at
+                | lkDate: 'dateTime' : 'UTC') }}
               </td>
               <td hlmTd class="max-w-0 align-top">
                 @let kind = record.kind ? ('bookings.kind.' + record.kind |

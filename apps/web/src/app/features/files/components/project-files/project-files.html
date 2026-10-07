@@ -169,11 +169,11 @@
                 >
                 <span class="text-muted-foreground block truncate text-xs"
                   >{{ 'files.size' | translate: { kind: (file.kind | uppercase),
-                  kb: (file.size / 1024 | number: '1.0-1') } }} · {{
-                  file.addedAt | date: 'dd.MM.yyyy' }} · @if (file.origin ===
-                  'from_project') { {{ 'files.origin.fromProject' | translate: {
-                  name: file.originProjectName ?? ('files.origin.unknownProject'
-                  | translate) } }} } @else if (file.origin === 'derived') { {{
+                  kb: (file.size / 1024 | lkNumber) } }} · {{ file.addedAt |
+                  lkDate }} · @if (file.origin === 'from_project') { {{
+                  'files.origin.fromProject' | translate: { name:
+                  file.originProjectName ?? ('files.origin.unknownProject' |
+                  translate) } }} } @else if (file.origin === 'derived') { {{
                   'files.origin.derived' | translate: { name:
                   file.derivedFromName ?? ('files.origin.unknownFile' |
                   translate) } }} } @else if (file.origin === 'wallet') { {{
@@ -195,8 +195,8 @@
                 }
               </td>
               <td hlmTd class="hidden tabular-nums lg:table-cell">
-                @if (file.period) { {{ file.period.from | date: 'dd.MM.yyyy' }}
-                – {{ file.period.to | date: 'dd.MM.yyyy' }} }
+                @if (file.period) { {{ file.period.from | lkDate }} – {{
+                file.period.to | lkDate }} }
               </td>
               <td
                 hlmTd

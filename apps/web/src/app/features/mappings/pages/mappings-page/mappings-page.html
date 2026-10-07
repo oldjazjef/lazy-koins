@@ -130,7 +130,7 @@
           {{ mapping.version }}
         </td>
         <td hlmTd class="tabular-nums">
-          {{ mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}
+          {{ mapping.updatedAt | lkDate: 'dateTime' }}
         </td>
         <td hlmTd class="hidden max-w-0 text-sm md:table-cell">
           @if (mapping.filesUsing > 0) {

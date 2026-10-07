@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  effect,
   ElementRef,
   HostListener,
   inject,
@@ -27,7 +28,9 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { ChatService } from '../assistant/chat.service';
 import { ChatSidebar } from '../assistant/chat-sidebar';
+import { UserSettingsService } from '../../features/settings/user-settings.service';
 import { AuthService } from '../auth/auth.service';
+import { LanguageService } from '../i18n/language.service';
 import { PinLockService } from '../pin/pin-lock.service';
 import { SetupStateService } from '../setup/setup-state.service';
 import { NotificationBell } from '../notification-centre/notification-bell';
@@ -97,6 +100,12 @@ export class AppShell {
     // Signed in: the bell polls (F11.11) until signing out.
     this.centre.start();
     inject(DestroyRef).onDestroy(() => this.centre.stop());
+    // F11.2: the profile's language and formats, as soon as they are known (and after a save).
+    const settings = inject(UserSettingsService).settings;
+    const language = inject(LanguageService);
+    effect(() => {
+      if (settings.hasValue()) language.apply(settings.value());
+    });
   }
 
   protected toggleMenu(): void {

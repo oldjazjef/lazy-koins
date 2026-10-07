@@ -62,8 +62,8 @@
                 @if (row.version; as version) {
                 <span [lkTruncate]="version.label">{{ version.label }}</span>
                 @let meta = version.exportType + ' · ' + ('estv.downloadedAt' |
-                translate: { date: (version.downloadedAt | date: 'dd.MM.yyyy
-                HH:mm') });
+                translate: { date: (version.downloadedAt | lkDate: 'dateTime')
+                });
                 <span class="text-muted-foreground text-xs" [lkTruncate]="meta"
                   >{{ meta }}</span
                 >
@@ -82,7 +82,7 @@
               <td hlmTd class="max-w-0 text-xs">
                 @if (row.check; as check) {
                 <span class="block tabular-nums"
-                  >{{ check.checkedAt | date: 'dd.MM.yyyy HH:mm' }}</span
+                  >{{ check.checkedAt | lkDate: 'dateTime' }}</span
                 >
                 @if (check.outcome === 'failed') {
                 <span hlmBadge variant="destructive"
@@ -107,7 +107,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span class="text-muted-foreground text-xs">
           @if (status.lastCheckAt) { {{ 'estv.lastCheck' | translate: { date:
-          (status.lastCheckAt | date: 'dd.MM.yyyy HH:mm') } }} }
+          (status.lastCheckAt | lkDate: 'dateTime') } }} }
         </span>
         <button
           hlmBtn

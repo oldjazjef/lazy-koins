@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadGatewayResponse,
@@ -17,12 +18,14 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { AuthenticatedUser } from '../auth/authenticated-user';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { SUPPORTED_LOCALES } from '../common/i18n/locale';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
 import { ProjectSentResponseDto } from '../projects/dto/project-sent.dto';
 import {
@@ -48,8 +51,13 @@ const MAIL_CONFLICT =
 const SMTP_FAILED =
   'The mail server refused or failed — body.code smtpFailed, body.smtp = { kind: auth | tls | connection | dns | timeout | rejected | protocol | unknown, host, port, smtpCode, response (redacted), command, code }';
 
-/** The only language with a template so far (F11.2). */
-const LANGUAGE = 'de-CH';
+/** F11.2: a template per language; without the parameter the user's language. */
+const LANGUAGE_QUERY = {
+  name: 'language',
+  required: false,
+  enum: SUPPORTED_LOCALES,
+  description: 'The template of this language; default the user’s language',
+} as const;
 
 @ApiTags('mail')
 @ApiBearerAuth(BEARER_SCHEME)
@@ -119,10 +127,12 @@ export class MailSettingsController {
       'My text template for the Treuhänder (F11.10) with default, placeholders and a preview',
   })
   @ApiOkResponse({ type: MailTemplateResponseDto })
+  @ApiQuery(LANGUAGE_QUERY)
   template(
     @CurrentUser() user: AuthenticatedUser,
+    @Query('language') language?: string,
   ): Promise<MailTemplateResponseDto> {
-    return this.mail.template(user.userId, LANGUAGE);
+    return this.mail.template(user.userId, language);
   }
 
   @Put('template')
@@ -132,20 +142,24 @@ export class MailSettingsController {
     description:
       'body.code: emptyMail | unknownPlaceholders (body.placeholders)',
   })
+  @ApiQuery(LANGUAGE_QUERY)
   saveTemplate(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: MailTemplateTextDto,
+    @Query('language') language?: string,
   ): Promise<MailTemplateResponseDto> {
-    return this.mail.saveTemplate(user.userId, LANGUAGE, dto);
+    return this.mail.saveTemplate(user.userId, language, dto);
   }
 
   @Delete('template')
   @ApiOperation({ summary: '"Auf Standard zurücksetzen"' })
   @ApiOkResponse({ type: MailTemplateResponseDto })
+  @ApiQuery(LANGUAGE_QUERY)
   resetTemplate(
     @CurrentUser() user: AuthenticatedUser,
+    @Query('language') language?: string,
   ): Promise<MailTemplateResponseDto> {
-    return this.mail.resetTemplate(user.userId, LANGUAGE);
+    return this.mail.resetTemplate(user.userId, language);
   }
 
   @Post('template/preview')
@@ -155,8 +169,13 @@ export class MailSettingsController {
       'Live preview of unsaved template text with sample values; unknown placeholders are listed',
   })
   @ApiOkResponse({ type: RenderedMailDto })
-  preview(@Body() dto: MailTemplateTextDto): Promise<RenderedMailDto> {
-    return this.mail.previewTemplate(dto);
+  @ApiQuery(LANGUAGE_QUERY)
+  preview(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MailTemplateTextDto,
+    @Query('language') language?: string,
+  ): Promise<RenderedMailDto> {
+    return this.mail.previewTemplate(user.userId, dto, language);
   }
 }
 

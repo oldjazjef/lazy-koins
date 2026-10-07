@@ -57,7 +57,7 @@ Electron for the desktop app (**Electron 42** + electron-builder, see Desktop).
 | Styling | **Tailwind CSS v4** (CSS-first, `.postcssrc.json`) + token values in `src/styles.css` |
 | Forms   | Typed reactive forms, validated with **Zod** (messages are i18n keys)                 |
 | Data    | `httpResource` for reads, the **ActionRunner** for mutations                          |
-| i18n    | **ngx-translate** v18, runtime JSON — `public/i18n/de-CH.json` (the only locale)      |
+| i18n    | **ngx-translate** v18, runtime JSON — `public/i18n/de-CH.json` + `en.json` (F11.2)    |
 | Auth    | **Firebase Authentication** with the Firebase JS SDK (`firebase/auth`), lazy-loaded   |
 | Font    | Inter, self-hosted via `@fontsource-variable/inter`                                   |
 
@@ -173,7 +173,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     openapi/                #   document + Scalar
 apps/web/                   # Angular app
   public/env.js             #   runtime configuration (window.__LK_ENV__) — see Runtime configuration
-  public/i18n/de-CH.json    #   messages
+  public/i18n/de-CH.json    #   messages (German = the reference) + en.json (same keys, F11.2)
   src/styles.css            #   the ONLY place colours live (light + dark)
   src/app/
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/ (toasts),
@@ -187,7 +187,8 @@ apps/web/                   # Angular app
                             #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
                             #   the editor body of a project's new mapping; the mappings feature uses its own
                             #   components/mapping-workbench with a sample file)
-    shared/format/          #   formatChf / formatQuantity + lkChf / lkQuantity pipes (de-CH, decimal.js)
+    shared/format/          #   formatChf / formatQuantity / formatDate + lkChf / lkQuantity / lkDate / lkNumber
+                            #   pipes (active format = a signal, F11.2; decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
     shared/files/           #   saveBlob / fileNameFrom — authenticated downloads; filesByPlatform
     shared/charts/          #   hand-rolled SVG: lk-line-chart, lk-sparkline, lk-allocation-bar (no chart lib)
@@ -1080,6 +1081,10 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `carryover.persistence.integration.spec.ts` tests the transaction and the CHECKs.
 - **Assistant / MCP** (migration `20261008180000_ai_chat_mcp`): see "Tool layer, AI assistant,
   MCP server".
+- **Language** (migration `20261008190000_user_locale`, F11.2): `user_settings.locale` (nullable,
+  CHECK `de-CH|en`) and `mail_template` **redefined** only to widen CHECKs — `number_format`
+  `de-CH|en`, `date_format` four patterns, `mail_template.language` `de-CH|en`; every other column
+  and CHECK copied. `mail.persistence.integration.spec.ts` tests them.
 - **Setup / PIN** (migration `20261008150000_setup_pin`, new tables only): `setup_progress` (PK
   `user_id`; `steps` must be a JSON object, `current_step` CHECK) and `user_pin` (PK `user_id`;
   `pin_hash LIKE 'scrypt$%'`, counters ≥ 0, auto-lock 1–240) — both cascade with the user;
@@ -1306,10 +1311,49 @@ disabled?, hidden? }`. Exactly one visible action → a plain icon button with t
   semantic classes; `no-hardcoded-design-values` rejects hex, arbitrary px and inline styles.
 - The look: calm and neutral for reading figures — cool slate greys, an ink-blue primary, Inter,
   radius 0.5rem; component classes `lk-brand`, `lk-nav-link`, `lk-panel`, `lk-facts`.
-- Every visible string is a key in `public/i18n/de-CH.json` (German/Swiss, du-form);
-  `no-hardcoded-text` rejects literal text in templates and `core/i18n/i18n-keys.spec.ts` fails
-  when a referenced key is missing. Keys built at runtime (`projects.status.<status>`) are listed
-  in that spec.
+- Every visible string is a key in `public/i18n/de-CH.json` (German/Swiss, du-form) **and**
+  `public/i18n/en.json` (English, F11.2); `no-hardcoded-text` rejects literal text in templates
+  and `core/i18n/i18n-keys.spec.ts` fails when a referenced key is missing in either file, when
+  the two files differ in their key sets, or when a text's `{{placeholders}}` differ. Keys built
+  at runtime (`projects.status.<status>`) are listed in that spec. **Adding a key = both files.**
+- **Languages (F11.2)**: German (Switzerland) and English. The language lives on the user
+  (`user_settings.locale`, `null` = not chosen yet → the browser's: `de*` → de-CH, else en) with
+  the number format (`de-CH` 1’234.56 | `en` 1,234.56) and the date format (`dd.MM.yyyy`,
+  `yyyy-MM-dd`, `dd/MM/yyyy`, `MM/dd/yyyy`); migration `20261008190000_user_locale`. On the
+  desktop the same row is local, and the window also tells the main process (bridge
+  `locale.set` → `desktop-config.json` `locale`) for its menus/dialogs
+  (`apps/desktop/src/main/lib/messages.ts`, one dictionary per language). Web:
+  `core/i18n/locales.ts` (`SUPPORTED_LOCALES`, browser default, last language in localStorage
+  `lk.locale` for the login page), `LanguageService` (root; `use` / `apply(settings)` /
+  `preview`: ngx-translate's language, `<html lang>`, the formats, the desktop) — the app shell
+  applies the profile as soon as it loads. Profil › "Sprache und Format" and the wizard's first
+  step use `lk-language-fields` (a new language brings its formats unless the user chose others,
+  `withLanguage`); the profile saves it at once, the wizard with "Weiter". **Formatting**: never
+  Angular's DatePipe/DecimalPipe (their locale is fixed at start) — `lkDate` (`'date' |
+'dateTime' | 'dateTimeSeconds'`, optional `'UTC'`), `lkChf`, `lkQuantity`, `lkNumber` are
+  impure pipes over the `displayFormat()` signal; code uses `formatDate` / `formatChf` /
+  `formatRelative`. A `computed` that calls `translate.instant` reads `translate.currentLang()`
+  so it re-translates on a switch.
+- **API texts per language**: `common/i18n/locale.ts` (`Locale`, `localeOr`). The documents
+  (statements PDF/Excel, internal report, mail draft) come from `exports/application/texts/`
+  (`ExportTexts`, one file per locale; `exportKit(locale, format)` adds the formatters) — the
+  German file is pinned byte for byte by `export-language.spec.ts` (snapshot). Country terms and
+  form references stay in the country rules (`rulesInLanguage`, `translatedLabels.en` keeps the
+  official German term in parentheses, F10.3). The mail template has a default per language
+  (`DEFAULT_MAIL_TEMPLATES`, `mail_template.language`), compose and the template endpoints use
+  the user's language (`?language=` overrides). The assistant's default prompt and fixed rules
+  exist per language (`assistant-prompt.ts`); the prompt's context names the app language.
+  The data export (F10.7) translates only its information columns — the standard format's own
+  columns are a file format and stay German. Notification titles are keys rendered by the web.
+  Tool titles have an English map (`tools/domain/tool-titles.ts`; Einstellungen › MCP gets
+  `titles` per language, proposal cards the user's); proposal summaries/changes and the API's
+  own error `message`s (the app shows codes as keys) stay as they are — not translated yet.
+- **Adding a language** = one message file `public/i18n/<code>.json` + the code in
+  `SUPPORTED_LOCALES` (web `core/i18n/locales.ts` with its formats in `LOCALE_FORMATS` and its
+  Angular locale data, API `common/i18n/locale.ts`) + the server catalogue: `ExportTexts` file,
+  default mail template + sample values, assistant prompt + rules, the country rules'
+  `translatedLabels`, the desktop dictionary — every one is a `Record<Locale, …>`, so the
+  compiler lists what is missing — and the migration's locale CHECKs.
 - Selector prefix `lk` for app code, `hlm` in `libs/ui`.
 
 ## Testing
@@ -1546,7 +1590,8 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
 - `hlmBtn` styles `button`/`a` only — a `<label hlmBtn>` renders unstyled; use a button that
   clicks a hidden `<input type="file">`.
 - `HttpTestingController.match()` **removes** what it matches; jsdom's `File` has no `text()`.
-- DatePipe formats like `'dd.MM.yyyy'` look like i18n keys; `i18n-keys.spec.ts` skips them.
+- DatePipe formats like `'dd.MM.yyyy'` look like i18n keys; `i18n-keys.spec.ts` skips them. Any
+  other quoted dotted literal (a storage key like `lk.locale`) must be a template literal.
 - Keep `\uFEFF` and other invisible characters as escapes in source (`no-irregular-whitespace`).
 
 - `better-sqlite3` is a native module: it is in `allowBuilds` (pnpm-workspace.yaml), and the API

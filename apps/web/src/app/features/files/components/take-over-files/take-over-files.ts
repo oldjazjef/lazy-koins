@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,7 +21,7 @@ import { TakeOverFilesService } from './take-over-files.service';
   selector: 'lk-take-over-files',
   imports: [
     Truncate,
-    DatePipe,
+    LkDatePipe,
     TranslatePipe,
     ...HlmButtonImports,
     ...HlmDialogImports,

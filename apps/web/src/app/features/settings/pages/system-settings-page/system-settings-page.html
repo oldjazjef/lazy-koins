@@ -27,8 +27,8 @@
     </dd>
     <dt>{{ 'settings.system.builtAt' | translate }}</dt>
     <dd>
-      @if (version()?.builtAt; as builtAt) { {{ builtAt | date: 'dd.MM.yyyy
-      HH:mm' }} } @else { – }
+      @if (version()?.builtAt; as builtAt) { {{ builtAt | lkDate: 'dateTime' }}
+      } @else { – }
     </dd>
     <dt>{{ 'settings.system.runtime' | translate }}</dt>
     <dd>

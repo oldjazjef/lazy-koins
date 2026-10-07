@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,7 +31,7 @@ export function assistantPromptSchema(max: number) {
 @Component({
   selector: 'lk-assistant-settings-section',
   imports: [
-    DatePipe,
+    LkDatePipe,
     ReactiveFormsModule,
     TranslatePipe,
     ...HlmBadgeImports,

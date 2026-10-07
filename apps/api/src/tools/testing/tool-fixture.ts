@@ -113,6 +113,7 @@ export async function toolSetup() {
           canton: 'ZH',
           advisorName: 'Treuhand AG',
           advisorEmail: 'treuhand@example.ch',
+          locale: 'de-CH',
           numberFormat: 'de-CH',
           dateFormat: 'dd.MM.yyyy',
           onlineRates: false,

@@ -2,8 +2,8 @@
 <div class="mb-4 flex flex-wrap items-center gap-3">
   @if (view.snapshot; as snapshot) {
   <p class="text-muted-foreground text-sm">
-    {{ 'result.calculatedAt' | translate: { date: (snapshot.createdAt | date:
-    'dd.MM.yyyy HH:mm') } }}
+    {{ 'result.calculatedAt' | translate: { date: (snapshot.createdAt | lkDate:
+    'dateTime') } }}
   </p>
   } @if (view.stale) {
   <span hlmBadge variant="destructive">{{ 'result.stale' | translate }}</span>
@@ -335,7 +335,7 @@
                 @for (line of linesPager.visible(); track line.id) {
                 <tr hlmTr>
                   <td hlmTd class="align-top tabular-nums">
-                    {{ line.date | date: 'dd.MM.yyyy' }}
+                    {{ line.date | lkDate }}
                   </td>
                   <td hlmTd class="max-w-0">
                     <span [lkTruncate]="line.platform"
@@ -527,7 +527,7 @@
         @for (event of eventsPager.visible(); track event.id) {
         <tr hlmTr>
           <td hlmTd class="tabular-nums">
-            {{ event.timestamp | date: 'dd.MM.yyyy' : 'UTC' }}
+            {{ event.timestamp | lkDate: 'date' : 'UTC' }}
           </td>
           <td hlmTd class="max-w-0">
             @let kind = 'bookings.kind.' + event.kind | translate;

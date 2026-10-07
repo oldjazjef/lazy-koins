@@ -55,7 +55,8 @@ import {
 } from './lib/os-notification';
 import { detectSyncProvider } from './lib/sync-folder';
 import { APP_ORIGIN } from './lib/web-protocol';
-import { MESSAGES } from './messages';
+import { isDesktopLocale, systemLocale } from './lib/messages';
+import { messages, setMessagesLocale } from './messages';
 import { handleAppScheme, registerAppScheme } from './protocol';
 import { reportError } from './report';
 
@@ -136,7 +137,14 @@ void app.whenReady().then(start);
 
 async function start(): Promise<void> {
   const userData = app.getPath('userData');
-  dataDir = resolveDataDir(userData, readConfig(userData), process.env);
+  const config = readConfig(userData);
+  // F11.2: the app's language (stored by the window), else the system's — now that it is known.
+  setMessagesLocale(
+    isDesktopLocale(config.locale)
+      ? config.locale
+      : systemLocale(app.getLocale()),
+  );
+  dataDir = resolveDataDir(userData, config, process.env);
 
   try {
     mkdirSync(dataDir, { recursive: true });
@@ -158,8 +166,8 @@ async function start(): Promise<void> {
     }
   } catch (error) {
     reportError(
-      MESSAGES.startFailed.title,
-      MESSAGES.startFailed.detail(
+      messages().startFailed.title,
+      messages().startFailed.detail(
         error instanceof Error ? error.message : String(error),
         dataDir,
       ),
@@ -254,14 +262,14 @@ async function acquireLock(): Promise<boolean> {
   if (assessment.kind === 'foreign') {
     const { response } = await dialog.showMessageBox({
       type: 'warning',
-      title: MESSAGES.foreignLock.title,
-      message: MESSAGES.foreignLock.message,
-      detail: MESSAGES.foreignLock.detail(
+      title: messages().foreignLock.title,
+      message: messages().foreignLock.message,
+      detail: messages().foreignLock.detail(
         assessment.lock.host,
         new Date(assessment.lock.heartbeatAt).toLocaleString('de-CH'),
         dataDir,
       ),
-      buttons: [MESSAGES.foreignLock.quit, MESSAGES.foreignLock.openAnyway],
+      buttons: [messages().foreignLock.quit, messages().foreignLock.openAnyway],
       defaultId: 0,
       cancelId: 0,
       noLink: true,
@@ -287,10 +295,10 @@ function warnAboutConflictCopies(): void {
   if (copies.length === 0) return;
   dialog.showMessageBoxSync({
     type: 'warning',
-    title: MESSAGES.conflictCopies.title,
-    message: MESSAGES.conflictCopies.message,
-    detail: MESSAGES.conflictCopies.detail(copies),
-    buttons: [MESSAGES.conflictCopies.ok],
+    title: messages().conflictCopies.title,
+    message: messages().conflictCopies.message,
+    detail: messages().conflictCopies.detail(copies),
+    buttons: [messages().conflictCopies.ok],
   });
 }
 
@@ -344,7 +352,7 @@ function registerIpc(userData: string): void {
     IPC.storageChoose,
     guard(async (): Promise<StorageChangeResult> => {
       const options = {
-        title: MESSAGES.chooseFolder,
+        title: messages().chooseFolder,
         defaultPath: dataDir,
         properties: ['openDirectory', 'createDirectory'] as Array<
           'openDirectory' | 'createDirectory'
@@ -376,6 +384,21 @@ function registerIpc(userData: string): void {
       args: [join(app.getAppPath(), 'mcp-stdio.js')],
       env: { ELECTRON_RUN_AS_NODE: '1', LAZYKOINS_DATA_DIR: dataDir },
     })),
+  );
+
+  // --- F11.2: the app's language for the menus and dialogs, kept in the desktop config ---
+  ipcMain.handle(
+    IPC.localeSet,
+    (event: IpcMainInvokeEvent, locale: unknown) => {
+      if (!fromApp(event)) throw new Error('IPC refused: not the app window');
+      if (!isDesktopLocale(locale))
+        throw new Error('IPC refused: not a locale');
+      const config = readConfig(userData);
+      if (config.locale !== locale)
+        writeConfig(userData, { ...config, locale });
+      setMessagesLocale(locale);
+      Menu.setApplicationMenu(buildMenu());
+    },
   );
 
   // --- F11.13: OS notifications (Einstellungen → System) ---
@@ -455,24 +478,27 @@ async function switchDataDir(
   if (targetLock.kind === 'foreign') {
     await ask({
       type: 'warning',
-      title: MESSAGES.foreignLock.title,
-      message: MESSAGES.foreignLockTarget,
-      buttons: [MESSAGES.switchExisting.cancel],
+      title: messages().foreignLock.title,
+      message: messages().foreignLockTarget,
+      buttons: [messages().switchExisting.cancel],
     });
     return { status: 'cancelled' };
   }
 
   const provider = detectSyncProvider(target, process.env);
-  const syncNote = provider ? `\n\n${MESSAGES.syncFolder(provider)}` : '';
+  const syncNote = provider ? `\n\n${messages().syncFolder(provider)}` : '';
   let copy = false;
 
   if (hasDatabase(target)) {
     const { response } = await ask({
       type: 'question',
-      title: MESSAGES.switchExisting.title,
-      message: MESSAGES.switchExisting.message,
-      detail: `${target}\n\n${MESSAGES.switchExisting.detail}${syncNote}`,
-      buttons: [MESSAGES.switchExisting.open, MESSAGES.switchExisting.cancel],
+      title: messages().switchExisting.title,
+      message: messages().switchExisting.message,
+      detail: `${target}\n\n${messages().switchExisting.detail}${syncNote}`,
+      buttons: [
+        messages().switchExisting.open,
+        messages().switchExisting.cancel,
+      ],
       defaultId: 0,
       cancelId: 1,
       noLink: true,
@@ -481,13 +507,13 @@ async function switchDataDir(
   } else {
     const { response } = await ask({
       type: 'question',
-      title: MESSAGES.switchEmpty.title,
-      message: MESSAGES.switchEmpty.message,
-      detail: `${target}\n\n${MESSAGES.switchEmpty.detail}${syncNote}`,
+      title: messages().switchEmpty.title,
+      message: messages().switchEmpty.message,
+      detail: `${target}\n\n${messages().switchEmpty.detail}${syncNote}`,
       buttons: [
-        MESSAGES.switchEmpty.copy,
-        MESSAGES.switchEmpty.empty,
-        MESSAGES.switchEmpty.cancel,
+        messages().switchEmpty.copy,
+        messages().switchEmpty.empty,
+        messages().switchEmpty.cancel,
       ],
       defaultId: 0,
       cancelId: 2,
@@ -522,7 +548,7 @@ async function switchDataDir(
   } catch (error) {
     // The API is already stopped: relaunch on the old folder rather than leave a dead window.
     reportError(
-      MESSAGES.startFailed.title,
+      messages().startFailed.title,
       error instanceof Error ? error.message : String(error),
       error,
     );
@@ -537,9 +563,9 @@ async function switchDataDir(
 async function showAbout(): Promise<void> {
   const options: Electron.MessageBoxOptions = {
     type: 'info',
-    title: MESSAGES.about.item,
+    title: messages().about.item,
     message: `lazy-koins ${fullVersion}`,
-    detail: MESSAGES.about.detail(
+    detail: messages().about.detail(
       process.versions.electron ?? '',
       process.versions.chrome ?? '',
       process.versions.node,
@@ -559,7 +585,7 @@ function buildMenu(): Menu {
     { role: 'fileMenu' },
     { role: 'editMenu' },
     {
-      label: 'Ansicht',
+      label: messages().viewMenu,
       submenu: [
         { role: 'reload' },
         ...(app.isPackaged
@@ -575,8 +601,10 @@ function buildMenu(): Menu {
     },
     { role: 'windowMenu' },
     {
-      label: MESSAGES.about.menu,
-      submenu: [{ label: MESSAGES.about.item, click: () => void showAbout() }],
+      label: messages().about.menu,
+      submenu: [
+        { label: messages().about.item, click: () => void showAbout() },
+      ],
     },
   ];
   return Menu.buildFromTemplate(template);

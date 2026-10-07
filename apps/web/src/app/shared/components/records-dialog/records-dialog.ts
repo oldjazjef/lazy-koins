@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,7 +28,7 @@ export type RecordRow = FigureRecord & { readonly projectId?: string | null };
 @Component({
   selector: 'lk-records-dialog',
   imports: [
-    DatePipe,
+    LkDatePipe,
     RouterLink,
     TranslatePipe,
     QuantityPipe,

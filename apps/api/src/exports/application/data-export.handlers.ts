@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Optional } from '@nestjs/common';
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import {
   BOOKINGS_SHEET,
@@ -10,6 +10,8 @@ import {
   toCsv,
 } from '@lazykoins/engine';
 import ExcelJS from 'exceljs';
+import { localeOr } from '../../common/i18n/locale';
+import { SettingsReader } from '../../settings/application/settings.handlers';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { loadOwnProject } from '../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -79,6 +81,7 @@ export class DataExportHandler implements IQueryHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly inputs: CalculationInputService,
+    @Optional() private readonly settings?: SettingsReader,
   ) {}
 
   async execute({
@@ -104,6 +107,8 @@ export class DataExportHandler implements IQueryHandler<
       rates: assembled.input.rates,
       fileNames,
       filter,
+      // F11.2: the information columns in the user's language (the format's own columns stay).
+      language: localeOr((await this.settings?.resolve(userId))?.locale),
     });
     const base = `${slug(project.name)}-${project.taxYear}`;
     if (format === 'xlsx') {

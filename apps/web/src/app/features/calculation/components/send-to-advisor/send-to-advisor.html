@@ -8,8 +8,8 @@
     (status.sent; as sent) {
     <div class="flex flex-wrap items-center gap-2 text-sm">
       <span hlmBadge variant="secondary"
-        >{{ 'projects.sent.badge' | translate: { date: (sent.sentAt | date:
-        'dd.MM.yyyy') } }}</span
+        >{{ 'projects.sent.badge' | translate: { date: (sent.sentAt | lkDate) }
+        }}</span
       >
       <span
         >{{ 'projects.sent.via.' + sent.via | translate }} @if (sent.sentTo) { ·
@@ -89,7 +89,7 @@
             @for (entry of logPager.visible(); track entry.id) {
             <tr hlmTr>
               <td hlmTd class="tabular-nums whitespace-nowrap">
-                {{ entry.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+                {{ entry.createdAt | lkDate: 'dateTime' }}
               </td>
               <td hlmTd class="max-w-0">
                 <span [lkTruncate]="entry.subject">{{ entry.subject }}</span>
@@ -239,8 +239,8 @@
               {{ item.fileName }}
               <span class="text-muted-foreground text-xs"
                 >· {{ 'exports.kind.' + item.kind | translate }} · {{
-                bytes(item.size) }} · {{ item.createdAt | date: 'dd.MM.yyyy
-                HH:mm' }}</span
+                bytes(item.size) }} · {{ item.createdAt | lkDate: 'dateTime'
+                }}</span
               >
               @if (item.internal) {
               <span class="text-destructive block text-xs"
@@ -405,7 +405,7 @@
           />
           {{ item.fileName }}
           <span class="text-muted-foreground text-xs"
-            >{{ item.createdAt | date: 'dd.MM.yyyy HH:mm' }}</span
+            >{{ item.createdAt | lkDate: 'dateTime' }}</span
           >
         </label>
         }

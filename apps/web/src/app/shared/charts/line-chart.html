@@ -61,9 +61,7 @@
         [style.left.%]="active.leftPct"
         role="status"
       >
-        <p class="text-muted-foreground">
-          {{ active.point.date | date: 'dd.MM.yyyy' }}
-        </p>
+        <p class="text-muted-foreground">{{ active.point.date | lkDate }}</p>
         <p class="text-sm font-medium tabular-nums">
           {{ active.point.value | lkChf: currency() }}
         </p>
@@ -83,7 +81,7 @@
     aria-hidden="true"
   >
     @for (tick of ticks(); track $index) {
-    <span>{{ tick | date: 'dd.MM.yyyy' }}</span>
+    <span>{{ tick | lkDate }}</span>
     }
   </div>
   } @if (hasMissing()) {
@@ -107,7 +105,7 @@
       <tbody>
         @for (point of points(); track point.date) {
         <tr>
-          <td>{{ point.date | date: 'dd.MM.yyyy' }}</td>
+          <td>{{ point.date | lkDate }}</td>
           <td>{{ point.value | lkChf }}</td>
           <td>{{ point.missing.join(', ') }}</td>
         </tr>

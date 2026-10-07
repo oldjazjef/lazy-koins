@@ -216,7 +216,10 @@ model UserSettings {
   canton       String   @default("")
   advisorName  String   @default("") @map("advisor_name")
   advisorEmail String   @default("") @map("advisor_email")
-  /// F11.2. Only `de-CH` / `dd.MM.yyyy` exist so far. CHECK in the migration.
+  /// F11.2: the language of the app and the exports (`de-CH` | `en`); null = not chosen yet (the
+  /// app takes the browser language, the exports German). CHECK in the migration.
+  locale       String?
+  /// F11.2: `de-CH` (1’234.56) | `en` (1,234.56) and the date pattern. CHECKs in the migration.
   numberFormat String   @default("de-CH") @map("number_format")
   dateFormat   String   @default("dd.MM.yyyy") @map("date_format")
   /// F11.3: rate lookups on the internet allowed.
@@ -515,7 +518,7 @@ model MailSettings {
 /// the built-in default of that language (`mail/domain/mail-template.ts`).
 model MailTemplate {
   userId    String   @map("user_id")
-  /// F11.2 language; only `de-CH` so far. CHECK in the migration.
+  /// F11.2 language (`de-CH` | `en`). CHECK in the migration.
   language  String
   subject   String
   body      String

@@ -6,6 +6,8 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import { CalculationSnapshotRepositoryPort } from '../../calculation/ports/calculation.repository.port';
+import { localeOr } from '../../common/i18n/locale';
+import { exportKit } from '../../exports/application/export-texts';
 import { ExportDataService } from '../../exports/application/exports.handlers';
 import type {
   ProjectExportContent,
@@ -93,7 +95,8 @@ export class ComposeMailQuery {
     readonly projectId: string,
     /** The attachments chosen in the dialog; absent = the preselection. */
     readonly exportIds?: readonly string[],
-    readonly language: MailLanguage = 'de-CH',
+    /** F11.2: absent = the user's language. */
+    readonly language?: MailLanguage,
     readonly now: Date = new Date(),
   ) {}
 }
@@ -138,15 +141,16 @@ export class ComposeMailHandler implements IQueryHandler<
       internal: isInternalExportKind(item.kind),
       selected: chosen.has(item.id),
     }));
-    const { values, advisorEmail, advisorName, calculated } =
+    const { values, advisorEmail, advisorName, calculated, language } =
       await this.valuesOf(
         query.userId,
         project,
         attachments.filter((a) => a.selected).map((a) => a.fileName),
         query.now,
+        query.language,
       );
     const rendered = renderMail(
-      await this.templates.of(query.userId, query.language),
+      await this.templates.of(query.userId, language),
       values,
     );
     const mailer = await this.gate.settingsOf(query.userId);
@@ -170,6 +174,7 @@ export class ComposeMailHandler implements IQueryHandler<
     project: Project,
     attachmentNames: string[],
     now: Date,
+    requested?: MailLanguage,
   ) {
     const snapshot = await this.snapshots.latest(project.id);
     const settings = await this.settings.resolve(userId);
@@ -177,6 +182,8 @@ export class ComposeMailHandler implements IQueryHandler<
     const data = snapshot
       ? await this.data.build(userId, project, snapshot, snapshot.createdAt)
       : null;
+    // F11.2: the template, the figures and the open items in one language.
+    const language = requested ?? localeOr(settings.locale);
     return {
       values: mailValues({
         project,
@@ -185,10 +192,15 @@ export class ComposeMailHandler implements IQueryHandler<
         advisorName: settings.advisorName,
         attachmentNames,
         now,
+        kit: exportKit(language, {
+          numberFormat: settings.numberFormat,
+          dateFormat: settings.dateFormat,
+        }),
       }),
       advisorEmail: settings.advisorEmail,
       advisorName: settings.advisorName,
       calculated: snapshot !== undefined,
+      language,
     };
   }
 }

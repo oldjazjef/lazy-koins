@@ -66,6 +66,7 @@ export class SettingsController {
         canton: dto.canton,
         advisorName: dto.advisorName,
         advisorEmail: dto.advisorEmail,
+        locale: dto.locale,
         numberFormat: dto.numberFormat,
         dateFormat: dto.dateFormat,
         onlineRates: dto.onlineRates,

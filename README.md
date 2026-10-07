@@ -30,6 +30,11 @@ one tax year:
 The first country is **Switzerland, private assets**: capital gains are tax-free there, so
 lazy-koins does not compute them — it focuses on what has to be declared.
 
+The app speaks **German (Switzerland)** and **English** — choose the language, number format
+(1’234.56 or 1,234.56) and date format in your profile; it applies at once, and the statements,
+the internal report and the mail to your accountant follow it (Swiss tax terms keep their
+official German name in parentheses).
+
 > lazy-koins is not tax advice. It documents how every figure was calculated so that you, your
 > accountant or the tax office can check it.
 

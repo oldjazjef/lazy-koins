@@ -14,6 +14,7 @@ import { ProjectFilePrismaRepository } from './prisma/repositories/project-file.
 import { ProjectSentPrismaRepository } from './prisma/repositories/project-sent.prisma.repository';
 import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
 import { UserPrismaRepository } from './prisma/repositories/user.prisma.repository';
+import { UserSettingsPrismaRepository } from './prisma/repositories/user-settings.prisma.repository';
 
 /**
  * The mail migration against a real SQLite file: the adapters of `mail_settings`,
@@ -162,6 +163,48 @@ describe('mail_template', () => {
     ]) {
       await expect(
         insert('mail_template', { user_id: user.id, updated_at: now, ...bad }),
+      ).rejects.toThrow(/CHECK constraint failed/);
+    }
+  });
+
+  it('keeps one template per language — German and English (F11.2)', async () => {
+    const user = await newUser('mail-template-en');
+    await templates.save(user.id, 'de-CH', {
+      subject: 'Steuern',
+      body: 'Text',
+    });
+    await templates.save(user.id, 'en', { subject: 'Taxes', body: 'Text' });
+    expect((await templates.find(user.id, 'en'))?.subject).toBe('Taxes');
+    expect((await templates.find(user.id, 'de-CH'))?.subject).toBe('Steuern');
+  });
+});
+
+describe('user_settings language and formats (F11.2)', () => {
+  it('stores locale, number and date format and refuses unknown values', async () => {
+    const user = await newUser('settings-locale');
+    const settings = new UserSettingsPrismaRepository(prisma);
+    expect((await settings.save(user.id, { canton: 'ZH' })).locale).toBeNull();
+    const saved = await settings.save(user.id, {
+      locale: 'en',
+      numberFormat: 'en',
+      dateFormat: 'MM/dd/yyyy',
+    });
+    expect(saved).toMatchObject({
+      locale: 'en',
+      numberFormat: 'en',
+      dateFormat: 'MM/dd/yyyy',
+    });
+    for (const [column, value] of [
+      ['locale', 'fr'],
+      ['number_format', 'fr-FR'],
+      ['date_format', 'yyyy/MM/dd'],
+    ] as const) {
+      await expect(
+        prisma.$executeRawUnsafe(
+          `UPDATE user_settings SET ${column} = ? WHERE user_id = ?`,
+          value,
+          user.id,
+        ),
       ).rejects.toThrow(/CHECK constraint failed/);
     }
   });

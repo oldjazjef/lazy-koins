@@ -65,7 +65,7 @@
       >
       <span class="text-muted-foreground text-xs">
         {{ 'mappings.sample.size' | translate: { kb: (sample.size / 1024 |
-        number: '1.0-1') } }} @if (inspection) { · {{ 'mappings.sample.rows' |
+        lkNumber) } }} @if (inspection) { · {{ 'mappings.sample.rows' |
         translate: { count: inspection.sample.rowCount } }} } @if
         (inspection?.sample?.sheet; as sheet) { · {{ 'mappings.sample.sheet' |
         translate: { name: sheet } }} } @if (sample.from; as from) { · {{

@@ -247,6 +247,8 @@ export class NotificationCentreService {
 
   /** The translated one-line text of a notification. */
   text(notification: AppNotification): string {
+    // F11.2: a signal read — the lists that call this re-translate on a language switch.
+    this.translate.currentLang();
     const params: Record<string, unknown> = { ...notification.params };
     const task = notification.params['task'];
     if (typeof task === 'string') {

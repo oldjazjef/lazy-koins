@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { AiModule } from '../ai/ai.module';
 import { ProjectsModule } from '../projects/projects.module';
+import { SettingsModule } from '../settings/settings.module';
 import { ToolsModule } from '../tools/tools.module';
 import {
   AskAssistantHandler,
@@ -27,7 +28,7 @@ import { AssistantService } from './assistant.service';
  * prompt in Einstellungen › AI.
  */
 @Module({
-  imports: [CqrsModule, AiModule, ProjectsModule, ToolsModule],
+  imports: [CqrsModule, AiModule, ProjectsModule, ToolsModule, SettingsModule],
   controllers: [AssistantSettingsController, ChatController],
   providers: [
     AssistantService,

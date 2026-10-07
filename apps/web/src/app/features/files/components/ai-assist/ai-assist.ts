@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,7 +31,7 @@ import { Truncate } from '../../../../shared/components/truncate';
 @Component({
   selector: 'lk-ai-assist',
   imports: [
-    DatePipe,
+    LkDatePipe,
     FormsModule,
     RouterLink,
     NgIcon,

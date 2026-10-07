@@ -1,4 +1,5 @@
-import { DatePipe, JsonPipe } from '@angular/common';
+import { JsonPipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -42,7 +43,7 @@ import {
 @Component({
   selector: 'lk-project-corrections',
   imports: [
-    DatePipe,
+    LkDatePipe,
     JsonPipe,
     ReactiveFormsModule,
     TranslatePipe,

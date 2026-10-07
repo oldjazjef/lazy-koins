@@ -36,7 +36,7 @@
   <div hlmCardContent class="flex flex-wrap items-center justify-between gap-3">
     <p class="text-sm">
       @if (settings.consentAt) { {{ 'settings.ai.consent.given' | translate: {
-      date: (settings.consentAt | date: 'dd.MM.yyyy HH:mm') } }} } @else { {{
+      date: (settings.consentAt | lkDate: 'dateTime') } }} } @else { {{
       'settings.ai.consent.none' | translate }} }
     </p>
     @if (settings.consentAt) {

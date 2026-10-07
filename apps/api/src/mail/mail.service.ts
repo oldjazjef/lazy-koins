@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { isLocale, localeOr } from '../common/i18n/locale';
+import {
+  GetSettingsQuery,
+  type SettingsView,
+} from '../settings/application/settings.handlers';
 import type { MailConnectionDraft } from './application/mail-gate';
 import {
   GetMailSettingsQuery,
@@ -57,31 +62,61 @@ export class MailService {
     return this.commands.execute(new SendTestMailCommand(userId, draft));
   }
 
-  template(userId: string, language: MailLanguage): Promise<MailTemplateView> {
-    return this.queries.execute(new GetMailTemplateQuery(userId, language));
+  /**
+   * F11.2: the requested language, else the user's — the default template exists per language
+   * (F11.10).
+   */
+  async languageOf(userId: string, requested?: string): Promise<MailLanguage> {
+    if (isLocale(requested)) return requested;
+    const settings: SettingsView = await this.queries.execute(
+      new GetSettingsQuery(userId),
+    );
+    return localeOr(settings.locale);
   }
 
-  saveTemplate(
+  async template(userId: string, language?: string): Promise<MailTemplateView> {
+    return this.queries.execute(
+      new GetMailTemplateQuery(userId, await this.languageOf(userId, language)),
+    );
+  }
+
+  async saveTemplate(
     userId: string,
-    language: MailLanguage,
+    language: string | undefined,
     text: MailTemplateText,
   ): Promise<MailTemplateView> {
     return this.commands.execute(
-      new SaveMailTemplateCommand(userId, language, text),
+      new SaveMailTemplateCommand(
+        userId,
+        await this.languageOf(userId, language),
+        text,
+      ),
     );
   }
 
-  resetTemplate(
+  async resetTemplate(
     userId: string,
-    language: MailLanguage,
+    language?: string,
   ): Promise<MailTemplateView> {
     return this.commands.execute(
-      new ResetMailTemplateCommand(userId, language),
+      new ResetMailTemplateCommand(
+        userId,
+        await this.languageOf(userId, language),
+      ),
     );
   }
 
-  previewTemplate(text: MailTemplateText): Promise<RenderedMail> {
-    return this.queries.execute(new PreviewMailTemplateQuery(text));
+  async previewTemplate(
+    userId: string,
+    text: MailTemplateText,
+    language?: string,
+  ): Promise<RenderedMail> {
+    return this.queries.execute(
+      new PreviewMailTemplateQuery(
+        text,
+        await this.languageOf(userId, language),
+      ),
+    );
   }
 
   compose(

@@ -1,4 +1,9 @@
 import type { BookingKind, Project } from './api.types';
+import type {
+  DateFormat,
+  NumberFormat,
+} from '../../shared/format/locale-format';
+import type { SupportedLocale } from '../i18n/locales';
 import type { ProjectSentSummary } from './mail.types';
 
 /**
@@ -513,8 +518,10 @@ export interface Settings {
   canton: string;
   advisorName: string;
   advisorEmail: string;
-  numberFormat: 'de-CH';
-  dateFormat: 'dd.MM.yyyy';
+  /** F11.2: the language of app and exports; null = not chosen yet (the browser's). */
+  locale: SupportedLocale | null;
+  numberFormat: NumberFormat;
+  dateFormat: DateFormat;
   onlineRates: boolean;
   /** Hints (`…abcd`) or null — never the key. */
   keys: { coingecko: string | null; etherscan: string | null };
@@ -527,6 +534,9 @@ export interface UpdateSettingsRequest {
   canton?: string;
   advisorName?: string;
   advisorEmail?: string;
+  locale?: SupportedLocale;
+  numberFormat?: NumberFormat;
+  dateFormat?: DateFormat;
   onlineRates?: boolean;
   keys?: { coingecko?: string | null; etherscan?: string | null };
   coingeckoIds?: Record<string, string>;

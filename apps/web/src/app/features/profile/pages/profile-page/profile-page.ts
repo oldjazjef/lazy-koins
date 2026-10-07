@@ -1,8 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
+  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -14,7 +16,13 @@ import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { z } from 'zod';
 import { CH_CANTONS } from '../../../../core/api/api.types';
 import type { UpdateSettingsRequest } from '../../../../core/api/calculation.types';
+import { LanguageService } from '../../../../core/i18n/language.service';
+import { LanguageFields } from '../../../../shared/components/language-fields';
 import { PageHeader } from '../../../../shared/components/page-header';
+import {
+  type LanguageChoice,
+  languageChoiceOf,
+} from '../../../../shared/format/format-options';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { UserSettingsService } from '../../../settings/user-settings.service';
 import { PinSettings } from '../../components/pin-settings/pin-settings';
@@ -44,7 +52,7 @@ export function profileChanges(
 
 /**
  * Profil (ANFORDERUNGEN §11, F11.1, F11.2): name, Wohnkanton and Treuhänder for the statements
- * and the mail draft, number and date format (only de-CH so far; the language follows).
+ * and the mail draft; language, number and date format (applied and saved at once).
  */
 @Component({
   selector: 'lk-profile-page',
@@ -52,6 +60,7 @@ export function profileChanges(
     ReactiveFormsModule,
     TranslatePipe,
     PageHeader,
+    LanguageFields,
     PinSettings,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -65,6 +74,7 @@ export function profileChanges(
 })
 export class ProfilePage {
   protected readonly service = inject(UserSettingsService);
+  private readonly language = inject(LanguageService);
   protected readonly data = inject(ProfilePageService);
   protected readonly cantons = CH_CANTONS;
 
@@ -80,7 +90,9 @@ export class ProfilePage {
 
   constructor() {
     effect(() => {
-      if (!this.service.settings.hasValue()) return;
+      // Unsaved edits stay when the language is switched (it saves on its own).
+      if (!this.service.settings.hasValue() || untracked(() => this.form.dirty))
+        return;
       const settings = this.service.settings.value();
       this.form.reset({
         displayName: settings.displayName,
@@ -89,6 +101,34 @@ export class ProfilePage {
         advisorEmail: settings.advisorEmail,
       });
     });
+  }
+
+  /** F11.2: the language and formats as stored — or, before the first choice, the current ones. */
+  protected readonly languageChoice = computed<LanguageChoice>(() =>
+    languageChoiceOf(
+      this.service.settings.hasValue() ? this.service.settings.value() : null,
+      this.language.locale(),
+    ),
+  );
+
+  /** Applies at once (no reload) and saves right away — like a toggle, not a form field. */
+  protected changeLanguage(choice: LanguageChoice): void {
+    this.language.preview(
+      choice.locale,
+      choice.numberFormat,
+      choice.dateFormat,
+    );
+    void this.service
+      .save({
+        locale: choice.locale,
+        numberFormat: choice.numberFormat,
+        dateFormat: choice.dateFormat,
+      })
+      .catch(() => {
+        // Back to what is stored.
+        if (this.service.settings.hasValue())
+          this.language.apply(this.service.settings.value());
+      });
   }
 
   protected downloadAll(): void {
@@ -105,6 +145,9 @@ export class ProfilePage {
     this.form.markAllAsTouched();
     const parsed = ProfileSchema.safeParse(this.form.getRawValue());
     if (!parsed.success) return;
-    void this.service.save(profileChanges(parsed.data)).catch(() => undefined);
+    void this.service
+      .save(profileChanges(parsed.data))
+      .then(() => this.form.markAsPristine())
+      .catch(() => undefined);
   }
 }

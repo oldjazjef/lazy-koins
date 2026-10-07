@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -33,7 +33,7 @@ function toNumber(value: string): number {
  */
 @Component({
   selector: 'lk-line-chart',
-  imports: [DatePipe, TranslatePipe, ChfPipe],
+  imports: [LkDatePipe, TranslatePipe, ChfPipe],
   templateUrl: './line-chart.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

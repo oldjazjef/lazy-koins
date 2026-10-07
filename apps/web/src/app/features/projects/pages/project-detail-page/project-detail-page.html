@@ -129,9 +129,9 @@
         <dt>{{ 'projects.fields.taxCurrency' | translate }}</dt>
         <dd>{{ project.taxCurrency }}</dd>
         <dt>{{ 'projects.fields.createdAt' | translate }}</dt>
-        <dd>{{ project.createdAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dd>{{ project.createdAt | lkDate: 'dateTime' }}</dd>
         <dt>{{ 'projects.fields.updatedAt' | translate }}</dt>
-        <dd>{{ project.updatedAt | date: 'dd.MM.yyyy HH:mm' }}</dd>
+        <dd>{{ project.updatedAt | lkDate: 'dateTime' }}</dd>
       </dl>
     </div>
   </section>

@@ -122,6 +122,7 @@ async function setup(options: { allowPrivate?: boolean; key?: string } = {}) {
     ...t,
     exports,
     runtime,
+    settingsRepo,
     mailSettings,
     templateRepo,
     transport,
@@ -499,6 +500,24 @@ describe('compose (F10.6a)', () => {
     );
     expect(chosen.body).toContain('- intern.pdf');
     expect(chosen.body).not.toContain('Steuern-2025_einfach.pdf');
+  });
+
+  it('uses the English default template and English values for an English user (F11.2)', async () => {
+    const t = await setup();
+    await configured(t);
+    await t.settingsRepo.save('anna', { locale: 'en' });
+    await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    const mail = await t.compose.execute(
+      new ComposeMailQuery('anna', t.project.id),
+    );
+    expect(mail.subject).toBe('Taxes 2025: crypto wealth and income');
+    expect(mail.body).toContain('Dear Treuhand Beispiel AG');
+    expect(mail.body).toContain('(canton ZH)');
+    expect(mail.body).toMatch(/Tax value at 31\.12\.2025: CHF [\d’]+\.\d\d/);
+    expect(mail.body).toContain('Attachments:\n- (no attachments)');
+    expect(mail.body).not.toContain('Guten Tag');
   });
 
   it('works before the first calculation and without a mailer (copy + mailto)', async () => {

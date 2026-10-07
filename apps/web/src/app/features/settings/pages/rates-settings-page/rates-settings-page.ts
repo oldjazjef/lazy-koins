@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -31,7 +31,7 @@ import { RatesSettingsPageService } from './rates-settings-page.service';
 @Component({
   selector: 'lk-rates-settings-page',
   imports: [
-    DatePipe,
+    LkDatePipe,
     TranslatePipe,
     PageHeader,
     Truncate,

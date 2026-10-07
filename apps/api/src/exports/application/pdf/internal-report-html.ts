@@ -41,5 +41,6 @@ export function internalReportHtml(data: ExportData): string {
      <div class="figures">${figures}</div>` +
       report.sections.map(section).join('') +
       `<footer>${e(report.title)}</footer>`,
+    report.lang,
   );
 }
