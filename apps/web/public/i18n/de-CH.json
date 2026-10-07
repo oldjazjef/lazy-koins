@@ -24,6 +24,27 @@
       "last": "Letzte Seite"
     }
   },
+  "dateRange": {
+    "empty": "Zeitraum wählen",
+    "clear": "Zeitraum aufheben",
+    "previous": "Vorheriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "presets": "Vorschläge",
+    "maxDays": "Ein Zeitraum darf höchstens {{days}} Tage umfassen.",
+    "taxYear": "Steuerjahr {{year}}"
+  },
+  "dateField": {
+    "open": "Kalender öffnen",
+    "clear": "Datum löschen",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "outOfRange": "Das Datum muss zwischen {{min}} und {{max}} liegen.",
+    "letter": {
+      "day": "T",
+      "month": "M",
+      "year": "J"
+    }
+  },
   "countries": {
     "CH": "Schweiz"
   },
@@ -1258,8 +1279,7 @@
       "asset": "Asset",
       "kind": "Art",
       "allKinds": "Alle Arten",
-      "from": "Von",
-      "to": "Bis",
+      "period": "Zeitraum",
       "csvBookings": "Buchungen (CSV)",
       "csvHoldings": "Bestände (CSV)",
       "xlsx": "Buchungen + Bestände (Excel)",
@@ -1795,12 +1815,9 @@
     "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden und fehlen in der Übersicht.",
     "period": {
       "label": "Zeitraum",
-      "ytd": "Seit 1. Januar",
+      "ytd": "Laufendes Jahr",
       "last12": "Letzte 12 Monate",
-      "taxYear": "Steuerjahr {{year}}",
-      "custom": "Eigener Zeitraum",
-      "from": "Von",
-      "to": "Bis (Stichtag)"
+      "taxYear": "Steuerjahr {{year}}"
     },
     "kpi": {
       "label": "Kennzahlen im Zeitraum",

@@ -352,10 +352,8 @@
           <label hlmLabel for="mark-date"
             >{{ 'projects.sent.date' | translate }}</label
           >
-          <input
-            hlmInput
-            id="mark-date"
-            type="date"
+          <lk-date-field
+            inputId="mark-date"
             [max]="today()"
             formControlName="date"
           />

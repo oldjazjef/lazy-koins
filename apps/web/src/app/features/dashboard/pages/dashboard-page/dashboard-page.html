@@ -8,57 +8,16 @@
   class="mb-6 flex flex-wrap items-end gap-4"
   [attr.aria-label]="'dashboard.period.label' | translate"
 >
-  <div class="flex flex-col gap-1">
-    <label hlmLabel for="dashboard-preset"
+  <div class="flex w-full max-w-lg flex-col gap-1">
+    <label hlmLabel for="dashboard-period"
       >{{ 'dashboard.period.label' | translate }}</label
     >
-    <select
-      hlmInput
-      id="dashboard-preset"
-      class="w-56"
-      [value]="presetValue()"
-      (change)="choosePreset($any($event.target).value)"
-    >
-      <option value="ytd">{{ 'dashboard.period.ytd' | translate }}</option>
-      <option value="last12">
-        {{ 'dashboard.period.last12' | translate }}
-      </option>
-      @for (year of service.taxYears(); track year) {
-      <option [value]="'year:' + year">
-        {{ 'dashboard.period.taxYear' | translate: { year: year } }}
-      </option>
-      }
-      <option value="custom">
-        {{ 'dashboard.period.custom' | translate }}
-      </option>
-    </select>
-  </div>
-  <div class="flex flex-col gap-1">
-    <label hlmLabel for="dashboard-from"
-      >{{ 'dashboard.period.from' | translate }}</label
-    >
-    <input
-      hlmInput
-      id="dashboard-from"
-      type="date"
-      class="w-40"
-      [value]="service.period().from"
-      [max]="service.period().to"
-      (change)="setFrom($any($event.target).value)"
-    />
-  </div>
-  <div class="flex flex-col gap-1">
-    <label hlmLabel for="dashboard-to"
-      >{{ 'dashboard.period.to' | translate }}</label
-    >
-    <input
-      hlmInput
-      id="dashboard-to"
-      type="date"
-      class="w-40"
-      [value]="service.period().to"
-      [min]="service.period().from"
-      (change)="setTo($any($event.target).value)"
+    <lk-date-range-picker
+      inputId="dashboard-period"
+      [range]="service.period()"
+      [presets]="service.presets()"
+      [max]="service.maxDay()"
+      (rangeChange)="service.choosePeriod($event)"
     />
   </div>
   <span class="flex-1"></span>

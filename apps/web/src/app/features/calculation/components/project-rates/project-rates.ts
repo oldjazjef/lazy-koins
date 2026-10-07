@@ -27,6 +27,7 @@ import { QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
+import { DateField } from '../../../../shared/components/date-field';
 import {
   type RowAction,
   RowActions,
@@ -57,6 +58,7 @@ const ManualRateSchema = z.object({
   selector: 'lk-project-rates',
   imports: [
     LkDatePipe,
+    DateField,
     ReactiveFormsModule,
     RouterLink,
     TranslatePipe,

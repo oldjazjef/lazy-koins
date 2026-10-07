@@ -30,6 +30,7 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
 import { correctionBody, type CorrectionFormValue } from './correction-form';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
+import { DateField } from '../../../../shared/components/date-field';
 import {
   type RowAction,
   RowActions,
@@ -44,6 +45,7 @@ import {
   selector: 'lk-project-corrections',
   imports: [
     LkDatePipe,
+    DateField,
     JsonPipe,
     ReactiveFormsModule,
     TranslatePipe,

@@ -254,6 +254,34 @@ describe('ProjectWorkspaceService', () => {
     http.expectOne('/api/projects/p1/result').flush(view());
   });
 
+  it('sends the data export period as the picked ISO days, and none when cleared (F10.7)', async () => {
+    const { service, http } = await setup();
+    const withPeriod = service.downloadData('csv', 'bookings', {
+      asset: 'BTC',
+      from: '2025-12-29',
+      to: '2026-01-04',
+    });
+    const request = http.expectOne((r) =>
+      r.url.endsWith('/projects/p1/data-export'),
+    );
+    expect(request.request.params.get('from')).toBe('2025-12-29');
+    expect(request.request.params.get('to')).toBe('2026-01-04');
+    request.flush(new Blob(['x']));
+    await withPeriod.catch(() => undefined);
+
+    const cleared = service.downloadData('xlsx', 'bookings', {
+      from: '',
+      to: '',
+    });
+    const second = http.expectOne((r) =>
+      r.url.endsWith('/projects/p1/data-export'),
+    );
+    expect(second.request.params.has('from')).toBe(false);
+    expect(second.request.params.has('to')).toBe(false);
+    second.flush(new Blob(['x']));
+    await cleared.catch(() => undefined);
+  });
+
   it('asks before a statement while open items exist, then creates it on confirm (F10.2a)', async () => {
     const { service, http } = await setup();
     const asked = service.requestExport('simple_pdf');

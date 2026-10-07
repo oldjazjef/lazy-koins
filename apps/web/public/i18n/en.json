@@ -24,6 +24,27 @@
       "last": "Last page"
     }
   },
+  "dateRange": {
+    "empty": "Choose a period",
+    "clear": "Clear period",
+    "previous": "Previous period",
+    "next": "Next period",
+    "presets": "Suggestions",
+    "maxDays": "A period may cover at most {{days}} days.",
+    "taxYear": "Tax year {{year}}"
+  },
+  "dateField": {
+    "open": "Open calendar",
+    "clear": "Clear date",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "outOfRange": "The date must lie between {{min}} and {{max}}.",
+    "letter": {
+      "day": "D",
+      "month": "M",
+      "year": "Y"
+    }
+  },
   "countries": {
     "CH": "Switzerland"
   },
@@ -1258,8 +1279,7 @@
       "asset": "Asset",
       "kind": "Kind",
       "allKinds": "All kinds",
-      "from": "From",
-      "to": "To",
+      "period": "Period",
       "csvBookings": "Bookings (CSV)",
       "csvHoldings": "Holdings (CSV)",
       "xlsx": "Bookings + holdings (Excel)",
@@ -1795,12 +1815,9 @@
     "unreadable": "{{count}} file(s) could not be read and are missing from the overview.",
     "period": {
       "label": "Period",
-      "ytd": "Since 1 January",
+      "ytd": "Current year",
       "last12": "Last 12 months",
-      "taxYear": "Tax year {{year}}",
-      "custom": "Custom period",
-      "from": "From",
-      "to": "To (reference date)"
+      "taxYear": "Tax year {{year}}"
     },
     "kpi": {
       "label": "Key figures for the period",
