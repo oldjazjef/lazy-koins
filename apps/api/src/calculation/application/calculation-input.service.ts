@@ -154,7 +154,10 @@ export class CalculationInputService {
     for (const file of files) {
       if (file.mappingId && !mappings.has(file.mappingId)) {
         const mapping = await this.mappings.findById(file.mappingId);
-        if (mapping) mappings.set(mapping.id, mapping);
+        // Defence in depth (F11.16 audit): only the project owner's own mappings are ever used.
+        if (mapping && mapping.ownerId === project.ownerId) {
+          mappings.set(mapping.id, mapping);
+        }
       }
     }
     const rates: RateEntry[] = (await this.rates.listByProject(project.id)).map(

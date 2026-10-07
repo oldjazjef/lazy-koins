@@ -11,6 +11,7 @@ import { BUILD_INFO } from '../../app/build-info';
 import type { ToolExecutor } from '../../tools/application/tool-executor';
 import type { McpToolPolicy } from '../../tools/application/tool-registry';
 import type { AnyTool } from '../../tools/domain/tool';
+import { toolContext } from '../../tools/domain/tool-scope';
 
 /** Who is calling: the token's user and the user's MCP switches. */
 export interface McpPrincipal {
@@ -67,11 +68,14 @@ export function createMcpServer(
     },
   );
   const registry = executor.registry;
-  const context = {
+  // User scoping (F11.16): the user comes ONLY from the authenticated token (`McpAccess`), never
+  // from the request — not from tool arguments, `_meta`, resource URIs or a session id (there
+  // is none: one server per request). Frozen, so no handler can change it.
+  const context = toolContext({
     userId: principal.userId,
-    source: 'mcp' as const,
+    source: 'mcp',
     tokenId: principal.tokenId,
-  };
+  });
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: registry

@@ -57,7 +57,10 @@ export class FileRowErrorsHandler implements IQueryHandler<
       result = await orUnreadable(() => this.analysis.applyStandard(readable));
     } else if (file.status === 'mapped' && file.mappingId) {
       const mapping = await this.mappings.findById(file.mappingId);
-      if (!mapping) throw new NotFoundException('No such mapping');
+      // Someone else's mapping reads like a missing one (defence in depth, F11.16 audit).
+      if (!mapping || mapping.ownerId !== userId) {
+        throw new NotFoundException('No such mapping');
+      }
       const { readable } = await readableOf(this.files, file);
       result = await orUnreadable(() =>
         this.analysis.apply(readable, mapping.spec),

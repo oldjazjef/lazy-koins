@@ -13,6 +13,7 @@ import {
 import { ProjectsService } from '../../projects/projects.service';
 import { ToolExecutor } from '../../tools/application/tool-executor';
 import { availableIn, type ToolContext } from '../../tools/domain/tool';
+import { toolContext } from '../../tools/domain/tool-scope';
 import { toolTitle } from '../../tools/domain/tool-titles';
 import {
   buildSystemPrompt,
@@ -159,7 +160,8 @@ export class ChatEngine {
       new Date().toISOString().slice(0, 10),
       locale,
     );
-    const toolContext: ToolContext = { userId, source: 'chat' };
+    // F11.16 user scoping: the signed-in user only — the model's tool arguments never name one.
+    const scope: ToolContext = toolContext({ userId, source: 'chat' });
     const tools = this.toolSpecs();
 
     const stored: NewChatMessage[] = [
@@ -209,7 +211,7 @@ export class ChatEngine {
       for (const call of turn.toolCalls) {
         toolsUsed.add(call.name);
         const { result, isError } = await this.runTool(
-          toolContext,
+          scope,
           call.name,
           call.input,
           proposals,
@@ -291,7 +293,7 @@ export class ChatEngine {
       decided = 'cancelled';
     } else {
       const outcome = await this.executor.call(
-        { userId, source: 'chat' },
+        toolContext({ userId, source: 'chat' }),
         proposal.tool,
         proposal.args,
         { confirmed: true },

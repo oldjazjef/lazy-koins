@@ -399,6 +399,8 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Umsetzung: Streamable HTTP unter `/api/mcp` (Web und Desktop, Zugriffstoken auch auf dem
   Desktop); der Desktop liefert zusätzlich einen stdio-Einstieg (`mcp-stdio.js`) mit, weil sich
   sein lokaler Port bei jedem Start ändert.
+  **Jede MCP- und Chat-Werkzeug-Aktion ist strikt auf den angemeldeten Benutzer beschränkt**
+  (Benutzer nur aus dem Token/der Anmeldung, nie aus Argumenten; fremde Daten = 404).
 
 ## 11b. Bedienung
 

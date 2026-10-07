@@ -500,6 +500,43 @@ the packaged app's data folder). Run as `ELECTRON_RUN_AS_NODE=1 <lazy-koins.exe>
 `LAZYKOINS_MCP_TOKEN[_FILE]=… node scripts/dev/mcp-client.mjs <endpoint> [tool] [json]` or
 `--stdio <mcp-stdio.js>`.
 
+**User scoping guarantees (F11.16, user rule 08.10.2026: "über MCP dürfen keine Sachen
+vorgenommen werden, die andere User betreffen")** — every MCP and chat tool action is strictly
+limited to the authenticated user:
+
+- **Identity only from authentication**: MCP = the PAT (`McpAccess`: SHA-256 lookup, revoked /
+  expired / MCP off refused, the token's `userId`); chat = the signed-in user of the route. Never
+  from tool arguments, headers, MCP `_meta`, resource URIs or a session id (stateless: one
+  `Server` + transport per request; the only module-level state is the per-token rate window and
+  the registry's schema cache, neither holds user data).
+- **One immutable context**: `toolContext()` (`tools/domain/tool-scope.ts`) builds the frozen
+  `ToolContext { userId, source, tokenId? }`; `ToolExecutor.call` rebuilds it on every call, so a
+  tool cannot change who it acts for. `createMcpServer` and `ChatEngine` use it.
+- **No identity arguments**: the registry refuses to register a tool whose input schema has a
+  field named like a user (`userId`, `ownerId`, `owner_email`, `tenantId`, `accountHolder`,
+  `uid`, … — `isIdentityField`; `accountId` = an exchange account and a mail `subject` are fine),
+  and `ToolExecutor.parse` refuses such top-level arguments with `refused` (audited) — the chat's
+  proposal path included.
+- **Owner checks stay in the handlers** (`loadOwnProject`, `loadOwnProjectFile`,
+  `loadOwnMapping`, `loadOwnWallet`, conversation/proposal/token/notification checks): another
+  user's id reads as **404**, never 403. Stored files dedupe per owner (`(owner_id, sha256)`),
+  mapping detection uses only the owner's mappings. Defence in depth: the calculation, dashboard,
+  package export and row errors use a file's mapping only when it belongs to the owner;
+  `ProjectFileRepositoryPort.add` and `ProjectBundleRepositoryPort.write` refuse a stored file,
+  mapping, wallet or target project of another owner. The ESTV tables are read-only for tools;
+  PAT management and the audit log are **not** tools (settings routes of the signed-in user).
+- **Tested**: `tool-scoping.spec.ts` (schema scan over the whole registry, refusal of identity
+  arguments, frozen context) and **`tools/tools.isolation.integration.spec.ts`** (the real
+  AppModule on the test database, users A and B with full data — same file bytes, same mapping
+  fingerprint, wallet, calculation, correction, export, notification, conversation with a pending
+  proposal, PAT): every registry tool is called as B with A's ids on every channel (`CASES` —
+  **a tool without a case fails the suite**: a new tool must add how it is attacked), must fail
+  with `notFound` (or the stated code) and nothing B sees may contain A's data; a positive
+  control runs the read tools on B's own ids; previews, conversations/proposals,
+  notifications, tokens and the audit log over HTTP; MCP end to end with the SDK client and B's
+  PAT (resources, tools, `_meta`, identity arguments, PAT on other routes, dev token on MCP); A's
+  data read before and after must be equal.
+
 **Web**: `core/assistant/` — `ChatService` (root: status, conversations, ask/confirm/cancel,
 consent notice, AI error panel state), `chat-sidebar` in the app shell (header toggle, open state
 in localStorage; beside the page from `lg`, an overlay with backdrop below; only the message list
@@ -1445,7 +1482,11 @@ etx), so no `project.json` has a `test` target, deliberately.
   a real loopback listener with the SDK `Client` + `StreamableHTTPClientTransport` (PAT auth,
   revoked/expired, write switch, per-token limit); `ai-converse.spec.ts` checks both adapters'
   wire format with a fake `fetch`; the desktop's `lib/mcp.spec.ts` the endpoint file and the
-  stdio forwarding.
+  stdio forwarding. User scoping: `tool-scoping.spec.ts` (unit) and
+  `tools.isolation.integration.spec.ts` (cross-user suite over the whole registry, see "User
+  scoping guarantees"; it boots AppModule with `AUTH_MODE=dev`, `RATES_ONLINE=false`,
+  `LK_CHAINS_FAKE=1` and the IP/account throttler storage stubbed — adding a tool means adding
+  its entry to `CASES`).
 - **Golden** (`libs/engine/src/golden/golden.spec.ts`, A1): part of `pnpm test`, `describe.skipIf`
   `private/golden.json` does not exist (CI, other machines). Today it only checks existence.
 - `libs/engine` has a `typecheck` target (Vitest's esbuild does not type-check); `pnpm check`

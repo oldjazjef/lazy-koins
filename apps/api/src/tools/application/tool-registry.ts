@@ -14,6 +14,7 @@ import {
   type ToolArea,
   type ToolSource,
 } from '../domain/tool';
+import { identityFieldsOf } from '../domain/tool-scope';
 
 /** Every tool of the app, built over the application services. */
 export function buildTools(services: ToolServices): AnyTool[] {
@@ -67,6 +68,14 @@ export class ToolRegistry {
       }
       if (this.byName.has(tool.name)) {
         throw new Error(`Duplicate tool: ${tool.name}`);
+      }
+      // User scoping (F11.16): who a tool acts for comes from the authenticated context only —
+      // an input field that could name a user (userId, ownerId, …) is a programming error.
+      const identity = identityFieldsOf(jsonSchemaOf(tool.input, 'input'));
+      if (identity.length > 0) {
+        throw new Error(
+          `Tool ${tool.name} must not take a user/owner argument: ${identity.join(', ')}`,
+        );
       }
       this.byName.set(tool.name, tool);
     }

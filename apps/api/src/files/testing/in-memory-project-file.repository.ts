@@ -101,6 +101,10 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     let fileId: string;
     if ('existingId' in input.stored) {
       fileId = input.stored.existingId;
+      // As the adapter: never link another owner's stored bytes.
+      if (this.stored.get(fileId)?.ownerId !== input.ownerId) {
+        throw new Error('The stored file belongs to another owner');
+      }
     } else {
       this.seq += 1;
       fileId = `f${this.seq}`;

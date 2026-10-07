@@ -4,7 +4,10 @@ import {
   mappingFingerprint,
   type RateEntry,
 } from '@lazykoins/engine';
-import type { ProjectCarryover as CarryoverRow } from '../../../generated/prisma/client';
+import type {
+  ProjectCarryover as CarryoverRow,
+  Prisma,
+} from '../../../generated/prisma/client';
 import {
   type BundleResult,
   CARRIED_PREFIX,
@@ -54,6 +57,60 @@ export class CarryoverPrismaRepository extends CarryoverRepositoryPort {
   }
 }
 
+/**
+ * Every existing row a bundle references (target project, reused mappings and stored files,
+ * wallets) must belong to `ownerId` — else the whole transaction rolls back. Defence in depth
+ * (F11.16 audit): the handlers already check ownership.
+ */
+async function assertOwnedBy(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  bundle: ProjectBundle,
+): Promise<void> {
+  const foreign = (what: string): never => {
+    throw new Error(`Bundle: the ${what} belongs to another owner`);
+  };
+  if ('existingProjectId' in bundle.target) {
+    const project = await tx.project.findFirst({
+      where: { id: bundle.target.existingProjectId, ownerId },
+      select: { id: true },
+    });
+    if (!project) foreign('target project');
+  }
+  const mappingIds = bundle.mappings.flatMap((m) =>
+    m.existingId ? [m.existingId] : [],
+  );
+  const storedIds = bundle.files.flatMap((f) =>
+    'existingId' in f.stored ? [f.stored.existingId] : [],
+  );
+  const walletIds = bundle.walletIds ?? [];
+  const count = async (
+    ids: readonly string[],
+    counter: (unique: string[]) => Promise<number>,
+    what: string,
+  ) => {
+    const unique = [...new Set(ids)];
+    if (unique.length > 0 && (await counter(unique)) !== unique.length) {
+      foreign(what);
+    }
+  };
+  await count(
+    mappingIds,
+    (ids) => tx.importMapping.count({ where: { id: { in: ids }, ownerId } }),
+    'mapping',
+  );
+  await count(
+    storedIds,
+    (ids) => tx.storedFile.count({ where: { id: { in: ids }, ownerId } }),
+    'stored file',
+  );
+  await count(
+    walletIds,
+    (ids) => tx.wallet.count({ where: { id: { in: ids }, ownerId } }),
+    'wallet',
+  );
+}
+
 function need<T>(map: ReadonlyMap<string, T>, key: string, what: string): T {
   const value = map.get(key);
   if (value === undefined) throw new Error(`Bundle: unknown ${what} ${key}`);
@@ -79,6 +136,9 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
                 })
               ).id
             : bundle.target.existingProjectId;
+        // Defence in depth (F11.16 audit): a bundle may only reference the owner's own rows.
+        // The handlers check ownership; this keeps a slip there from crossing users.
+        await assertOwnedBy(tx, ownerId, bundle);
 
         const mappingIds = new Map<string, string>();
         let mappingsCreated = 0;

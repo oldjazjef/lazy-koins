@@ -165,7 +165,10 @@ export class DashboardInputService {
     for (const file of files) {
       if (file.mappingId && !mappings.has(file.mappingId)) {
         const mapping = await this.mappings.findById(file.mappingId);
-        if (mapping) mappings.set(mapping.id, mapping);
+        // Defence in depth (F11.16 audit): only the user's own mappings are ever used.
+        if (mapping && mapping.ownerId === userId) {
+          mappings.set(mapping.id, mapping);
+        }
       }
     }
     return {

@@ -10,6 +10,7 @@ import {
 } from '../domain/tool';
 import { previewText } from '../domain/preview-texts';
 import type { ToolAuditStatus } from '../domain/tool-audit';
+import { identityArguments, toolContext } from '../domain/tool-scope';
 import { ToolAuditRepositoryPort } from '../ports/tool-audit.repository.port';
 import { type McpToolPolicy, ToolRegistry } from './tool-registry';
 
@@ -38,7 +39,9 @@ export interface ToolCallOptions {
 
 /**
  * Runs tools of the registry for the acting user (owner scoping is the services' — every call
- * passes `context.userId`): validates the arguments with the tool's zod schema, applies the
+ * passes `context.userId`). **User scoping guard (F11.16)**: the context is rebuilt as a frozen
+ * `ToolContext` from the authenticated user and source only (`toolContext`), and arguments that
+ * try to name a user (`userId`, `ownerId`, …) are refused before anything runs. Then it validates the arguments with the tool's zod schema, applies the
  * policy (MCP areas + write switch; chat writes only when confirmed), runs it, parses the result
  * through the output schema (an allow-list), maps service errors to codes and **audits every
  * call** (`tool_audit`: user, source, tool, redacted argument summary, outcome, duration).
@@ -53,12 +56,14 @@ export class ToolExecutor {
   ) {}
 
   async call(
-    context: ToolContext,
+    authenticated: ToolContext,
     name: string,
     args: unknown,
     options: ToolCallOptions = {},
   ): Promise<ToolCallResult> {
     const started = Date.now();
+    // The one context every tool sees: immutable, from the authentication result only.
+    const context = toolContext(authenticated);
     const tool = this.registry.get(name);
     const finish = async (
       result: ToolCallResult,
@@ -106,12 +111,28 @@ export class ToolExecutor {
       const output = tool.output.parse(await tool.run(context, input));
       return finish({ ok: true, tool, output }, 'ok');
     } catch (error) {
-      return finish({ ok: false, tool, error: failureOf(error) }, 'error');
+      return finish(
+        { ok: false, tool, error: failureOf(error) },
+        error instanceof ToolError && error.code === 'refused'
+          ? 'refused'
+          : 'error',
+      );
     }
   }
 
-  /** The validated arguments, or a `ToolError('invalidArguments')` naming the problems. */
+  /**
+   * The validated arguments, or a `ToolError('invalidArguments')` naming the problems. An
+   * argument that names a user (`userId`, `ownerId`, …) is refused (`ToolError('refused')`): a
+   * tool always acts for the authenticated user, never for one an argument names.
+   */
   parse(tool: AnyTool, args: unknown): unknown {
+    const identity = identityArguments(args);
+    if (identity.length > 0) {
+      throw new ToolError(
+        'refused',
+        `Tools act only for the signed-in user; remove the argument(s) ${identity.join(', ')}`,
+      );
+    }
     const parsed = tool.input.safeParse(args ?? {});
     if (!parsed.success) {
       throw new ToolError(
@@ -136,7 +157,7 @@ export class ToolExecutor {
   ): Promise<ToolPreview> {
     if (tool.preview) {
       try {
-        return await tool.preview(context, input);
+        return await tool.preview(toolContext(context), input);
       } catch (error) {
         // A failing preview (a 404 for a wrong id) still shows the arguments; running will fail.
         this.logger.debug(`preview of ${tool.name} failed: ${String(error)}`);

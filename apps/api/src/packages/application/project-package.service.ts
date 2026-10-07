@@ -260,7 +260,10 @@ export class ProjectPackageService {
       }
       if (file.mappingId && !mappingKeys.has(file.mappingId)) {
         const mapping = await this.mappings.findById(file.mappingId);
-        if (mapping) mappingKeys.set(mapping.id, mapping);
+        // Defence in depth (F11.16 audit): a package never carries another user's mapping.
+        if (mapping && mapping.ownerId === project.ownerId) {
+          mappingKeys.set(mapping.id, mapping);
+        }
       }
       const derivedFrom = derivedFromId(file.origin);
       manifestFiles.push({
