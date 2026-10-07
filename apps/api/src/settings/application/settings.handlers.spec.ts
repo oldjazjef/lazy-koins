@@ -45,7 +45,8 @@ describe('settings (F11, F6.7)', () => {
       dateFormat: 'dd.MM.yyyy',
       onlineRates: true,
       keys: { coingecko: null, etherscan: null },
-      coingeckoIds: {},
+      coinChoices: {},
+      coinDismissed: [],
       keyStorageAvailable: true,
     });
   });

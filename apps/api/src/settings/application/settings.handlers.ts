@@ -53,7 +53,10 @@ export interface SettingsView {
   readonly dateFormat: UserSettings['dateFormat'];
   readonly onlineRates: boolean;
   readonly keys: Readonly<Record<ApiKeyName, string | null>>;
-  readonly coingeckoIds: Readonly<Record<string, string>>;
+  /** F7.4: the coin per ticker (`PUT|DELETE /settings/coins/:symbol`). */
+  readonly coinChoices: UserSettings['coinChoices'];
+  /** Tickers whose shared-code warning was settled ("Passt so"). */
+  readonly coinDismissed: readonly string[];
   /** Whether keys can be stored at all (`SETTINGS_ENCRYPTION_KEY` set). */
   readonly keyStorageAvailable: boolean;
 }
@@ -98,7 +101,8 @@ export class SettingsReader {
         coingecko: keyHint(resolved.keys.coingecko),
         etherscan: keyHint(resolved.keys.etherscan),
       },
-      coingeckoIds: resolved.coingeckoIds,
+      coinChoices: resolved.coinChoices,
+      coinDismissed: resolved.coinDismissed,
       keyStorageAvailable: this.secrets.box.available,
     };
   }

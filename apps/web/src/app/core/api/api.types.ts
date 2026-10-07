@@ -220,6 +220,8 @@ export const HINT_KINDS = [
   ...MISSING_FILE_KINDS,
   'unrecognisedFile',
   'rowErrors',
+  // F7.4: a ticker of the project that several relevant coins carry.
+  'sharedTicker',
 ] as const;
 export type HintKind = (typeof HINT_KINDS)[number];
 
@@ -240,6 +242,9 @@ export interface ProjectHint {
   fileId: string | null;
   fileName: string | null;
   count: number | null;
+  /** sharedTicker: the ticker and its coins ("Name (#rank)"). */
+  asset?: string | null;
+  coins?: string[];
   /** F5.7a: deactivated files that would cover this platform/account — they cover nothing. */
   disabledFiles?: { id: string; name: string }[];
   status: HintStatus;

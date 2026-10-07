@@ -445,4 +445,11 @@ export class UserRatePrismaRepository extends UserRateRepositoryPort {
     }
     return usable.length;
   }
+
+  async deletePrices(userId: string, asset: string): Promise<number> {
+    const { count } = await this.prisma.userRate.deleteMany({
+      where: { userId, kind: 'price', asset },
+    });
+    return count;
+  }
 }

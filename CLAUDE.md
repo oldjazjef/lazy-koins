@@ -1084,6 +1084,55 @@ recalculates first when stale; detailed Excel = the FACHREGELN sheets with formu
 (`PdfRendererPort` → 503 without a browser; the desktop app prints with Electron, see Versions
 and icons › PDFs); `GET …/mail-draft` (F10.6).
 
+**A ticker is not a coin (F7.4, bug 07.10.2026: OPN = OPEN Ticketing Ecosystem was priced with
+Binance's `OPNUSDT`, another coin)** — `rates/domain/coin-choice.ts` (pure) decides per asset:
+
+- **Coin choice** (`user_settings.coin_choices`, provider-aware: symbol → `{ provider, id, name,
+symbol, contract? }`; `COIN_PROVIDERS` = `coingecko` today, CoinMarketCap = a new provider id
+  pattern + a `CoinDirectoryPort` adapter + a price source). A chosen coin → **only** its
+  provider (CoinGecko with the user's key; without a key `noKey`), **never** Binance by ticker.
+  The older `coingecko_ids` were migrated (`20261009090000_coin_choices`, and `parseCoinChoices`
+  still reads the plain-string shape, e.g. from older account packages).
+- **Ambiguous tickers** = the hand-kept `AMBIGUOUS_SYMBOLS` (OPN, ONE — verified at CoinGecko)
+  **plus** tickers the market list shows without a clear leader (below), without a chosen coin:
+  nothing is fetched by ticker, an existing Binance series is deleted on refresh and **filtered at
+  read time** everywhere (calculation input before the hash, dashboard project rates and the
+  `user_rate` cache) — so it counts on no day, never as 0; the calculation gets the open item
+  `ambiguousPrice:<asset>` („Kurs mehrdeutig – Coin wählen", `missingPrices` check; internal
+  report only, never on statements; fiat and USD-pegged assets never get it — the live market
+  list shares e.g. BUSD).
+- **Shared tickers (warnings)**: `coin_market` = CoinGecko's top 2000 by market cap
+  (`/coins/markets`, deployment-wide, `CoinMarketService.refreshIfStale` — at most daily, only in
+  an online "Kurse aktualisieren", which waits ≤ 3 s for it (`refreshBriefly`) — the pages run
+  on in the background; without a key 15 s apart with one retry after a 429 (the public API
+  refused 8 pages 2.5 s apart); a coin repeated across pages counts once; a failure keeps the
+  old list). Rule (`sharedTicker`,
+  deterministic): coins with the symbol and rank ≤ `SHARED_RANK_LIMIT` (2000) are relevant; < 2
+  relevant → nothing; second rank < `LEADER_FACTOR` (3) × first rank → **ambiguous** (no clear
+  leader); else **warning** (price used; Kurse tab, dashboard holding and the hint
+  `sharedTicker:<SYM>` say „Kürzel … wird von mehreren Coins verwendet — verwendet: … Prüfen?"
+  with the candidates). „Passt so" (`coin_dismissed`, per user + ticker) settles a warning only; a
+  chosen coin settles both.
+- **Choosing**: `GET /rates/coins/search?q=`, `GET /rates/coins/:provider/:id` (validation, 422
+  `unknownCoin`, 502 `coinProviderFailed`, 409 `offline`), `PUT|DELETE /settings/coins/:symbol`,
+  `PUT|DELETE /settings/coins/:symbol/dismissal`, `POST /projects/:id/rates/coin` (store + refetch
+  that asset with `force`). Storing/removing a choice deletes the asset's fetched rows in every
+  open project and in `user_rate`; choices are part of both input hashes (snapshot stale,
+  dashboard cache key) — the dashboard value changes at once. An override is only for its day.
+- **Wallet tokens** (`ContractCoinResolver`): in a project refresh, an ambiguous ticker (or a
+  shared one, with a CoinGecko key) held by the project's wallets under exactly one contract on
+  a CoinGecko platform (`COINGECKO_PLATFORMS`) is identified via `GET
+/coins/{platform}/contract/{address}` and stored as the coin choice with `contract` (several
+  contracts for one ticker, an unlisted contract or another symbol → nothing).
+- **ESTV**: a chosen coin is binding — a Kursliste entry (also a single ticker hit) is taken only
+  when its normalised name is the coin's, else `coinMismatch`; an unresolved ambiguous ticker
+  takes nothing (`ambiguousSymbol`).
+- Web: `shared/coins` (`CoinsService`, `lk-coin-picker`), Einstellungen › Kurse „Coin je Kürzel",
+  Kurse tab „Kursquelle je Asset" (source, „Falscher Kurs? Coin wählen", „Passt so", remove),
+  dashboard holdings (source line, warning, same actions), the override hint „Gilt nur für dieses
+  Datum". `COINGECKO_IDS` (built-in ids, OPN = `open-ticketing-ecosystem`) are only the
+  fallback after Binance and the picker's suggestion.
+
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
 never open items, check lights, „zu prüfen“/„nachtragen“ wording or a "to check" fill. A position
@@ -1178,7 +1227,9 @@ year) — the deployment-wide `estv_*` tables are not read directly. Rates: a **
 (`user_rate`, never `manual`/`estv`; unrelated to the deployment-wide `estv_rate`) filled
 by "Kurse aktualisieren" — FX first, then one request per asset without a price (the app shows
 progress), skipped when project or cache rates cover both ends of the period (±14 d) unless
-`force`; 409 when lookups are off (F11.3). Period ≤ 3660 days. The project detail shows a compact
+`force`; 409 when lookups are off (F11.3); the same coin rules as a project (F7.4: a chosen coin
+only from its provider, an ambiguous ticker never by ticker — such cache rows are filtered and
+deleted). Each holding carries `priceSource`, `pricing`, `coin`, `shared`. Period ≤ 3660 days. The project detail shows a compact
 card for its tax year (`project` param: only that project). Charts are hand-rolled SVG in
 `shared/charts` (no dependency): decimal strings become numbers **only there**, for coordinates;
 tooltip + crosshair (mouse, arrow keys), a visually hidden table, colours from tokens (`--alloc-*`
@@ -1264,8 +1315,9 @@ divided by `denomination`) and `estv_check` (last check per year, outcome `updat
 * **Projects**: `EstvProjectRatesService.apply` runs first in "Kurse aktualisieren" (and on
   "übernehmen"): assets = `assetsNeedingPrices` + stablecoin positions, matched by ticker, then
   `ESTV_SYMBOL_ALIASES` / `RATE_ALIASES`, then exact name; several entries of one ticker → the
-  one whose name is the known coin name (CoinGecko id table / user ids), else **ambiguous: no
-  value** (the UI asks for an override). Writes `estv` rates at 31.12. (price CHF + fx USD/EUR) with
+  one whose name is the known coin name (CoinGecko id table), else **ambiguous: no
+  value** (the UI asks for an override); a chosen coin (F7.4) is binding by name, an ambiguous
+  ticker without a choice takes nothing. Writes `estv` rates at 31.12. (price CHF + fx USD/EUR) with
   `project_rate.note` = `ESTV-Kursliste <Jahr>, Stand <dd.MM.yyyy>`; automatic rows that no longer
   match are removed. ESTV wins by the price priority (also USD/CHF at 31.12. over the ECB fixing);
   a new version changes values → the input hash → the snapshot is stale. `GET …/rates` has `estv`
@@ -1411,6 +1463,11 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
 - **Deactivated files** (migration `20261009100000_project_file_disabled`, F5.7a):
   `project_file.disabled_at` + `disabled_note` (`ADD COLUMN`, column CHECK: a note only with a
   date, ≤ 500 — no redefinition); `files.persistence.integration.spec.ts` tests them.
+- **Coin choices** (migration `20261009090000_coin_choices`, F7.4): `user_settings` **redefined**
+  — `coingecko_ids` becomes `coin_choices` (JSON object, every stored id carried over as a
+  CoinGecko choice) + `coin_dismissed` (JSON array); every other column/CHECK copied; new table
+  `coin_market` (deployment-wide, PK `(provider, coin_id)`, symbol/name/rank/price CHECKs).
+  `calculation.persistence.integration.spec.ts`, `coin-choices.migration.integration.spec.ts`.
 - **Remote library** (migration `20261008210000_remote_library`, F5.18): `remote_library_settings`
   (new table, CHECKs inside the CREATE TABLE) and `import_mapping.library_server` (`ADD COLUMN`
   with a column CHECK — no redefinition); `remote-library.persistence.integration.spec.ts`.

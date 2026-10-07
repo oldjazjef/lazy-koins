@@ -212,6 +212,10 @@ describe('dashboard (F11.4–F11.9)', () => {
     expect(result.holdings.find((h) => h.asset === 'ETH')?.priceChf).toBe(
       '1100',
     );
+    // F7.4: each holding names where its price comes from.
+    expect(result.holdings.find((h) => h.asset === 'ETH')?.priceSource).toBe(
+      'estv',
+    );
   });
 
   it('names the largest seven assets and sums the rest as "Andere"', () => {

@@ -71,6 +71,8 @@ export const DE_CH_EXPORT_TEXTS: ExportTexts = {
       `${asset}: ${p('count')} Ertragsbuchungen ohne Kurs`,
     oneOffWithoutPrice: ({ where }) =>
       `${where}: Einmalereignis ohne Kurs – ESTV-Kurs nachtragen`,
+    ambiguousPrice: ({ asset }) =>
+      `${asset}: Kurs mehrdeutig – das Kürzel steht für mehrere Coins; unter Kurse den Coin wählen`,
     unclassifiedBookings: ({ where, p }) =>
       `${where}: ${p('count')} Buchungen „${p('rawType')}“ nicht zugeordnet`,
     walletNetworksNotAvailable: () =>

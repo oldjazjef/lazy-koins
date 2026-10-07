@@ -13,6 +13,16 @@ import {
   GetEstvStatusHandler,
   StartEstvUpdateHandler,
 } from './application/estv.handlers';
+import {
+  ChooseProjectCoinHandler,
+  CoinChoiceService,
+  DismissSharedTickerHandler,
+  GetCoinHandler,
+  SearchCoinsHandler,
+  SetCoinChoiceHandler,
+} from './application/coin-choice.handlers';
+import { CoinMarketService } from './application/coin-market.service';
+import { ContractCoinResolver } from './application/contract-coins';
 import { EstvNotifier } from './application/estv-notifier';
 import { EstvProjectRatesService } from './application/estv-project-rates.service';
 import {
@@ -28,6 +38,7 @@ import {
   SetManualRateHandler,
 } from './application/rates.handlers';
 import { RefreshProgress } from './application/refresh-progress';
+import { CoinsController } from './coins.controller';
 import { EstvController } from './estv.controller';
 import { RatesController } from './rates.controller';
 import { RatesService } from './rates.service';
@@ -40,7 +51,7 @@ import { RatesService } from './rates.service';
  */
 @Module({
   imports: [CqrsModule, CalculationModule, SettingsModule],
-  controllers: [RatesController, EstvController],
+  controllers: [RatesController, EstvController, CoinsController],
   providers: [
     RatesService,
     GetRatesHandler,
@@ -57,9 +68,18 @@ import { RatesService } from './rates.service';
     GetEstvStatusHandler,
     StartEstvUpdateHandler,
     ApplyEstvHandler,
+    // F7.4 "Coin wählen": the coin per ticker.
+    CoinChoiceService,
+    CoinMarketService,
+    ContractCoinResolver,
+    DismissSharedTickerHandler,
+    SearchCoinsHandler,
+    GetCoinHandler,
+    SetCoinChoiceHandler,
+    ChooseProjectCoinHandler,
   ],
   // The tool layer (tools/) calls the same façade as the controller.
-  exports: [RatesService],
+  exports: [RatesService, CoinMarketService],
 })
 export class RatesModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

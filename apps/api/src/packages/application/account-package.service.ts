@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { mappingFingerprint, validateMappingSpec } from '@lazykoins/engine';
 import { z } from 'zod';
 import { SUPPORTED_LOCALES } from '../../common/i18n/locale';
+import {
+  coingeckoIdsOf,
+  parseCoinChoices,
+} from '../../rates/domain/coin-choice';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
 import {
@@ -38,7 +42,20 @@ const SettingsSchema = z.object({
   numberFormat: z.enum(NUMBER_FORMATS),
   dateFormat: z.enum(DATE_FORMATS),
   onlineRates: z.boolean(),
+  /** The older shape (CoinGecko ids only) — still written for older app versions. */
   coingeckoIds: z.record(z.string().max(40), z.string().max(100)),
+  /** F7.4: symbol → { provider, id, name, symbol }; absent in older packages. */
+  coinChoices: z
+    .record(
+      z.string().max(40),
+      z.object({
+        provider: z.string().max(40),
+        id: z.string().max(100),
+        name: z.string().max(200).nullable(),
+        symbol: z.string().max(40).nullable(),
+      }),
+    )
+    .optional(),
 });
 
 const ManifestSchema = z.object({
@@ -120,7 +137,10 @@ export class AccountPackageService {
         numberFormat: stored.numberFormat,
         dateFormat: stored.dateFormat,
         onlineRates: stored.onlineRates,
-        coingeckoIds: { ...stored.coingeckoIds },
+        coingeckoIds: coingeckoIdsOf(stored.coinChoices),
+        coinChoices: Object.fromEntries(
+          Object.entries(stored.coinChoices).map(([k, v]) => [k, { ...v }]),
+        ),
       };
       files.push({
         path: 'settings.json',
@@ -207,7 +227,12 @@ export class AccountPackageService {
     }
     let settingsApplied = false;
     if (settings && !(await this.settings.find(userId))) {
-      await this.settings.save(userId, settings);
+      const { coingeckoIds, coinChoices, ...rest } = settings;
+      await this.settings.save(userId, {
+        ...rest,
+        // F7.4: the coin per ticker; an older package only has CoinGecko ids.
+        coinChoices: parseCoinChoices(coinChoices ?? coingeckoIds),
+      });
       settingsApplied = true;
     }
     return { projects, mappingsCreated, mappingsReused, settingsApplied };

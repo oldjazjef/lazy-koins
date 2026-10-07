@@ -56,6 +56,7 @@ import {
   type HintAction,
   hintActions,
   hintsByPlatform,
+  RATES_GROUP,
   type HintSort,
   sortHints,
 } from './project-hints.logic';
@@ -128,6 +129,8 @@ export class ProjectHints {
   readonly showChecks = output<string | null>();
   /** The mapping assignment lives in the files tab. */
   readonly showFiles = output<void>();
+  /** F7.4: "Coin wählen" / "Passt so" live in the Kurse tab. */
+  readonly showRates = output<void>();
 
   protected readonly kinds = HINT_KINDS;
   protected readonly statuses = HINT_STATUSES;
@@ -279,7 +282,14 @@ export class ProjectHints {
   }
 
   /** The account(s) or file of a hint; "ganze Plattform" when it names none. */
+  protected groupLabel(platform: string): string {
+    if (platform === RATES_GROUP)
+      return this.translate.instant('hints.ratesGroup');
+    return platform || this.translate.instant('hints.unreadFiles');
+  }
+
   protected whereOf(hint: ProjectHint): string {
+    if (hint.asset) return hint.asset;
     if (hint.fileName) return hint.fileName;
     return (
       hint.accountId ||
@@ -357,6 +367,9 @@ export class ProjectHints {
         return;
       case 'rowErrors':
         void this.openRowErrors(hint);
+        return;
+      case 'rates':
+        this.showRates.emit();
         return;
     }
   }

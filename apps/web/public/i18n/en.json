@@ -1168,7 +1168,8 @@
       "walletNetworkNotSelected": "Used on this network, but not selected for the wallet",
       "walletNetworkNotFetched": "Not fetched yet – use “Fetch” in the Wallets tab",
       "walletManualBalanceMissing": "Balance at 31.12. missing – enter it manually with a receipt",
-      "walletFetchFailed": "Fetch failed – check the key/plan or enter the balance manually with a receipt"
+      "walletFetchFailed": "Fetch failed – check the key/plan or enter the balance manually with a receipt",
+      "ambiguousPrice": "Ambiguous price – the ticker stands for several coins. Choose the coin in the Rates tab."
     },
     "comparison": {
       "title": "Comparison with {{year}}",
@@ -1294,14 +1295,41 @@
       "fetched": "fetched",
       "cached": "already stored",
       "notFound": "not found",
-      "failed": "Error"
+      "failed": "Error",
+      "ambiguous": "ambiguous – choose the coin",
+      "noKey": "CoinGecko key missing"
     },
     "errors": {
       "asset": "Please enter an asset symbol.",
       "date": "Please choose a date.",
       "value": "Please enter a positive value with a period as the decimal separator."
     },
-    "estvNotApplicable": "The ESTV rate list (Kursliste) only applies to projects in CHF – this project is in {{currency}}. Rates come from the ECB, Binance and CoinGecko."
+    "estvNotApplicable": "The ESTV rate list (Kursliste) only applies to projects in CHF – this project is in {{currency}}. Rates come from the ECB, Binance and CoinGecko.",
+    "overrideOnlyDay": "Applies to this date only; if the price history is wrong, use \"Choose coin\".",
+    "contracts": "Identified by contract: {{assets}}",
+    "pricing": {
+      "title": "Price source per asset",
+      "hint": "A ticker is not a coin. If a price history is wrong, choose the coin you hold: its price then replaces the price by ticker – on the dashboard, too.",
+      "empty": "No assets with a price yet – calculate first.",
+      "byTicker": "by ticker",
+      "chosen": "{{name}} ({{provider}})",
+      "byContract": "identified by contract ({{network}})",
+      "ambiguous": "Ambiguous price – choose the coin",
+      "noSource": "no price yet",
+      "ignored": "not used: {{sources}}",
+      "overridden": "+ override",
+      "shared": "Ticker {{symbol}} is used by several coins — used: {{name}} ({{source}}). Check?",
+      "sharedAmbiguous": "Ticker {{symbol}} is used by several coins — no price until you choose the coin.",
+      "candidates": "Coins with this ticker: {{coins}}",
+      "choose": "Wrong price? Choose coin",
+      "dismiss": "Looks right",
+      "removeCoin": "Remove coin assignment",
+      "fields": {
+        "asset": "Asset",
+        "source": "Price source",
+        "note": "Note"
+      }
+    }
   },
   "exports": {
     "createTitle": "Create statement",
@@ -1660,7 +1688,8 @@
       "endsEarly": "Gap at the end",
       "noYearEndBalance": "No holdings at 31.12.",
       "unrecognisedFile": "Unrecognised file",
-      "rowErrors": "File with row errors"
+      "rowErrors": "File with row errors",
+      "sharedTicker": "Ticker used by several coins"
     },
     "severity": {
       "info": "Info",
@@ -1680,11 +1709,14 @@
       "endsEarlyZero": "Bookings end on {{date}}; balance 0 afterwards – nothing can be missing.",
       "noYearEndBalance": "No account statement at 31.12.{{year}} – the balance according to the bookings is not checked.",
       "unrecognisedFile": "No mapping – the file is not included in the calculation.",
-      "rowErrors": "{{count}} rows could not be read."
+      "rowErrors": "{{count}} rows could not be read.",
+      "sharedTicker": "{{asset}}: {{count}} coins use this ticker – check the price."
     },
     "howTo": {
       "unrecognisedFile": "There is no mapping yet for the structure of this file. Have the AI create one, assign an existing one, or mark the file as “evidence only”.",
-      "rowErrors": "Some rows have missing or invalid values (e.g. a timestamp without a time zone). Look at the rows, correct the file or the mapping, and upload it again."
+      "rowErrors": "Some rows have missing or invalid values (e.g. a timestamp without a time zone). Look at the rows, correct the file or the mapping, and upload it again.",
+      "sharedTicker": "The ticker {{asset}} is used by several coins. The price comes by ticker (Binance) from the best-known coin. Check it? In the Rates tab, \"Choose coin\" or \"Looks right\".",
+      "sharedTickerAmbiguous": "The ticker {{asset}} is used by several coins of similar size – no price is fetched by ticker. In the Rates tab, \"Choose coin\"."
     },
     "actions": {
       "upload": "Upload file",
@@ -1696,7 +1728,8 @@
       "assign": "Assign mapping",
       "rowErrors": "View row errors",
       "markOk": "Mark as OK",
-      "reopen": "Reopen"
+      "reopen": "Reopen",
+      "rates": "Go to rates"
     },
     "dismiss": {
       "title": "Mark hint as OK",
@@ -1714,6 +1747,8 @@
       "column": "Column",
       "problem": "Problem"
     },
+    "coins": "Coins with this ticker: {{coins}}",
+    "ratesGroup": "Rates",
     "disabledFiles": "Deactivated and therefore not counted: {{names}}"
   },
   "notifications": {
@@ -1888,7 +1923,8 @@
     "libraryTake": "Taking mapping from the library",
     "suggestionTake": "Taking the suggested mapping",
     "mappingImport": "Uploading mappings",
-    "libraryBulkPublish": "Publishing mappings"
+    "libraryBulkPublish": "Publishing mappings",
+    "coin": "Saving the coin for {{asset}}"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1949,6 +1985,12 @@
         "ok": "valued",
         "missingPrice": "no rate",
         "negative": "negative"
+      },
+      "source": "Price source",
+      "sourceOf": "Price from {{source}}",
+      "priceSource": {
+        "record": "price from the file",
+        "fixed": "tax currency"
       }
     },
     "card": {
@@ -2656,7 +2698,9 @@
       "libraryUrlInvalid": "This address cannot be used.",
       "incompatibleSpec": "This mapping needs a newer version of the app – update lazy-koins.",
       "duplicateMapping": "You already have exactly this mapping.",
-      "libraryCopy": "A copy taken from the library cannot be published as a new entry."
+      "libraryCopy": "A copy taken from the library cannot be published as a new entry.",
+      "unknownCoin": "The price provider does not know this coin.",
+      "coinProviderFailed": "The price provider cannot be reached right now."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -2868,5 +2912,45 @@
       "confirm": "I have reviewed the {{count}} mappings and want to publish them exactly like this.",
       "submit": "Publish {{count}}"
     }
+  },
+  "coins": {
+    "settings": {
+      "title": "Coin per ticker",
+      "hint": "A ticker is not a coin: \"OPN\" stands for OPEN Ticketing Ecosystem and for Opinion, for example. With a coin set here, its price comes only from the chosen provider – never by ticker from Binance. lazy-koins checks the coin with the provider when saving.",
+      "empty": "No coin set yet – the ticker applies."
+    },
+    "fields": {
+      "symbol": "Ticker",
+      "coin": "Coin",
+      "provider": "Provider"
+    },
+    "provider": {
+      "coingecko": "CoinGecko"
+    },
+    "add": "Set a coin",
+    "change": "Change coin",
+    "remove": "Remove assignment",
+    "picker": {
+      "title": "Choose the coin for {{asset}}",
+      "description": "Search the price provider by ticker, name or id and pick the coin you actually hold. Its price history replaces the previous one.",
+      "query": "Search (ticker, name, id)",
+      "search": "Search",
+      "ambiguous": "This ticker stands for several coins – check name and rank.",
+      "searching": "Searching …",
+      "none": "No coins found.",
+      "results": "Coins found",
+      "suggested": "Suggestion",
+      "current": "Current",
+      "rank": "Rank {{rank}}",
+      "noRank": "no rank",
+      "use": "Use this coin"
+    },
+    "searchFailed": "The search at the price provider failed.",
+    "saved": "Coin saved",
+    "saveFailed": "The coin could not be saved",
+    "removed": "Assignment removed",
+    "removeFailed": "The assignment could not be removed",
+    "chosen": "Coin saved, prices fetched again",
+    "dismissed": "Note hidden"
   }
 }

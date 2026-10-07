@@ -1,6 +1,8 @@
+import type { CoinChoice, Pricing, SharedTicker } from './coin.types';
 import type { BookingKind, Project, ProjectFileStatus } from './api.types';
 import type {
   CorrectionType,
+  FetchStatus,
   FigureRecord,
   OpenItem,
 } from './calculation.types';
@@ -54,6 +56,13 @@ export interface DashboardHolding {
   readonly asset: string;
   readonly quantity: string;
   readonly priceChf: string | null;
+  /** F7.4: where the price comes from (`binance`, `coingecko`, `manual`, `estv`, `record`, …). */
+  readonly priceSource: string | null;
+  /** How the price is looked up: the chosen coin, none (ambiguous ticker), by ticker. */
+  readonly pricing: Pricing;
+  readonly coin: CoinChoice | null;
+  /** Several relevant coins carry the ticker ("Kürzel … wird von mehreren Coins verwendet"). */
+  readonly shared: SharedTicker | null;
   readonly valueChf: string | null;
   readonly status: DashboardHoldingStatus;
   readonly sparkline: readonly (string | null)[];
@@ -101,7 +110,7 @@ export interface DashboardRefreshSummary {
   readonly fx: number;
   readonly assets: readonly {
     readonly asset: string;
-    readonly status: 'fetched' | 'cached' | 'notFound' | 'failed';
+    readonly status: FetchStatus;
     readonly source: string | null;
     readonly points: number;
   }[];

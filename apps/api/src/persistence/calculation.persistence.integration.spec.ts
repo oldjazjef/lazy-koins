@@ -8,6 +8,7 @@ import {
   CorrectionPrismaRepository,
   OpenItemStatePrismaRepository,
 } from './prisma/repositories/calculation.prisma.repository';
+import { CoinMarketPrismaRepository } from './prisma/repositories/coin-market.prisma.repository';
 import { ProjectExportPrismaRepository } from './prisma/repositories/project-export.prisma.repository';
 import { ProjectRatePrismaRepository } from './prisma/repositories/project-rate.prisma.repository';
 import { ProjectPrismaRepository } from './prisma/repositories/project.prisma.repository';
@@ -39,6 +40,7 @@ const snapshots = new CalculationSnapshotPrismaRepository(prisma);
 const corrections = new CorrectionPrismaRepository(prisma);
 const states = new OpenItemStatePrismaRepository(prisma);
 const exportsRepo = new ProjectExportPrismaRepository(prisma);
+const market = new CoinMarketPrismaRepository(prisma);
 
 let seq = 0;
 async function newProject() {
@@ -111,13 +113,25 @@ describe('user settings', () => {
     const created = await settings.save(user.id, {
       displayName: 'Anna',
       sealedKeys: { coingecko: 'enc:v1:a:b:c' },
-      coingeckoIds: { POL: 'polygon-ecosystem-token' },
+      coinChoices: {
+        OPN: {
+          provider: 'coingecko',
+          id: 'open-ticketing-ecosystem',
+          name: 'OPEN Ticketing Ecosystem',
+          symbol: 'OPN',
+        },
+      },
     });
     expect(created).toMatchObject({
       displayName: 'Anna',
       onlineRates: true,
       sealedKeys: { coingecko: 'enc:v1:a:b:c', etherscan: null },
-      coingeckoIds: { POL: 'polygon-ecosystem-token' },
+      coinChoices: {
+        OPN: {
+          id: 'open-ticketing-ecosystem',
+          name: 'OPEN Ticketing Ecosystem',
+        },
+      },
     });
     const updated = await settings.save(user.id, {
       onlineRates: false,
@@ -131,6 +145,70 @@ describe('user settings', () => {
     await expect(
       settings.save(user.id, { sealedKeys: { etherscan: 'plain-key' } }),
     ).rejects.toThrow();
+    // F7.4: the coin choices must be a JSON object (migration 20261009090000_coin_choices).
+    await expect(
+      prisma.$executeRawUnsafe(
+        `UPDATE user_settings SET coin_choices = '[]' WHERE user_id = '${user.id}'`,
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
+    // The older shape (symbol → CoinGecko id) still reads, as a choice without a name.
+    await prisma.$executeRawUnsafe(
+      `UPDATE user_settings SET coin_choices = '{"pol":"polygon-ecosystem-token"}' WHERE user_id = '${user.id}'`,
+    );
+    expect((await settings.find(user.id))?.coinChoices).toEqual({
+      POL: {
+        provider: 'coingecko',
+        id: 'polygon-ecosystem-token',
+        name: null,
+        symbol: null,
+      },
+    });
+  });
+});
+
+describe('coin market list (F7.4)', () => {
+  it('replaces the whole list, reads by symbol (best rank first) and knows when', async () => {
+    const coin = (id: string, symbol: string, rank: number) => ({
+      provider: 'coingecko' as const,
+      id,
+      name: id,
+      symbol,
+      marketCapRank: rank,
+      priceUsd: '0.5',
+    });
+    await market.replace(
+      'coingecko',
+      [coin('b', 'ONE', 649), coin('a', 'ONE', 366), coin('c', 'DOT', 20)],
+      '2026-10-07T10:00:00.000Z',
+    );
+    await market.replace(
+      'coingecko',
+      [
+        coin('harmony', 'ONE', 649),
+        coin('cross-2', 'ONE', 366),
+        coin('polkadot', 'DOT', 20),
+      ],
+      '2026-10-08T10:00:00.000Z',
+    );
+    expect(
+      (await market.listBySymbols('coingecko', ['ONE'])).map((c) => c.id),
+    ).toEqual(['cross-2', 'harmony']);
+    expect(await market.listBySymbols('coingecko', [])).toEqual([]);
+    // Only tickers that ≥ 2 coins up to the rank carry.
+    expect(
+      (await market.listShared('coingecko', 2000)).map((c) => c.id),
+    ).toEqual(['cross-2', 'harmony']);
+    expect(await market.listShared('coingecko', 500)).toEqual([]);
+    expect(await market.fetchedAt('coingecko')).toBe(
+      '2026-10-08T10:00:00.000Z',
+    );
+    await expect(
+      market.replace(
+        'coingecko',
+        [{ ...coin('x', 'one', 1) }],
+        '2026-10-08T10:00:00.000Z',
+      ),
+    ).rejects.toThrow(/CHECK constraint failed/);
   });
 });
 
@@ -158,6 +236,21 @@ describe('project rates', () => {
     expect(await rates.delete(project.id, { ...entry, source: 'manual' })).toBe(
       false,
     );
+    // F7.4: removing the fetched prices of one asset keeps overrides and other assets.
+    await rates.upsertMany(project.id, [
+      { ...entry, source: 'manual' },
+      { ...entry, source: 'coingecko', currency: 'CHF' },
+      { ...entry, asset: 'ETH' },
+    ]);
+    expect(await rates.deleteFetchedPrices(project.id, 'BTC')).toBe(2);
+    expect(
+      (await rates.listByProject(project.id)).map(
+        (r) => `${r.asset}|${r.source}`,
+      ),
+    ).toEqual(['BTC|manual', 'ETH|binance']);
+    await rates.delete(project.id, { ...entry, source: 'manual' });
+    await rates.delete(project.id, { ...entry, asset: 'ETH' });
+    await rates.upsertMany(project.id, [entry]);
     await expect(
       rates.upsertMany(project.id, [{ ...entry, source: 'yahoo' as never }]),
     ).rejects.toThrow(/CHECK constraint failed/);

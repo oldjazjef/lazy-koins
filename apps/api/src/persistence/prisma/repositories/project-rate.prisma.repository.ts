@@ -94,4 +94,16 @@ export class ProjectRatePrismaRepository extends ProjectRateRepositoryPort {
     });
     return count > 0;
   }
+
+  async deleteFetchedPrices(projectId: string, asset: string): Promise<number> {
+    const { count } = await this.prisma.projectRate.deleteMany({
+      where: {
+        projectId,
+        kind: 'price',
+        asset,
+        source: { notIn: ['manual', 'estv'] },
+      },
+    });
+    return count;
+  }
 }

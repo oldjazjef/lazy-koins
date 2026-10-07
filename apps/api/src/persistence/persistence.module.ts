@@ -20,6 +20,8 @@ import { NotificationRepositoryPort } from '../notifications/ports/notification.
 import { ProjectRepositoryPort } from '../projects/ports/project.repository.port';
 import { ProjectSentRepositoryPort } from '../projects/ports/project-sent.repository.port';
 import { EstvKurslisteRepositoryPort } from '../rates/ports/estv.port';
+import { CoinMarketRepositoryPort } from '../rates/ports/coin-market.repository.port';
+import { CoinMarketPrismaRepository } from './prisma/repositories/coin-market.prisma.repository';
 import { ProjectRateRepositoryPort } from '../rates/ports/project-rate.repository.port';
 import { UserSettingsRepositoryPort } from '../settings/ports/user-settings.repository.port';
 import { UserRepositoryPort } from '../users/ports/user.repository.port';
@@ -119,6 +121,7 @@ import {
       provide: EstvKurslisteRepositoryPort,
       useClass: EstvKurslistePrismaRepository,
     },
+    { provide: CoinMarketRepositoryPort, useClass: CoinMarketPrismaRepository },
     {
       provide: CalculationSnapshotRepositoryPort,
       useClass: CalculationSnapshotPrismaRepository,
@@ -185,6 +188,7 @@ import {
     UserSettingsRepositoryPort,
     ProjectRateRepositoryPort,
     EstvKurslisteRepositoryPort,
+    CoinMarketRepositoryPort,
     CalculationSnapshotRepositoryPort,
     CorrectionRepositoryPort,
     OpenItemStateRepositoryPort,

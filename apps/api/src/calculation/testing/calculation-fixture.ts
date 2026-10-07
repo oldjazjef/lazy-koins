@@ -9,8 +9,12 @@ import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memor
 import { ListMyProjectsHandler } from '../../projects/application/queries/list-my-projects.query';
 import { InMemoryProjectRepository } from '../../projects/testing/in-memory-project.repository';
 import { InMemoryProjectSentRepository } from '../../projects/testing/in-memory-project-sent.repository';
-import { InMemoryProjectRateRepository } from '../../rates/testing/in-memory-project-rate.repository';
+import {
+  InMemoryCoinMarketRepository,
+  InMemoryProjectRateRepository,
+} from '../../rates/testing/in-memory-project-rate.repository';
 import { InMemoryWalletRepository } from '../../wallets/testing/in-memory-wallet.repository';
+import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
 import { CalculationInputService } from '../application/calculation-input.service';
 import {
   CalculateProjectHandler,
@@ -64,6 +68,10 @@ export async function calculationSetup() {
   const states = new InMemoryOpenItemStateRepository();
   const reader = new SourceFileReader();
   const wallets = new InMemoryWalletRepository();
+  // The owner's settings (coin choices, F7.4) — specs that need keys or choices save into it.
+  const userSettings = new InMemoryUserSettingsRepository();
+  // The deployment-wide market list (shared tickers, F7.4) — empty unless a spec fills it.
+  const market = new InMemoryCoinMarketRepository();
   const inputs = new CalculationInputService(
     projects,
     files,
@@ -73,6 +81,8 @@ export async function calculationSetup() {
     snapshots,
     reader,
     wallets,
+    userSettings,
+    market,
   );
   const project = await projects.create('anna', {
     name: 'Steuern 2025',
@@ -132,6 +142,13 @@ export async function calculationSetup() {
     projects,
     files,
     wallets,
+    userSettings,
+    market,
+    /** Adds a synthetic standard-format file to the project. */
+    addFile: (name: string, csv: string) =>
+      upload.execute(
+        new UploadProjectFileCommand('anna', project.id, name, encode(csv)),
+      ),
     reader,
     mappings,
     rates,

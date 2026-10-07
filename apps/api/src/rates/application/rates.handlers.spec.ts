@@ -10,7 +10,6 @@ import {
   SettingsReader,
   SettingsSecrets,
 } from '../../settings/application/settings.handlers';
-import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
 import type { EstvVersion } from '../domain/estv';
 import {
   crypto,
@@ -43,7 +42,7 @@ import { RefreshProgress } from './refresh-progress';
 
 async function setup(online: 'true' | 'false' = 'true') {
   const t = await calculationSetup();
-  const settingsRepo = new InMemoryUserSettingsRepository();
+  const settingsRepo = t.userSettings;
   const config = {
     get: (key: string) =>
       key === 'RATES_ONLINE'
@@ -74,6 +73,7 @@ async function setup(online: 'true' | 'false' = 'true') {
       settings,
       config,
       estvStore,
+      t.snapshots,
     ),
     refresh: new RefreshRatesHandler(
       t.projects,

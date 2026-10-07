@@ -116,6 +116,44 @@ function correction(
   return { id, createdAt, reason: 'Test', data };
 }
 
+describe('ambiguous tickers (F7.4: "Kurs mehrdeutig – Coin wählen")', () => {
+  it('an asset of the year whose ticker stands for several coins gets one stable open item', () => {
+    const result = calculate(
+      input({
+        holdings: [
+          holding({
+            platform: 'metamask',
+            accountId: 'eth',
+            asset: 'OPN',
+            quantity: '1000',
+          }),
+          holding({ asset: 'BTC', quantity: '1' }),
+          holding({ asset: 'BUSD', quantity: '50' }),
+        ],
+        bookings: [
+          booking({ asset: 'ONE', kind: 'income_staking', quantity: '5' }),
+        ],
+        rates: [fx('2025-12-31', '0.8'), usd('BTC', '2025-12-31', '90000')],
+        // ONE: income only; OPN: a position; XYZ: not in the project → no item; BUSD is pegged
+        // (never priced by ticker) → no item although the market list shares the ticker.
+        ambiguousAssets: ['OPN', 'ONE', 'XYZ', 'BUSD'],
+      }),
+    );
+    const items = result.openItems.filter((i) => i.reason === 'ambiguousPrice');
+    expect(items.map((i) => [i.key, i.check, i.asset])).toEqual([
+      ['ambiguousPrice:ONE', 'missingPrices', 'ONE'],
+      ['ambiguousPrice:OPN', 'missingPrices', 'OPN'],
+    ]);
+    expect(items[1]?.recordIds.length).toBe(1);
+    // Without the list (a choice made) the item is gone.
+    expect(
+      calculate(
+        input({ holdings: [holding({ asset: 'OPN', quantity: '1' })] }),
+      ).openItems.some((i) => i.reason === 'ambiguousPrice'),
+    ).toBe(false);
+  });
+});
+
 describe('platform-wide statement (one statement for every sub-account)', () => {
   // Kraken-like: a ledger with spot + two earn sub-accounts, and one statement under "kraken".
   const ledger = () => [
