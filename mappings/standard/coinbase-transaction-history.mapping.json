@@ -1,0 +1,219 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Coinbase Transaction History (CSV)",
+  "platform": "coinbase",
+  "description": "Coinbase app 'Transaction history' report (coinbase.com: profile > Statements / Reports > Generate report > Transaction history, all assets, CSV; layout 2024+). A short preamble ('Transactions', 'User,...') sits above the header ID, Timestamp, Transaction Type, Asset, Quantity Transacted, Price Currency, Price at Transaction, Subtotal, Total (inclusive of fees and/or spread), Fees and/or Spread, Notes. Timestamps carry their zone ('2025-01-15 10:00:00 UTC'). Money columns carry currency symbols ('CHF1,234.56', '$5.00'). The direction of each row comes from its type. A Buy/Sell row holds both sides: the crypto leg (Quantity, Asset) and the money leg (Subtotal in Price Currency) with the fee; Convert holds the received asset only in Notes ('Converted 1 ETH to 3,000 USDC'). Known limits: a Buy paid by card books the money leg on the Coinbase cash balance too (it can go negative — add the bank/card deposit or a statement balance); Advanced Trade rows priced in a stablecoin still state Subtotal in the native currency; staking and savings moves are booked as transfers to the accounts 'staking' / 'savings'; the older layout (Spot Price Currency, …) is not covered. No running balance.",
+  "match": {
+    "headers": [
+      "Timestamp",
+      "Transaction Type",
+      "Asset",
+      "Quantity Transacted",
+      "Price Currency",
+      "Subtotal",
+      "Fees and/or Spread",
+      "Notes"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [","], "stripText": true },
+  "bookings": {
+    "timestamp": { "column": "Timestamp", "format": "ymd", "timeZone": "UTC" },
+    "asset": { "column": "Asset" },
+    "quantity": { "mode": "signed", "column": "Quantity Transacted" },
+    "group": { "column": "ID" },
+    "note": { "column": "Notes" },
+    "kind": {
+      "columns": ["Transaction Type", "Notes"],
+      "rules": [
+        { "equals": ["Buy"], "kind": "trade", "direction": "in" },
+        {
+          "equals": ["Advanced Trade Buy"],
+          "kind": "trade",
+          "direction": "in"
+        },
+        { "equals": ["Advance Trade Buy"], "kind": "trade", "direction": "in" },
+        {
+          "equals": ["Retail MGX DEX Buy"],
+          "kind": "trade",
+          "direction": "in"
+        },
+        { "equals": ["Sell"], "kind": "trade", "direction": "out" },
+        {
+          "equals": ["Advanced Trade Sell"],
+          "kind": "trade",
+          "direction": "out"
+        },
+        {
+          "equals": ["Advance Trade Sell"],
+          "kind": "trade",
+          "direction": "out"
+        },
+        {
+          "equals": ["Retail Simple Dust"],
+          "kind": "trade",
+          "direction": "out"
+        },
+        { "equals": ["Convert"], "kind": "trade", "direction": "out" },
+        { "equals": ["Deposit"], "kind": "deposit", "direction": "in" },
+        {
+          "equals": ["Exchange Withdrawal"],
+          "kind": "deposit",
+          "direction": "in"
+        },
+        { "equals": ["Pro Withdrawal"], "kind": "deposit", "direction": "in" },
+        {
+          "pattern": "^Receive\\|.*Coinbase Referral",
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        {
+          "pattern": "^Receive\\|.*Coinbase (Earn|Rewards)",
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        { "equals": ["Receive"], "kind": "deposit", "direction": "in" },
+        { "equals": ["Withdrawal"], "kind": "withdrawal", "direction": "out" },
+        { "equals": ["Send"], "kind": "withdrawal", "direction": "out" },
+        {
+          "equals": ["Retail MGX DEX Send"],
+          "kind": "withdrawal",
+          "direction": "out"
+        },
+        {
+          "equals": ["Exchange Deposit"],
+          "kind": "withdrawal",
+          "direction": "out"
+        },
+        { "equals": ["Pro Deposit"], "kind": "withdrawal", "direction": "out" },
+        {
+          "equals": ["Prime Deposit"],
+          "kind": "withdrawal",
+          "direction": "out"
+        },
+        { "equals": ["Card Spend"], "kind": "withdrawal", "direction": "out" },
+        { "equals": ["Donation"], "kind": "withdrawal", "direction": "out" },
+        { "equals": ["Admin Debit"], "kind": "withdrawal", "direction": "out" },
+        { "equals": ["Subscription"], "kind": "fee", "direction": "out" },
+        {
+          "equals": ["Staking Income"],
+          "kind": "income_staking",
+          "direction": "in"
+        },
+        {
+          "equals": ["Rewards Income"],
+          "kind": "income_staking",
+          "direction": "in"
+        },
+        {
+          "equals": ["Reward Income"],
+          "kind": "income_staking",
+          "direction": "in"
+        },
+        {
+          "equals": ["Inflation Reward"],
+          "kind": "income_staking",
+          "direction": "in"
+        },
+        {
+          "equals": ["Interest payout"],
+          "kind": "income_interest",
+          "direction": "in"
+        },
+        {
+          "equals": ["Coinbase Earn"],
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        {
+          "equals": ["Learning Reward"],
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        {
+          "equals": ["Incentives Rewards Payout"],
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        {
+          "equals": ["Subscription Rebate"],
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        {
+          "equals": ["Subscription Rebates (24 Hours)"],
+          "kind": "income_airdrop",
+          "direction": "in"
+        },
+        {
+          "equals": ["Retail Staking Transfer"],
+          "kind": "transfer",
+          "direction": "out"
+        },
+        {
+          "equals": ["Retail Unstaking Transfer"],
+          "kind": "transfer",
+          "direction": "in"
+        },
+        {
+          "equals": ["Cash to Savings"],
+          "kind": "transfer",
+          "direction": "out"
+        },
+        {
+          "equals": ["Savings to Cash"],
+          "kind": "transfer",
+          "direction": "in"
+        },
+        {
+          "equals": ["Vault Withdrawal"],
+          "kind": "transfer",
+          "direction": "in"
+        },
+        { "equals": ["Transfer"], "kind": "transfer" },
+        { "equals": ["Asset Migration"], "kind": "transfer" },
+        { "equals": ["Retail Eth2 Deprecation"], "kind": "transfer" }
+      ],
+      "default": "unknown"
+    },
+    "counter": [
+      {
+        "when": { "kinds": ["trade"], "pattern": "^Convert\\|" },
+        "asset": {
+          "column": "Notes",
+          "pattern": " to [\\d.,]+ ([A-Za-z0-9]+)\\s*$"
+        },
+        "quantity": {
+          "column": "Notes",
+          "pattern": " to ([\\d.,]+) [A-Za-z0-9]+\\s*$",
+          "sign": "opposite"
+        }
+      },
+      {
+        "when": { "kinds": ["trade"] },
+        "asset": { "column": "Price Currency" },
+        "quantity": { "column": "Subtotal", "sign": "opposite" },
+        "fee": { "column": "Fees and/or Spread" }
+      },
+      {
+        "when": {
+          "kinds": ["transfer"],
+          "pattern": "^Retail (Un)?[Ss]taking Transfer\\|"
+        },
+        "asset": { "column": "Asset" },
+        "quantity": { "column": "Quantity Transacted", "sign": "opposite" },
+        "account": { "value": "staking" }
+      },
+      {
+        "when": {
+          "kinds": ["transfer"],
+          "pattern": "^(Cash to Savings|Savings to Cash|Vault Withdrawal)\\|"
+        },
+        "asset": { "column": "Asset" },
+        "quantity": { "column": "Quantity Transacted", "sign": "opposite" },
+        "account": { "value": "savings" }
+      }
+    ]
+  }
+}

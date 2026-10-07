@@ -1,0 +1,18 @@
+"Disclaimer: All data is without guarantee, errors and changes are reserved."
+
+UserId: 00000000-1111-2222-3333-444444444444
+
+History of all your transactions
+Transaction ID,Timestamp,Transaction Type,In/Out,Amount Fiat,Fiat,Amount Asset,Asset,Asset market price,Asset market price currency,Asset class,Product ID,Fee,Fee asset,Spread,Spread Currency,Tax Fiat
+T001aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T09:00:00+02:00,deposit,incoming,1000.00,EUR,-,EUR,-,-,Fiat,1,-,-,-,-,0.00
+T002aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T10:00:00+02:00,buy,incoming,500.00,EUR,0.00562430,BTC,88900.00,EUR,Cryptocurrency,1,0.42000000,BEST,-,-,0.00
+T003aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T11:00:00+02:00,sell,outgoing,310.00,EUR,0.10000000,ETH,3100.00,EUR,Cryptocurrency,1,0.00010000,ETH,-,-,0.00
+T004aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T12:00:00+02:00,buy,incoming,1000.00,EUR,12.50000000,GOLD,80.00,EUR,Metal,1,-,-,-,-,0.00
+T005aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T13:00:00+02:00,deposit,incoming,1250.00,EUR,0.40000000,ETH,3125.00,EUR,Cryptocurrency,1,-,-,-,-,0.00
+T006aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T14:00:00+02:00,withdrawal,outgoing,890.00,EUR,0.01000000,BTC,89000.00,EUR,Cryptocurrency,1,0.00002000,BTC,-,-,0.00
+T007aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T15:00:00+02:00,withdrawal,outgoing,200.00,EUR,-,EUR,-,-,Fiat,1,-,-,-,-,0.00
+T008aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T16:00:00+02:00,transfer(stake),outgoing,310.00,EUR,0.10000000,ETH,3100.00,EUR,Cryptocurrency,1,-,-,-,-,0.00
+T009aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T17:00:00+02:00,transfer(unstake),incoming,155.00,EUR,0.05000000,ETH,3100.00,EUR,Cryptocurrency,1,-,-,-,-,0.00
+T010aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T18:00:00+02:00,transfer,incoming,0.62,EUR,0.00020000,ETH,3100.00,EUR,Cryptocurrency,1,-,-,-,-,0.00
+T011aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T19:00:00+02:00,transfer,outgoing,15.00,EUR,30.00000000,BEST,0.50,EUR,Cryptocurrency,1,-,-,-,-,0.00
+T012aaaa-bbbb-cccc-dddd-eeeeeeeeeeee,2025-09-01T20:00:00+02:00,refund,incoming,5.00,EUR,-,EUR,-,-,Fiat,1,-,-,-,-,0.00

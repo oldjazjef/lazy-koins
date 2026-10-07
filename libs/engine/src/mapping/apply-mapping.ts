@@ -101,14 +101,26 @@ interface Context {
   readonly file: SourceFile;
   readonly numbers: NumberFormat;
   readonly zone: string;
+  /** The timestamp column actually used (`timestamp.headerPattern` may pick it from the header). */
+  readonly timestampColumn: string;
 }
 
-function number(ctx: Context, row: TableRow, column: string): Decimal {
+/** A number cell, `''` when empty or one of `numbers.nullValues` (`-`). */
+function numberText(ctx: Context, row: TableRow, column: string): string {
   const text = row.get(column);
-  if (text === '') throw new RowFailure('required', column);
+  return ctx.spec.numbers.nullValues?.includes(text) ? '' : text;
+}
+
+function parseNumberText(ctx: Context, text: string, column: string): Decimal {
   const value = parseNumber(text, ctx.numbers);
   if (value === undefined) throw new RowFailure('invalidNumber', column);
   return value;
+}
+
+function number(ctx: Context, row: TableRow, column: string): Decimal {
+  const text = numberText(ctx, row, column);
+  if (text === '') throw new RowFailure('required', column);
+  return parseNumberText(ctx, text, column);
 }
 
 function optionalNumber(
@@ -116,8 +128,21 @@ function optionalNumber(
   row: TableRow,
   column: string | undefined,
 ): Decimal | undefined {
-  if (column === undefined || row.get(column) === '') return undefined;
+  if (column === undefined || numberText(ctx, row, column) === '')
+    return undefined;
   return number(ctx, row, column);
+}
+
+/** The text a spec names: a column (optionally cut by a regex's first group) or a constant. */
+function extracted(
+  row: TableRow,
+  source: { column?: string; pattern?: string; value?: string },
+): string {
+  let text = source.column === undefined ? '' : row.get(source.column);
+  if (text !== '' && source.pattern !== undefined) {
+    text = (new RegExp(source.pattern, 'i').exec(text)?.[1] ?? '').trim();
+  }
+  return text !== '' ? text : (source.value ?? '');
 }
 
 function valueOf(
@@ -144,33 +169,45 @@ export function normaliseAsset(spec: MappingSpec, raw: string): string {
   return aliases.get(upper) ?? upper;
 }
 
-function kindOf(
-  spec: MappingSpec,
-  row: TableRow,
-): { kind: BookingKind; rawType: string } {
+interface KindDecision {
+  readonly kind: BookingKind;
+  readonly rawType: string;
+  /** The kind columns' values joined by "|" (what `pattern` rules test). */
+  readonly joined: string;
+  readonly direction?: 'in' | 'out';
+}
+
+function kindOf(spec: MappingSpec, row: TableRow): KindDecision {
   const rule = spec.bookings?.kind;
-  if (!rule) return { kind: 'unknown', rawType: '' };
+  if (!rule) return { kind: 'unknown', rawType: '', joined: '' };
   const values = rule.columns.map((column) => row.get(column));
   const rawType = values.filter((value) => value !== '').join('/');
   const joined = values.join('|');
   for (const candidate of rule.rules) {
+    let hit = false;
     if (candidate.equals) {
-      const hit = candidate.equals.every((expected, index) => {
-        if (expected === '*') return true;
-        return (
-          (values[index] ?? '').toLowerCase() === expected.trim().toLowerCase()
-        );
-      });
-      if (hit && candidate.equals.length <= values.length)
-        return { kind: candidate.kind, rawType };
-    } else if (
-      candidate.pattern &&
-      new RegExp(candidate.pattern, 'i').test(joined)
-    ) {
-      return { kind: candidate.kind, rawType };
+      hit =
+        candidate.equals.length <= values.length &&
+        candidate.equals.every((expected, index) => {
+          if (expected === '*') return true;
+          return (
+            (values[index] ?? '').toLowerCase() ===
+            expected.trim().toLowerCase()
+          );
+        });
+    } else if (candidate.pattern) {
+      hit = new RegExp(candidate.pattern, 'i').test(joined);
+    }
+    if (hit) {
+      return {
+        kind: candidate.kind,
+        rawType,
+        joined,
+        ...(candidate.direction ? { direction: candidate.direction } : {}),
+      };
     }
   }
-  return { kind: rule.default, rawType };
+  return { kind: rule.default, rawType, joined };
 }
 
 function excluded(spec: MappingSpec, row: TableRow): boolean {
@@ -190,14 +227,42 @@ function excluded(spec: MappingSpec, row: TableRow): boolean {
   });
 }
 
+/**
+ * The timestamp column: the first header matching `timestamp.headerPattern` (KuCoin writes the
+ * zone into it, "Time(UTC+08:00)"), else `timestamp.column`; plus the zone that header names.
+ */
+function timestampColumnOf(
+  spec: MappingSpec,
+  table: Table,
+): { column: string; zone?: string } {
+  const timestamp = spec.bookings?.timestamp;
+  if (!timestamp) return { column: '' };
+  if (timestamp.headerPattern) {
+    const pattern = new RegExp(timestamp.headerPattern, 'i');
+    for (const header of table.header) {
+      const match = pattern.exec(header);
+      if (!match) continue;
+      const captured = match[1]?.trim();
+      const zone =
+        captured !== undefined && fixedOffset(captured) !== undefined
+          ? captured
+          : undefined;
+      return zone === undefined ? { column: header } : { column: header, zone };
+    }
+  }
+  return { column: timestamp.column };
+}
+
 /** The zone of the file's wall-clock times: from its name when the spec says so, else fixed. */
 function zoneFor(
   spec: MappingSpec,
   file: SourceFile,
   notes: ImportNote[],
+  headerZone?: string,
 ): string {
   const timestamp = spec.bookings?.timestamp;
   if (!timestamp) return 'UTC';
+  if (headerZone !== undefined) return headerZone;
   if (timestamp.timeZoneFromFileName) {
     const match = new RegExp(timestamp.timeZoneFromFileName, 'i').exec(
       file.name,
@@ -214,18 +279,132 @@ function zoneFor(
   return timestamp.timeZone;
 }
 
-function bookingFromRow(ctx: Context, row: TableRow): Booking {
+type BookingsMapping = NonNullable<MappingSpec['bookings']>;
+type CounterLeg = Extract<
+  NonNullable<BookingsMapping['counter']>,
+  { asset: unknown }
+>;
+
+/** The fee of a leg: absolute value, and its asset only when it differs from the leg's. */
+function feeOf(
+  ctx: Context,
+  row: TableRow,
+  source: { column: string; assetColumn?: string } | undefined,
+  asset: string,
+): { fee?: Decimal; feeAsset?: string } {
+  if (!source) return {};
+  const value = optionalNumber(ctx, row, source.column);
+  if (value === undefined || value.isZero()) return {};
+  const rawFeeAsset = source.assetColumn ? row.get(source.assetColumn) : '';
+  const normalised =
+    rawFeeAsset === '' ? asset : normaliseAsset(ctx.spec, rawFeeAsset);
+  return normalised === asset
+    ? { fee: value.abs() }
+    : { fee: value.abs(), feeAsset: normalised };
+}
+
+/** The counter rule for this row: the first whose `when` matches the main leg. */
+function counterRuleFor(
+  mapping: BookingsMapping,
+  decision: KindDecision,
+): CounterLeg | undefined {
+  const counter = mapping.counter;
+  if (counter === undefined) return undefined;
+  const rules = Array.isArray(counter) ? counter : [counter];
+  return rules.find(
+    (rule) =>
+      rule.when.kinds.includes(decision.kind) &&
+      (rule.when.pattern === undefined ||
+        new RegExp(rule.when.pattern, 'i').test(decision.joined)),
+  );
+}
+
+/**
+ * The second leg of a row (`bookings.counter`): same time, row, kind and group, its own asset,
+ * amount, fee and account. `undefined` when the row has no amount for it (empty or 0).
+ */
+function counterBooking(
+  ctx: Context,
+  row: TableRow,
+  main: Booking,
+  rule: CounterLeg,
+): Booking | undefined {
+  const quantityColumn = rule.quantity.column;
+  let text = numberText(ctx, row, quantityColumn);
+  if (text !== '' && rule.quantity.pattern !== undefined) {
+    text = (
+      new RegExp(rule.quantity.pattern, 'i').exec(text)?.[1] ?? ''
+    ).trim();
+  }
+  if (text === '') return undefined;
+  const amount = parseNumberText(ctx, text, quantityColumn);
+  if (amount.isZero()) return undefined;
+  const rawAsset = extracted(row, rule.asset);
+  if (rawAsset === '')
+    throw new RowFailure('required', rule.asset.column ?? quantityColumn);
+  const asset = normaliseAsset(ctx.spec, rawAsset);
+  const quantity =
+    rule.quantity.sign === 'signed'
+      ? amount
+      : main.quantity.isNegative()
+        ? amount.abs()
+        : amount.abs().negated();
+  const { fee, feeAsset } = feeOf(ctx, row, rule.fee, asset);
+  return {
+    id: `${main.id}:counter`,
+    sourceFileId: main.sourceFileId,
+    row: main.row,
+    raw: main.raw,
+    platform: main.platform,
+    accountId: valueOf(row, rule.account) || main.accountId,
+    timestamp: main.timestamp,
+    asset,
+    quantity,
+    kind: main.kind,
+    fee,
+    feeAsset,
+    group: main.group,
+    note: main.note,
+    rawType: main.rawType,
+    rawAsset: rawAsset.trim() === asset ? undefined : rawAsset.trim(),
+  };
+}
+
+/** One row → its booking, plus the counter leg when the spec has one for this row. */
+function bookingsFromRow(ctx: Context, row: TableRow): Booking[] {
   const mapping = ctx.spec.bookings;
   if (!mapping) throw new Error('no bookings mapping');
-  const time = row.get(mapping.timestamp.column);
-  if (time === '') throw new RowFailure('required', mapping.timestamp.column);
+  const decision = kindOf(ctx.spec, row);
+  const rule = counterRuleFor(mapping, decision);
+  const main = bookingFromRow(ctx, row, decision);
+  if (!rule) return [main];
+  const counter = counterBooking(ctx, row, main, rule);
+  if (!counter) return [main];
+  // The two legs of one row belong together even when the export has no group column.
+  const group = main.group ?? `${ctx.file.id}:${row.row}`;
+  return [
+    { ...main, group },
+    { ...counter, group },
+  ];
+}
+
+function bookingFromRow(
+  ctx: Context,
+  row: TableRow,
+  decision: KindDecision,
+): Booking {
+  const mapping = ctx.spec.bookings;
+  if (!mapping) throw new Error('no bookings mapping');
+  const timestampColumn = ctx.timestampColumn;
+  const time = row.get(timestampColumn);
+  if (time === '') throw new RowFailure('required', timestampColumn);
   let timestamp: string;
   try {
     timestamp = timestampToUtc(time, mapping.timestamp.format, ctx.zone);
   } catch {
-    throw new RowFailure('invalidTimestamp', mapping.timestamp.column);
+    throw new RowFailure('invalidTimestamp', timestampColumn);
   }
-  const rawAsset = row.get(mapping.asset.column);
+  const rawAsset = extracted(row, mapping.asset);
   if (rawAsset === '') throw new RowFailure('required', mapping.asset.column);
   const asset = normaliseAsset(ctx.spec, rawAsset);
 
@@ -246,29 +425,22 @@ function bookingFromRow(ctx: Context, row: TableRow): Booking {
           : incoming.abs().minus(outgoing.abs());
     }
   } else {
-    const amount = number(ctx, row, q.column).abs();
+    const amountColumn =
+      q.fallbackColumn !== undefined && numberText(ctx, row, q.column) === ''
+        ? q.fallbackColumn
+        : q.column;
+    const amount = number(ctx, row, amountColumn).abs();
     const side = row.get(q.sideColumn).toLowerCase();
     quantity = q.outValues.some((v) => v.toLowerCase() === side)
       ? amount.negated()
       : amount;
   }
+  if (decision.direction === 'in') quantity = quantity.abs();
+  else if (decision.direction === 'out') quantity = quantity.abs().negated();
 
-  let fee: Decimal | undefined;
-  let feeAsset: string | undefined;
-  if (mapping.fee) {
-    const value = optionalNumber(ctx, row, mapping.fee.column);
-    if (value !== undefined && !value.isZero()) {
-      fee = value.abs();
-      const rawFeeAsset = mapping.fee.assetColumn
-        ? row.get(mapping.fee.assetColumn)
-        : '';
-      const normalised =
-        rawFeeAsset === '' ? asset : normaliseAsset(ctx.spec, rawFeeAsset);
-      feeAsset = normalised === asset ? undefined : normalised;
-    }
-  }
+  const { fee, feeAsset } = feeOf(ctx, row, mapping.fee, asset);
 
-  const { kind, rawType } = kindOf(ctx.spec, row);
+  const { kind, rawType } = decision;
   const group = mapping.group ? row.get(mapping.group.column) : '';
   const note = mapping.note ? row.get(mapping.note.column) : '';
   return {
@@ -348,11 +520,13 @@ export function applyMapping(
   }
   const notes: ImportNote[] = [];
   const errors: RowError[] = [];
+  const timestampColumn = timestampColumnOf(spec, table);
   const ctx: Context = {
     spec,
     file,
     numbers: spec.numbers,
-    zone: zoneFor(spec, file, notes),
+    zone: zoneFor(spec, file, notes, timestampColumn.zone),
+    timestampColumn: timestampColumn.column,
   };
   const bookings: Booking[] = [];
   const holdings: Holding[] = [];
@@ -380,8 +554,11 @@ export function applyMapping(
     let booking: Booking | undefined;
     if (spec.bookings) {
       try {
-        booking = bookingFromRow(ctx, row);
-        bookings.push(booking);
+        // The main leg first, then its counter leg (bookings.counter) — the running balance
+        // (lastPerAsset) belongs to the main leg.
+        const legs = bookingsFromRow(ctx, row);
+        booking = legs[0];
+        bookings.push(...legs);
       } catch (error) {
         fail(row.row, error);
         continue;

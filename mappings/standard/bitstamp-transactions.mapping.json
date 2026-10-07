@@ -1,0 +1,73 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Bitstamp Transaction History (CSV, RFC 4180)",
+  "platform": "bitstamp",
+  "description": "Bitstamp transaction history (bitstamp.net: profile > History > Transaction history > Open export options > CSV 'RFC 4180 (new)'). Header ID, Account, Type, Subtype, Datetime, Amount, Amount currency, Value, Value currency, Rate, Rate currency, Fee, Fee currency, Order ID. Datetime is UTC (ISO, e.g. '2025-01-15T10:00:00Z'). Amounts are written without sign; the direction comes from Type/Subtype. A Market row holds both sides: Amount in Amount currency (bought on Buy, sold on Sell) and Value in Value currency (the other way); the fee is booked in Fee currency; Order ID links them. Account (Main Account or a sub-account name) becomes the account. Staked/unstaked assets are booked as transfers to/from the account 'staking'. Known limits: the old export ('Type, Datetime, Account, Amount, Value, Rate, Fee, Sub Type' with amounts like '0.5 BTC') is not covered — choose the RFC 4180 format; 'Sub Account Transfer' keeps the amount's own sign (one row per side expected); type texts not listed fall to unknown.",
+  "match": {
+    "headers": [
+      "Account",
+      "Type",
+      "Subtype",
+      "Datetime",
+      "Amount",
+      "Amount currency",
+      "Value currency",
+      "Fee currency"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "bookings": {
+    "timestamp": { "column": "Datetime", "format": "ymd", "timeZone": "UTC" },
+    "account": { "column": "Account", "value": "main" },
+    "asset": { "column": "Amount currency" },
+    "quantity": { "mode": "signed", "column": "Amount" },
+    "fee": { "column": "Fee", "assetColumn": "Fee currency" },
+    "group": { "column": "Order ID" },
+    "kind": {
+      "columns": ["Type", "Subtype"],
+      "rules": [
+        { "equals": ["Market", "Buy"], "kind": "trade", "direction": "in" },
+        { "equals": ["Market", "Sell"], "kind": "trade", "direction": "out" },
+        { "equals": ["Deposit"], "kind": "deposit", "direction": "in" },
+        { "equals": ["Ripple deposit"], "kind": "deposit", "direction": "in" },
+        { "equals": ["Withdrawal"], "kind": "withdrawal", "direction": "out" },
+        {
+          "equals": ["Ripple payment"],
+          "kind": "withdrawal",
+          "direction": "out"
+        },
+        {
+          "equals": ["Staking reward"],
+          "kind": "income_staking",
+          "direction": "in"
+        },
+        { "equals": ["Staked assets"], "kind": "transfer", "direction": "out" },
+        {
+          "equals": ["Unstaked assets"],
+          "kind": "transfer",
+          "direction": "in"
+        },
+        { "equals": ["Sub Account Transfer"], "kind": "transfer" }
+      ],
+      "default": "unknown"
+    },
+    "counter": [
+      {
+        "when": { "kinds": ["trade"] },
+        "asset": { "column": "Value currency" },
+        "quantity": { "column": "Value", "sign": "opposite" }
+      },
+      {
+        "when": {
+          "kinds": ["transfer"],
+          "pattern": "^(Staked|Unstaked) assets\\|"
+        },
+        "asset": { "column": "Amount currency" },
+        "quantity": { "column": "Amount", "sign": "opposite" },
+        "account": { "value": "staking" }
+      }
+    ]
+  }
+}

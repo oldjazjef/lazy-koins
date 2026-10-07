@@ -1,0 +1,192 @@
+{
+  "format": "lazy-koins-mapping",
+  "version": 1,
+  "name": "Crypto.com App – Crypto Wallet Transactions (CSV)",
+  "platform": "cryptocom",
+  "description": "Crypto.com App 'Crypto Wallet' transaction history (App: Accounts > Crypto Wallet > Transaction History (clock icon) > Export, CSV by e-mail). Header Timestamp (UTC), Transaction Description, Currency, Amount, To Currency, To Amount, Native Currency, Native Amount, Native Amount (in USD), Transaction Kind, Transaction Hash. Times are UTC; Amount is signed. An exchange row holds both sides: Currency/Amount (spent, negative) and To Currency/To Amount (received) — both are booked, linked by the row. Card purchases (crypto_purchase) have no money leg in the app. Moves into Crypto Earn, lockups, staking and Supercharger stay owned and are booked as transfers to the accounts 'earn', 'staking' and 'supercharger'; limit-order fund locks/unlocks are excluded (they only reserve funds). The Fiat Wallet export uses the same columns and is read by this mapping too. Known limits: crypto_transfer (sending to / receiving from another Crypto.com user) is left unknown — gift or own account, decide per row; the money leg of a fiat (viban) exchange is booked here, so do not import the Fiat Wallet export for the same period as well; Crypto.com Exchange has its own exports.",
+  "match": {
+    "headers": [
+      "Timestamp (UTC)",
+      "Transaction Description",
+      "Currency",
+      "Amount",
+      "To Currency",
+      "To Amount",
+      "Native Currency",
+      "Native Amount",
+      "Transaction Kind"
+    ]
+  },
+  "source": { "delimiter": "," },
+  "numbers": { "decimal": ".", "thousands": [] },
+  "filters": [
+    {
+      "column": "Transaction Kind",
+      "pattern": "^trading\\.limit_order\\.[a-z_]+\\.(fund|purchase|sell)_(lock|unlock)$"
+    }
+  ],
+  "bookings": {
+    "timestamp": {
+      "column": "Timestamp (UTC)",
+      "format": "ymd",
+      "timeZone": "UTC"
+    },
+    "asset": { "column": "Currency" },
+    "quantity": { "mode": "signed", "column": "Amount" },
+    "valueUsd": { "column": "Native Amount (in USD)" },
+    "note": { "column": "Transaction Description" },
+    "kind": {
+      "columns": ["Transaction Kind", "Transaction Description"],
+      "rules": [
+        { "equals": ["viban_purchase"], "kind": "trade" },
+        { "equals": ["van_purchase"], "kind": "trade" },
+        { "equals": ["crypto_viban_exchange"], "kind": "trade" },
+        { "equals": ["crypto_exchange"], "kind": "trade" },
+        { "equals": ["crypto_to_van_sell_order"], "kind": "trade" },
+        { "equals": ["crypto_purchase"], "kind": "trade" },
+        { "equals": ["recurring_buy_order"], "kind": "trade" },
+        { "equals": ["dust_conversion_debited"], "kind": "trade" },
+        { "equals": ["dust_conversion_credited"], "kind": "trade" },
+        { "equals": ["trading.crypto_purchase.google_pay"], "kind": "trade" },
+        { "equals": ["trading.crypto_purchase.apple_pay"], "kind": "trade" },
+        {
+          "equals": ["trading.limit_order.fiat_wallet.sell_commit"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["trading.limit_order.fiat_wallet.purchase_commit"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["trading.limit_order.cash_account.purchase_commit"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["trading.limit_order.cash_account.sell_commit"],
+          "kind": "trade"
+        },
+        {
+          "equals": ["trading.limit_order.crypto_wallet.exchange"],
+          "kind": "trade"
+        },
+        { "equals": ["crypto_deposit"], "kind": "deposit" },
+        { "equals": ["exchange_to_crypto_transfer"], "kind": "deposit" },
+        { "equals": ["crypto_payment_refund"], "kind": "deposit" },
+        { "equals": ["viban_deposit"], "kind": "deposit" },
+        { "equals": ["crypto_withdrawal"], "kind": "withdrawal" },
+        { "equals": ["crypto_to_exchange_transfer"], "kind": "withdrawal" },
+        { "equals": ["crypto_payment"], "kind": "withdrawal" },
+        { "equals": ["card_top_up"], "kind": "withdrawal" },
+        { "equals": ["viban_card_top_up"], "kind": "withdrawal" },
+        { "equals": ["viban_withdrawal"], "kind": "withdrawal" },
+        { "equals": ["crypto_earn_program_created"], "kind": "transfer" },
+        { "equals": ["crypto_earn_program_withdrawn"], "kind": "transfer" },
+        { "equals": ["lockup_lock"], "kind": "transfer" },
+        { "equals": ["lockup_unlock"], "kind": "transfer" },
+        { "equals": ["lockup_upgrade"], "kind": "transfer" },
+        {
+          "equals": ["finance.lockup.dpos_lock.crypto_wallet"],
+          "kind": "transfer"
+        },
+        {
+          "equals": ["finance.dpos.staking.crypto_wallet"],
+          "kind": "transfer"
+        },
+        {
+          "equals": ["finance.dpos.unstaking.crypto_wallet"],
+          "kind": "transfer"
+        },
+        { "equals": ["supercharger_deposit"], "kind": "transfer" },
+        { "equals": ["supercharger_withdrawal"], "kind": "transfer" },
+        { "equals": ["council_node_deposit_created"], "kind": "transfer" },
+        {
+          "pattern": "^(lockup|dynamic_coin|interest|crypto_wallet)_swap_(credited|debited)\\|",
+          "kind": "transfer"
+        },
+        {
+          "equals": ["dynamic_coin_swap_bonus_exchange_deposit"],
+          "kind": "transfer"
+        },
+        { "equals": ["viban_deposit_precredit"], "kind": "transfer" },
+        { "equals": ["viban_deposit_precredit_repayment"], "kind": "transfer" },
+        { "equals": ["crypto_earn_interest_paid"], "kind": "income_interest" },
+        {
+          "equals": ["crypto_earn_extra_interest_paid"],
+          "kind": "income_interest"
+        },
+        {
+          "equals": [
+            "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet"
+          ],
+          "kind": "income_interest"
+        },
+        { "equals": ["mco_stake_reward"], "kind": "income_interest" },
+        { "equals": ["staking_reward"], "kind": "income_staking" },
+        {
+          "equals": ["finance.dpos.compound_interest.crypto_wallet"],
+          "kind": "income_staking"
+        },
+        {
+          "equals": ["finance.dpos.non_compound_interest.crypto_wallet"],
+          "kind": "income_staking"
+        },
+        {
+          "equals": ["finance.lockup.dpos_compound_interest.crypto_wallet"],
+          "kind": "income_staking"
+        },
+        {
+          "equals": ["supercharger_reward_to_app_credited"],
+          "kind": "income_launchpool"
+        },
+        { "equals": ["referral_bonus"], "kind": "income_airdrop" },
+        { "equals": ["referral_gift"], "kind": "income_airdrop" },
+        { "equals": ["referral_card_cashback"], "kind": "income_airdrop" },
+        { "equals": ["card_cashback_reverted"], "kind": "income_airdrop" },
+        { "equals": ["transfer_cashback"], "kind": "income_airdrop" },
+        { "equals": ["reimbursement"], "kind": "income_airdrop" },
+        { "equals": ["reimbursement_reverted"], "kind": "income_airdrop" },
+        { "equals": ["gift_card_reward"], "kind": "income_airdrop" },
+        { "equals": ["admin_wallet_credited"], "kind": "income_airdrop" },
+        { "equals": ["campaign_reward"], "kind": "income_airdrop" },
+        {
+          "equals": ["rewards_platform_deposit_credited"],
+          "kind": "income_airdrop"
+        },
+        { "pattern": "^\\|.*\\bDeposit\\b", "kind": "deposit" },
+        { "pattern": "^\\|.*\\bWithdraw", "kind": "withdrawal" }
+      ],
+      "default": "unknown"
+    },
+    "counter": [
+      {
+        "when": { "kinds": ["trade"] },
+        "asset": { "column": "To Currency" },
+        "quantity": { "column": "To Amount", "sign": "signed" }
+      },
+      {
+        "when": { "kinds": ["transfer"], "pattern": "^crypto_earn_program_" },
+        "asset": { "column": "Currency" },
+        "quantity": { "column": "Amount", "sign": "opposite" },
+        "account": { "value": "earn" }
+      },
+      {
+        "when": {
+          "kinds": ["transfer"],
+          "pattern": "^(lockup_(lock|unlock|upgrade)|finance\\.lockup\\.dpos_lock\\.crypto_wallet|finance\\.dpos\\.(staking|unstaking)\\.crypto_wallet|council_node_deposit_created)\\|"
+        },
+        "asset": { "column": "Currency" },
+        "quantity": { "column": "Amount", "sign": "opposite" },
+        "account": { "value": "staking" }
+      },
+      {
+        "when": {
+          "kinds": ["transfer"],
+          "pattern": "^supercharger_(deposit|withdrawal)\\|"
+        },
+        "asset": { "column": "Currency" },
+        "quantity": { "column": "Amount", "sign": "opposite" },
+        "account": { "value": "supercharger" }
+      }
+    ]
+  }
+}
