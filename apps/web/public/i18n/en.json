@@ -1775,9 +1775,7 @@
       "statementSave": "Checking and saving holdings from {{name}}",
       "mappingReady": "Mapping suggestion for {{name}} is ready",
       "statementReady": "Account statement {{name}} has been read"
-    },
-    "chat": "The assistant is replying",
-    "chatConfirm": "Applying the assistant’s change"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

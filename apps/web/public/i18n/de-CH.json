@@ -1775,9 +1775,7 @@
       "statementSave": "Bestände aus {{name}} werden geprüft und gespeichert",
       "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
       "statementReady": "Kontoauszug {{name}} ist ausgelesen"
-    },
-    "chat": "Der Assistent antwortet",
-    "chatConfirm": "Änderung des Assistenten wird ausgeführt"
+    }
   },
   "dashboard": {
     "title": "Dashboard",

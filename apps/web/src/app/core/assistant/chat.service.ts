@@ -8,7 +8,6 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../actions/action';
 import { ActionRunner } from '../actions/action-runner';
 import { extractErrorDetail } from '../actions/extract-error-detail';
-import { ActivityService } from '../activity/activity.service';
 import { apiUrl } from '../api/api-url';
 import type {
   AskRequest,
@@ -41,7 +40,6 @@ export const MAX_QUESTION = 4000;
 export class ChatService {
   private readonly http = inject(HttpClient);
   private readonly actions = inject(ActionRunner);
-  private readonly activity = inject(ActivityService);
   private readonly notifications = inject(NotificationService);
   private readonly events = inject(AssistantEvents);
   private readonly contextService = inject(ChatContextService);
@@ -177,9 +175,9 @@ export class ChatService {
     this.error.set(null);
     this.pending.set(question);
     try {
-      const view = await this.activity.track(
-        'activity.chat',
-        firstValueFrom(this.http.post<ConversationView>(url, body)),
+      // No activity snackbar: the chat shows its own "thinking" state (user rule).
+      const view = await firstValueFrom(
+        this.http.post<ConversationView>(url, body),
       );
       this.conversation.set(view);
       if (consent) {
@@ -236,9 +234,6 @@ export class ChatService {
         {
           key: 'chat-decide',
           silent: true,
-          ...(decision === 'confirm'
-            ? { activity: { label: 'activity.chatConfirm' } }
-            : {}),
         },
       );
       this.conversation.set(view);

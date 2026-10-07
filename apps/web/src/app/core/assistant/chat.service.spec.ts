@@ -1,3 +1,4 @@
+import { ActivityService } from '../activity/activity.service';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -155,6 +156,18 @@ describe('ChatService', () => {
     request.flush(view({ title: 'Neu' }));
     expect(await asked).toBe(true);
     expect(service.conversation()?.title).toBe('Neu');
+    await settle();
+    http.expectOne('/api/chat/conversations').flush([]);
+  });
+
+  it('shows no activity snackbar while the assistant answers (the chat shows it itself)', async () => {
+    const { service, http } = await setup();
+    const activity = TestBed.inject(ActivityService);
+    service.conversation.set(view());
+    const asked = service.ask('Und jetzt?');
+    expect(activity.count()).toBe(0);
+    http.expectOne('/api/chat/conversations/c1/messages').flush(view());
+    expect(await asked).toBe(true);
     await settle();
     http.expectOne('/api/chat/conversations').flush([]);
   });
