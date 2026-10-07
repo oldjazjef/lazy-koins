@@ -176,6 +176,39 @@
     @apply bg-muted/40 w-full shrink-0 border-t px-6 py-4;
   }
 
+  /*
+   * Form rows (user rule): fields side by side always line up — labels stay on one line
+   * (truncated, full text as title), inputs sit on the same baseline even when a label is long,
+   * and every field keeps a usable minimum width (a date input never shrinks to "dd/m").
+   *   <div class="lk-form-row"> <div class="lk-field"><label …>…</label><input …></div> … </div>
+   */
+  .lk-form-row {
+    @apply grid items-start gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .lk-field {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .lk-field > label {
+    @apply truncate;
+  }
+
+  /*
+   * The same rule for every existing multi-column form (a grid whose cells are label + input
+   * columns): one-line labels, so the inputs below them start on the same line. Prefer
+   * lk-form-row / lk-field (+ a title on long labels) in new markup.
+   */
+  .grid > .flex.flex-col > label[hlmLabel],
+  .grid > div > label[hlmLabel]:first-child {
+    @apply truncate;
+  }
+
+  .grid:has(> .flex.flex-col > label[hlmLabel]) {
+    @apply items-start;
+  }
+
   /* The user menu at the top right. */
   .lk-menu {
     @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex w-56 flex-col overflow-hidden rounded-md border py-1 shadow-md;

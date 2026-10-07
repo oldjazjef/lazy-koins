@@ -1247,6 +1247,10 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`login-page.spec.ts` guards it).
 - Mutations go through `defineAction` + `ActionRunner` in the page service; messages are i18n keys.
 - Dialogs for decisions (reopen a closed project, delete), pages for forms.
+- **Form rows** (user rule, 08.10.2026): fields side by side always line up — one-line labels
+  (truncated, full text as `title`), inputs on the same line even when a label is long or a field
+  shows an error, a usable minimum width per field. Use `lk-form-row` + `lk-field` (styles.css);
+  existing grids of label + input columns get the same via a global rule.
 - **Dialog layout** (user rule, 07.10.2026): three fixed regions — `<hlm-dialog-header>` at the top,
   `<div class="lk-dialog-body">` in the middle (the ONLY part that scrolls), `<hlm-dialog-footer>`
   with every action button across the full width at the bottom. All three are **direct children**

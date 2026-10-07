@@ -145,13 +145,12 @@
     </p>
   </div>
   <div hlmCardContent>
-    <form
-      class="grid gap-3 sm:grid-cols-6"
-      [formGroup]="form"
-      (ngSubmit)="submit()"
-    >
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-kind"
+    <form class="lk-form-row" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-kind"
+          [attr.title]="'rates.fields.kind' | translate"
           >{{ 'rates.fields.kind' | translate }}</label
         >
         <select hlmInput id="rate-kind" formControlName="kind">
@@ -159,14 +158,20 @@
           <option value="fx">{{ 'rates.kind.fx' | translate }}</option>
         </select>
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-asset"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-asset"
+          [attr.title]="'rates.fields.asset' | translate"
           >{{ 'rates.fields.asset' | translate }}</label
         >
         <input hlmInput id="rate-asset" type="text" formControlName="asset" />
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-currency"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-currency"
+          [attr.title]="'rates.fields.currency' | translate"
           >{{ 'rates.fields.currency' | translate }}</label
         >
         <select hlmInput id="rate-currency" formControlName="currency">
@@ -175,19 +180,25 @@
           }
         </select>
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-date"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-date"
+          [attr.title]="'rates.fields.date' | translate"
           >{{ 'rates.fields.date' | translate }}</label
         >
         <input hlmInput id="rate-date" type="date" formControlName="date" />
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-value"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-value"
+          [attr.title]="'rates.fields.value' | translate"
           >{{ 'rates.fields.value' | translate }}</label
         >
         <input hlmInput id="rate-value" type="text" formControlName="value" />
       </div>
-      <div class="flex items-end">
+      <div class="lk-field">
         <button
           hlmBtn
           type="submit"
@@ -198,7 +209,7 @@
         </button>
       </div>
       @if (error(); as key) {
-      <p class="text-destructive text-sm sm:col-span-6" role="alert">
+      <p class="text-destructive col-span-full text-sm" role="alert">
         {{ key | translate }}
       </p>
       }
