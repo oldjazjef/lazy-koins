@@ -13,7 +13,7 @@ import { AppVersionService } from '../../../../core/version/app-version.service'
 
 /** Where the source lives (public repository). */
 export const REPOSITORY_URL = 'https://github.com/oldjazjef/lazy-koins';
-export const SUPPORT_URL = 'https://buymeacoffee.com/oldjazjef';
+export const SUPPORT_URL = 'https://buymeacoffee.com/hello.eme';
 
 /** Einstellungen › System: the running version (number + commit), build time and the repository. */
 @Component({
