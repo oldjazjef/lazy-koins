@@ -52,7 +52,7 @@ function entryOf(entry: LibraryEntryView): z.input<typeof entryOut> {
     updatedAt: entry.updatedAt,
     mine: entry.mine,
     myRating: entry.myRating,
-    link: `/app/library/${encodeURIComponent(entry.id)}`,
+    link: `/app/mappings/library/${encodeURIComponent(entry.id)}`,
   };
 }
 

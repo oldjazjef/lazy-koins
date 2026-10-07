@@ -62,7 +62,8 @@
     "wallets": "Wallets",
     "dashboard": "Dashboard",
     "chat": "Assistant",
-    "library": "Library"
+    "library": "Library",
+    "myMappings": "My mappings"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",

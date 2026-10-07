@@ -131,7 +131,7 @@ describe('LibraryPublishService (F5.15 review step)', () => {
       onClick: () => void;
     };
     action.onClick();
-    expect(navigate).toHaveBeenCalledWith(['/app/library', 'l7']);
+    expect(navigate).toHaveBeenCalledWith(['/app/mappings/library', 'l7']);
   });
 
   it('offers a new version of my existing entry (from the same mapping) by default', async () => {

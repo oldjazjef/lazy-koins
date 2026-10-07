@@ -101,7 +101,7 @@
         <dt>{{ 'library.origin.label' | translate }}</dt>
         <dd class="flex flex-col gap-1">
           @if (service.libraryEntry.hasValue()) {
-          <a class="hover:underline" [routerLink]="['/app/library', source.id]"
+          <a class="hover:underline" [routerLink]="['/app/mappings/library', source.id]"
             >{{ 'library.origin.version' | translate: { version: source.version
             } }}</a
           >

@@ -21,7 +21,7 @@ two as a package (F1.3).
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
 > Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
-> the **Bibliothek** (mapping library, web only) next to it;
+> the **Bibliothek** (mapping library, web only) as its sub-item (`/app/mappings/library`; the nav entry opens a menu Meine Mappings · Bibliothek, `NavItem.children`);
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -410,9 +410,9 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   `GET /api/projects/:id/library-matches` = per `needs_mapping` file of my project the entries
   whose spec would read it (cheap header pre-filter on the bytes, then
   `FileAnalysisService.matchingSpecs` = `mappingConfidence` as on upload; ≤ 10 per file).
-- **Web**: `/app/library` (`LibraryPage`, table pattern: name + description line, platform,
+- **Web**: `/app/mappings/library` (`LibraryPage`, table pattern: name + description line, platform,
   stars, taken, author pseudonym, version; row actions Ansehen · Übernehmen · Bewerten ·
-  (own) Neue Version · Löschen; paginator), `/app/library/:id` (JSON, facts, my rating, take,
+  (own) Neue Version · Löschen; paginator), `/app/mappings/library/:id` (JSON, facts, my rating, take,
   own: new version/delete). `LibraryPublishService` + `lk-library-publish-dialog` (provided by the
   host: library pages and the mapping page): source → findings with checkboxes (every change
   reviews again, stale answers dropped) → pseudonym + description → exact JSON → confirmation

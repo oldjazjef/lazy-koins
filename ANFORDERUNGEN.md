@@ -163,7 +163,7 @@ teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittst
   eigene Mapping bearbeiten und löschen. Braucht eine hochgeladene Datei ein Mapping und passen
   Bibliothekseinträge zu ihrem Fingerabdruck, zeigt der Dateibereich „In der Bibliothek gefunden:
   N passende Mappings“ mit „Übernehmen“ (Kopie + der Datei zuordnen) – vor dem AI-Angebot.
-- **F5.17 Bibliothek und Bewertung**: Seite „Bibliothek“ im Hauptmenü (nur Web): suchen (Name,
+- **F5.17 Bibliothek und Bewertung**: Seite „Bibliothek“ als Unterpunkt von „Mappings“ im Hauptmenü (nur Web): suchen (Name,
   Plattform, Beschreibung), nach Plattform filtern, sortieren (Bewertung, Übernahmen, neueste,
   Name), Detailseite mit JSON, Version, Angaben und „Übernehmen“. Jeder Benutzer kann einen
   fremden Eintrag mit 1–5 Sternen bewerten (eine Bewertung pro Benutzer, änderbar, entfernbar;

@@ -14,6 +14,35 @@
         <ul class="flex items-center gap-1">
           @if (!setup.incomplete()) { @for (item of items; track item.path) {
           <li>
+            @if (item.children; as children) {
+            <!-- An entry with sub-items (Mappings: Meine Mappings · Bibliothek) opens a menu. -->
+            <button
+              type="button"
+              class="lk-nav-link"
+              [class.lk-nav-active]="isActive(item)"
+              [hlmDropdownMenuTrigger]="submenu"
+              align="start"
+            >
+              <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+              <span>{{ item.labelKey | translate }}</span>
+              <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
+            </button>
+            <ng-template #submenu>
+              <hlm-dropdown-menu class="min-w-48">
+                @for (child of children; track child.path) {
+                <a
+                  hlmDropdownMenuItem
+                  [routerLink]="child.path"
+                  [class.lk-nav-active]="isActive(child, children)"
+                  [attr.aria-current]="isActive(child, children) ? 'page' : null"
+                >
+                  <ng-icon [name]="child.icon" size="16" aria-hidden="true" />
+                  {{ child.labelKey | translate }}
+                </a>
+                }
+              </hlm-dropdown-menu>
+            </ng-template>
+            } @else {
             <a
               [routerLink]="item.path"
               routerLinkActive="lk-nav-active"
@@ -23,6 +52,7 @@
               <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
               <span>{{ item.labelKey | translate }}</span>
             </a>
+            }
           </li>
           } }
         </ul>

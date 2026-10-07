@@ -8,7 +8,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
+  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
@@ -26,6 +28,8 @@ import {
 } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
+import { HlmDropdownMenuImports } from '@lazykoins/ui/dropdown-menu';
+import { filter, map } from 'rxjs';
 import { ChatService } from '../assistant/chat.service';
 import { ChatSidebar } from '../assistant/chat-sidebar';
 import { UserSettingsService } from '../../features/settings/user-settings.service';
@@ -37,7 +41,13 @@ import { NotificationBell } from '../notification-centre/notification-bell';
 import { NotificationCentreService } from '../notification-centre/notification-centre.service';
 import { ThemeService } from '../theme/theme.service';
 import { AppVersionService } from '../version/app-version.service';
-import { NAV_ICONS, navItemsFor, USER_MENU_ITEMS } from './nav-config';
+import {
+  isNavActive,
+  NAV_ICONS,
+  type NavItem,
+  navItemsFor,
+  USER_MENU_ITEMS,
+} from './nav-config';
 
 /**
  * The signed-in frame, desktop first: a header with the app name, the main navigation, the theme
@@ -55,6 +65,7 @@ import { NAV_ICONS, navItemsFor, USER_MENU_ITEMS } from './nav-config';
     ChatSidebar,
     NotificationBell,
     ...HlmButtonImports,
+    ...HlmDropdownMenuImports,
   ],
   providers: [
     provideIcons({
@@ -95,6 +106,18 @@ export class AppShell {
   // A template literal: i18n-keys.spec.ts reads quoted dotted literals as translation keys.
   protected readonly logo = `favicon.svg`;
   private readonly router = inject(Router);
+  /** The current URL, for entries with sub-items (no `routerLinkActive` on a menu button). */
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  protected isActive(item: NavItem, siblings?: readonly NavItem[]): boolean {
+    return isNavActive(this.url(), item, siblings);
+  }
   private readonly centre = inject(NotificationCentreService);
 
   constructor() {

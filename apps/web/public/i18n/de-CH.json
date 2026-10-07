@@ -62,7 +62,8 @@
     "wallets": "Wallets",
     "dashboard": "Dashboard",
     "chat": "Assistent",
-    "library": "Bibliothek"
+    "library": "Bibliothek",
+    "myMappings": "Meine Mappings"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",

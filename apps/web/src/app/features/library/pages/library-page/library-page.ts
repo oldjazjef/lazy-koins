@@ -48,7 +48,7 @@ import { LibraryPageService } from './library-page.service';
 type LibraryAction = 'view' | 'take' | 'rate' | 'newVersion' | 'delete';
 
 /**
- * F5.15–F5.17: the mapping library page (`/app/library`, web only) — the shared mappings of all
+ * F5.15–F5.17: the mapping library page (`/app/mappings/library`, web only) — the shared mappings of all
  * users with search, platform filter and sort; per row: Ansehen, Übernehmen (a private copy),
  * Bewerten, and for my own entries Neue Version and Löschen. "Mapping veröffentlichen" opens
  * the review dialog.
@@ -142,7 +142,7 @@ export class LibraryPage {
   }
 
   protected open(id: string): void {
-    void this.router.navigate(['/app/library', id]);
+    void this.router.navigate(['/app/mappings/library', id]);
   }
 
   protected act(action: string, entry: LibraryEntry): void {

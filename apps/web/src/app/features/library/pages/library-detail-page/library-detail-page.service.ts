@@ -64,7 +64,7 @@ export class LibraryDetailPageService {
     const id = this.entryId();
     if (!id) return;
     if (await this.client.remove(id)) {
-      await this.router.navigate(['/app/library'], { replaceUrl: true });
+      await this.router.navigate(['/app/mappings/library'], { replaceUrl: true });
     }
   }
 }
