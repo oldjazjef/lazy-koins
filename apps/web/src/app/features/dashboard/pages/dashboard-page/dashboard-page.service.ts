@@ -13,6 +13,7 @@ import type {
   KpiKind,
 } from '../../../../core/api/dashboard.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { type CoinRef, CoinsService } from '../../../../shared/coins';
 import {
   type DateRange,
   type DateRangePreset,
@@ -311,6 +312,7 @@ export class DashboardPageService {
     from: string,
     to: string,
     assets: string[],
+    force = false,
   ): Promise<DashboardRefreshSummary> {
     return firstValueFrom(
       this.http.post<DashboardRefreshSummary>(
@@ -319,9 +321,39 @@ export class DashboardPageService {
           from,
           to,
           assets,
+          ...(force ? { force: true } : {}),
           ...(this.currency() ? { currency: this.currency() } : {}),
         },
       ),
     );
+  }
+
+  // --- F7.4 "Falscher Kurs? Coin wählen" per holding ---
+
+  private readonly coins = inject(CoinsService);
+
+  /**
+   * Stores the coin of a holding's ticker (the API removes that asset's fetched series from every
+   * open project and from this cache — the value changes at once), then fetches its prices for
+   * the period from the chosen coin (`force`; only with lookups on).
+   */
+  async chooseCoin(asset: string, coin: CoinRef): Promise<void> {
+    await this.coins.setChoice(asset, coin);
+    const view = this.view.hasValue() ? this.view.value() : undefined;
+    if (view?.online) {
+      const { from, to } = this.period();
+      try {
+        const summary = await this.refreshCall(from, to, [asset], true);
+        this.lastRefresh.set(summary.assets);
+      } catch {
+        this.notifications.error('dashboard.rates.failed');
+      }
+    }
+    this.view.reload();
+  }
+
+  /** "Passt so" for a shared-ticker warning. */
+  async dismissShared(asset: string): Promise<void> {
+    await this.coins.dismiss(asset);
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import type { Locale } from '../../common/i18n/locale';
+import type { CoinChoices } from '../../rates/domain/coin-choice';
 
 /** F11.2: `de-CH` = 1’234.56, `en` = 1,234.56. */
 export const NUMBER_FORMATS = ['de-CH', 'en'] as const;
@@ -33,8 +34,13 @@ export interface UserSettings {
   readonly onlineRates: boolean;
   /** Sealed values, `null` when not stored. */
   readonly sealedKeys: Readonly<Record<ApiKeyName, string | null>>;
-  /** Symbol → CoinGecko id, overriding the built-in table. */
-  readonly coingeckoIds: Readonly<Record<string, string>>;
+  /**
+   * Symbol → the coin the user chose (provider + id + name, F7.4): prices of that symbol come only
+   * from that provider, never from an exchange by ticker (`rates/domain/coin-choice.ts`).
+   */
+  readonly coinChoices: CoinChoices;
+  /** Tickers whose shared-code warning the user settled ("Passt so"), upper case, sorted. */
+  readonly coinDismissed: readonly string[];
   readonly updatedAt: string | null;
 }
 
@@ -49,7 +55,9 @@ export interface UpdateSettingsInput {
   readonly onlineRates?: boolean;
   /** A new sealed value, or `null` to remove the key. Absent = unchanged. */
   readonly sealedKeys?: Partial<Record<ApiKeyName, string | null>>;
-  readonly coingeckoIds?: Readonly<Record<string, string>>;
+  /** The whole map (replaces the stored one); absent = unchanged. */
+  readonly coinChoices?: CoinChoices;
+  readonly coinDismissed?: readonly string[];
 }
 
 export function defaultSettings(userId: string): UserSettings {
@@ -64,7 +72,8 @@ export function defaultSettings(userId: string): UserSettings {
     dateFormat: 'dd.MM.yyyy',
     onlineRates: true,
     sealedKeys: { coingecko: null, etherscan: null },
-    coingeckoIds: {},
+    coinChoices: {},
+    coinDismissed: [],
     updatedAt: null,
   };
 }

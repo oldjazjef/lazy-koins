@@ -150,12 +150,21 @@ export interface EstvCandidate {
   readonly valorNumber: string | null;
 }
 
+/**
+ * Why an asset got no ESTV value although the Kursliste has entries for its ticker:
+ * `several` = several equally good entries; `coinMismatch` = the user chose a coin for the ticker
+ * and no entry carries that coin's name; `ambiguousSymbol` = the ticker stands for several coins
+ * (`AMBIGUOUS_SYMBOLS`) and no coin is chosen yet.
+ */
+export type EstvAmbiguity = 'several' | 'coinMismatch' | 'ambiguousSymbol';
+
 export interface EstvMatchResult {
   /** Asset → the Kursliste entry it takes its 31.12. value from. */
   readonly matched: readonly { asset: string; rate: EstvRate }[];
-  /** Assets with several equally good entries: no value, the user decides (override). */
+  /** Assets with entries but no safe pick: no value, the user decides (coin / override). */
   readonly ambiguous: readonly {
     asset: string;
+    reason: EstvAmbiguity;
     candidates: readonly EstvCandidate[];
   }[];
   /** Assets without an entry: the other sources apply (F7.4). */
@@ -171,6 +180,11 @@ export interface EstvMatchResult {
  *    (`knownNames`, e.g. the CoinGecko id `bitcoin` → "Bitcoin"); still not exactly one → ambiguous;
  * 3. no ticker → an entry whose name is the asset (`POLKADOT` → "Polkadot"), if exactly one.
  *
+ * A coin the user chose (`requiredNames`: asset → the chosen coin's name) is binding: an entry —
+ * also a single ticker hit — is only taken when its name is that coin's (normalised compare),
+ * else `coinMismatch`. A ticker in `unresolved` (several coins, none chosen) takes nothing
+ * (`ambiguousSymbol`).
+ *
  * Ambiguous assets get **no** value — a wrong Steuerwert is worse than none (open item).
  */
 export function matchEstvAssets(
@@ -179,6 +193,8 @@ export function matchEstvAssets(
   options: {
     readonly knownNames?: Readonly<Record<string, string>>;
     readonly extraAliases?: Readonly<Record<string, readonly string[]>>;
+    readonly requiredNames?: Readonly<Record<string, string>>;
+    readonly unresolved?: readonly string[];
   } = {},
 ): EstvMatchResult {
   const listed = rates.filter((r) => r.kind !== 'fx');
@@ -191,7 +207,22 @@ export function matchEstvAssets(
     if (name) byName.set(name, [...(byName.get(name) ?? []), rate]);
   }
   const matched: { asset: string; rate: EstvRate }[] = [];
-  const ambiguous: { asset: string; candidates: EstvCandidate[] }[] = [];
+  const ambiguous: {
+    asset: string;
+    reason: EstvAmbiguity;
+    candidates: EstvCandidate[];
+  }[] = [];
+  const unresolved = new Set(
+    (options.unresolved ?? []).map((a) => a.toUpperCase()),
+  );
+  const candidatesOf = (list: readonly EstvRate[]): EstvCandidate[] =>
+    list
+      .map((c) => ({
+        symbol: c.symbol,
+        name: c.name,
+        valorNumber: c.valorNumber,
+      }))
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   const unmatched: string[] = [];
   const sortedAssets = [...new Set(assets.map((a) => a.toUpperCase()))].sort();
   for (const asset of sortedAssets) {
@@ -207,6 +238,35 @@ export function matchEstvAssets(
     }
     if (candidates.length === 0) {
       candidates = byName.get(normaliseName(asset)) ?? [];
+    }
+    const required = options.requiredNames?.[asset];
+    if (candidates.length > 0 && required !== undefined) {
+      // The chosen coin decides — also over a single ticker hit (another coin's Steuerwert).
+      const fitting = candidates.filter(
+        (c) => normaliseName(c.name) === normaliseName(required),
+      );
+      const distinct = new Set(
+        fitting.map((c) => c.valorNumber ?? c.ictaxId ?? c.name),
+      );
+      const [first] = fitting;
+      if (first && distinct.size === 1) {
+        matched.push({ asset, rate: first });
+      } else {
+        ambiguous.push({
+          asset,
+          reason: fitting.length > 1 ? 'several' : 'coinMismatch',
+          candidates: candidatesOf(candidates),
+        });
+      }
+      continue;
+    }
+    if (candidates.length > 0 && unresolved.has(asset)) {
+      ambiguous.push({
+        asset,
+        reason: 'ambiguousSymbol',
+        candidates: candidatesOf(candidates),
+      });
+      continue;
     }
     if (candidates.length > 1) {
       const known = options.knownNames?.[asset];
@@ -228,13 +288,8 @@ export function matchEstvAssets(
     } else if (candidates.length > 1) {
       ambiguous.push({
         asset,
-        candidates: candidates
-          .map((c) => ({
-            symbol: c.symbol,
-            name: c.name,
-            valorNumber: c.valorNumber,
-          }))
-          .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
+        reason: 'several',
+        candidates: candidatesOf(candidates),
       });
     } else {
       unmatched.push(asset);

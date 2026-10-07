@@ -18,9 +18,6 @@ import {
 } from './dto/settings.dto';
 import { SettingsService } from './settings.service';
 
-const SYMBOL = /^[A-Za-z0-9.]{1,40}$/;
-const COINGECKO_ID = /^[a-z0-9-]{1,100}$/;
-
 @ApiTags('settings')
 @ApiBearerAuth(BEARER_SCHEME)
 @Controller('settings')
@@ -48,18 +45,6 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateSettingsDto,
   ): Promise<SettingsResponseDto> {
-    const coingeckoIds = dto.coingeckoIds
-      ? Object.fromEntries(
-          Object.entries(dto.coingeckoIds)
-            .filter(
-              ([symbol, id]) =>
-                typeof id === 'string' &&
-                SYMBOL.test(symbol) &&
-                COINGECKO_ID.test(id),
-            )
-            .map(([symbol, id]) => [symbol.toUpperCase(), id]),
-        )
-      : undefined;
     return SettingsResponseDto.from(
       await this.settings.update(user.userId, {
         displayName: dto.displayName,
@@ -71,7 +56,6 @@ export class SettingsController {
         dateFormat: dto.dateFormat,
         onlineRates: dto.onlineRates,
         keys: dto.keys,
-        coingeckoIds,
       }),
     );
   }

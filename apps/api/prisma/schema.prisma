@@ -295,8 +295,10 @@ model UserSettings {
   /// `enc:v1:…` (secret-box.ts), or null.
   coingeckoKey String?  @map("coingecko_key")
   etherscanKey String?  @map("etherscan_key")
-  /// JSON object symbol → CoinGecko id, overriding the built-in table.
-  coingeckoIds String   @default("{}") @map("coingecko_ids")
+  /// JSON object symbol → the chosen coin { provider, id, name, symbol } (F7.4, coin-choice.ts).
+  coinChoices  String   @default("{}") @map("coin_choices")
+  /// JSON array of tickers whose shared-code warning the user settled ("Passt so", F7.4).
+  coinDismissed String  @default("[]") @map("coin_dismissed")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -746,6 +748,25 @@ model EstvCheck {
   error     String?
 
   @@map("estv_check")
+}
+
+/// F7.4: the price provider's top coins by market cap (deployment-wide, refreshed at most daily
+/// when online) — which coins share a ticker ("Kürzel wird von mehreren Coins verwendet").
+model CoinMarket {
+  /// coingecko (CHECK in the migration).
+  provider      String
+  coinId        String   @map("coin_id")
+  /// Upper case.
+  symbol        String
+  name          String
+  marketCapRank Int      @map("market_cap_rank")
+  /// USD per unit at fetch time, plain decimal; null when unknown.
+  priceUsd      String?  @map("price_usd")
+  fetchedAt     DateTime @map("fetched_at")
+
+  @@id([provider, coinId])
+  @@index([provider, symbol])
+  @@map("coin_market")
 }
 
 /// F11.0s: where a user is in the setup wizard. One row per user, created on the first step

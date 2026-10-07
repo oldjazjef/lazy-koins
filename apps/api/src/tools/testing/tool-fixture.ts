@@ -144,7 +144,8 @@ export async function toolSetup() {
           dateFormat: 'dd.MM.yyyy',
           onlineRates: false,
           keys: { coingecko: PLANTED_SECRETS.coingeckoHint, etherscan: null },
-          coingeckoIds: {},
+          coinChoices: {},
+          coinDismissed: [],
           keyStorageAvailable: true,
         };
       },

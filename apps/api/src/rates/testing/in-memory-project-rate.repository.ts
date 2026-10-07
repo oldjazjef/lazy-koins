@@ -4,6 +4,13 @@ import type {
   RateKey,
   StoredRateEntry,
 } from '../domain/project-rate';
+import type {
+  CoinCandidate,
+  CoinProvider,
+  MarketCoin,
+} from '../domain/coin-choice';
+import { CoinMarketRepositoryPort } from '../ports/coin-market.repository.port';
+import { CoinDirectoryPort } from '../ports/coin-directory.port';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
 import {
   FiatPriceSourcePort,
@@ -47,6 +54,23 @@ export class InMemoryProjectRateRepository extends ProjectRateRepositoryPort {
   async delete(projectId: string, key: RateKey): Promise<boolean> {
     return this.rows.delete(keyOf(projectId, key));
   }
+
+  async deleteFetchedPrices(projectId: string, asset: string): Promise<number> {
+    let count = 0;
+    for (const [key, row] of this.rows) {
+      if (
+        row.projectId === projectId &&
+        row.kind === 'price' &&
+        row.asset === asset &&
+        row.source !== 'manual' &&
+        row.source !== 'estv'
+      ) {
+        this.rows.delete(key);
+        count += 1;
+      }
+    }
+    return count;
+  }
 }
 
 /** The window's ends and the 31.12. before its end — enough for a year-end lookup. */
@@ -69,6 +93,7 @@ export class FakeUsdSource extends UsdPriceSourcePort {
     this.calls.push(request);
     if (this.failFor.has(request.symbol)) {
       throw Object.assign(new Error('binance: request failed'), {
+        source: 'binance',
         status: null,
       });
     }
@@ -104,7 +129,9 @@ export class FakeFiatSource extends FiatPriceSourcePort {
   ): Promise<RateEntry[]> {
     this.calls.push(request);
     if (this.failWithStatus !== undefined) {
+      // Shaped like `RateSourceError` (source + status).
       throw Object.assign(new Error('coingecko: request failed'), {
+        source: 'coingecko',
         status: this.failWithStatus,
       });
     }
@@ -128,6 +155,139 @@ export class FakeFiatSource extends FiatPriceSourcePort {
       url: 'https://api.coingecko.com/api/v3/ping',
       millis: 1,
     };
+  }
+}
+
+/** Fake coin directory ("Coin wählen"): a fixed list, calls recorded — no network in tests. */
+export class FakeCoinDirectory extends CoinDirectoryPort {
+  readonly providers: readonly CoinProvider[] = ['coingecko'];
+  readonly calls: string[] = [];
+  /** Every call fails with this HTTP status (e.g. 429). */
+  failWithStatus: number | undefined;
+  readonly coins: CoinCandidate[] = [
+    {
+      provider: 'coingecko',
+      id: 'opinion',
+      name: 'Opinion',
+      symbol: 'OPN',
+      marketCapRank: 1191,
+    },
+    {
+      provider: 'coingecko',
+      id: 'open-ticketing-ecosystem',
+      name: 'OPEN Ticketing Ecosystem',
+      symbol: 'OPN',
+      marketCapRank: 3301,
+    },
+    {
+      provider: 'coingecko',
+      id: 'polkadot',
+      name: 'Polkadot',
+      symbol: 'DOT',
+      marketCapRank: 20,
+    },
+  ];
+
+  private fail(): void {
+    if (this.failWithStatus !== undefined) {
+      throw Object.assign(new Error('coingecko: request failed'), {
+        source: 'coingecko',
+        status: this.failWithStatus,
+      });
+    }
+  }
+
+  async search(
+    _provider: CoinProvider,
+    query: string,
+    options: { readonly apiKey?: string; readonly limit: number },
+  ): Promise<CoinCandidate[]> {
+    this.calls.push(`search:${query}`);
+    this.fail();
+    const q = query.toLowerCase();
+    return this.coins
+      .filter(
+        (c) =>
+          c.symbol.toLowerCase() === q ||
+          c.name.toLowerCase().includes(q) ||
+          c.id === q,
+      )
+      .slice(0, options.limit);
+  }
+
+  async find(
+    _provider: CoinProvider,
+    id: string,
+  ): Promise<CoinCandidate | undefined> {
+    this.calls.push(`find:${id}`);
+    this.fail();
+    return this.coins.find((c) => c.id === id);
+  }
+
+  /** `<platform>:<address>` → coin id, for `byContract`. */
+  readonly contracts = new Map<string, string>();
+
+  async byContract(
+    _provider: CoinProvider,
+    platform: string,
+    address: string,
+  ): Promise<CoinCandidate | undefined> {
+    this.calls.push(`contract:${platform}:${address}`);
+    this.fail();
+    const id = this.contracts.get(`${platform}:${address}`);
+    return id ? this.coins.find((c) => c.id === id) : undefined;
+  }
+
+  /** The market list `topCoins` answers (empty by default). */
+  market: MarketCoin[] = [];
+
+  async topCoins(
+    _provider: CoinProvider,
+    count: number,
+  ): Promise<MarketCoin[]> {
+    this.calls.push(`top:${count}`);
+    this.fail();
+    return this.market.filter((c) => c.marketCapRank <= count);
+  }
+}
+
+/** Port double: the deployment-wide market list over an array. */
+export class InMemoryCoinMarketRepository extends CoinMarketRepositoryPort {
+  rows: MarketCoin[] = [];
+  at: string | null = null;
+
+  async fetchedAt(): Promise<string | null> {
+    return this.at;
+  }
+
+  async listBySymbols(
+    provider: CoinProvider,
+    symbols: readonly string[],
+  ): Promise<MarketCoin[]> {
+    return this.rows.filter(
+      (r) => r.provider === provider && symbols.includes(r.symbol),
+    );
+  }
+
+  async listShared(
+    provider: CoinProvider,
+    maxRank: number,
+  ): Promise<MarketCoin[]> {
+    const relevant = this.rows.filter(
+      (r) => r.provider === provider && r.marketCapRank <= maxRank,
+    );
+    return relevant.filter(
+      (r) => relevant.filter((o) => o.symbol === r.symbol).length > 1,
+    );
+  }
+
+  async replace(
+    _provider: CoinProvider,
+    coins: readonly MarketCoin[],
+    fetchedAt: string,
+  ): Promise<void> {
+    this.rows = [...coins];
+    this.at = fetchedAt;
   }
 }
 

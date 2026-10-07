@@ -26,8 +26,10 @@ export interface RateKey {
 }
 
 /**
- * Symbol → CoinGecko coin id for the common assets; users add or override entries in their
- * settings (`coingeckoIds`).
+ * Symbol → CoinGecko coin id for the common assets: the CoinGecko fallback after Binance, the
+ * known coin name in the ESTV match and the suggestion in "Coin wählen". A coin the user chose
+ * (`settings.coinChoices`, `coin-choice.ts`) always wins. For a symbol in `AMBIGUOUS_SYMBOLS`
+ * the entry is only a suggestion — nothing is fetched until the user chose.
  */
 export const COINGECKO_IDS: Readonly<Record<string, string>> = {
   BTC: 'bitcoin',
@@ -81,6 +83,10 @@ export const COINGECKO_IDS: Readonly<Record<string, string>> = {
   NEO: 'neo',
   ZEC: 'zcash',
   DASH: 'dash',
+  // OPEN Ticketing Ecosystem (on-chain ticketing, onopen.xyz). Verified 07.10.2026 against
+  // CoinGecko: GET /api/v3/search?query=OPN and GET /api/v3/coins/open-ticketing-ecosystem →
+  // name "OPEN Ticketing Ecosystem", symbol "opn", homepage onopen.xyz. Not "opinion" (also OPN).
+  OPN: 'open-ticketing-ecosystem',
 };
 
 /**

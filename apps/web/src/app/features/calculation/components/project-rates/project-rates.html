@@ -128,20 +128,139 @@
     <li>
       <span
         hlmBadge
-        [variant]="asset.status === 'notFound' || asset.status === 'failed' ? 'destructive' : 'outline'"
+        [variant]="asset.status === 'fetched' || asset.status === 'cached' ? 'outline' : 'destructive'"
         >{{ asset.asset }} · {{ 'rates.status.' + asset.status | translate
         }}</span
       >
     </li>
     }
   </ul>
+  @if (summary.contracts?.length) {
+  <p class="text-muted-foreground mt-2 text-xs">
+    {{ 'rates.contracts' | translate: { assets: contractAssets(summary) } }}
+  </p>
+  }
 </div>
-} @if (!closed()) {
+}
+
+<section class="mb-6 flex flex-col gap-2" aria-labelledby="rate-assets-title">
+  <h3 id="rate-assets-title" class="font-medium">
+    {{ 'rates.pricing.title' | translate }}
+  </h3>
+  <p class="text-muted-foreground text-sm">
+    {{ 'rates.pricing.hint' | translate }}
+  </p>
+  @if (assetRows().length === 0) {
+  <lk-empty-state [message]="'rates.pricing.empty' | translate" />
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col class="w-36" />
+        <col />
+        <col class="hidden w-96 lg:table-column" />
+        <col class="w-14" />
+      </colgroup>
+      <thead hlmTHead>
+        <tr hlmTr>
+          <th hlmTh>{{ 'rates.pricing.fields.asset' | translate }}</th>
+          <th hlmTh>{{ 'rates.pricing.fields.source' | translate }}</th>
+          <th hlmTh class="hidden lg:table-cell">
+            {{ 'rates.pricing.fields.note' | translate }}
+          </th>
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody hlmTBody>
+        @for (row of assetPager.visible(); track row.asset) { @let shared =
+        sharedLine(row); @let candidates = candidatesLine(row);
+        <tr hlmTr class="align-top">
+          <td hlmTd class="max-w-0">
+            <span class="font-medium" [lkTruncate]="row.asset"
+              >{{ row.asset }}</span
+            >
+            @if (row.coin?.contract; as contract) { @let found =
+            'rates.pricing.byContract' | translate: { network: contract.network
+            };
+            <span class="text-muted-foreground text-xs" [lkTruncate]="found"
+              >{{ found }}</span
+            >
+            }
+          </td>
+          <td hlmTd class="max-w-0">
+            @let line = sourceLine(row);
+            <span
+              class="flex min-w-0 items-center gap-2"
+              [class.text-destructive]="row.pricing === 'ambiguous'"
+            >
+              <span [lkTruncate]="line">{{ line }}</span>
+              @if (row.overridden) {
+              <span hlmBadge variant="outline" class="shrink-0"
+                >{{ 'rates.pricing.overridden' | translate }}</span
+              >
+              }
+            </span>
+            @if (row.ignored.length > 0) { @let ignored =
+            'rates.pricing.ignored' | translate: { sources:
+            sourceNames(row.ignored) };
+            <span class="text-muted-foreground text-xs" [lkTruncate]="ignored"
+              >{{ ignored }}</span
+            >
+            } @if (shared) {
+            <span
+              class="text-xs lg:hidden"
+              [class.text-destructive]="row.shared?.level === 'ambiguous'"
+              [lkTruncate]="shared"
+              >{{ shared }}</span
+            >
+            }
+          </td>
+          <td hlmTd class="hidden whitespace-normal text-xs lg:table-cell">
+            @if (shared) {
+            <p
+              role="note"
+              [class.text-destructive]="row.shared?.level === 'ambiguous'"
+            >
+              {{ shared }}
+            </p>
+            } @if (candidates) {
+            <p class="text-muted-foreground">{{ candidates }}</p>
+            }
+          </td>
+          <td hlmTd class="lk-sticky-actions text-right">
+            <lk-row-actions
+              [actions]="assetActions().get(row.asset) ?? []"
+              (selected)="assetAction($event, row)"
+            />
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <lk-paginator [pager]="assetPager" />
+  }
+</section>
+
+<lk-coin-picker
+  [symbol]="picking()?.asset ?? null"
+  [current]="picking()?.coin ?? null"
+  [busy]="savingCoin()"
+  (picked)="pickCoin($event)"
+  (closed)="picking.set(null)"
+/>
+
+@if (!closed()) {
 <section hlmCard class="mb-6">
   <div hlmCardHeader>
     <h3 hlmCardTitle>{{ 'rates.overrideTitle' | translate }}</h3>
     <p hlmCardDescription>
       {{ 'rates.overrideHint' | translate: { currency: view.currency } }}
+    </p>
+    <p hlmCardDescription role="note">
+      {{ 'rates.overrideOnlyDay' | translate }}
     </p>
   </div>
   <div hlmCardContent>

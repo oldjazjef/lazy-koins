@@ -88,6 +88,27 @@ describe('changeOf — URL/method → scope and project', () => {
     ],
     // F5.18 (desktop): the link to a web library; its test stores nothing.
     ['PUT', '/api/settings/library', { scope: 'settings' }],
+    // F7.4: a coin per ticker removes fetched prices in every open project + the dashboard cache.
+    [
+      'PUT',
+      '/api/settings/coins/OPN',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    [
+      'DELETE',
+      '/api/settings/coins/OPN',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    [
+      'PUT',
+      '/api/settings/coins/TON/dismissal',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
+    [
+      'POST',
+      '/api/projects/p1/rates/coin',
+      { projectId: null, scope: ['rates', 'settings'] },
+    ],
     ['POST', '/api/settings/library/test', null],
     ['POST', '/api/library', null],
     ['PUT', '/api/library/l1/rating', null],

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
   type Booking,
   type Correction,
@@ -26,7 +26,14 @@ import type { ImportMapping } from '../../mappings/domain/import-mapping';
 import { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
+import { marketAmbiguityOf } from '../../rates/application/coin-market.service';
+import {
+  type CoinChoices,
+  priceSourceUsable,
+} from '../../rates/domain/coin-choice';
+import { CoinMarketRepositoryPort } from '../../rates/ports/coin-market.repository.port';
 import { ProjectRateRepositoryPort } from '../../rates/ports/project-rate.repository.port';
+import { UserSettingsRepositoryPort } from '../../settings/ports/user-settings.repository.port';
 import { UserRateRepositoryPort } from '../ports/user-rate.repository.port';
 
 /** Where a record of the dashboard comes from (drill-down: file + row, link to the project). */
@@ -55,6 +62,10 @@ export interface DashboardSources {
     readonly rates: readonly RateEntry[];
   }[];
   readonly userRates: readonly RateEntry[];
+  /** F7.4: the user's coin per ticker (rates above are already filtered by it). */
+  readonly coinChoices: CoinChoices;
+  /** Tickers the market list shows without a clear leader (their Binance rows are filtered). */
+  readonly marketAmbiguous: readonly string[];
 }
 
 export interface DashboardRecords {
@@ -94,6 +105,9 @@ export class DashboardInputService {
     private readonly corrections: CorrectionRepositoryPort,
     private readonly userRates: UserRateRepositoryPort,
     private readonly inputs: CalculationInputService,
+    private readonly settings: UserSettingsRepositoryPort,
+    /** F7.4: the deployment-wide market list (shared tickers); absent in older specs. */
+    @Optional() private readonly market?: CoinMarketRepositoryPort,
   ) {}
 
   /**
@@ -123,6 +137,17 @@ export class DashboardInputService {
           : (currencies[0] ?? 'CHF');
       projects = owned.filter((p) => p.taxCurrency === selected);
     }
+    // F7.4: a by-ticker price (Binance) of a ticker with a chosen coin or of an ambiguous ticker
+    // may be another coin's — it never counts, in project rates nor in the rate cache (filtered
+    // at read time, so old rows stop counting at once and the cache key changes with a choice).
+    // Ambiguous tickers (hand-kept list or no clear leader in the market list) never get a
+    // Binance price here either — such a cached series is filtered, never shown as a value.
+    const coinChoices: CoinChoices =
+      (await this.settings.find(userId))?.coinChoices ?? {};
+    const marketAmbiguous = await marketAmbiguityOf(this.market, coinChoices);
+    const usable = (r: RateEntry) =>
+      r.kind !== 'price' ||
+      priceSourceUsable(r.asset, r.source, coinChoices, marketAmbiguous);
     const bySha = new Map<string, { file: ProjectFile; year: number }>();
     const corrections: ProjectCorrection[] = [];
     const projectRates: DashboardSources['projectRates'][number][] = [];
@@ -153,14 +178,16 @@ export class DashboardInputService {
       }
       projectRates.push({
         projectId: project.id,
-        rates: (await this.rates.listByProject(project.id)).map((r) => ({
-          kind: r.kind,
-          asset: r.asset,
-          currency: r.currency,
-          date: r.date,
-          value: r.value,
-          source: r.source,
-        })),
+        rates: (await this.rates.listByProject(project.id))
+          .filter(usable)
+          .map((r) => ({
+            kind: r.kind,
+            asset: r.asset,
+            currency: r.currency,
+            date: r.date,
+            value: r.value,
+            source: r.source,
+          })),
       });
     }
     const files = [...bySha.values()]
@@ -184,7 +211,9 @@ export class DashboardInputService {
       mappings,
       corrections,
       projectRates,
-      userRates: await this.userRates.listByUser(userId),
+      userRates: (await this.userRates.listByUser(userId)).filter(usable),
+      coinChoices,
+      marketAmbiguous: [...marketAmbiguous.keys()].sort(compareText),
     };
   }
 
@@ -232,6 +261,10 @@ export class DashboardInputService {
             `${r.kind}|${r.asset}|${r.currency}|${r.date}|${r.source}|${r.value}`,
         )
         .sort(compareText),
+      coins: Object.entries(sources.coinChoices)
+        .map(([symbol, c]) => `${symbol}|${c.provider}|${c.id}`)
+        .sort(compareText),
+      ambiguous: sources.marketAmbiguous,
     };
     return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
   }

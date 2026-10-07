@@ -57,6 +57,17 @@ const RULES: readonly (readonly [
     (m) => ({ projectId: m[1], scope: 'notifications' }),
   ],
   [/^projects$/, () => ({ scope: 'projects' })],
+  // F7.4 "Coin wählen": the coin of a ticker is the user's — it removes that asset's fetched
+  // prices in every open project and the dashboard's cache, so every project, the dashboard
+  // (via `projects`) and Einstellungen › Kurse reload.
+  [
+    /^projects\/[^/]+\/rates\/coin$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['rates', 'settings'] }),
+  ],
+  [
+    /^settings\/coins\/[^/]+(\/dismissal)?$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['rates', 'settings'] }),
+  ],
   // A mapping saved from a project's file: the mappings page shows it, too.
   [
     /^projects\/([^/]+)\/files\/[^/]+\/ai\/mapping\/accept$/,

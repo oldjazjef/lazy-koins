@@ -1,3 +1,4 @@
+import type { AssetPricing, CoinChoice } from './coin.types';
 import type { BookingKind, Project } from './api.types';
 import type {
   DateFormat,
@@ -185,6 +186,7 @@ export const OPEN_ITEM_REASONS = [
   'positionWithoutPrice',
   'incomeWithoutPrice',
   'oneOffWithoutPrice',
+  'ambiguousPrice',
   'unclassifiedBookings',
   'walletNetworksNotAvailable',
   'walletNetworksUnchecked',
@@ -387,6 +389,8 @@ export interface RatesView {
   currency: string;
   online: boolean;
   series: RateSeries[];
+  /** F7.4: every priced asset and where its price comes from ("Coin wählen"). */
+  assets: AssetPricing[];
   manual: StoredRate[];
   /** F7.4a: the stored Kursliste of the tax year and the version in use. */
   estv: {
@@ -407,10 +411,19 @@ export interface EstvApplySummary {
   matched: { asset: string; symbol: string; name: string; value: string }[];
   ambiguous: {
     asset: string;
+    /** several entries · the chosen coin is not listed · the ticker stands for several coins */
+    reason: EstvAmbiguity;
     candidates: { symbol: string; name: string; valorNumber: string | null }[];
   }[];
   fx: string[];
 }
+
+export const ESTV_AMBIGUITIES = [
+  'several',
+  'coinMismatch',
+  'ambiguousSymbol',
+] as const;
+export type EstvAmbiguity = (typeof ESTV_AMBIGUITIES)[number];
 
 export const ESTV_PHASES = ['metadata', 'download', 'parse', 'store'] as const;
 export type EstvPhase = (typeof ESTV_PHASES)[number];
@@ -456,6 +469,8 @@ export const FETCH_STATUSES = [
   'cached',
   'notFound',
   'failed',
+  'ambiguous',
+  'noKey',
 ] as const;
 export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
@@ -476,6 +491,8 @@ export interface RefreshSummary {
     source: string | null;
     points: number;
   }[];
+  /** F6: wallet tokens identified by chain + contract in this refresh. */
+  contracts?: { asset: string; choice: CoinChoice }[];
 }
 
 export interface ManualRateRequest {
@@ -535,7 +552,8 @@ export interface Settings {
   onlineRates: boolean;
   /** Hints (`…abcd`) or null — never the key. */
   keys: { coingecko: string | null; etherscan: string | null };
-  coingeckoIds: Record<string, string>;
+  /** F7.4: the coin per ticker (`PUT|DELETE /settings/coins/:symbol`). */
+  coinChoices: Record<string, CoinChoice>;
   keyStorageAvailable: boolean;
 }
 
@@ -549,5 +567,4 @@ export interface UpdateSettingsRequest {
   dateFormat?: DateFormat;
   onlineRates?: boolean;
   keys?: { coingecko?: string | null; etherscan?: string | null };
-  coingeckoIds?: Record<string, string>;
 }

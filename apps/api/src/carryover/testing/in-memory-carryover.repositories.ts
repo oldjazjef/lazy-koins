@@ -205,4 +205,19 @@ export class InMemoryUserRateRepository extends UserRateRepositoryPort {
     }
     return count;
   }
+
+  async deletePrices(userId: string, asset: string): Promise<number> {
+    let count = 0;
+    for (const [key, row] of this.rows) {
+      if (
+        row.userId === userId &&
+        row.kind === 'price' &&
+        row.asset === asset
+      ) {
+        this.rows.delete(key);
+        count += 1;
+      }
+    }
+    return count;
+  }
 }

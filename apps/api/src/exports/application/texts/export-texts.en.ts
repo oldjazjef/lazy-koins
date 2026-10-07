@@ -74,6 +74,8 @@ export const EN_EXPORT_TEXTS: ExportTexts = {
       `${asset}: ${p('count')} income bookings without a price`,
     oneOffWithoutPrice: ({ where }) =>
       `${where}: one-off event without a price – add the ESTV price`,
+    ambiguousPrice: ({ asset }) =>
+      `${asset}: ambiguous price – the ticker stands for several coins; choose the coin under Rates`,
     unclassifiedBookings: ({ where, p }) =>
       `${where}: ${p('count')} bookings “${p('rawType')}” not classified`,
     walletNetworksNotAvailable: () =>

@@ -30,6 +30,9 @@
       </div>
 
       @switch (form.controls.type.value) { @case ('price_override') {
+      <p class="text-muted-foreground col-span-full text-sm" role="note">
+        {{ 'rates.overrideOnlyDay' | translate }}
+      </p>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-asset"
           >{{ 'corrections.fields.asset' | translate }}</label

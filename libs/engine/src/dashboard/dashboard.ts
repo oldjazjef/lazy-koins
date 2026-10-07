@@ -219,6 +219,11 @@ export interface DashboardHolding {
   readonly quantity: string;
   /** CHF per unit at the period end (Stichtag), null = no price. */
   readonly priceChf: string | null;
+  /**
+   * Where that price comes from: a rate source (`binance`, `coingecko`, `ecb`), `manual`
+   * (override), `estv`, `record` (the file's own price), `pegged`, `fixed`; null = no price.
+   */
+  readonly priceSource: string | null;
   readonly valueChf: string | null;
   readonly status: DashboardHoldingStatus;
   /** CHF per unit over the period, evenly sampled; null = no price that day. */
@@ -347,6 +352,15 @@ export function dashboard(input: DashboardInput): DashboardResult {
     prices.set(key, value);
     return value;
   };
+  /** Where the price at `date` comes from (`binance`, `coingecko`, `manual`, `estv`, `record`, …). */
+  const sourceOf = (asset: string, date: string): string | null =>
+    unitPriceChf(
+      table,
+      rules,
+      asset,
+      date,
+      ownPrices.get(`${asset}|${date}`) ?? {},
+    )?.source ?? null;
 
   // --- Daily balances (rule 3 for accounts without bookings) ---
   const dayBefore = addDays(from, -1);
@@ -580,6 +594,7 @@ export function dashboard(input: DashboardInput): DashboardResult {
         asset,
         quantity: toDecimalString(quantity),
         priceChf: price === null ? null : toDecimalString(price),
+        priceSource: price === null ? null : sourceOf(asset, to),
         valueChf:
           status === 'ok' && price !== null
             ? toDecimalString(quantity.times(price))

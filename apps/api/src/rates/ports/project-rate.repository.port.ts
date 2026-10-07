@@ -20,4 +20,13 @@ export abstract class ProjectRateRepositoryPort {
 
   /** Removes one stored rate; `false` when there was none. */
   abstract delete(projectId: string, key: RateKey): Promise<boolean>;
+
+  /**
+   * Removes the **fetched** prices of `asset` (every source but `manual` and `estv`) — after a coin
+   * was chosen for the symbol they may be another coin's (F7.4). Returns how many.
+   */
+  abstract deleteFetchedPrices(
+    projectId: string,
+    asset: string,
+  ): Promise<number>;
 }

@@ -642,6 +642,42 @@ export function calculate(input: CalculationInput): CalculationResult {
       recordIds: lines.map((l) => l.bookingId),
     });
   }
+  // F7.4: a ticker of several coins without a chosen coin — never a silent price; one item per
+  // asset that matters this year (a position at 31.12., income or a one-off event).
+  // Fiat and USD-pegged assets are never priced by ticker (live 07.10.2026: the market list
+  // shares BUSD between two coins) — no item for them.
+  const ambiguous = new Set(
+    (input.ambiguousAssets ?? [])
+      .map((a) => a.toUpperCase())
+      .filter(
+        (a) =>
+          !input.rules.usdPegged.includes(a) && !input.rules.fiat.includes(a),
+      ),
+  );
+  for (const asset of [...ambiguous].sort(compareText)) {
+    const ids = new Set<string>();
+    for (const p of positions)
+      if (p.asset === asset && p.status !== 'spam')
+        p.recordIds.forEach((id) => ids.add(id));
+    for (const l of income)
+      if (l.asset === asset && l.status !== 'spam') ids.add(l.bookingId);
+    for (const e of oneOffEvents)
+      if (e.asset === asset) e.recordIds.forEach((id) => ids.add(id));
+    if (ids.size === 0) continue;
+    items.missingPrices.push({
+      key: `ambiguousPrice:${asset}`,
+      check: 'missingPrices',
+      reason: 'ambiguousPrice',
+      light: 'yellow',
+      platform: null,
+      accountId: null,
+      asset,
+      date: null,
+      params: {},
+      impactChf: null,
+      recordIds: [...ids].sort(compareText),
+    });
+  }
   for (const event of oneOffEvents.filter(
     (e) => e.valueChf === null && e.incomeLineId === null,
   )) {

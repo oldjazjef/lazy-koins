@@ -3,7 +3,6 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
-  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -92,16 +91,6 @@ export class UpdateSettingsDto {
   @ValidateNested()
   @Type(() => SettingsKeysDto)
   keys?: SettingsKeysDto;
-
-  @ApiPropertyOptional({
-    description:
-      'Symbol → CoinGecko id, e.g. { "POL": "polygon-ecosystem-token" }',
-    type: 'object',
-    additionalProperties: { type: 'string' },
-  })
-  @IsOptional()
-  @IsObject()
-  coingeckoIds?: Record<string, string>;
 }
 
 /** Body of a key test: the typed key (unsaved, never stored); omitted = the stored key. */
@@ -146,15 +135,31 @@ export class SettingsResponseDto {
     additionalProperties: { type: 'string', nullable: true },
   })
   keys!: Record<string, string | null>;
-  @ApiProperty({ type: 'object', additionalProperties: { type: 'string' } })
-  coingeckoIds!: Record<string, string>;
+  @ApiProperty({
+    description:
+      'F7.4: symbol → the chosen coin { provider, id, name, symbol } (changed via /settings/coins/:symbol)',
+    type: 'object',
+    additionalProperties: { type: 'object' },
+  })
+  coinChoices!: Record<
+    string,
+    { provider: string; id: string; name: string | null; symbol: string | null }
+  >;
+  @ApiProperty({
+    type: [String],
+    description: 'Tickers whose shared-code warning was settled ("Passt so")',
+  })
+  coinDismissed!: string[];
   @ApiProperty() keyStorageAvailable!: boolean;
 
   static from(view: SettingsView): SettingsResponseDto {
     return {
       ...view,
       keys: { ...view.keys },
-      coingeckoIds: { ...view.coingeckoIds },
+      coinChoices: Object.fromEntries(
+        Object.entries(view.coinChoices).map(([k, v]) => [k, { ...v }]),
+      ),
+      coinDismissed: [...view.coinDismissed],
     };
   }
 }

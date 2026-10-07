@@ -250,6 +250,20 @@ describe('carry-over persistence', () => {
         user.id,
       ),
     ).rejects.toThrow(/CHECK constraint failed/);
+    // F7.4: a chosen coin removes every cached price of that asset — only of this user.
+    const other = await newUser();
+    await userRates.upsertMany(other.id, [entry]);
+    await userRates.upsertMany(user.id, [{ ...entry, asset: 'ETH' }]);
+    expect(await userRates.deletePrices(user.id, 'DOT')).toBe(2);
+    expect((await userRates.listByUser(user.id)).map((r) => r.asset)).toEqual([
+      'ETH',
+    ]);
+    expect(await userRates.listByUser(other.id)).toHaveLength(1);
+    await userRates.upsertMany(user.id, [
+      { ...entry, value: '5.5' },
+      { ...entry, currency: 'EUR' },
+    ]);
+    await userRates.deletePrices(user.id, 'ETH');
     const project = await projects.create(user.id, {
       name: 'P',
       taxYear: 2025,

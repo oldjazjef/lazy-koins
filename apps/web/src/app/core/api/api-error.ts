@@ -48,6 +48,9 @@ export const API_ERROR_CODES = [
   // F11.0u / F5.20: several mappings at once.
   'duplicateMapping',
   'libraryCopy',
+  // F7.4 "Coin wählen": the provider does not know the id / could not be reached.
+  'unknownCoin',
+  'coinProviderFailed',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

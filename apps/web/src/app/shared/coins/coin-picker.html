@@ -1,0 +1,134 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="w-full sm:max-w-2xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'coins.picker.title' | translate: { asset: ticker() || '…' } }}
+      </h3>
+      <p hlmDialogDescription>{{ 'coins.picker.description' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-4">
+        <form class="lk-form-row" (submit)="$event.preventDefault(); search()">
+          @if (editableSymbol()) {
+          <div class="lk-field">
+            <label
+              hlmLabel
+              for="coin-picker-symbol"
+              [title]="'coins.fields.symbol' | translate"
+              >{{ 'coins.fields.symbol' | translate }}</label
+            >
+            <input
+              hlmInput
+              id="coin-picker-symbol"
+              type="text"
+              autocomplete="off"
+              [value]="ticker()"
+              (input)="setTicker($event)"
+            />
+          </div>
+          }
+          <div class="lk-field">
+            <label
+              hlmLabel
+              for="coin-picker-query"
+              [title]="'coins.picker.query' | translate"
+              >{{ 'coins.picker.query' | translate }}</label
+            >
+            <input
+              hlmInput
+              id="coin-picker-query"
+              type="search"
+              autocomplete="off"
+              [value]="query()"
+              (input)="setQuery($event)"
+            />
+          </div>
+          <div class="lk-field">
+            <button
+              hlmBtn
+              variant="outline"
+              type="submit"
+              class="w-full"
+              [disabled]="searching() || !query().trim()"
+            >
+              {{ 'coins.picker.search' | translate }}
+            </button>
+          </div>
+        </form>
+
+        @if (ambiguous()) {
+        <p class="text-muted-foreground text-sm" role="note">
+          {{ 'coins.picker.ambiguous' | translate }}
+        </p>
+        } @if (error(); as error) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ error.key | translate: error.params }}
+        </p>
+        } @if (searching()) {
+        <p class="text-muted-foreground text-sm" aria-live="polite">
+          {{ 'coins.picker.searching' | translate }}
+        </p>
+        } @else if (searched() && results().length === 0 && !error()) {
+        <p class="text-muted-foreground text-sm">
+          {{ 'coins.picker.none' | translate }}
+        </p>
+        } @if (results().length > 0) {
+        <ul
+          class="flex flex-col gap-1"
+          role="listbox"
+          [attr.aria-label]="'coins.picker.results' | translate"
+        >
+          @for (coin of results(); track coin.id) {
+          <li>
+            <button
+              type="button"
+              role="option"
+              class="lk-panel flex w-full min-w-0 items-center gap-3 px-3 py-2 text-left text-sm"
+              [class.border-primary]="selected()?.id === coin.id"
+              [attr.aria-selected]="selected()?.id === coin.id"
+              (click)="select(coin)"
+            >
+              <span class="flex min-w-0 flex-1 flex-col">
+                <span class="truncate font-medium">{{ coin.name }}</span>
+                <span class="text-muted-foreground truncate text-xs"
+                  >{{ coin.symbol }} · {{ coin.id }}</span
+                >
+              </span>
+              @if (coin.id === suggested()) {
+              <span hlmBadge variant="secondary" class="shrink-0"
+                >{{ 'coins.picker.suggested' | translate }}</span
+              >
+              } @if (coin.id === current()?.id) {
+              <span hlmBadge variant="outline" class="shrink-0"
+                >{{ 'coins.picker.current' | translate }}</span
+              >
+              }
+              <span
+                class="text-muted-foreground w-24 shrink-0 text-right text-xs tabular-nums"
+              >
+                @if (coin.marketCapRank !== null) { {{ 'coins.picker.rank' |
+                translate: { rank: coin.marketCapRank } }} } @else { {{
+                'coins.picker.noRank' | translate }} }
+              </span>
+            </button>
+          </li>
+          }
+        </ul>
+        }
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!selected() || !tickerValid() || busy()"
+        (click)="confirm()"
+      >
+        {{ 'coins.picker.use' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

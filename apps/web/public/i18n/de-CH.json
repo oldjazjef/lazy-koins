@@ -1168,7 +1168,8 @@
       "walletNetworkNotSelected": "Auf diesem Netzwerk genutzt, aber für die Wallet nicht ausgewählt",
       "walletNetworkNotFetched": "Noch nicht abgerufen – im Tab Wallets „Abrufen“",
       "walletManualBalanceMissing": "Saldo per 31.12. fehlt – manuell mit Beleg erfassen",
-      "walletFetchFailed": "Abruf fehlgeschlagen – Schlüssel/Plan prüfen oder Saldo manuell mit Beleg erfassen"
+      "walletFetchFailed": "Abruf fehlgeschlagen – Schlüssel/Plan prüfen oder Saldo manuell mit Beleg erfassen",
+      "ambiguousPrice": "Kurs mehrdeutig – das Kürzel steht für mehrere Coins. Im Tab Kurse den Coin wählen."
     },
     "comparison": {
       "title": "Vergleich mit {{year}}",
@@ -1294,14 +1295,41 @@
       "fetched": "abgerufen",
       "cached": "schon gespeichert",
       "notFound": "nicht gefunden",
-      "failed": "Fehler"
+      "failed": "Fehler",
+      "ambiguous": "mehrdeutig – Coin wählen",
+      "noKey": "CoinGecko-Schlüssel fehlt"
     },
     "errors": {
       "asset": "Bitte ein Asset-Kürzel eingeben.",
       "date": "Bitte ein Datum wählen.",
       "value": "Bitte einen positiven Wert mit Punkt als Dezimaltrennzeichen eingeben."
     },
-    "estvNotApplicable": "Die ESTV-Kursliste gilt nur für Projekte in CHF – dieses Projekt ist in {{currency}}. Kurse kommen von der EZB, Binance und CoinGecko."
+    "estvNotApplicable": "Die ESTV-Kursliste gilt nur für Projekte in CHF – dieses Projekt ist in {{currency}}. Kurse kommen von der EZB, Binance und CoinGecko.",
+    "overrideOnlyDay": "Gilt nur für dieses Datum; bei falschem Kursverlauf „Coin wählen“.",
+    "contracts": "Per Contract erkannt: {{assets}}",
+    "pricing": {
+      "title": "Kursquelle je Asset",
+      "hint": "Ein Kürzel ist kein Coin. Stimmt ein Kursverlauf nicht, wähle den Coin, den du hältst: Sein Kurs ersetzt dann den Kurs per Kürzel – auch im Dashboard.",
+      "empty": "Noch keine Assets mit Kurs – zuerst berechnen.",
+      "byTicker": "nach Kürzel",
+      "chosen": "{{name}} ({{provider}})",
+      "byContract": "per Contract erkannt ({{network}})",
+      "ambiguous": "Kurs mehrdeutig – Coin wählen",
+      "noSource": "noch kein Kurs",
+      "ignored": "nicht verwendet: {{sources}}",
+      "overridden": "+ Überschreibung",
+      "shared": "Kürzel {{symbol}} wird von mehreren Coins verwendet — verwendet: {{name}} ({{source}}). Prüfen?",
+      "sharedAmbiguous": "Kürzel {{symbol}} wird von mehreren Coins verwendet — kein Kurs, bis du den Coin wählst.",
+      "candidates": "Coins mit diesem Kürzel: {{coins}}",
+      "choose": "Falscher Kurs? Coin wählen",
+      "dismiss": "Passt so",
+      "removeCoin": "Coin-Zuordnung entfernen",
+      "fields": {
+        "asset": "Asset",
+        "source": "Kursquelle",
+        "note": "Hinweis"
+      }
+    }
   },
   "exports": {
     "createTitle": "Auszug erstellen",
@@ -1660,7 +1688,8 @@
       "endsEarly": "Lücke am Ende",
       "noYearEndBalance": "Kein Bestand per 31.12.",
       "unrecognisedFile": "Nicht erkannte Datei",
-      "rowErrors": "Datei mit Zeilenfehlern"
+      "rowErrors": "Datei mit Zeilenfehlern",
+      "sharedTicker": "Kürzel mehrfach vergeben"
     },
     "severity": {
       "info": "Info",
@@ -1680,11 +1709,14 @@
       "endsEarlyZero": "Buchungen enden am {{date}}; danach Saldo 0 – nichts kann fehlen.",
       "noYearEndBalance": "Kein Kontoauszug per 31.12.{{year}} – der Saldo laut Buchungen wird nicht geprüft.",
       "unrecognisedFile": "Kein Mapping – die Datei fliesst nicht in die Berechnung ein.",
-      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden."
+      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden.",
+      "sharedTicker": "{{asset}}: {{count}} Coins verwenden dieses Kürzel – Kurs prüfen."
     },
     "howTo": {
       "unrecognisedFile": "Für den Aufbau dieser Datei gibt es noch kein Mapping. Lass es von der AI erstellen, ordne ein vorhandenes zu oder markiere die Datei als «nur Beleg».",
-      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch."
+      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch.",
+      "sharedTicker": "Das Kürzel {{asset}} wird von mehreren Coins verwendet. Der Kurs kommt per Kürzel (Binance) vom bekanntesten Coin. Prüfen? Im Tab Kurse „Coin wählen“ oder „Passt so“.",
+      "sharedTickerAmbiguous": "Das Kürzel {{asset}} wird von mehreren ähnlich grossen Coins verwendet – es wird kein Kurs per Kürzel abgerufen. Im Tab Kurse „Coin wählen“."
     },
     "actions": {
       "upload": "Datei hochladen",
@@ -1696,7 +1728,8 @@
       "assign": "Mapping zuordnen",
       "rowErrors": "Zeilenfehler ansehen",
       "markOk": "Als in Ordnung markieren",
-      "reopen": "Wieder öffnen"
+      "reopen": "Wieder öffnen",
+      "rates": "Zu den Kursen"
     },
     "dismiss": {
       "title": "Hinweis als in Ordnung markieren",
@@ -1714,6 +1747,8 @@
       "column": "Spalte",
       "problem": "Problem"
     },
+    "coins": "Coins mit diesem Kürzel: {{coins}}",
+    "ratesGroup": "Kurse",
     "disabledFiles": "Deaktiviert und deshalb nicht berücksichtigt: {{names}}"
   },
   "notifications": {
@@ -1888,7 +1923,8 @@
     "libraryTake": "Mapping aus der Bibliothek übernehmen",
     "suggestionTake": "Vorgeschlagenes Mapping übernehmen",
     "mappingImport": "Mappings werden hochgeladen",
-    "libraryBulkPublish": "Mappings werden veröffentlicht"
+    "libraryBulkPublish": "Mappings werden veröffentlicht",
+    "coin": "Coin für {{asset}} wird gespeichert"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1949,6 +1985,12 @@
         "ok": "bewertet",
         "missingPrice": "kein Kurs",
         "negative": "negativ"
+      },
+      "source": "Kursquelle",
+      "sourceOf": "Kurs von {{source}}",
+      "priceSource": {
+        "record": "Preis aus der Datei",
+        "fixed": "Steuerwährung"
       }
     },
     "card": {
@@ -2656,7 +2698,9 @@
       "libraryUrlInvalid": "Diese Adresse kann nicht verwendet werden.",
       "incompatibleSpec": "Dieses Mapping braucht eine neuere Version der App – aktualisiere lazy-koins.",
       "duplicateMapping": "Genau dieses Mapping hast du schon.",
-      "libraryCopy": "Eine Kopie aus der Bibliothek kann nicht als neuer Eintrag veröffentlicht werden."
+      "libraryCopy": "Eine Kopie aus der Bibliothek kann nicht als neuer Eintrag veröffentlicht werden.",
+      "unknownCoin": "Diesen Coin kennt der Kursanbieter nicht.",
+      "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -2868,5 +2912,45 @@
       "confirm": "Ich habe die {{count}} Mappings geprüft und will sie genau so veröffentlichen.",
       "submit": "{{count}} veröffentlichen"
     }
+  },
+  "coins": {
+    "settings": {
+      "title": "Coin je Kürzel",
+      "hint": "Ein Kürzel ist kein Coin: „OPN“ steht z. B. für OPEN Ticketing Ecosystem und für Opinion. Ist hier ein Coin hinterlegt, kommt sein Kurs nur vom gewählten Anbieter – nie per Kürzel von Binance. Beim Speichern prüft lazy-koins den Coin beim Anbieter.",
+      "empty": "Noch kein Coin hinterlegt – es gilt das Kürzel."
+    },
+    "fields": {
+      "symbol": "Kürzel",
+      "coin": "Coin",
+      "provider": "Anbieter"
+    },
+    "provider": {
+      "coingecko": "CoinGecko"
+    },
+    "add": "Coin hinterlegen",
+    "change": "Coin ändern",
+    "remove": "Zuordnung entfernen",
+    "picker": {
+      "title": "Coin für {{asset}} wählen",
+      "description": "Suche beim Kursanbieter nach Kürzel, Name oder ID und wähle den Coin, den du wirklich hältst. Sein Kursverlauf ersetzt den bisherigen.",
+      "query": "Suche (Kürzel, Name, ID)",
+      "search": "Suchen",
+      "ambiguous": "Dieses Kürzel steht für mehrere Coins – prüfe Name und Rang.",
+      "searching": "Suche läuft …",
+      "none": "Keine Coins gefunden.",
+      "results": "Gefundene Coins",
+      "suggested": "Vorschlag",
+      "current": "Aktuell",
+      "rank": "Rang {{rank}}",
+      "noRank": "ohne Rang",
+      "use": "Diesen Coin verwenden"
+    },
+    "searchFailed": "Die Suche beim Kursanbieter ist fehlgeschlagen.",
+    "saved": "Coin gespeichert",
+    "saveFailed": "Coin konnte nicht gespeichert werden",
+    "removed": "Zuordnung entfernt",
+    "removeFailed": "Zuordnung konnte nicht entfernt werden",
+    "chosen": "Coin gespeichert, Kurse neu abgerufen",
+    "dismissed": "Hinweis ausgeblendet"
   }
 }

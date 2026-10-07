@@ -24,6 +24,12 @@ import { registeredHostPdfPrinter } from './pdf/host-pdf.renderer';
 import { selectPdfRenderer } from './pdf/select-pdf-renderer';
 import { BinanceKlinesSource } from './rates/binance-klines.source';
 import { CoinGeckoSource } from './rates/coingecko.source';
+import { CoinGeckoDirectory } from './rates/coingecko-directory';
+import { SerialGate } from './rates/http-rate-client';
+import { CoinDirectoryPort } from '../rates/ports/coin-directory.port';
+
+/** One CoinGecko gate per process: the free plan allows ~30 calls a minute. */
+const COINGECKO_GATE = new SerialGate(2500);
 import { FrankfurterFxSource } from './rates/frankfurter-fx.source';
 import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
 
@@ -59,7 +65,15 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
       provide: UsdPriceSourcePort,
       useFactory: () => new BinanceKlinesSource(),
     },
-    { provide: FiatPriceSourcePort, useFactory: () => new CoinGeckoSource() },
+    // CoinGecko prices and its coin directory ("Coin wählen") share one gate (rate limit).
+    {
+      provide: FiatPriceSourcePort,
+      useFactory: () => new CoinGeckoSource(fetch, COINGECKO_GATE),
+    },
+    {
+      provide: CoinDirectoryPort,
+      useFactory: () => new CoinGeckoDirectory(COINGECKO_GATE),
+    },
     { provide: FxRateSourcePort, useFactory: () => new FrankfurterFxSource() },
     {
       provide: EstvKurslisteSourcePort,
@@ -104,6 +118,7 @@ import { IctaxKurslisteSource } from './rates/ictax/ictax-kursliste.source';
     AiCompletionPort,
     UsdPriceSourcePort,
     FiatPriceSourcePort,
+    CoinDirectoryPort,
     FxRateSourcePort,
     EstvKurslisteSourcePort,
     PdfRendererPort,

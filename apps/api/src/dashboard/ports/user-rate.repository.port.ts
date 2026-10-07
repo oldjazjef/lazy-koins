@@ -12,4 +12,10 @@ export abstract class UserRateRepositoryPort {
     userId: string,
     entries: readonly RateEntry[],
   ): Promise<number>;
+
+  /**
+   * Removes every cached price of `asset` (any source) — a coin chosen for the symbol makes them
+   * possibly another coin's (F7.4). Returns how many.
+   */
+  abstract deletePrices(userId: string, asset: string): Promise<number>;
 }
