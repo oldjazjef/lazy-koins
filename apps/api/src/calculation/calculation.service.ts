@@ -9,7 +9,9 @@ import {
   GetChecksQuery,
   GetFigureRecordsQuery,
   GetResultQuery,
+  GetResultStatusQuery,
   ListCorrectionsQuery,
+  type ResultStatus,
   type ResultView,
   SetCorrectionUndoneCommand,
   UpdateOpenItemCommand,
@@ -32,6 +34,10 @@ export class CalculationService {
 
   result(userId: string, projectId: string): Promise<ResultView> {
     return this.queries.execute(new GetResultQuery(userId, projectId));
+  }
+
+  resultStatus(userId: string, projectId: string): Promise<ResultStatus> {
+    return this.queries.execute(new GetResultStatusQuery(userId, projectId));
   }
 
   figureRecords(

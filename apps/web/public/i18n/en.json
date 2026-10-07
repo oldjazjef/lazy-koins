@@ -84,7 +84,9 @@
       "subtitle": "One project per tax year.",
       "new": "New project",
       "empty": "No projects yet. Create one for your tax year.",
-      "loadFailed": "Could not load projects."
+      "loadFailed": "Could not load projects.",
+      "stale": "out of date",
+      "staleTitle": "Data changed since the calculation – recalculate in the project"
     },
     "form": {
       "title": "New project",
@@ -105,6 +107,7 @@
     "detail": {
       "title": "Project",
       "subtitle": "Tax year {{year}}",
+      "stale": "Data changed since the last calculation – the result and checks still show the previous state.",
       "editTitle": "Details",
       "factsTitle": "Overview",
       "closedHint": "This project is closed and read-only. Reopen it to make changes.",

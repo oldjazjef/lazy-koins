@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -10,7 +10,8 @@ import type {
   ProjectSentStatus,
 } from '../../../../core/api/mail.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
+import { DataChanges } from '../../../../core/data/data-changes';
+import { dataChangesInterceptor } from '../../../../core/data/data-changes.interceptor';
 import {
   mailtoLink,
   selectedBytes,
@@ -73,7 +74,8 @@ async function setup() {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
-      provideHttpClient(),
+      // The app's DataChanges interceptor: a send/mark reports a change to the project.
+      provideHttpClient(withInterceptors([dataChangesInterceptor])),
       provideHttpClientTesting(),
       provideTranslateService(),
       SendToAdvisorService,
@@ -82,7 +84,7 @@ async function setup() {
   });
   const service = TestBed.inject(SendToAdvisorService);
   const http = TestBed.inject(HttpTestingController);
-  const events = TestBed.inject(ProjectSentEvents);
+  const events = TestBed.inject(DataChanges);
   service.projectId.set('p1');
   await settle();
   http.expectOne('/api/projects/p1/mail/log').flush([]);
@@ -130,7 +132,7 @@ describe('SendToAdvisorService', () => {
   it('sends the confirmed mail, sets F4.7 and tells the project page', async () => {
     const { service, http, events, notifications } = await setup();
     service.composition.set(composition());
-    const before = events.version();
+    const before = events.projectVersion('p1');
     const sent = service.send({
       to: 'treuhand@example.ch',
       ccMe: true,
@@ -159,7 +161,7 @@ describe('SendToAdvisorService', () => {
     });
     expect(await sent).toBe(true);
     expect(service.composition()).toBeNull();
-    expect(events.version()).toBe(before + 1);
+    expect(events.projectVersion('p1')).toBe(before + 1);
     expect(notifications.success).toHaveBeenCalledWith('mail.send.sent');
     await reloads(http);
     await settle();

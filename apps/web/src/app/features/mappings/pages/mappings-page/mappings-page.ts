@@ -83,7 +83,7 @@ export class MappingsPage {
   protected readonly addToProjectId = signal('');
 
   constructor() {
-    this.service.refresh();
+    this.service.follow();
   }
 
   protected setSort(value: string): void {

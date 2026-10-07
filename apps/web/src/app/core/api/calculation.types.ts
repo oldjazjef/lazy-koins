@@ -17,8 +17,18 @@ export interface ProjectListItem extends Project {
   wealthChf: string | null;
   incomeChf: string | null;
   calculatedAt: string | null;
+  /** F7.6: the data changed since that calculation — the figures are out of date. */
+  stale: boolean;
   /** F4.7: sent to the Treuhänder (null = not yet). */
   sent: ProjectSentSummary | null;
+}
+
+/** `GET /api/projects/:id/result/status` — the header's calculation line (F7.6). */
+export interface ResultStatus {
+  /** null = never calculated. */
+  calculatedAt: string | null;
+  /** The data changed since the latest calculation; false without one. */
+  stale: boolean;
 }
 
 export const INCOME_CATEGORIES = [

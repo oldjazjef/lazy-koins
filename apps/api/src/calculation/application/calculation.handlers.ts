@@ -119,10 +119,51 @@ export class GetResultHandler implements IQueryHandler<
     const files = await this.inputs.fileRefs(project.id);
     if (!snapshot) return { snapshot: null, stale: true, result: null, files };
     const { result, ...meta } = snapshot;
-    const stale =
-      meta.engineVersion !== ENGINE_VERSION ||
-      (await this.inputs.inputHash(project)) !== meta.inputHash;
+    const stale = await this.inputs.isStale(project, meta);
     return { snapshot: meta, stale, result, files };
+  }
+}
+
+/** The project header's line (F7.6): when it was calculated and whether that is out of date. */
+export interface ResultStatus {
+  /** null = never calculated. */
+  readonly calculatedAt: string | null;
+  /** The data changed since the latest calculation; false without one. */
+  readonly stale: boolean;
+}
+
+export class GetResultStatusQuery {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+  ) {}
+}
+
+/** Cheap: the snapshot's figures row and the input hash — no result JSON, no file read. */
+@QueryHandler(GetResultStatusQuery)
+export class GetResultStatusHandler implements IQueryHandler<
+  GetResultStatusQuery,
+  ResultStatus
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly inputs: CalculationInputService,
+    private readonly snapshots: CalculationSnapshotRepositoryPort,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+  }: GetResultStatusQuery): Promise<ResultStatus> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    const figures = (await this.snapshots.latestFigures([project.id])).get(
+      project.id,
+    );
+    if (!figures) return { calculatedAt: null, stale: false };
+    return {
+      calculatedAt: figures.calculatedAt,
+      stale: await this.inputs.isStale(project, figures),
+    };
   }
 }
 

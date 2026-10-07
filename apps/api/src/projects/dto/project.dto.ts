@@ -143,6 +143,12 @@ export class ProjectListItemDto extends ProjectResponseDto {
   calculatedAt!: string | null;
 
   @ApiProperty({
+    description:
+      'The data changed since that calculation (F7.6) — the figures are out of date; false without one',
+  })
+  stale!: boolean;
+
+  @ApiProperty({
     type: ProjectSentSummaryDto,
     nullable: true,
     description: 'F4.7: sent to the Treuhänder (null = not yet)',
@@ -150,12 +156,13 @@ export class ProjectListItemDto extends ProjectResponseDto {
   sent!: ProjectSentSummaryDto | null;
 
   static fromEntry(entry: ProjectListEntry): ProjectListItemDto {
-    const { figures, sent, ...project } = entry;
+    const { figures, sent, stale, ...project } = entry;
     return {
       ...ProjectResponseDto.from(project),
       wealthChf: figures?.wealthChf ?? null,
       incomeChf: figures?.incomeChf ?? null,
       calculatedAt: figures?.calculatedAt ?? null,
+      stale,
       sent,
     };
   }

@@ -92,7 +92,14 @@
           </span>
         </td>
         <td hlmTd class="text-right tabular-nums">
-          {{ project.wealthChf | lkChf: project.taxCurrency }}
+          {{ project.wealthChf | lkChf: project.taxCurrency }} @if
+          (project.stale) {
+          <span
+            class="lk-warning-text block text-xs"
+            [title]="'projects.list.staleTitle' | translate"
+            >{{ 'projects.list.stale' | translate }}</span
+          >
+          }
         </td>
         <td hlmTd class="hidden text-right tabular-nums md:table-cell">
           {{ project.incomeChf | lkChf: project.taxCurrency }}

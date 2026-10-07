@@ -22,6 +22,7 @@ import {
   type AiErrorInfo,
 } from '../../shared/ai/ai-error-details';
 import { AI_ERROR_CODES } from '../../shared/ai/ai-error-key';
+import { DATA_SCOPES, DataChanges } from '../data/data-changes';
 import { AssistantEvents } from './assistant-events';
 import { ChatContextService } from './chat-context.service';
 
@@ -42,6 +43,7 @@ export class ChatService {
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
   private readonly events = inject(AssistantEvents);
+  private readonly changes = inject(DataChanges);
   private readonly contextService = inject(ChatContextService);
 
   readonly open = signal(readOpen());
@@ -237,7 +239,14 @@ export class ChatService {
         },
       );
       this.conversation.set(view);
-      if (decision === 'confirm') this.events.changed(proposal.projectId);
+      // The confirm URL does not say what the tool changed: the proposal names its project
+      // (null = none/unknown → every project), and a tool may touch any area.
+      if (decision === 'confirm') {
+        this.changes.changed({
+          projectId: proposal.projectId,
+          scope: DATA_SCOPES,
+        });
+      }
     } catch (error) {
       const decided =
         error instanceof HttpErrorResponse && error.status === 409;

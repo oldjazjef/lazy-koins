@@ -88,6 +88,21 @@ export class CalculationInputService {
     return hashOf(project, await this.sources(project));
   }
 
+  /**
+   * F7.6: a snapshot is stale when another engine computed it or anything that decides the
+   * result changed since (files added/removed/reassigned, a mapping edited, corrections, rates,
+   * wallets, the tax currency, the previous year) — the one rule for result, list and header.
+   */
+  async isStale(
+    project: Project,
+    snapshot: { readonly inputHash: string; readonly engineVersion: number },
+  ): Promise<boolean> {
+    return (
+      snapshot.engineVersion !== ENGINE_VERSION ||
+      (await this.inputHash(project)) !== snapshot.inputHash
+    );
+  }
+
   async build(project: Project): Promise<AssembledInput> {
     const rules = projectRules(project);
     const sources = await this.sources(project);

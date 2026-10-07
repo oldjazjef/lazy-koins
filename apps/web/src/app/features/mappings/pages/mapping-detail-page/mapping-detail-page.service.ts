@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type {
   Mapping,
   MappingUsageProject,
@@ -58,6 +59,17 @@ export class MappingDetailPageService {
     const id = this.mappingId();
     return id ? apiUrl(`/mappings/${id}/usage`) : undefined;
   });
+
+  constructor() {
+    // "Wird genutzt in" follows re-applies and files added/removed in any project. The mapping
+    // itself is not reloaded under the open editor — this page is where it is changed.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () =>
+        changes.globalVersion('mappings') + changes.globalVersion('projects'),
+      [this.usage],
+    );
+  }
 
   readonly notFound = computed(() => {
     const error = this.mapping.error() as { status?: number } | undefined;
@@ -179,7 +191,6 @@ export class MappingDetailPageService {
           : 'mappings.detail.reapplied',
         { reapplied: result.reapplied, skipped: result.skippedClosed },
       );
-      this.usage.reload();
     } catch {
       // The runner has shown the failure.
     }

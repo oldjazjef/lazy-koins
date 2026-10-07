@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
+import { CalculationModule } from '../calculation/calculation.module';
 import { CreateProjectHandler } from './application/commands/create-project.command';
 import { DeleteProjectHandler } from './application/commands/delete-project.command';
 import { UpdateProjectHandler } from './application/commands/update-project.command';
@@ -19,7 +20,8 @@ import { ProjectsService } from './projects.service';
  * bound in the global `PersistenceModule`.
  */
 @Module({
-  imports: [CqrsModule],
+  // The list tells stale figures with the calculation's input hash (F7.6).
+  imports: [CqrsModule, CalculationModule],
   controllers: [ProjectsController, ProjectSentController],
   providers: [
     ProjectsService,

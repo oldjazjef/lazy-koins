@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type { Project } from '../../../../core/api/api.types';
 import {
   type AppNotification,
@@ -28,6 +29,7 @@ export type StatusFilter = (typeof STATUS_FILTERS)[number];
 @Injectable({ providedIn: 'root' })
 export class NotificationsPageService {
   private readonly centre = inject(NotificationCentreService);
+  private readonly changes = inject(DataChanges);
 
   readonly kind = signal<NotificationKind | ''>('');
   readonly projectId = signal('');
@@ -74,18 +76,30 @@ export class NotificationsPageService {
     await this.centre.open(notification);
   }
 
+  /**
+   * Called in the page's constructor: reloads now and after every change to notifications (the
+   * row actions, the bell's) or to a project (the API raises/resolves by topic) while on screen.
+   */
+  follow(): void {
+    this.refresh();
+    reloadOn(
+      () =>
+        this.changes.globalVersion('notifications') +
+        this.changes.globalVersion('projects'),
+      [this.notifications],
+    );
+    reloadOn(() => this.changes.globalVersion('projects'), [this.projects]);
+  }
+
   async markRead(notification: AppNotification): Promise<void> {
     await this.centre.markRead(notification);
-    this.refresh();
   }
 
   async dismiss(notification: AppNotification): Promise<void> {
     await this.centre.dismiss(notification);
-    this.refresh();
   }
 
   async markAllRead(): Promise<void> {
     await this.centre.markAllRead();
-    this.refresh();
   }
 }

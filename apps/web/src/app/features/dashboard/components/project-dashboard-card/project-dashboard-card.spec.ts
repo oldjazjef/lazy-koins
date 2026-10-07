@@ -5,8 +5,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
-import { AssistantEvents } from '../../../../core/assistant/assistant-events';
-import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
+import { DataChanges } from '../../../../core/data/data-changes';
 import { ProjectDashboardCard } from './project-dashboard-card';
 
 const settle = async () => {
@@ -35,7 +34,10 @@ const VIEW = {
 
 const isDashboard = (req: { url: string }) => req.url.endsWith('/dashboard');
 
-/** Regression (07.10.2026): after "Neu berechnen" the project's chart kept the old values. */
+/**
+ * Regression (07.10.2026): after "Neu berechnen" the project's chart kept the old values; and
+ * (08.10.2026) after removing a file etc. — every change must update it.
+ */
 describe('ProjectDashboardCard', () => {
   async function setup() {
     TestBed.configureTestingModule({
@@ -61,20 +63,33 @@ describe('ProjectDashboardCard', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('reloads after the workspace recalculated (or exported)', async () => {
+  it('reloads after a change to this project (a recalculation, a file removed …)', async () => {
     const { http } = await setup();
-    TestBed.inject(ProjectSentEvents).changed();
+    TestBed.inject(DataChanges).changed({ projectId: 'p1' });
+    await settle();
+    const reloads = http.match(isDashboard);
+    expect(reloads).toHaveLength(1);
+    expect(reloads[0]?.request.params.get('project')).toBe('p1');
+  });
+
+  it('ignores a change to another project, follows a change to every project', async () => {
+    const { http } = await setup();
+    const changes = TestBed.inject(DataChanges);
+    changes.changed({ projectId: 'other' });
+    await settle();
+    expect(http.match(isDashboard)).toHaveLength(0);
+    // A mapping edited: every project may read its files anew.
+    changes.changed({ projectId: null, scope: 'mappings' });
     await settle();
     expect(http.match(isDashboard)).toHaveLength(1);
   });
 
-  it('reloads after the assistant changed this project, not another one', async () => {
+  it('refetches once for several changes in one tick', async () => {
     const { http } = await setup();
-    const events = TestBed.inject(AssistantEvents);
-    events.changed('other');
-    await settle();
-    expect(http.match(isDashboard)).toHaveLength(0);
-    events.changed('p1');
+    const changes = TestBed.inject(DataChanges);
+    changes.changed({ projectId: 'p1' });
+    changes.changed({ projectId: 'p1' });
+    changes.changed({ projectId: null });
     await settle();
     expect(http.match(isDashboard)).toHaveLength(1);
   });
