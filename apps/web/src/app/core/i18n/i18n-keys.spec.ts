@@ -57,6 +57,7 @@ import {
   HINT_SEVERITIES,
   HINT_STATUSES,
   LIBRARY_SORTS,
+  SUGGESTION_SOURCES,
   MISSING_FILE_KINDS,
   PRIVACY_FINDING_KINDS,
   REMOTE_URL_PROBLEMS,
@@ -152,6 +153,20 @@ const DYNAMIC_KEYS = [
   // F5.18: the desktop's link to a web library.
   ...REMOTE_URL_PROBLEMS.map(
     (problem) => `library.remote.urlProblems.${problem}`,
+  ),
+  // F5.19 / F11.0u / F5.20: suggestions, several mapping files, bulk publish.
+  ...SUGGESTION_SOURCES.map((source) => `files.suggestions.source.${source}`),
+  ...[
+    'stored',
+    'duplicate',
+    'invalid',
+    'notJson',
+    'tooLarge',
+    'tooMany',
+    'failed',
+  ].map((state) => `mappings.import.state.${state}`),
+  ...['libraryCopy', 'tooLarge', 'reviewFailed'].map(
+    (block) => `library.bulk.block.${block}`,
   ),
   ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
   ...KPI_KINDS.map((kind) => `dashboard.kpi.${kind}`),

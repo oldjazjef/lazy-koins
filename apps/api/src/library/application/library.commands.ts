@@ -86,6 +86,13 @@ export class PublishLibraryMappingHandler implements ICommandHandler<
       input,
     );
     assertSpecSize(review.size);
+    if (review.libraryCopy && !review.target) {
+      // F5.20: someone else's work taken as a copy is not mine to publish as a new entry.
+      throw conflict(
+        'libraryCopy',
+        'This mapping is a copy taken from the library: it cannot be published as a new entry',
+      );
+    }
     const publication = {
       authorName: cleanAuthorName(input.authorName),
       sourceMappingId: review.sourceMappingId,

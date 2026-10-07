@@ -52,13 +52,34 @@
       ></progress>
       <ul class="flex flex-col gap-1 text-sm">
         @for (item of service.uploads(); track item.id) {
-        <li class="flex justify-between gap-4">
-          <span class="truncate">{{ item.name }}</span>
+        <li class="flex min-w-0 items-center justify-between gap-4">
+          <span class="min-w-0" [lkTruncate]="item.name">{{ item.name }}</span>
+          @if (item.state === 'done' && item.status === 'needs_mapping') {
+          <!-- F5.19: unrecognised — the suggestion is right below, no hunting -->
+          <span class="flex shrink-0 items-center gap-2">
+            <span class="text-muted-foreground"
+              >{{ 'files.upload.needsMapping' | translate }}</span
+            >
+            @if (item.fileId && service.suggestionsByFile().has(item.fileId)) {
+            <button
+              hlmBtn
+              variant="link"
+              size="sm"
+              type="button"
+              class="h-auto px-0"
+              (click)="showSuggestions()"
+            >
+              {{ 'files.upload.showSuggestion' | translate }}
+            </button>
+            }
+          </span>
+          } @else {
           <span
             [class.text-destructive]="item.state === 'failed'"
             class="text-muted-foreground shrink-0"
             >{{ 'files.upload.state.' + item.state | translate }}</span
           >
+          }
         </li>
         }
       </ul>
@@ -99,12 +120,13 @@
       </button>
     </div>
 
-    <!-- F5.16: matching mappings from the library, before the AI option (web only) -->
-    <lk-library-matches
-      [projectId]="projectId()"
-      [refresh]="service.overview.value()"
+    <!-- F5.19: a suggestion for every file that needs a mapping (own, standard, library) -->
+    <lk-mapping-suggestions
       [closed]="closed()"
-      (taken)="libraryTaken()"
+      (taken)="suggestionTaken()"
+      (withAi)="suggestionAi($event)"
+      (newMapping)="suggestionNew($event)"
+      (adapt)="suggestionAdapt($event)"
     />
     @if (service.openHints() > 0) {
     <!-- F5.8: the details live in the Hinweise tab -->
@@ -354,12 +376,11 @@
     <div class="lk-dialog-body">
       @if (current.file.kind !== 'pdf') { @if (current.file.status ===
       'needs_mapping') {
-      <lk-library-matches
-        [projectId]="projectId()"
+      <lk-mapping-suggestions
         [fileId]="current.file.id"
-        [refresh]="service.overview.value()"
         [closed]="closed()"
-        (taken)="libraryTaken()"
+        (taken)="suggestionTaken()"
+        (adapt)="suggestionAdapt($event)"
       />
       }
       <div class="flex flex-wrap items-end gap-2">

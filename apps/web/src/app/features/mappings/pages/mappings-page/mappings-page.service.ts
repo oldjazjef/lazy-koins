@@ -99,35 +99,6 @@ export class MappingsPageService {
     return outcome;
   }
 
-  /** An uploaded `.json` (origin `copied`): parsed here, validated and stored by the API. */
-  async upload(file: File): Promise<Mapping | undefined> {
-    const parsed = parseSpecText(await file.text());
-    if (!parsed) {
-      this.notifications.error('mappings.upload.notJson', file.name);
-      return undefined;
-    }
-    try {
-      const outcome = await this.post(parsed.value, 'copied');
-      if (!outcome.ok) {
-        this.notifications.error(
-          'mappings.upload.invalid',
-          outcome.issues
-            .map((issue) => `${issue.path || '/'}: ${issue.message}`)
-            .join('; '),
-        );
-        return undefined;
-      }
-      this.notifications.success('mappings.saved', {
-        labelKey: 'mappings.openPage',
-        onClick: () =>
-          void this.router.navigate(['/app/mappings', outcome.mapping.id]),
-      });
-      return outcome.mapping;
-    } catch {
-      return undefined;
-    }
-  }
-
   private async post(
     spec: unknown,
     origin: 'manual' | 'copied' | 'ai',

@@ -1,0 +1,78 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="w-full sm:max-w-3xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'mappings.import.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'mappings.import.summary' | translate: service.summary() }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <ul class="flex flex-col gap-3 text-sm" aria-live="polite">
+        @for (outcome of service.results() ?? []; track $index) {
+        <li class="flex min-w-0 flex-col gap-1">
+          <div class="flex min-w-0 items-center gap-2">
+            <span hlmBadge class="shrink-0" [variant]="variant(outcome)"
+              >{{ 'mappings.import.state.' + outcome.state | translate }}</span
+            >
+            <span class="min-w-0 font-medium" [lkTruncate]="outcome.name"
+              >{{ outcome.name }}</span
+            >
+          </div>
+          @switch (outcome.state) { @case ('stored') {
+          <a
+            class="text-primary text-xs hover:underline"
+            [routerLink]="['/app/mappings', outcome.mapping.id]"
+            (click)="service.close()"
+            >{{ 'mappings.import.open' | translate: { name: outcome.mapping.name
+            } }}</a
+          >
+          } @case ('duplicate') { @if (outcome.existingId) {
+          <a
+            class="text-muted-foreground text-xs hover:underline"
+            [routerLink]="['/app/mappings', outcome.existingId]"
+            (click)="service.close()"
+            >{{ 'mappings.import.existing' | translate: { name:
+            outcome.existingName ?? '' } }}</a
+          >
+          } } @case ('invalid') {
+          <ul class="text-muted-foreground flex flex-col gap-0.5 text-xs">
+            @for (issue of issues(outcome); track $index) {
+            <li class="font-mono break-all">
+              {{ issue.path || '/' }}: {{ issue.message }}
+            </li>
+            } @if (moreIssues(outcome) > 0) {
+            <li>
+              {{ 'mappings.import.moreIssues' | translate: { count:
+              moreIssues(outcome) } }}
+            </li>
+            }
+          </ul>
+          } @case ('notJson') {
+          <span class="text-muted-foreground text-xs"
+            >{{ 'mappings.upload.notJson' | translate }}</span
+          >
+          } @case ('tooLarge') {
+          <span class="text-muted-foreground text-xs"
+            >{{ 'mappings.import.tooLargeHint' | translate }}</span
+          >
+          } @case ('tooMany') {
+          <span class="text-muted-foreground text-xs"
+            >{{ 'mappings.import.tooManyHint' | translate: { limit } }}</span
+          >
+          } @case ('failed') {
+          <span class="text-muted-foreground text-xs"
+            >{{ (outcome.error?.key ?? 'mappings.saveFailed') | translate:
+            outcome.error?.params ?? {} }}</span
+          >
+          } }
+        </li>
+        }
+      </ul>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn type="button" hlmDialogClose>
+        {{ 'common.close' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

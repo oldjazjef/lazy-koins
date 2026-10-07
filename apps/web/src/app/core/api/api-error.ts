@@ -45,6 +45,9 @@ export const API_ERROR_CODES = [
   'libraryRateLimited',
   'libraryUrlInvalid',
   'incompatibleSpec',
+  // F11.0u / F5.20: several mappings at once.
+  'duplicateMapping',
+  'libraryCopy',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

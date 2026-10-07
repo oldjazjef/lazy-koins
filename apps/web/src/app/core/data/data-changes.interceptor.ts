@@ -86,6 +86,12 @@ const RULES: readonly (readonly [
     /^library\/[^/]+\/take$/,
     () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
   ],
+  // F5.19: taking a standard mapping = a copy in my mappings, maybe assigned to a file of a
+  // project the URL does not name (as the library's take).
+  [
+    /^standard-mappings\/[^/]+\/take$/,
+    () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
+  ],
   // A new ESTV Kursliste: every project's Kurse tab says "neuer Stand".
   [
     /^rates\/estv\/update$/,

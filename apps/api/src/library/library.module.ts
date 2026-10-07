@@ -12,6 +12,7 @@ import {
 import {
   GetLibraryMappingHandler,
   ProjectLibraryMatchesHandler,
+  PublishQuotaHandler,
   ReviewPublicationHandler,
   SearchLibraryHandler,
 } from './application/library.queries';
@@ -84,6 +85,7 @@ import {
     GetLibraryMappingHandler,
     ReviewPublicationHandler,
     ProjectLibraryMatchesHandler,
+    PublishQuotaHandler,
     PublishLibraryMappingHandler,
     DeleteLibraryMappingHandler,
     RateLibraryMappingHandler,

@@ -182,6 +182,27 @@ teilen sie); die Desktop-App hat keine eigene, kann aber die eines Servers lesen
   die Kopfzeile und der Dateiname einer Datei das Gerät, die Seite sagt das ausdrücklich.
   Veröffentlichen, Bewerten und Löschen gibt es in der Desktop-App nicht. Ein Mapping, das diese
   App-Version nicht vollständig versteht, wird nicht übernommen („neuere App-Version nötig“).
+- **F5.19 Mapping-Vorschlag beim Upload** (Wunsch 08.10.2026: „Sind Mappings verfügbar, soll ein
+  Mapping beim Upload eines Files vorgeschlagen werden“): Jede hochgeladene Tabelle, für die kein
+  Mapping automatisch gefunden wurde, bekommt sofort einen **Vorschlag** – ohne Suchen, im
+  Dateien-Tab (und in der Upload-Liste „braucht ein Mapping · Vorschlag ansehen“) sowie im
+  Zuordnungsdialog: „Vorschlag: <Mapping> (<Quelle>, Übereinstimmung …)“ mit Vorschau des
+  Ergebnisses (Arten, unbekannte Werte, Zeilenfehler, erste Buchungen) und **„Übernehmen“** mit
+  einem Klick; dazu „Andere Vorschläge“, „Mit AI erstellen“, „Neues Mapping“. Quellen: eigene
+  Mappings (auch beinahe passende – fehlende Spalten werden genannt, „Als Vorlage anpassen“ öffnet
+  den Editor), die mitgelieferten **Standard-Mappings** (`mappings/standard/`, schreibgeschützt,
+  mit Stand; Übernehmen = eigene Kopie) und die Bibliothek (Web; Desktop nur mit verbundener
+  Bibliothek, F5.18). Zugeordnet wird nie ohne Klick; abgeschlossene Projekte bekommen keine
+  Vorschläge (F4.5). Die automatische Erkennung beim Upload bleibt unverändert streng.
+- **F5.20 Mehrere Mappings veröffentlichen** (Wunsch 08.10.2026): Auf der Mapping-Seite lassen
+  sich Mappings auswählen (Kontrollkästchen, ganze Seite, Anzahl; die Auswahl gilt bis zum
+  nächsten Suchen/Sortieren) und als Sammelaktion „In Bibliothek veröffentlichen“. Jedes Mapping
+  durchläuft trotzdem die Prüfung von F5.15 (Hinweise einzeln entfernbar, genaues JSON), der
+  Anzeigename wird einmal für alle angegeben, dann ausdrücklich bestätigen; veröffentlicht wird
+  eines nach dem anderen mit Ergebnis pro Mapping (veröffentlicht / schon veröffentlicht – „Neue
+  Version“ / abgelehnt mit Grund). Vor dem Start sagt die App, wenn die Auswahl mehr neue Einträge
+  enthält, als heute noch erlaubt sind (10 pro Tag). Aus der Bibliothek übernommene Kopien können
+  nicht als neue Einträge veröffentlicht werden. Alle Schutzregeln gelten pro Mapping.
 
 ## 6. Wallets
 
@@ -324,6 +345,12 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
   anderen – ausser was jemand selbst in der Mapping-Bibliothek veröffentlicht (F5.15, nur Web);
   eine dort übernommene Kopie ist ein eigenes Mapping (Herkunft „aus Bibliothek“).
+- **F11.0u Mehrere Mapping-Dateien hochladen** (Wunsch 08.10.2026: „eine Liste hochladen“):
+  „Mappings hochladen“ (Mapping-Seite und Mappings eines Projekts) nimmt mehrere `.json` auf
+  einmal (Auswahl oder Hineinziehen). Jede Datei wird einzeln geprüft; was ich genau so schon
+  habe, wird übersprungen; ein Fehler hält die anderen nicht auf. Danach zeigt eine Liste pro
+  Datei: gespeichert / schon vorhanden / ungültig (mit den Problemen). Höchstens 50 Dateien pro
+  Durchgang.
 - **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
   Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
   Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.

@@ -58,20 +58,6 @@ const settle = async () => {
   await new Promise((resolve) => setTimeout(resolve));
 };
 
-/** A picked .json file (jsdom's File has no text()). */
-const jsonFile = (text: string, name: string) =>
-  ({ name, text: () => Promise.resolve(text) }) as unknown as File;
-
-/** Waits (a few tasks) until a request matching `url` is pending — File.text() is async. */
-async function pending(http: HttpTestingController, url: string) {
-  for (let i = 0; i < 50; i += 1) {
-    const [found] = http.match(url);
-    if (found) return found;
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  }
-  throw new Error(`no request for ${url}`);
-}
-
 async function setup(list: MappingSummary[] = LIST) {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
   TestBed.configureTestingModule({
@@ -203,29 +189,5 @@ describe('MappingsPageService', () => {
     await settle();
     http.expectOne('/api/mappings').flush(LIST);
     expect(await created).toMatchObject({ ok: true });
-  });
-
-  it('uploads a .json as a copied mapping, with a link to its page', async () => {
-    const { service, http, notifications, navigate } = await setup();
-    expect(await service.upload(jsonFile('{nope', 'x.json'))).toBeUndefined();
-    expect(notifications.error).toHaveBeenCalledWith(
-      'mappings.upload.notJson',
-      'x.json',
-    );
-
-    const uploading = service.upload(
-      jsonFile('{"format":"lazy-koins-mapping"}', 'kraken.mapping.json'),
-    );
-    const post = await pending(http, '/api/mappings');
-    expect(post.request.body).toMatchObject({ origin: 'copied' });
-    post.flush(summary({ id: 'm5' }));
-    expect(await uploading).toMatchObject({ id: 'm5' });
-    await settle();
-    http.expectOne('/api/mappings').flush(LIST);
-
-    const [key, action] = notifications.success.mock.calls[0] ?? [];
-    expect(key).toBe('mappings.saved');
-    (action as { onClick: () => void }).onClick();
-    expect(navigate).toHaveBeenCalledWith(['/app/mappings', 'm5']);
   });
 });

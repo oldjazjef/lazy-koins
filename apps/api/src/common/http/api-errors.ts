@@ -14,7 +14,9 @@ export type ConflictCode =
   | 'alreadyDecided'
   | 'alreadyPublished'
   | 'ownEntry'
-  | 'libraryNotConfigured';
+  | 'libraryNotConfigured'
+  | 'duplicateMapping'
+  | 'libraryCopy';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

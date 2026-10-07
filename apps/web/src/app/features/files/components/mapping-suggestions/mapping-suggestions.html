@@ -1,0 +1,254 @@
+@if (visible().length > 0) {
+<section
+  id="mapping-suggestions"
+  class="lk-panel flex scroll-mt-24 flex-col gap-4 p-4"
+  aria-labelledby="mapping-suggestions-title"
+>
+  @if (!fileId()) {
+  <div class="flex flex-col gap-1">
+    <h3
+      id="mapping-suggestions-title"
+      class="flex items-center gap-2 font-medium"
+    >
+      <ng-icon
+        name="lucideWandSparkles"
+        size="16"
+        class="text-primary"
+        aria-hidden="true"
+      />
+      {{ 'files.suggestions.title' | translate: { count: visible().length } }}
+    </h3>
+    <p class="text-muted-foreground text-sm">
+      {{ 'files.suggestions.body' | translate }}
+    </p>
+  </div>
+  } @else {
+  <h4 id="mapping-suggestions-title" class="text-sm font-medium">
+    {{ 'files.suggestions.dialogTitle' | translate }}
+  </h4>
+  } @if (libraryUnavailable()) {
+  <p class="text-muted-foreground text-xs">
+    {{ 'files.suggestions.libraryUnavailable' | translate }}
+  </p>
+  } @for (file of visible(); track file.projectFileId) { @let current =
+  shown(file); @if (current) {
+  <div
+    class="flex min-w-0 flex-col gap-3 border-t pt-3 first-of-type:border-t-0"
+  >
+    @if (!fileId()) {
+    <p class="text-sm font-medium" [lkTruncate]="file.displayName">
+      {{ file.displayName }}
+    </p>
+    }
+    <div class="flex min-w-0 flex-col gap-1 text-sm">
+      <p class="flex min-w-0 flex-wrap items-center gap-2">
+        <span class="text-muted-foreground shrink-0"
+          >{{ 'files.suggestions.suggestion' | translate }}</span
+        >
+        <span class="min-w-0 font-medium" [lkTruncate]="current.name"
+          >{{ current.name }}</span
+        >
+        <span hlmBadge variant="outline" class="shrink-0"
+          >{{ sourceKey(current) | translate }}</span
+        >
+        <span
+          hlmBadge
+          class="shrink-0"
+          [variant]="current.reads ? 'secondary' : 'outline'"
+          >{{ 'files.suggestions.coverage' | translate: { percent:
+          percent(current) } }}</span
+        >
+      </p>
+      <p class="text-muted-foreground text-xs">
+        {{ current.platform }} @if (current.revision !== null) { · {{
+        'files.suggestions.revision' | translate: { revision: current.revision }
+        }} } @if (current.library; as lib) { · {{ 'library.versionShort' |
+        translate: { version: lib.version } }} · {{ lib.authorName ??
+        ('library.anonymous' | translate) }} · {{ 'library.usage' | translate: {
+        count: lib.usageCount } }} } @if (current.source === 'library' &&
+        server(); as server) { · {{ 'library.remote.source' | translate: {
+        server } }} }
+      </p>
+      @if (current.library) {
+      <span class="hidden md:inline-flex">
+        <lk-star-rating
+          [readonly]="true"
+          [value]="current.library.ratingAverage"
+        />
+      </span>
+      } @if (!current.reads) {
+      <p class="text-muted-foreground text-xs">
+        {{ 'files.suggestions.near' | translate: { matched: current.matched,
+        required: current.required } }} @if (current.missing.length > 0) { {{
+        'files.suggestions.missing' | translate: { columns:
+        current.missing.join(', ') } }} } @if (!current.fileNameMatches) { {{
+        'files.suggestions.fileName' | translate }} }
+      </p>
+      }
+    </div>
+
+    @if (current.reads) { @let status = previewStatus(file, current); @if
+    (readyPreview(file, current); as p) {
+    <div class="flex flex-col gap-2 text-sm">
+      <p class="text-muted-foreground">
+        {{ 'mappings.preview.totals' | translate: { bookings:
+        p.preview.totals.bookings, holdings: p.preview.totals.holdings, errors:
+        p.preview.totals.errors, notes: p.preview.totals.notes } }}
+      </p>
+      @if (kinds(p).length > 0) {
+      <ul
+        class="flex flex-wrap gap-2"
+        [attr.aria-label]="'ai.mapping.kindCounts' | translate"
+      >
+        @for (entry of kinds(p); track entry.kind) {
+        <li>
+          <span
+            hlmBadge
+            [variant]="entry.kind === 'unknown' ? 'destructive' : 'outline'"
+            >{{ 'bookings.kind.' + entry.kind | translate }}: {{ entry.count
+            }}</span
+          >
+        </li>
+        }
+      </ul>
+      } @if (p.unknownValues.length > 0) {
+      <p class="text-muted-foreground text-xs">
+        {{ 'ai.mapping.unknownValues' | translate }}
+      </p>
+      <ul class="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+        @for (unknown of p.unknownValues; track unknown.value) {
+        <li
+          class="max-w-full min-w-0 font-mono text-xs"
+          [lkTruncate]="unknown.value"
+        >
+          {{ unknown.value || '–' }} ({{ unknown.count }})
+        </li>
+        }
+      </ul>
+      }
+      <div>
+        <button
+          hlmBtn
+          variant="link"
+          size="sm"
+          type="button"
+          class="px-0"
+          [attr.aria-expanded]="isOpen(detailsOpen(), file)"
+          (click)="toggleDetails(file)"
+        >
+          {{ (isOpen(detailsOpen(), file) ? 'files.suggestions.hidePreview' :
+          'files.suggestions.showPreview') | translate }}
+        </button>
+      </div>
+      @if (isOpen(detailsOpen(), file)) {
+      <lk-mapping-preview [preview]="p.preview" />
+      }
+    </div>
+    } @else if (status === 'failed') {
+    <p class="text-muted-foreground text-xs">
+      {{ 'files.suggestions.previewFailed' | translate }}
+    </p>
+    } @else {
+    <hlm-skeleton class="h-6 w-2/3" />
+    } }
+
+    <div class="flex flex-wrap items-center gap-2">
+      @if (current.reads) {
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [disabled]="busy() !== null"
+        (click)="take(file, current)"
+      >
+        {{ 'files.suggestions.take' | translate }}
+      </button>
+      } @else {
+      <button
+        hlmBtn
+        size="sm"
+        type="button"
+        [disabled]="busy() !== null"
+        (click)="startAdapt(file, current)"
+      >
+        {{ 'files.suggestions.adapt' | translate }}
+      </button>
+      } @if (file.suggestions.length > 1) {
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        [attr.aria-expanded]="isOpen(othersOpen(), file)"
+        (click)="toggleOthers(file)"
+      >
+        {{ 'files.suggestions.others' | translate: { count:
+        file.suggestions.length - 1 } }}
+      </button>
+      } @if (!fileId()) {
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        (click)="withAi.emit(file.projectFileId)"
+      >
+        <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+        {{ 'mappings.withAi' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        size="sm"
+        type="button"
+        (click)="newMapping.emit(file.projectFileId)"
+      >
+        {{ 'files.assign.newMapping' | translate }}
+      </button>
+      }
+    </div>
+
+    @if (isOpen(othersOpen(), file)) {
+    <ul class="flex flex-col gap-2">
+      @for (other of others(file); track other.source + ':' + other.id) {
+      <li class="flex min-w-0 items-center gap-3 text-sm">
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span class="font-medium" [lkTruncate]="other.name"
+            >{{ other.name }}</span
+          >
+          <span class="text-muted-foreground truncate text-xs"
+            >{{ sourceKey(other) | translate }} · {{ other.platform }} · {{
+            'files.suggestions.coverage' | translate: { percent: percent(other)
+            } }}</span
+          >
+        </div>
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          type="button"
+          class="shrink-0"
+          (click)="show(file, other)"
+        >
+          {{ 'files.suggestions.show' | translate }}
+        </button>
+        @if (other.reads) {
+        <button
+          hlmBtn
+          size="sm"
+          type="button"
+          class="shrink-0"
+          [disabled]="busy() !== null"
+          (click)="take(file, other)"
+        >
+          {{ 'files.suggestions.take' | translate }}
+        </button>
+        }
+      </li>
+      }
+    </ul>
+    }
+  </div>
+  } }
+</section>
+}

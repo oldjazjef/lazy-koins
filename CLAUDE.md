@@ -153,6 +153,8 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
                             #   stateless sample-file inspect/preview for the editor
     library/                #   F5.15–F5.18: the global mapping library (web) + its public read-only endpoint;
                             #   desktop = remote mode (a linked web server's library, read-only)
+    suggestions/            #   F5.19: mapping suggestions for files that need one + the bundled standard
+                            #   mappings (mappings/standard/) as read-only templates (web + desktop)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings (project file or editor sample), PDF statements
       domain/               #     pure: prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
@@ -185,8 +187,8 @@ apps/web/                   # Angular app
                             #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
                             #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
     features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
-                            #   mappings (F11.0: list + detail), library (F5.15–F5.17: list + entry, publish
-                            #   dialog, files-area matches; web only), profile (+ account package), settings
+                            #   mappings (F11.0: list + detail, several .json at once, bulk publish), library
+                            #   (F5.15–F5.20: list + entry, publish + bulk-publish dialogs), profile (+ account package), settings
                             #   (shell + rates/wallets/ai/mail; components/ = the forms shared with
                             #   the wizard), setup (F11.0s wizard), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
@@ -301,7 +303,51 @@ with a synthetic sample; `README.md` documents every export format (headers, dat
 → kind, sources, confidence). `libs/engine/src/mapping/standard-mappings.spec.ts` applies each to
 its sample (no errors/unknowns, kind counts, trade pairing, privacy scan, no fingerprint overlap
 with each other or the standard templates). They are product data, not test fixtures — the
-synthetic `libs/engine/src/mapping/fixtures/` stay as they are.
+synthetic `libs/engine/src/mapping/fixtures/` stay as they are. **Shipped with the API** (F5.19,
+decided 08.10.2026): `suggestions/domain/standard-mappings.ts` imports each JSON (webpack inlines
+it — web server, Docker image and desktop bundle carry the same catalogue; `resolveJsonModule` in
+`apps/api/tsconfig.json`, the eslint `enforce-module-boundaries` rule allows exactly
+`../mappings/standard/*.mapping.json`). The catalogue is **read-only and versioned**: each entry
+has a `revision`, and `suggestions.handlers.spec.ts` pins `revision:hash` per entry in a snapshot
+(change a JSON → bump its revision → update the snapshot; it also fails when a file in the folder
+is missing from the catalogue). `GET /api/standard-mappings` (+ `copyId` = my identical copy),
+`GET /api/standard-mappings/:id` (+ spec), `POST /api/standard-mappings/:id/take
+{projectId?, projectFileId?}` = a copy in my mappings (origin **`copied`** — no new origin, no
+migration; an identical copy I already have is reused, `findSameSpec` = canonical JSON equality),
+target checked before copying (ownership 404, closed project 409, PDF 400), then assigned through
+`ChangeProjectFileCommand`. To add one: the JSON + sample + its case in `standard-mappings.spec.ts`
+
+- its line in the catalogue + the snapshot.
+
+**Mapping suggestions on upload (F5.19, user request 08.10.2026: „Sind Mappings verfügbar, soll
+ein Mapping beim Upload eines Files vorgeschlagen werden“)** — the upload stays exactly as strict
+as before (`mappingConfidence`: every fingerprint header, file-name pattern); suggestions are a
+separate read: `GET /api/projects/:id/mapping-suggestions` (`suggestions/application/
+suggestions.handlers.ts`) = per `needs_mapping` CSV/XLSX file (newest 50) ≤ 6 ranked candidates
+from (a) **my mappings** — the engine's `mappingSimilarity` (`libs/engine/src/mapping/
+similarity.ts`: the best header row via `bestHeaderRow`, `coverage` = share of the spec's
+fingerprint headers present, `missing`, file-name pattern, platform in the file name, `score`;
+`isSuggestable` = reads it, or coverage ≥ 0.6 with ≥ 2 shared headers); a mapping of mine that
+reads the file was saved after the upload; (b) the **standard catalogue** (same similarity; hidden
+when I already have the identical copy — it shows as `own`); (c) the **library** through
+`LibraryService` (web: own library; desktop: the linked server with suggestions on, F5.18 — what
+`LibraryStatus` says): its F5.16 matches (full matches only; near matches need specs the desktop
+does not have), kept in the library's order. `rankSuggestions`: what reads the file first (own →
+standard → library), then near matches by score. `library: used | off | unavailable` — a failing
+library never fails the answer. Closed project = no suggestions. `GET …/files/:fileId/
+suggestion-preview?source=own|standard|library&id=` = `kindSummary` + the first records (the
+mapping preview), nothing stored. Web: `ProjectFilesService.suggestions` (one request, reloads
+with the project and `mappings`), `lk-mapping-suggestions` (`features/files/components/
+mapping-suggestions`) in the files card (replaces F5.16's `lk-library-matches`, which was removed)
+and the assignment dialog (`fileId`): "Vorschlag: <name> (<Quelle>, Übereinstimmung N %)", the
+preview of the shown suggestion (kind badges, unknown values, totals, "Vorschau anzeigen" =
+`lk-mapping-preview`), **Übernehmen** (`takeSuggestion`: own = PATCH assign, standard =
+`…/take`, library = `LibraryClient.take`), "Andere Vorschläge", "Mit AI erstellen", "Neues
+Mapping"; a near match offers **"Als Vorlage anpassen"** = `MappingEditorState.openFrom(file,
+spec, missing)` (the new-mapping editor with the spec minus the missing headers; stored only on
+save, then assigned). The upload list marks an upload that ended `needs_mapping` ("braucht ein
+Mapping · Vorschlag ansehen" scrolls to `#mapping-suggestions`). Nothing is assigned without a
+click.
 
 Upload flow (`files/application/commands/upload-project-file.command.ts`): kind from the bytes
 (`%PDF-`, ZIP with `xl/`, text) → SHA-256 → duplicate in the same project = **409** with
@@ -337,7 +383,8 @@ are skipped). Deleting one resets its files to `needs_mapping` in the same trans
 
 **Mappings page (F11.0)** — `features/mappings`, `/app/mappings` in the main navigation: every
 mapping of mine (`GET /api/mappings` adds `filesUsing` / `projectsUsing`, counted by the
-database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json`, new.
+database via `ProjectFileRepositoryPort.countByMappings`), search + sort, upload `.json` (several
+at once, below), new.
 `/app/mappings/:id`: facts, JSON, edit (`lk-mapping-workbench` with a sample file — a file that
 uses it is preloaded; see Beispieldatei below), save → offer re-apply, download, delete (lists the affected
 files; disabled while a closed project uses it — the API's 409), and "Wird genutzt in"
@@ -346,6 +393,36 @@ files; disabled while a closed project uses it — the API's 409), and "Wird gen
 section only lists the mappings its files use (linking here), uploads a `.json`, starts
 "Mit AI erstellen" and the editor of a new mapping for one file; edits happen on this page. After
 a save from a project (editor, upload, AI) the toast links to the new mapping's page.
+
+**Several mapping files at once (F11.0u)** — "Mappings hochladen" on the Mappings page (picker
+`multiple` + a drop zone above the table) and in a project's mappings section:
+`MappingImportService` (root, `features/mappings/mapping-import.service.ts`) posts each file on its
+own to the existing `POST /api/mappings` with `rejectDuplicate: true` (409 `duplicateMapping` +
+`existingId`/`existingName` when I already have exactly this spec — canonical JSON, key order and
+unknown keys do not matter; without the flag, as before). No batch endpoint (decided: per file is
+as good — the per-account write budget of 120 / 10 min covers it; ≤ 50 files and ≤ 1 MB per file
+in the web). Not JSON / an array / too large / beyond 50 are refused locally; one failure never
+stops the others; progress through the ActivityService (`activity.mappingImport`). Results in
+`lk-mapping-import-results` (stored → link, duplicate → link to mine, invalid → the zod issues,
+failed → the API error); a single stored file only gets the toast with the link.
+
+**Bulk publish (F5.20, web)** — the Mappings page has a checkbox column while
+`LibraryAvailability` is mode `web` (select all on the page, `N ausgewählt`, cleared on a new
+search/sort) and "In Bibliothek veröffentlichen": `BulkPublishService` +
+`lk-bulk-publish-dialog` (`features/library/components/bulk-publish-dialog`, provided by the page):
+`GET /api/library/quota` (`{newPerDay, usedToday, remainingToday, publishesPer10Min}` — the count
+the publish handler enforces), then **every mapping reviewed** (`POST /api/library/review`,
+removable findings ticked and reviewed again, untick → review again, stale answers dropped), mode
+per mapping (new entry / new version of my existing entry — the default when `existing` / skip),
+the JSON per mapping on demand, the pseudonym **once**, the warning when the new entries exceed
+what is left today or the selection exceeds the 10-minute budget, the explicit confirmation (+ keep
+remaining findings) — then `POST /api/library` **one by one** with the single dialog's body (no
+bulk endpoint, every server rule per item). Results per item: published (version) / already
+published (409 `alreadyPublished` → "Als neue Version veröffentlichen" with its `libraryId`) /
+refused (`publishLimit`, a throttler 429 = `rateLimited`, any other code). **Library copies**
+(origin `library`) cannot be published as new entries: the review carries `libraryCopy`, the
+publish answers **409 `libraryCopy`** unless it is a new version of my own entry; the dialogs
+explain it (single dialog: publish disabled).
 
 **Beispieldatei (sample file) in the mapping editor** — "Neues Mapping" (dialog, `sm:max-w-6xl`)
 and editing on `/app/mappings/:id` use `features/mappings/components/mapping-workbench`
@@ -386,8 +463,8 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   web server. The web reads one service, `LibraryAvailability` (`core/library`): web = always
   available and writable (no request); desktop = `GET /api/library/status`, asked again on every
   `settings` change. It drives the nav sub-item (`navItemsFor(available)`,
-  `NavItem.needsLibrary`), the route (`canMatch` → `canOpen()`), the files-area matches
-  (`suggestions()`), the mapping page's publish button (`canPublish` = mode `web`) and origin line,
+  `NavItem.needsLibrary`), the route (`canMatch` → `canOpen()`), the mapping page's publish button
+  and the bulk selection (F5.20) (`canPublish` = mode `web`) and origin line,
   and the library pages' write actions (`readOnly`). The tables exist in every database (one
   migration history); `library_mapping`/`library_rating` stay empty on the desktop.
 - **Model** (migration `20261008200000_mapping_library`): `library_mapping` (author FK cascade —
@@ -414,7 +491,9 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   `privacyFindings` with paths + kinds, never the values), ≤ 64 KB (422 `specTooLarge`), the same
   canonical spec twice = 409 `alreadyPublished`, ≤ 10 **new** entries per author per 24 h (429
   `publishLimit`, deleted ones count), HTTP budgets 10 publishes / 60 ratings per 10 min.
-  `libraryId` = a new version of **my** entry (someone else's = 404). `removePrivacyFindings`
+  `libraryId` = a new version of **my** entry (someone else's = 404). A copy taken from the
+  library (`libraryCopy` in the review) as a new entry = 409 `libraryCopy` (F5.20).
+  `GET /api/library/quota` = new entries left today (F5.20). `removePrivacyFindings`
   drops a filter value (the filter when nothing is left), an alias/rewrite/kind rule whole, a
   constant (its source when it had no column), the description, the file-name pattern.
 - **Delete** (`DELETE /api/library/:id`): author only, others 404 (never 403 — no leak of who
@@ -441,9 +520,11 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   host: library pages and the mapping page): source → findings with checkboxes (every change
   reviews again, stale answers dropped) → pseudonym + description → exact JSON → confirmation
   (+ "Hinweise bewusst beibehalten"). `LibraryClient` (root) = take/rate/delete through the
-  ActionRunner. `lk-library-matches` in the files card and in the assignment dialog (before the
-  AI buttons): "In der Bibliothek gefunden: N passende Mappings" + Übernehmen (copy + assign).
-  `dataChangesInterceptor`: `POST /library/:id/take` = scope `mappings` + every project (the
+  ActionRunner. In the files card and the assignment dialog the library's matches are part of the
+  F5.19 suggestions (`lk-mapping-suggestions`, see Files and mappings) — Übernehmen = copy + assign.
+  (The files-tab suggestions, F5.19, ask the API, which reads the same `LibraryStatus`.)
+  `dataChangesInterceptor`: `POST /library/:id/take` (and F5.19's
+  `POST /standard-mappings/:id/take`) = scope `mappings` + every project (the
   file it was assigned to is in the body, not the URL); `/library/review` is read-only; publish,
   rate and delete touch no own data.
 - **Tools** (`tools/definitions/library.tools.ts`, area `mappings`): `search_library`,
