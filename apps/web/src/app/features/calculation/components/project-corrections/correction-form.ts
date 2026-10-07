@@ -72,6 +72,11 @@ export function correctionBody(value: CorrectionFormValue): CorrectionBody {
         .object({ type: z.literal('reclassify'), bookingId: required, kind })
         .safeParse(value);
       break;
+    case 'exclude_booking':
+      data = z
+        .object({ type: z.literal('exclude_booking'), bookingId: required })
+        .safeParse(value);
+      break;
     case 'manual_booking': {
       const parsed = z
         .object({

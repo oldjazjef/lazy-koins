@@ -39,6 +39,7 @@ export const WORKSPACE_TABS = [
   'hints',
   'wallets',
   'rates',
+  'transactions',
   'result',
   'checks',
   'corrections',
@@ -246,14 +247,14 @@ export class ProjectWorkspaceService {
   });
 
   private readonly undoAction = defineAction<
-    { id: string; correction: Correction; undo: boolean },
+    { id: string; correctionId: string; undo: boolean },
     Correction
   >({
-    run: ({ id, correction, undo }) =>
+    run: ({ id, correctionId, undo }) =>
       firstValueFrom(
         this.http.post<Correction>(
           apiUrl(
-            `/projects/${id}/corrections/${correction.id}/${undo ? 'undo' : 'redo'}`,
+            `/projects/${id}/corrections/${correctionId}/${undo ? 'undo' : 'redo'}`,
           ),
           {},
         ),
@@ -419,9 +420,14 @@ export class ProjectWorkspaceService {
   }
 
   async setUndone(correction: Correction, undo: boolean): Promise<void> {
+    await this.setUndoneById(correction.id, undo);
+  }
+
+  /** Undo/redo by id (the Transaktionen tab knows a booking's correction only by its id). */
+  async setUndoneById(correctionId: string, undo: boolean): Promise<void> {
     await this.actions.run(
       this.undoAction,
-      { id: this.requireId(), correction, undo },
+      { id: this.requireId(), correctionId, undo },
       { key: 'project-workspace' },
     );
     await this.calculate();

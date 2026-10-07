@@ -248,8 +248,16 @@ export const CORRECTION_TYPES = [
   'reclassify',
   'manual_booking',
   'manual_holding',
+  'exclude_booking',
 ] as const;
 export type CorrectionType = (typeof CORRECTION_TYPES)[number];
+/** What the corrections form offers — an exclusion is made in the Transaktionen tab. */
+export const FORM_CORRECTION_TYPES = [
+  'price_override',
+  'reclassify',
+  'manual_booking',
+  'manual_holding',
+] as const satisfies readonly CorrectionType[];
 
 export interface AppliedCorrection {
   correctionId: string;
@@ -614,4 +622,58 @@ export interface UpdateSettingsRequest {
   };
   /** Price sources: the order as arranged (each provider once). */
   priceSources?: PriceSourceSetting[];
+}
+
+/** "Transaktionen": how a booking counts (libs/engine `BOOKING_TREATMENTS`, same order). */
+export const BOOKING_TREATMENTS = [
+  'income',
+  'oneOff',
+  'balance',
+  'checkOnly',
+  'transfer',
+  'spam',
+  'unknown',
+  'afterYear',
+  'excluded',
+] as const;
+export type BookingTreatment = (typeof BOOKING_TREATMENTS)[number];
+
+/** One booking with its treatment (`GET /projects/:id/transactions`); amounts are decimal strings. */
+export interface TransactionRow {
+  id: string;
+  timestamp: string;
+  platform: string;
+  accountId: string;
+  asset: string;
+  quantity: string;
+  kind: BookingKind;
+  importedKind: BookingKind | null;
+  fee: string | null;
+  feeAsset: string | null;
+  rawType: string;
+  note: string | null;
+  group: string | null;
+  sourceFileId: string;
+  row: number;
+  manual: boolean;
+  treatment: BookingTreatment;
+  /** Income / one-off value in the tax currency; null = none or no price. */
+  valueChf: string | null;
+  incomeCategory: string | null;
+  figureIds: string[];
+  correctionId: string | null;
+  correctionReason: string | null;
+  projectFileId: string | null;
+  fileName: string | null;
+}
+
+export interface TransactionsView {
+  taxYear: number;
+  currency: string;
+  total: number;
+  offset: number;
+  limit: number;
+  counts: Record<BookingTreatment, number>;
+  platforms: string[];
+  rows: TransactionRow[];
 }

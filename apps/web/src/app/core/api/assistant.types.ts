@@ -7,6 +7,7 @@ export const CHAT_CONTEXT_TABS = [
   'hints',
   'wallets',
   'rates',
+  'transactions',
   'result',
   'checks',
   'corrections',

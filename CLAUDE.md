@@ -20,7 +20,7 @@ two as a package (F1.3).
 > tool layer for the chat sidebar and the MCP server), the Angular web app (`apps/web`: login, the
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
-> Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
+> Wallets · Kurse · Transaktionen · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
 > the **Bibliothek** (mapping library; on the desktop a linked web server's, F5.18) as its sub-item (`/app/mappings/library`; in the sidebar the entry expands to Meine Mappings · Bibliothek, `NavItem.children`);
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
@@ -1135,6 +1135,28 @@ symbol, contract? }`; `COIN_PROVIDERS` = `coingecko`, `coinmarketcap` (F7.4b); a
   dashboard holdings (source line, warning, same actions), the override hint „Gilt nur für dieses
   Datum". `COINGECKO_IDS` (built-in ids, OPN = `open-ticketing-ecosystem`) are only the
   fallback after Binance and the picker's suggestion.
+
+**Transaktionen** (user request 07.10.2026: „eine Ansicht, wo man alle Transaktionen sieht und
+wie sie zur Steuerrechnung zählen … Einträge deaktivieren mit Begründung“) — engine
+`calculation/treatments.ts`: `bookingTreatments(input, result)` = every booking (imported and
+manual) newest first with its **treatment** (`BOOKING_TREATMENTS`: `income` (value), `oneOff`,
+`balance` (decides a ledger position at 31.12.), `checkOnly` (account valued from a statement or
+manual balance), `transfer`, `spam`, `unknown`, `afterYear`, `excluded`), the figure ids it feeds,
+the imported kind of a reclassified booking and the correction id + reason. **Deactivating** is
+the correction type **`exclude_booking`** `{ bookingId }` (F9.4: data, reason required,
+undo/redo, the file untouched; `applyCorrections` drops the booking, `targetMissing` when it is
+gone or excluded twice; the dashboard dates it by the booking, the follow-up project carries it
+like a reclassification; migration `20261009120000_exclude_booking_correction` redefines
+`correction` only to widen its type CHECK). API `GET /projects/:id/transactions?q&treatment&
+platform&offset&limit` (`ListTransactionsHandler`: computed from the **live** input with the
+same `calculate`, never stored — right even while the snapshot is stale; `counts` per treatment
+with the treatment filter aside, ≤ 200 per page). Web: tab **Transaktionen**
+(`calculation/components/project-transactions`, its own service provided by the component,
+**server-side** paging through a `Pagination` adapter for `lk-paginator`): search (debounced),
+platform, treatment chips with counts, legend, row actions In der Rechnung anzeigen (drill-down)
+· Umklassieren (prefilled corrections form) · Deaktivieren (dialog, reason required) / Wieder
+aktivieren (undo) — the last three hidden on a closed project and for manual bookings (undo their
+correction). The corrections form does not offer `exclude_booking` (`FORM_CORRECTION_TYPES`).
 
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —

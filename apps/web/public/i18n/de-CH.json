@@ -1087,6 +1087,7 @@
       "hints": "Hinweise",
       "wallets": "Wallets",
       "rates": "Kurse",
+      "transactions": "Transaktionen",
       "result": "Ergebnis",
       "checks": "Prüfungen",
       "corrections": "Korrekturen",
@@ -1096,6 +1097,70 @@
   "calculation": {
     "calculated": "Neu berechnet",
     "calculateFailed": "Berechnung fehlgeschlagen"
+  },
+  "transactions": {
+    "title": "Transaktionen",
+    "subtitle": "Alle Buchungen des Projekts und wie sie in die Steuerrechnung eingehen. Einzelne Einträge kannst du mit Begründung deaktivieren – die Originaldatei bleibt unverändert.",
+    "search": "Suchen",
+    "searchPlaceholder": "Asset, Plattform, Konto, Art, Datei …",
+    "platform": "Plattform",
+    "allPlatforms": "Alle Plattformen",
+    "treatmentFilter": "Nach Behandlung filtern",
+    "all": "Alle",
+    "legendTitle": "Was bedeuten die Behandlungen?",
+    "liveHint": "Live aus den aktuellen Dateien, Korrekturen und Kursen berechnet – auch bevor du neu berechnest.",
+    "empty": "Noch keine Buchungen. Lade im Tab Dateien Exporte hoch.",
+    "emptyFiltered": "Keine Buchung passt zu diesem Filter.",
+    "loadFailed": "Die Transaktionen konnten nicht geladen werden.",
+    "columns": {
+      "date": "Zeitpunkt (UTC)",
+      "booking": "Buchung",
+      "quantity": "Menge",
+      "treatment": "Steuerlich"
+    },
+    "treatment": {
+      "income": "Ertrag",
+      "oneOff": "Einmalereignis",
+      "balance": "Vermögen",
+      "checkOnly": "Nur Kontrolle",
+      "transfer": "Übertrag",
+      "spam": "Spam",
+      "unknown": "Nicht klassiert",
+      "afterYear": "Nach dem Steuerjahr",
+      "excluded": "Deaktiviert"
+    },
+    "help": {
+      "income": "Steuerbarer Ertrag des Jahres (Staking, Zinsen, Airdrops …), bewertet am Tag des Eingangs, netto nach Gebühr – zählt zum Ertrag.",
+      "oneOff": "Verlust oder anderes Einmalereignis, im Auszug separat aufgeführt.",
+      "balance": "Verändert den Bestand des Kontos und damit das Vermögen per 31.12. Ein Kauf oder Verkauf selbst ist bei Privatvermögen nicht steuerbar.",
+      "checkOnly": "Das Konto wird per 31.12. aus einem Kontoauszug bewertet; die Buchung wird nur dagegen geprüft.",
+      "transfer": "Übertrag zwischen deinen eigenen Konten – steuerlich neutral.",
+      "spam": "Spam- oder Scam-Token – weder Vermögen noch Ertrag.",
+      "unknown": "Noch nicht klassiert: zählt im Bestand mit und ist ein offener Punkt, bis du sie umklassierst.",
+      "afterYear": "Liegt nach dem 31.12. des Steuerjahres – zählt in diesem Projekt nicht.",
+      "excluded": "Von dir deaktiviert (mit Begründung) – wird in der Rechnung ignoriert, bis du sie wieder aktivierst."
+    },
+    "origin": "{{file}}, Zeile {{row}}",
+    "manual": "Manuelle Buchung (Korrektur)",
+    "importedAs": "Importiert als «{{kind}}», umklassiert",
+    "fee": "Gebühr {{fee}} {{asset}}",
+    "noPrice": "kein Kurs",
+    "reason": "Grund: {{reason}}",
+    "figureTitle": "{{asset}} auf {{platform}}",
+    "actions": {
+      "exclude": "Deaktivieren",
+      "reactivate": "Wieder aktivieren",
+      "reclassify": "Umklassieren",
+      "figure": "In der Rechnung anzeigen"
+    },
+    "exclude": {
+      "title": "Buchung deaktivieren",
+      "body": "{{quantity}} {{asset}} auf {{platform}} wird in der Steuerrechnung nicht mehr berücksichtigt.",
+      "reason": "Begründung",
+      "reasonPlaceholder": "z. B. doppelt importiert, Testüberweisung, gehört nicht zu mir",
+      "reasonRequired": "Bitte gib eine Begründung an.",
+      "hint": "Das wird als Korrektur gespeichert (mit Datum und Begründung) und lässt sich jederzeit rückgängig machen. Danach wird neu berechnet."
+    }
   },
   "records": {
     "title": "Zugrunde liegende Buchungen",
@@ -1275,7 +1340,8 @@
       "price_override": "Kurs überschreiben",
       "reclassify": "Buchung umklassieren",
       "manual_booking": "Manuelle Buchung",
-      "manual_holding": "Manueller Bestand"
+      "manual_holding": "Manueller Bestand",
+      "exclude_booking": "Buchung deaktivieren"
     },
     "status": {
       "applied": "angewendet",
@@ -2610,7 +2676,8 @@
       "rateLibraryMapping": "Mapping «{{name}}» bewerten",
       "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen",
       "deactivateFile": "Datei «{{file}}» deaktivieren (wird bei der Berechnung ignoriert)",
-      "activateFile": "Datei «{{file}}» wieder aktivieren"
+      "activateFile": "Datei «{{file}}» wieder aktivieren",
+      "excludeBooking": "Buchung {{booking}} deaktivieren"
     },
     "event": {
       "executed": "Ausgeführt: {{title}}",

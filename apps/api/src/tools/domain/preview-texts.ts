@@ -29,6 +29,7 @@ export const PREVIEW_TEXTS = {
   'chat.preview.fallback': [],
   'chat.preview.priceOverride': ['asset', 'date'],
   'chat.preview.reclassify': ['booking'],
+  'chat.preview.excludeBooking': ['booking'],
   'chat.preview.manualBooking': ['asset', 'platform'],
   'chat.preview.manualHolding': ['asset', 'platform'],
   'chat.preview.openItem': ['item'],

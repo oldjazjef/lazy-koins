@@ -21,6 +21,9 @@ import type { RateEntry } from '../rates/rate-table';
  * - `manual_booking`, `manual_holding` (F9.3): a forgotten platform, a hard fork, a loss, a
  *   balance with its evidence (F6.5). A manual holding replaces the account's balance of that
  *   asset at that date.
+ * - `exclude_booking` (Transaktionen): one imported booking is left out of the calculation
+ *   entirely (a duplicate, a test transfer, a row that does not belong here) — with its reason,
+ *   undoable like every correction. The file and its row stay untouched.
  */
 
 const decimalText = z
@@ -51,6 +54,10 @@ export const CorrectionDataSchema = z.discriminatedUnion('type', [
     type: z.literal('reclassify'),
     bookingId: z.string().min(1).max(200),
     kind: z.enum(BOOKING_KINDS),
+  }),
+  z.object({
+    type: z.literal('exclude_booking'),
+    bookingId: z.string().min(1).max(200),
   }),
   z.object({
     type: z.literal('manual_booking'),
@@ -88,6 +95,7 @@ export const CORRECTION_TYPES = [
   'reclassify',
   'manual_booking',
   'manual_holding',
+  'exclude_booking',
 ] as const satisfies readonly CorrectionType[];
 
 export interface Correction {
@@ -104,7 +112,7 @@ export type CorrectionSide = Readonly<Record<string, string | null>> | null;
 export interface AppliedCorrection {
   readonly correctionId: string;
   readonly type: CorrectionType;
-  /** `targetMissing`: the booking to reclassify is not (any more) in the project's files. */
+  /** `targetMissing`: the booking to reclassify/exclude is not (any more) in the project's files. */
   readonly status: 'applied' | 'targetMissing';
   readonly before: CorrectionSide;
   readonly after: CorrectionSide;
@@ -152,6 +160,8 @@ export function applyCorrections(
 ): CorrectedRecords {
   const outBookings: Booking[] = [...bookings];
   const indexOf = new Map(outBookings.map((b, i) => [b.id, i] as const));
+  /** Bookings left out by `exclude_booking` — removed at the end so the indexes stay valid. */
+  const excluded = new Set<string>();
   const outHoldings: Holding[] = [...holdings];
   const rates: RateEntry[] = [];
   const applied: AppliedCorrection[] = [];
@@ -205,6 +215,37 @@ export function applyCorrections(
           status: 'applied',
           before: { bookingId: current.id, kind: current.kind },
           after: { bookingId: current.id, kind: data.kind },
+        });
+        break;
+      }
+      case 'exclude_booking': {
+        const index = indexOf.get(data.bookingId);
+        const current = index === undefined ? undefined : outBookings[index];
+        if (!current || excluded.has(current.id)) {
+          applied.push({
+            correctionId: correction.id,
+            type: data.type,
+            status: 'targetMissing',
+            before: null,
+            after: { bookingId: data.bookingId },
+          });
+          break;
+        }
+        excluded.add(current.id);
+        applied.push({
+          correctionId: correction.id,
+          type: data.type,
+          status: 'applied',
+          before: {
+            bookingId: current.id,
+            platform: current.platform,
+            accountId: current.accountId,
+            timestamp: current.timestamp,
+            asset: current.asset,
+            quantity: toDecimalString(current.quantity),
+            kind: current.kind,
+          },
+          after: null,
         });
         break;
       }
@@ -282,7 +323,15 @@ export function applyCorrections(
       }
     }
   }
-  return { bookings: outBookings, holdings: outHoldings, rates, applied };
+  return {
+    bookings:
+      excluded.size === 0
+        ? outBookings
+        : outBookings.filter((b) => !excluded.has(b.id)),
+    holdings: outHoldings,
+    rates,
+    applied,
+  };
 }
 
 /** Whether a record was created by a correction (manual booking/holding). */

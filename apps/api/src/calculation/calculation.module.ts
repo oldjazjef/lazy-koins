@@ -13,6 +13,7 @@ import {
   SetCorrectionUndoneHandler,
   UpdateOpenItemHandler,
 } from './application/calculation.handlers';
+import { ListTransactionsHandler } from './application/transactions.handlers';
 import { CalculationController } from './calculation.controller';
 import { CalculationService } from './calculation.service';
 
@@ -37,6 +38,7 @@ import { CalculationService } from './calculation.service';
     ListCorrectionsHandler,
     CreateCorrectionHandler,
     SetCorrectionUndoneHandler,
+    ListTransactionsHandler,
   ],
   exports: [CalculationService, CalculationInputService],
 })

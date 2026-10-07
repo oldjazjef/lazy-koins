@@ -366,7 +366,7 @@ model CalculationSnapshot {
 model Correction {
   id        String    @id @default(uuid(7))
   projectId String    @map("project_id")
-  /// price_override | reclassify | manual_booking | manual_holding. CHECK in the migration.
+  /// price_override | reclassify | manual_booking | manual_holding | exclude_booking. CHECK in the migrations.
   type      String
   /// The validated correction data (libs/engine `CorrectionDataSchema`) as JSON.
   data      String

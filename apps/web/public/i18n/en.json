@@ -1087,6 +1087,7 @@
       "hints": "Hints",
       "wallets": "Wallets",
       "rates": "Rates",
+      "transactions": "Transactions",
       "result": "Result",
       "checks": "Checks",
       "corrections": "Corrections",
@@ -1096,6 +1097,70 @@
   "calculation": {
     "calculated": "Recalculated",
     "calculateFailed": "Calculation failed"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "subtitle": "Every booking of the project and how it counts in the tax calculation. You can deactivate single entries with a reason – the original file stays unchanged.",
+    "search": "Search",
+    "searchPlaceholder": "Asset, platform, account, kind, file …",
+    "platform": "Platform",
+    "allPlatforms": "All platforms",
+    "treatmentFilter": "Filter by treatment",
+    "all": "All",
+    "legendTitle": "What do the treatments mean?",
+    "liveHint": "Computed live from the current files, corrections and rates – even before you recalculate.",
+    "empty": "No bookings yet. Upload exports in the Files tab.",
+    "emptyFiltered": "No booking matches this filter.",
+    "loadFailed": "The transactions could not be loaded.",
+    "columns": {
+      "date": "Time (UTC)",
+      "booking": "Booking",
+      "quantity": "Quantity",
+      "treatment": "For tax"
+    },
+    "treatment": {
+      "income": "Income",
+      "oneOff": "One-off event",
+      "balance": "Wealth",
+      "checkOnly": "Check only",
+      "transfer": "Transfer",
+      "spam": "Spam",
+      "unknown": "Unclassified",
+      "afterYear": "After the tax year",
+      "excluded": "Deactivated"
+    },
+    "help": {
+      "income": "Taxable income of the year (staking, interest, airdrops …), valued on the day it arrived, net of the fee – counts as income.",
+      "oneOff": "A loss or another one-off event, listed separately in the statement.",
+      "balance": "Changes the account's holdings and so the wealth as of 31.12. A buy or sell in itself is not taxable for private assets.",
+      "checkOnly": "The account is valued from a statement as of 31.12.; the booking is only checked against it.",
+      "transfer": "A transfer between your own accounts – neutral for tax.",
+      "spam": "Spam or scam token – neither wealth nor income.",
+      "unknown": "Not classified yet: counted in the holdings and an open item until you reclassify it.",
+      "afterYear": "Lies after 31.12. of the tax year – does not count in this project.",
+      "excluded": "Deactivated by you (with a reason) – ignored in the calculation until you activate it again."
+    },
+    "origin": "{{file}}, row {{row}}",
+    "manual": "Manual booking (correction)",
+    "importedAs": "Imported as “{{kind}}”, reclassified",
+    "fee": "Fee {{fee}} {{asset}}",
+    "noPrice": "no price",
+    "reason": "Reason: {{reason}}",
+    "figureTitle": "{{asset}} on {{platform}}",
+    "actions": {
+      "exclude": "Deactivate",
+      "reactivate": "Activate again",
+      "reclassify": "Reclassify",
+      "figure": "Show in the calculation"
+    },
+    "exclude": {
+      "title": "Deactivate booking",
+      "body": "{{quantity}} {{asset}} on {{platform}} will no longer count in the tax calculation.",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. imported twice, test transfer, not mine",
+      "reasonRequired": "Please give a reason.",
+      "hint": "This is stored as a correction (with date and reason) and can be undone at any time. The project is recalculated afterwards."
+    }
   },
   "records": {
     "title": "Underlying bookings",
@@ -1275,7 +1340,8 @@
       "price_override": "Override rate",
       "reclassify": "Reclassify booking",
       "manual_booking": "Manual booking",
-      "manual_holding": "Manual holding"
+      "manual_holding": "Manual holding",
+      "exclude_booking": "Deactivate booking"
     },
     "status": {
       "applied": "applied",
@@ -2610,7 +2676,8 @@
       "rateLibraryMapping": "Rate mapping \"{{name}}\"",
       "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library",
       "deactivateFile": "Deactivate file “{{file}}” (ignored by the calculation)",
-      "activateFile": "Activate file “{{file}}” again"
+      "activateFile": "Activate file “{{file}}” again",
+      "excludeBooking": "Deactivate booking {{booking}}"
     },
     "event": {
       "executed": "Done: {{title}}",

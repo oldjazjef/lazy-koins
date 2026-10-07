@@ -22,7 +22,7 @@ import { HlmTableImports } from '@lazykoins/ui/table';
 import { BOOKING_KINDS } from '../../../../core/api/api.types';
 import {
   type Correction,
-  CORRECTION_TYPES,
+  FORM_CORRECTION_TYPES,
   type CorrectionType,
 } from '../../../../core/api/calculation.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
@@ -66,7 +66,7 @@ import {
 })
 export class ProjectCorrections {
   protected readonly service = inject(ProjectWorkspaceService);
-  protected readonly types = CORRECTION_TYPES;
+  protected readonly types = FORM_CORRECTION_TYPES;
   protected readonly kinds = BOOKING_KINDS;
 
   readonly closed = input(false);

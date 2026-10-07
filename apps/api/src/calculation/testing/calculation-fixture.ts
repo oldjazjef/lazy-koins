@@ -27,6 +27,7 @@ import {
   SetCorrectionUndoneHandler,
   UpdateOpenItemHandler,
 } from '../application/calculation.handlers';
+import { ListTransactionsHandler } from '../application/transactions.handlers';
 import {
   InMemoryCorrectionRepository,
   InMemoryOpenItemStateRepository,
@@ -177,5 +178,6 @@ export async function calculationSetup() {
       inputs,
     ),
     status: new GetResultStatusHandler(projects, inputs, snapshots),
+    transactions: new ListTransactionsHandler(projects, inputs),
   };
 }

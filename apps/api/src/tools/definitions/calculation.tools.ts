@@ -171,6 +171,14 @@ export function calculationTools(s: ToolServices): AnyTool[] {
           ],
           projectId: project,
         };
+      case 'exclude_booking':
+        return {
+          summary: previewText('chat.preview.excludeBooking', {
+            booking: data.bookingId,
+          }),
+          changes: [reasonLine],
+          projectId: project,
+        };
       case 'manual_booking':
         return {
           summary: previewText('chat.preview.manualBooking', {
@@ -712,7 +720,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'create_correction',
       title: 'Korrektur erfassen',
       description:
-        'F9.3: any correction — manual_booking (a forgotten booking, hard fork, loss) or manual_holding (a balance at a date with its evidence), also price_override / reclassify. `correction` follows the correction schema.',
+        'F9.3: any correction — manual_booking (a forgotten booking, hard fork, loss) or manual_holding (a balance at a date with its evidence), also price_override / reclassify / exclude_booking (leave one booking out, with a reason). `correction` follows the correction schema.',
       area: 'corrections',
       effect: 'write',
       input: z.object({ projectId, correction: CorrectionDataSchema, reason }),
