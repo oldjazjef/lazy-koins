@@ -1,0 +1,101 @@
+<button
+  hlmBtn
+  variant="outline"
+  size="sm"
+  type="button"
+  [disabled]="disabled()"
+  (click)="show()"
+>
+  {{ 'files.takeOver.open' | translate }}
+</button>
+
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'files.takeOver.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'files.takeOver.hint' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (service.sources(); as sources) { @for (source of sources; track
+      source.projectId) {
+      <section class="flex flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <h4 class="min-w-0 flex-1 font-medium" [lkTruncate]="source.name">
+            {{ source.name }}
+            <span class="text-muted-foreground text-sm"
+              >· {{ source.taxYear }}</span
+            >
+          </h4>
+          @if (selectable(source) > 0) {
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            (click)="service.setProject(source, true)"
+          >
+            {{ 'projects.followUp.all' | translate }}
+          </button>
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            (click)="service.setProject(source, false)"
+          >
+            {{ 'projects.followUp.none' | translate }}
+          </button>
+          }
+        </div>
+        @for (group of groups(source.files); track group.platform) {
+        <fieldset class="flex flex-col gap-1">
+          <legend class="text-muted-foreground text-xs font-medium">
+            {{ group.platform ?? ('projects.followUp.noPlatform' | translate) }}
+          </legend>
+          @for (file of group.files; track file.projectFileId) {
+          <label
+            class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1 text-sm"
+          >
+            <input
+              type="checkbox"
+              [disabled]="file.inTarget"
+              [checked]="file.inTarget || service.selected().has(file.projectFileId)"
+              (change)="service.toggle(file.projectFileId)"
+            />
+            <span class="min-w-0 flex-1" [lkTruncate]="file.displayName"
+              >{{ file.displayName }}</span
+            >
+            <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
+              @if (file.inTarget) { {{ 'files.takeOver.already' | translate }} }
+              @else if (file.periodFrom && file.periodTo) { {{ file.periodFrom |
+              lkDate }} – {{ file.periodTo | lkDate }} }
+            </span>
+          </label>
+          }
+        </fieldset>
+        }
+      </section>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'files.takeOver.empty' | translate }}
+      </p>
+      } } @else {
+      <hlm-skeleton class="h-40 w-full" />
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.selected().size === 0 || service.isBusy()"
+        (click)="confirm()"
+      >
+        {{ 'files.takeOver.confirm' | translate: { count:
+        service.selected().size } }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

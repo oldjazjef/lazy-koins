@@ -1,4 +1,4 @@
-import { UnprocessableEntityException } from '@nestjs/common';
+import { Optional, UnprocessableEntityException } from '@nestjs/common';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -6,6 +6,8 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import { secretHint } from '../../common/crypto/secret-box';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { Topics } from '../../notifications/domain/notification';
 import {
   AiCompletionPort,
   type AiProviderKind,
@@ -79,6 +81,11 @@ export interface SaveAiSettingsInput {
   readonly apiKey?: string;
   /** `true` withdraws the consent (F5.14): the next request asks again. */
   readonly revokeConsent?: boolean;
+  /**
+   * `true` gives the consent up front (F5.14, setup wizard F11.0s) — the app still shows what is
+   * sent before every request. Ignored when a consent exists or `revokeConsent` is set.
+   */
+  readonly giveConsent?: boolean;
 }
 
 export class SaveAiSettingsCommand {
@@ -98,6 +105,7 @@ export class SaveAiSettingsHandler implements ICommandHandler<
     private readonly settings: AiSettingsRepositoryPort,
     private readonly gate: AiGate,
     private readonly runtime: AiRuntime,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
 
   async execute({
@@ -144,8 +152,15 @@ export class SaveAiSettingsHandler implements ICommandHandler<
       model: input.model.trim(),
       apiKeyCipher,
       apiKeyHint,
-      consentAt: input.revokeConsent ? null : current.consentAt,
+      consentAt: input.revokeConsent
+        ? null
+        : (current.consentAt ??
+          (input.giveConsent ? new Date().toISOString() : null)),
     });
+    // A new or removed key settles "Schlüssel prüfen" until the next failure (F11.11).
+    if (key !== undefined) {
+      await this.notifications?.resolve(userId, Topics.keyInvalid('ai'));
+    }
     return settingsView(saved, this.runtime);
   }
 }
@@ -189,23 +204,27 @@ export class TestAiConnectionHandler implements ICommandHandler<
       draft,
     );
     const started = Date.now();
-    const answer = await this.gate.call(() =>
-      this.ai.complete(connection, {
-        system:
-          'This is a connection test. Answer with the JSON object {"ok": true}.',
-        messages: [{ role: 'user', content: 'Connection test.' }],
-        output: {
-          name: 'connection_test',
-          description: 'Confirms the connection works.',
-          schema: {
-            type: 'object',
-            properties: { ok: { type: 'boolean' } },
-            required: ['ok'],
+    const answer = await this.gate.call(
+      () =>
+        this.ai.complete(connection, {
+          system:
+            'This is a connection test. Answer with the JSON object {"ok": true}.',
+          messages: [{ role: 'user', content: 'Connection test.' }],
+          output: {
+            name: 'connection_test',
+            description: 'Confirms the connection works.',
+            schema: {
+              type: 'object',
+              properties: { ok: { type: 'boolean' } },
+              required: ['ok'],
+            },
           },
-        },
-        maxTokens: 50,
-        timeoutMs: 30_000,
-      }),
+          maxTokens: 50,
+          timeoutMs: 30_000,
+        }),
+      connection,
+      // Only a test of the saved key may settle "Schlüssel prüfen" (F11.12).
+      draft?.apiKey === undefined ? { userId, test: true } : undefined,
     );
     return {
       ok: true,

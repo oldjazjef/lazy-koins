@@ -12,8 +12,37 @@
 
       <nav [attr.aria-label]="'nav.label' | translate" class="flex-1">
         <ul class="flex items-center gap-1">
-          @for (item of items; track item.path) {
+          @if (!setup.incomplete()) { @for (item of items; track item.path) {
           <li>
+            @if (item.children; as children) {
+            <!-- An entry with sub-items (Mappings: Meine Mappings · Bibliothek) opens a menu. -->
+            <button
+              type="button"
+              class="lk-nav-link"
+              [class.lk-nav-active]="isActive(item)"
+              [hlmDropdownMenuTrigger]="submenu"
+              align="start"
+            >
+              <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
+              <span>{{ item.labelKey | translate }}</span>
+              <ng-icon name="lucideChevronDown" size="14" aria-hidden="true" />
+            </button>
+            <ng-template #submenu>
+              <hlm-dropdown-menu class="min-w-48">
+                @for (child of children; track child.path) {
+                <a
+                  hlmDropdownMenuItem
+                  [routerLink]="child.path"
+                  [class.lk-nav-active]="isActive(child, children)"
+                  [attr.aria-current]="isActive(child, children) ? 'page' : null"
+                >
+                  <ng-icon [name]="child.icon" size="16" aria-hidden="true" />
+                  {{ child.labelKey | translate }}
+                </a>
+                }
+              </hlm-dropdown-menu>
+            </ng-template>
+            } @else {
             <a
               [routerLink]="item.path"
               routerLinkActive="lk-nav-active"
@@ -23,11 +52,27 @@
               <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
               <span>{{ item.labelKey | translate }}</span>
             </a>
+            }
           </li>
-          }
+          } }
         </ul>
       </nav>
 
+      <lk-notification-bell />
+      <button
+        hlmBtn
+        variant="ghost"
+        size="icon"
+        type="button"
+        aria-controls="lk-chat"
+        [class.lk-nav-active]="chat.open()"
+        [attr.aria-expanded]="chat.open()"
+        [attr.aria-label]="'nav.chat' | translate"
+        [attr.title]="'nav.chat' | translate"
+        (click)="chat.toggle()"
+      >
+        <ng-icon name="lucideBot" size="18" aria-hidden="true" />
+      </button>
       <button
         hlmBtn
         variant="ghost"
@@ -71,6 +116,16 @@
             <ng-icon [name]="item.icon" size="16" aria-hidden="true" />
             {{ item.labelKey | translate }}
           </a>
+          } @if (pin.status()?.hasPin) {
+          <button
+            role="menuitem"
+            type="button"
+            class="lk-menu-item border-t"
+            (click)="lockNow()"
+          >
+            <ng-icon name="lucideLock" size="16" aria-hidden="true" />
+            {{ 'pin.lockNow' | translate }}
+          </button>
           } @if (auth.hasAccount) {
           <button
             role="menuitem"
@@ -88,19 +143,38 @@
     </div>
   </header>
 
-  <!-- Only this area scrolls (user rule): the header above stays put. -->
-  <div class="lk-scroll-area flex min-h-0 flex-1 flex-col overflow-y-auto">
-    <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
-      <router-outlet />
-    </main>
-
-    @if (version.info(); as build) {
-    <footer
-      class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+  <div class="relative flex min-h-0 flex-1">
+    <!-- Only this area scrolls (user rule): the header above stays put. -->
+    <div
+      class="lk-scroll-area flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
     >
-      {{ 'app.version' | translate: { version: build.version, commit:
-      build.commit } }}
-    </footer>
+      <!-- The container for full-width page headers: its width excludes the scrollbar. -->
+      <div class="lk-scroll-content flex flex-1 flex-col">
+        <main class="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
+          <router-outlet />
+        </main>
+
+        @if (version.info(); as build) {
+        <footer
+          class="text-muted-foreground mx-auto w-full max-w-6xl px-6 pb-4 text-xs"
+        >
+          {{ 'app.version' | translate: { version: build.version, commit:
+          build.commit } }}
+        </footer>
+        }
+      </div>
+    </div>
+
+    <!-- The assistant (F11.14): beside the page on wide screens, an overlay on narrow ones -->
+    @if (chat.open()) {
+    <button
+      type="button"
+      class="lk-chat-backdrop"
+      tabindex="-1"
+      [attr.aria-label]="'chat.close' | translate"
+      (click)="chat.close()"
+    ></button>
+    <lk-chat-sidebar id="lk-chat" class="lk-chat-panel" />
     }
   </div>
 </div>

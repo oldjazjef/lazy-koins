@@ -73,6 +73,8 @@ export class InMemorySnapshotRepository extends CalculationSnapshotRepositoryPor
           wealthChf: latest.wealthChf,
           incomeChf: latest.incomeChf,
           calculatedAt: latest.createdAt,
+          inputHash: latest.inputHash,
+          engineVersion: latest.engineVersion,
         });
       }
     }

@@ -6,12 +6,17 @@ import {
   type CalculationInput,
   type Correction,
   countryRules,
+  type CountryRules,
   ENGINE_VERSION,
   type Holding,
   parseStandardFile,
   type PreviousYear,
   type RateEntry,
+  type WalletState,
+  withTaxCurrency,
 } from '@lazykoins/engine';
+import { walletStates } from '../../wallets/domain/wallet-states';
+import { WalletRepositoryPort } from '../../wallets/ports/wallet.repository.port';
 import { readableOf } from '../../files/application/file-access';
 import {
   SourceFileReader,
@@ -46,6 +51,8 @@ interface Sources {
   readonly rates: readonly RateEntry[];
   readonly previous: PreviousYear | undefined;
   readonly previousRef: string | null;
+  /** F6.4: the project's wallets per network (only the wallet check reads them). */
+  readonly wallets: readonly WalletState[];
 }
 
 function compareText(a: string, b: string): number {
@@ -73,6 +80,7 @@ export class CalculationInputService {
     private readonly corrections: CorrectionRepositoryPort,
     private readonly snapshots: CalculationSnapshotRepositoryPort,
     private readonly reader: SourceFileReader,
+    private readonly wallets: WalletRepositoryPort,
   ) {}
 
   /** The input hash alone — cheap (no file is read); tells whether a snapshot is stale. */
@@ -80,9 +88,23 @@ export class CalculationInputService {
     return hashOf(project, await this.sources(project));
   }
 
+  /**
+   * F7.6: a snapshot is stale when another engine computed it or anything that decides the
+   * result changed since (files added/removed/reassigned, a mapping edited, corrections, rates,
+   * wallets, the tax currency, the previous year) — the one rule for result, list and header.
+   */
+  async isStale(
+    project: Project,
+    snapshot: { readonly inputHash: string; readonly engineVersion: number },
+  ): Promise<boolean> {
+    return (
+      snapshot.engineVersion !== ENGINE_VERSION ||
+      (await this.inputHash(project)) !== snapshot.inputHash
+    );
+  }
+
   async build(project: Project): Promise<AssembledInput> {
-    const rules = countryRules(project.country);
-    if (!rules) throw new Error(`No country rules for ${project.country}`);
+    const rules = projectRules(project);
     const sources = await this.sources(project);
     const bookings: Booking[] = [];
     const holdings: Holding[] = [];
@@ -118,6 +140,7 @@ export class CalculationInputService {
         corrections,
         rates: sources.rates,
         previous: sources.previous,
+        wallets: sources.wallets,
       },
       files: sources.files.map((f) => ({
         projectFileId: f.id,
@@ -146,7 +169,10 @@ export class CalculationInputService {
     for (const file of files) {
       if (file.mappingId && !mappings.has(file.mappingId)) {
         const mapping = await this.mappings.findById(file.mappingId);
-        if (mapping) mappings.set(mapping.id, mapping);
+        // Defence in depth (F11.16 audit): only the project owner's own mappings are ever used.
+        if (mapping && mapping.ownerId === project.ownerId) {
+          mappings.set(mapping.id, mapping);
+        }
       }
     }
     const rates: RateEntry[] = (await this.rates.listByProject(project.id)).map(
@@ -168,17 +194,37 @@ export class CalculationInputService {
       rates,
       previous,
       previousRef: ref,
+      wallets: await this.walletStates(project),
     };
   }
 
-  /** The owner's project of the year before (same country), via its latest snapshot. */
+  private async walletStates(project: Project): Promise<WalletState[]> {
+    const ids = await this.wallets.listWalletIds(project.id);
+    if (ids.length === 0) return [];
+    const wallets = (await this.wallets.findByIds(ids)).filter(
+      (w) => w.ownerId === project.ownerId,
+    );
+    return walletStates(
+      wallets,
+      await this.wallets.listData(ids),
+      await this.wallets.listBalances(project.id),
+      `${project.taxYear}-12-31`,
+    );
+  }
+
+  /**
+   * The owner's project of the year before (same country and tax currency — its values are
+   * compared), via its latest snapshot.
+   */
   private async previousYear(
     project: Project,
   ): Promise<{ previous: PreviousYear | undefined; ref: string | null }> {
     const candidates = (await this.projects.findByOwner(project.ownerId))
       .filter(
         (p) =>
-          p.taxYear === project.taxYear - 1 && p.country === project.country,
+          p.taxYear === project.taxYear - 1 &&
+          p.country === project.country &&
+          p.taxCurrency === project.taxCurrency,
       )
       .sort((a, b) => compareText(b.updatedAt, a.updatedAt));
     for (const candidate of candidates) {
@@ -205,7 +251,8 @@ export class CalculationInputService {
     return { previous: undefined, ref: null };
   }
 
-  private async recordsOf(
+  /** The standard records of one project file (read again from its bytes); `undefined` without a mapping. */
+  async recordsOf(
     file: ProjectFile,
     mappings: ReadonlyMap<string, ImportMapping>,
   ): Promise<
@@ -225,11 +272,25 @@ export class CalculationInputService {
   }
 }
 
+/**
+ * The country's rules valued in the project's tax currency (F4.1a) — what every calculation,
+ * export and dashboard of the project runs on.
+ */
+export function projectRules(
+  project: Pick<Project, 'country' | 'taxCurrency'>,
+): CountryRules {
+  const rules = countryRules(project.country);
+  if (!rules) throw new Error(`No country rules for ${project.country}`);
+  return withTaxCurrency(rules, project.taxCurrency);
+}
+
 function hashOf(project: Project, sources: Sources): string {
   const canonical = {
     engineVersion: ENGINE_VERSION,
     taxYear: project.taxYear,
     country: project.country,
+    // F4.1a: another tax currency values everything anew.
+    currency: project.taxCurrency,
     files: sources.files.map((f) => [
       f.sha256,
       f.status,
@@ -248,6 +309,7 @@ function hashOf(project: Project, sources: Sources): string {
       )
       .sort(compareText),
     previous: sources.previousRef,
+    wallets: sources.wallets,
   };
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }

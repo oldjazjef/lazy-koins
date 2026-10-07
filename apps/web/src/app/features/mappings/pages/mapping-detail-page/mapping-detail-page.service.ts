@@ -10,21 +10,21 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
+import { AuthService } from '../../../../core/auth/auth.service';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
+import { LibraryClient } from '../../../library/library-client';
 import type {
+  LibraryEntry,
   Mapping,
-  MappingPreview,
   MappingUsageProject,
   ProjectStatus,
   ReapplyResult,
-  SpecIssue,
   UpdatedMapping,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
-import {
-  type CheckFileOption,
-  parseSpecText,
-} from '../../../files/components/mapping-editor';
+import { parseSpecText } from '../../../files/components/mapping-editor';
+import { MappingWorkbenchService } from '../../components/mapping-workbench';
 import { specIssues } from '../mappings-page/mappings-page.service';
 
 /** A file read with the mapping, with its project (the editor's preview, the delete dialog). */
@@ -37,9 +37,10 @@ export interface UsageFile {
 }
 
 /**
- * Page-scoped: one mapping (F11.0) — facts, JSON, editor with preview against a file that uses
- * it, re-apply after saving (closed projects are skipped by the API), download, delete (its files
- * go back to "needs mapping"; refused while a closed project uses it), and "Wird genutzt in".
+ * Page-scoped: one mapping (F11.0) — facts, JSON, editor with a sample file and live preview (a
+ * file that uses it is loaded as the sample), re-apply after saving (closed projects are skipped
+ * by the API), download, delete (its files go back to "needs mapping"; refused while a closed
+ * project uses it), and "Wird genutzt in".
  * Someone else's mapping is a 404, like a missing one.
  */
 @Injectable()
@@ -61,6 +62,50 @@ export class MappingDetailPageService {
     const id = this.mappingId();
     return id ? apiUrl(`/mappings/${id}/usage`) : undefined;
   });
+
+  /** F5.15–F5.17 are web only (the desktop has no library). */
+  readonly webApp = inject(AuthService).hasAccount;
+  private readonly library = inject(LibraryClient);
+
+  /** For a copy from the library (F5.16): the entry as it is now — 404 once it was removed. */
+  readonly libraryEntry = httpResource<LibraryEntry>(() => {
+    const source = this.mapping.hasValue()
+      ? this.mapping.value().library
+      : undefined;
+    return source && this.webApp ? apiUrl(`/library/${source.id}`) : undefined;
+  });
+
+  /** The entry's newer version, if the author published one since the copy was taken. */
+  readonly newerVersion = computed(() => {
+    const source = this.mapping.hasValue()
+      ? this.mapping.value().library
+      : undefined;
+    const entry = this.libraryEntry.hasValue()
+      ? this.libraryEntry.value()
+      : undefined;
+    return source && entry && entry.version > source.version
+      ? entry.version
+      : null;
+  });
+
+  /** A copy of the newer version (a new mapping of mine; this one stays as it is). */
+  async takeNewerVersion(): Promise<void> {
+    const source = this.mapping.value()?.library;
+    if (!source) return;
+    const taken = await this.library.take(source.id);
+    if (taken) await this.router.navigate(['/app/mappings', taken.mapping.id]);
+  }
+
+  constructor() {
+    // "Wird genutzt in" follows re-applies and files added/removed in any project. The mapping
+    // itself is not reloaded under the open editor — this page is where it is changed.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () =>
+        changes.globalVersion('mappings') + changes.globalVersion('projects'),
+      [this.usage],
+    );
+  }
 
   readonly notFound = computed(() => {
     const error = this.mapping.error() as { status?: number } | undefined;
@@ -95,30 +140,13 @@ export class MappingDetailPageService {
   /** F4.5: the API refuses deleting while a closed project holds such a file. */
   readonly usedByClosedProject = computed(() => this.closedFiles() > 0);
 
-  // --- Editor ---
+  // --- Editor (with a sample file: `MappingWorkbenchService`) ---
 
+  private readonly workbench = inject(MappingWorkbenchService);
   readonly editing = signal(false);
-  readonly text = signal('');
-  readonly issues = signal<readonly SpecIssue[]>([]);
-  readonly invalidJson = signal(false);
-  readonly preview = signal<MappingPreview | null>(null);
-  readonly checkFileId = signal('');
   readonly busy = signal(false);
   /** After saving: how many files could be re-read with the new version. */
   readonly reapplyOffer = signal<number | null>(null);
-
-  readonly checkFiles = computed<CheckFileOption[]>(() =>
-    this.usageFiles().map((file) => ({
-      id: file.fileId,
-      label: `${file.displayName} · ${file.projectName}`,
-    })),
-  );
-
-  private readonly checkFile = computed(() =>
-    this.usageFiles().find((file) => file.fileId === this.checkFileId()),
-  );
-  readonly canCheck = computed(() => this.checkFile() !== undefined);
-
   private readonly reapplyAction = defineAction<string, ReapplyResult>({
     run: (id) =>
       firstValueFrom(
@@ -136,50 +164,32 @@ export class MappingDetailPageService {
   private readonly status = this.actions.status<unknown>('mapping-detail');
   readonly isBusy = computed(() => this.status()?.state === 'pending');
 
+  /**
+   * Opens the editor with the stored spec; the first file that uses the mapping (any project) is
+   * loaded as the sample, so the live preview starts right away.
+   */
   startEdit(): void {
     if (!this.mapping.hasValue()) return;
-    this.text.set(JSON.stringify(this.mapping.value().spec, null, 2));
-    this.issues.set([]);
-    this.invalidJson.set(false);
-    this.preview.set(null);
-    this.checkFileId.set(this.usageFiles()[0]?.fileId ?? '');
+    const mapping = this.mapping.value();
+    this.workbench.start(JSON.stringify(mapping.spec, null, 2), mapping.id);
     this.editing.set(true);
+    const first = this.usageFiles()[0];
+    if (first) {
+      void this.workbench.useProjectFile(
+        first.projectId,
+        { id: first.fileId, displayName: first.displayName },
+        first.projectName,
+      );
+    }
   }
 
   cancelEdit(): void {
     this.editing.set(false);
   }
 
-  /** Validates (via the API) and previews the edited spec against the chosen file. */
-  async check(): Promise<void> {
-    const parsed = this.parse();
-    const file = this.checkFile();
-    if (!parsed || !file) return;
-    this.busy.set(true);
-    try {
-      const preview = await firstValueFrom(
-        this.http.post<MappingPreview>(
-          apiUrl(
-            `/projects/${file.projectId}/files/${file.fileId}/mapping-preview`,
-          ),
-          { spec: parsed.value, limit: 20 },
-        ),
-      );
-      this.issues.set([]);
-      this.preview.set(preview);
-    } catch (error) {
-      this.preview.set(null);
-      const issues = specIssues(error);
-      if (issues) this.issues.set(issues);
-      else this.notifications.error('mappings.checkFailed');
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
   /** Saves the edited spec; when files use the mapping, offers to re-read them. */
   async save(): Promise<void> {
-    const parsed = this.parse();
+    const parsed = parseSpecText(this.workbench.text());
     const id = this.mappingId();
     if (!parsed || !id) return;
     this.busy.set(true);
@@ -195,13 +205,12 @@ export class MappingDetailPageService {
       if (updated.filesUsing > 0) this.reapplyOffer.set(updated.filesUsing);
     } catch (error) {
       const issues = specIssues(error);
-      if (issues) this.issues.set(issues);
+      if (issues) this.workbench.saveIssues.set(issues);
       else this.notifications.error('mappings.saveFailed');
     } finally {
       this.busy.set(false);
     }
   }
-
   /** Re-reads every file of the mapping; files in closed projects stay as they were (F4.5). */
   async reapply(): Promise<void> {
     const id = this.mappingId();
@@ -210,6 +219,7 @@ export class MappingDetailPageService {
     try {
       const result = await this.actions.run(this.reapplyAction, id, {
         key: 'mapping-detail',
+        activity: { label: 'activity.reapply' },
       });
       this.notifications.info(
         result.skippedClosed > 0
@@ -217,7 +227,6 @@ export class MappingDetailPageService {
           : 'mappings.detail.reapplied',
         { reapplied: result.reapplied, skipped: result.skippedClosed },
       );
-      this.usage.reload();
     } catch {
       // The runner has shown the failure.
     }
@@ -265,15 +274,5 @@ export class MappingDetailPageService {
       return;
     }
     await this.router.navigate(['/app/mappings'], { replaceUrl: true });
-  }
-
-  private parse(): { value: unknown } | undefined {
-    const parsed = parseSpecText(this.text());
-    this.invalidJson.set(parsed === undefined);
-    if (!parsed) {
-      this.issues.set([]);
-      this.preview.set(null);
-    }
-    return parsed;
   }
 }

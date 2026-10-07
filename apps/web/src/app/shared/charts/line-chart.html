@@ -1,0 +1,116 @@
+<figure class="flex flex-col gap-1">
+  <div class="flex gap-2">
+    @if (!compact()) {
+    <div
+      class="text-muted-foreground flex w-20 shrink-0 flex-col justify-between py-1 text-right text-xs tabular-nums"
+      aria-hidden="true"
+    >
+      @for (label of yLabels(); track $index) {
+      <span>{{ label }}</span>
+      }
+    </div>
+    }
+    <div class="relative min-w-0 flex-1">
+      <svg
+        class="block w-full cursor-crosshair outline-none focus-visible:ring-2"
+        [class.h-28]="compact()"
+        [class.h-60]="!compact()"
+        [attr.viewBox]="'0 0 ' + width + ' ' + height()"
+        [attr.preserveAspectRatio]="'none'"
+        role="img"
+        tabindex="0"
+        [attr.aria-label]="label()"
+        (mousemove)="move($event)"
+        (mouseleave)="leave()"
+        (keydown)="key($event)"
+        (blur)="leave()"
+      >
+        <title>{{ label() }}</title>
+        @for (y of gridLines(); track $index) {
+        <line
+          class="lk-chart-grid"
+          x1="0"
+          [attr.y1]="y"
+          [attr.x2]="width"
+          [attr.y2]="y"
+        />
+        } @for (bar of missingBars(); track $index) {
+        <rect
+          class="lk-chart-missing"
+          [attr.x]="bar.x"
+          [attr.y]="height() - 4"
+          [attr.width]="bar.width"
+          height="4"
+        />
+        }
+        <path class="lk-chart-area" [attr.d]="area()" />
+        <path class="lk-chart-line" [attr.d]="line()" />
+        @if (activePoint(); as active) {
+        <line
+          class="lk-chart-crosshair"
+          [attr.x1]="active.x"
+          y1="0"
+          [attr.x2]="active.x"
+          [attr.y2]="height()"
+        />
+        }
+      </svg>
+      @if (activePoint(); as active) {
+      <div
+        class="lk-chart-tooltip"
+        [style.left.%]="active.leftPct"
+        role="status"
+      >
+        <p class="text-muted-foreground">{{ active.point.date | lkDate }}</p>
+        <p class="text-sm font-medium tabular-nums">
+          {{ active.point.value | lkChf: currency() }}
+        </p>
+        @if (active.point.missing.length > 0) {
+        <p class="mt-1">
+          {{ 'charts.missingOn' | translate: { assets:
+          active.point.missing.join(', ') } }}
+        </p>
+        }
+      </div>
+      }
+    </div>
+  </div>
+  @if (!compact()) {
+  <div
+    class="text-muted-foreground flex justify-between pl-22 text-xs tabular-nums"
+    aria-hidden="true"
+  >
+    @for (tick of ticks(); track $index) {
+    <span>{{ tick | lkDate }}</span>
+    }
+  </div>
+  } @if (hasMissing()) {
+  <figcaption class="text-muted-foreground flex items-center gap-2 text-xs">
+    <span class="lk-swatch lk-swatch-missing" aria-hidden="true"></span>
+    {{ 'charts.missingLegend' | translate }}
+  </figcaption>
+  }
+  <div class="sr-only">
+    <table>
+      <caption>
+        {{ label() }}
+      </caption>
+      <thead>
+        <tr>
+          <th>{{ 'charts.date' | translate }}</th>
+          <th>{{ 'charts.valueChf' | translate: { currency: currency() } }}</th>
+          <th>{{ 'charts.missing' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (point of points(); track point.date) {
+        <tr>
+          <td>{{ point.date | lkDate }}</td>
+          <td>{{ point.value | lkChf }}</td>
+          <td>{{ point.missing.join(', ') }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</figure>

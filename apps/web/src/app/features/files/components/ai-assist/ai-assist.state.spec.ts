@@ -1,4 +1,6 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
+import { aiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -13,6 +15,7 @@ import type {
   ProjectFile,
   ProjectFiles,
 } from '../../../../core/api/api.types';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
 import { ProjectFilesService } from '../project-files/project-files.service';
@@ -100,14 +103,20 @@ const BASE = '/api/projects/p1/files/f1/ai';
 
 async function setup(files: ProjectFile[] = [file()]) {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+  const aiErrors = {
+    notify: vi.fn((error: unknown) => aiErrorInfo(error)),
+    open: vi.fn(),
+    close: vi.fn(),
+  };
   TestBed.configureTestingModule({
     providers: [
       ProjectFilesService,
       AiAssistState,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
+      { provide: AiErrorNotifier, useValue: aiErrors },
     ],
   });
   const filesService = TestBed.inject(ProjectFilesService);
@@ -124,10 +133,14 @@ async function setup(files: ProjectFile[] = [file()]) {
   http.expectOne('/api/projects/p1/mappings').flush([]);
   http.expectOne('/api/mappings').flush([]);
   await settle();
-  return { state, http, notifications };
+  return { state, http, notifications, aiErrors };
 }
 
-async function flushReloads(http: HttpTestingController) {
+/** The reloads after a change (DataChanges); my mappings only when a mapping was saved. */
+async function flushReloads(
+  http: HttpTestingController,
+  { mappings = false } = {},
+) {
   await settle();
   http.expectOne('/api/projects/p1/files').flush({
     taxYear: 2025,
@@ -135,13 +148,14 @@ async function flushReloads(http: HttpTestingController) {
     missing: [],
   });
   http.expectOne('/api/projects/p1/mappings').flush([]);
-  http.expectOne('/api/mappings').flush([]);
+  if (mappings) http.expectOne('/api/mappings').flush([]);
+  else http.expectNone('/api/mappings');
 }
 
 describe('AiAssistState', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
     } finally {
       TestBed.resetTestingModule();
     }
@@ -189,9 +203,17 @@ describe('AiAssistState', () => {
     const request = http.expectOne(`${BASE}/mapping`);
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ consent: true });
+    // The provider may take a while: the activity indicator shows it.
+    const activity = TestBed.inject(ActivityService);
+    expect(activity.tasks().map((t) => t.label)).toEqual([
+      'activity.ai.mapping',
+    ]);
     request.flush(candidate);
     await sent;
+    expect(activity.count()).toBe(0);
     expect(state.step()).toBe('mappingReview');
+    // The dialog was open: it shows the proposal, no toast needed.
+    expect(notifications.success).not.toHaveBeenCalled();
     expect(state.usage()).toEqual({ inputTokens: 10, outputTokens: 5 });
     expect(JSON.parse(state.specText())).toEqual(candidate.spec);
 
@@ -203,7 +225,7 @@ describe('AiAssistState', () => {
     });
     accept.flush({ mapping: { id: 'm7' }, file: file({ status: 'mapped' }) });
     await saved;
-    await flushReloads(http);
+    await flushReloads(http, { mappings: true });
     // The toast links to the new mapping's page (F11.0).
     expect(notifications.success).toHaveBeenCalledWith('ai.mapping.saved', {
       labelKey: 'mappings.openPage',
@@ -242,7 +264,7 @@ describe('AiAssistState', () => {
   });
 
   it('translates provider failures and stays on the consent step', async () => {
-    const { state, http, notifications } = await setup();
+    const { state, http, notifications, aiErrors } = await setup();
     state.file.set(file());
     state.request.set({
       payload: {},
@@ -259,8 +281,86 @@ describe('AiAssistState', () => {
         { status: 502, statusText: 'Bad Gateway' },
       );
     await sent;
-    expect(notifications.error).toHaveBeenCalledWith('ai.errors.invalidKey');
+    expect(aiErrors.notify).toHaveBeenCalledTimes(1);
+    expect(aiErrors.notify.mock.results[0]?.value).toMatchObject({
+      key: 'ai.errors.invalidKey',
+    });
+    expect(notifications.error).not.toHaveBeenCalled();
     expect(state.step()).toBe('consent');
+    expect(state.error()).toMatchObject({
+      key: 'ai.errors.invalidKey',
+      hintKey: 'ai.hints.key',
+    });
+  });
+
+  it('keeps the provider details of a failure and puts the one-liner into the toast', async () => {
+    const { state, http, notifications, aiErrors } = await setup();
+    state.file.set(file());
+    state.request.set({
+      payload: {},
+      provider: 'openai_compatible',
+      baseUrl: 'https://api.example.com/v1',
+      model: 'gpt-x',
+      consentGiven: true,
+    });
+    const sent = state.send();
+    http.expectOne(`${BASE}/mapping`).flush(
+      {
+        statusCode: 502,
+        code: 'modelNotFound',
+        status: 404,
+        providerMessage: 'The model gpt-x does not exist',
+        providerCode: 'model_not_found',
+        url: 'https://api.example.com/v1/chat/completions',
+        model: 'gpt-x',
+        detail: 'modelNotFound: HTTP 404 · …',
+      },
+      { status: 502, statusText: 'Bad Gateway' },
+    );
+    await sent;
+    // F11.2: the toast is translated; the API's English one-liner stays in the error panel.
+    expect(aiErrors.notify).toHaveBeenCalledTimes(1);
+    expect(aiErrors.notify.mock.results[0]?.value).toMatchObject({
+      key: 'ai.errors.modelNotFound',
+    });
+    expect(notifications.error).not.toHaveBeenCalled();
+    expect(state.error()?.detail).toBe('modelNotFound: HTTP 404 · …');
+    expect(state.error()).toMatchObject({
+      status: 404,
+      providerMessage: 'The model gpt-x does not exist',
+      providerCode: 'model_not_found',
+      url: 'https://api.example.com/v1/chat/completions',
+      model: 'gpt-x',
+      hintKey: 'ai.hints.model',
+    });
+  });
+
+  it('offers the proposal in a toast when the dialog was closed while the AI worked', async () => {
+    const { state, http, notifications } = await setup();
+    state.file.set(file());
+    state.request.set({
+      payload: {},
+      provider: 'openai_compatible',
+      baseUrl: '',
+      model: '',
+      consentGiven: true,
+    });
+    const sent = state.send();
+    state.close();
+    http.expectOne(`${BASE}/mapping`).flush(candidate);
+    await sent;
+    expect(state.step()).toBe('closed');
+    expect(notifications.success).toHaveBeenCalledWith(
+      'activity.ai.mappingReady',
+      expect.objectContaining({ labelKey: 'activity.show' }),
+      { name: 'export.csv' },
+    );
+    const [, action] = notifications.success.mock.calls[0] as [
+      string,
+      { onClick: () => void },
+    ];
+    action.onClick();
+    expect(state.step()).toBe('mappingReview');
   });
 
   it('reads a PDF statement and stores only the kept balances, as printed', async () => {
@@ -368,3 +468,13 @@ describe('confirmed / aiErrorKey', () => {
     expect(aiErrorKey(new Error('x'))).toBe('ai.errors.failed');
   });
 });
+
+/** The hints (F5.8) reload with the files; their own behaviour is tested separately. */
+function verifyIgnoringHints(http: HttpTestingController): void {
+  for (const request of http.match('/api/projects/p1/hints')) {
+    if (!request.cancelled) {
+      request.flush({ taxYear: 2025, hints: [], open: 0 });
+    }
+  }
+  http.verify();
+}

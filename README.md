@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://buymeacoffee.com/oldjazjef">☕ Buy me a coffee</a>
+  <a href="https://buymeacoffee.com/hello.eme">☕ Buy me a coffee</a>
 </p>
 
 ---
@@ -29,6 +29,11 @@ one tax year:
 
 The first country is **Switzerland, private assets**: capital gains are tax-free there, so
 lazy-koins does not compute them — it focuses on what has to be declared.
+
+The app speaks **German (Switzerland)** and **English** — choose the language, number format
+(1’234.56 or 1,234.56) and date format in your profile; it applies at once, and the statements,
+the internal report and the mail to your accountant follow it (Swiss tax terms keep their
+official German name in parentheses).
 
 > lazy-koins is not tax advice. It documents how every figure was calculated so that you, your
 > accountant or the tax office can check it.
@@ -92,6 +97,32 @@ SmartScreen / macOS Gatekeeper will ask once).
 - API keys (AI, CoinGecko, Etherscan, mail) are stored encrypted and never shown again.
 - Seed phrases and private keys are detected and refused — lazy-koins only ever needs public
   addresses.
+- The assistant chat sends your messages and what its tools read for them to your AI provider —
+  you agree once; it never changes anything before you click "Ausführen" on its proposal.
+
+## AI assistant and MCP server
+
+With the AI plugin set up, a **chat sidebar** (toggle in the header) explains figures with links
+down to the file row, asks for missing files with an upload drop zone, and proposes corrections
+as cards you confirm or cancel. Its system prompt is editable under Einstellungen › AI; the
+safety rules (confirm before changes, no tax advice, no keys) are always appended.
+
+The same tools are available to external AI clients (Claude Desktop, Claude Code, …) through a
+built-in **MCP server** — off by default:
+
+1. Einstellungen › MCP: switch it on, choose the areas (projects, files, results, …) and whether
+   write tools are allowed, create a personal access token (shown once).
+2. Connect a client to the Streamable HTTP endpoint `/api/mcp` with
+   `Authorization: Bearer <token>`, e.g. Claude Code:
+   `claude mcp add --transport http lazy-koins https://<your-host>/api/mcp --header "Authorization: Bearer <token>"`.
+3. Desktop app: the endpoint only listens on 127.0.0.1 (the port changes per start), so use the
+   **stdio** entry `mcp-stdio.js` that ships with the app — Einstellungen › MCP shows the exact
+   command for your installation (it runs the app's executable with `ELECTRON_RUN_AS_NODE=1`
+   and the token in `LAZYKOINS_MCP_TOKEN`).
+
+Every tool call (chat and MCP) is logged without secrets and listed under Einstellungen › MCP;
+tokens can be revoked at any time. For a quick check from a terminal:
+`LAZYKOINS_MCP_TOKEN=… node scripts/dev/mcp-client.mjs http://localhost:3333/api/mcp`.
 
 ## Tech stack
 
@@ -125,10 +156,17 @@ pnpm build:desktop  # build the installer for your OS
 ## Support
 
 If lazy-koins saves you an afternoon of spreadsheets, you can
-[buy me a coffee](https://buymeacoffee.com/oldjazjef). Bugs and ideas are welcome as
+[buy me a coffee](https://buymeacoffee.com/hello.eme). Bugs and ideas are welcome as
 [issues](https://github.com/oldjazjef/lazy-koins/issues); security problems please via
 [private vulnerability reporting](SECURITY.md).
 
 ## License
 
-[MIT](LICENSE) © Emanuel Mistretta
+[PolyForm Noncommercial 1.0.0](LICENSE) © Emanuel Mistretta
+
+You may use, change and share the code for any **noncommercial** purpose: personal use, your own
+tax return, study, hobby projects, and use by charities, schools and public institutions. You may
+**not** use it to make money: no selling it, no paid hosting or service built on it, no use in a
+commercial product. For a commercial license, ask via
+[GitHub](https://github.com/oldjazjef/lazy-koins/issues). This makes lazy-koins source-available,
+not open source in the OSI sense.

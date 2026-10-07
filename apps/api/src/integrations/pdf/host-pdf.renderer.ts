@@ -2,7 +2,7 @@ import {
   PdfRendererPort,
   PdfUnavailableError,
 } from '../../exports/ports/project-export.repository.port';
-import { type HostPdfPrinter, PDF_PRINT_OPTIONS } from './print-options';
+import { type HostPdfPrinter, printOptionsFor } from './print-options';
 
 /**
  * PDFs printed by the hosting process — in the desktop app Electron's own Chromium
@@ -19,7 +19,7 @@ export class HostPdfRenderer extends PdfRendererPort {
 
   async render(html: string): Promise<Uint8Array> {
     try {
-      return await this.printer(html, PDF_PRINT_OPTIONS);
+      return await this.printer(html, printOptionsFor(html));
     } catch (error) {
       throw new PdfUnavailableError(
         error instanceof Error

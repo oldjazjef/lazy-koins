@@ -6,6 +6,7 @@ import {
   defaultImporterRegistry,
   type ImportResult,
   type MappingSpec,
+  mappingConfidence,
   mappingImporter,
   STANDARD_IMPORTER_ID,
 } from '@lazykoins/engine';
@@ -94,6 +95,34 @@ export class FileAnalysisService {
       mapping.id,
       'mapped',
     );
+  }
+
+  /**
+   * F5.16: which of these specs (library entries — not the owner's) would read the file, surest
+   * first. Detection only, read like an upload; nothing is applied or stored.
+   */
+  async matchingSpecs(
+    file: ReadableFile,
+    specs: readonly { readonly id: string; readonly spec: MappingSpec }[],
+  ): Promise<{ id: string; confidence: number }[]> {
+    if (file.kind === 'pdf' || specs.length === 0) return [];
+    const source = await this.reader.read(file);
+    return specs
+      .map(({ id, spec }) => ({
+        id,
+        confidence: mappingConfidence(spec, source),
+      }))
+      .filter((match) => match.confidence > 0)
+      .sort((a, b) => b.confidence - a.confidence || compare(a.id, b.id));
+  }
+
+  /** The standard format's full result (row errors of a standard file, F5.10). */
+  async applyStandard(file: ReadableFile): Promise<ImportResult | undefined> {
+    const source = await this.reader.read(file);
+    const standard = defaultImporterRegistry([])
+      .candidates(source)
+      .find((candidate) => candidate.importer.id === STANDARD_IMPORTER_ID);
+    return standard?.importer.parse(source);
   }
 
   /** The engine's full result for a spec — previews (nothing is stored). */

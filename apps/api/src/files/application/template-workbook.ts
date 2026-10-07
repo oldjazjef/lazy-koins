@@ -1,9 +1,9 @@
 import {
   BOOKING_COLUMNS,
   BOOKING_KINDS,
-  TEMPLATE_EXPLANATION,
-  TEMPLATE_SHEETS,
+  type TemplateLanguage,
   type TemplateSheet,
+  templateContent,
 } from '@lazykoins/engine';
 import ExcelJS from 'exceljs';
 
@@ -52,24 +52,32 @@ function addDataSheet(
 /**
  * The XLSX template of the standard format (the content comes from the engine): an explanation
  * sheet, `Buchungen` and `Bestände` with synthetic example rows, number columns formatted as text,
- * and a drop-down list for `Art`.
+ * and a drop-down list for `Art`. F11.2: explanations, example notes and labels in `language`;
+ * the column headers and sheet names stay German — they are the format.
  */
-export async function buildTemplateWorkbook(): Promise<Uint8Array> {
+export async function buildTemplateWorkbook(
+  language: TemplateLanguage = 'de-CH',
+): Promise<Uint8Array> {
+  const content = templateContent(language);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'lazy-koins';
 
-  const explanation = workbook.addWorksheet(TEMPLATE_SHEETS.explanationSheet);
+  const explanation = workbook.addWorksheet(content.explanationSheet);
   explanation.getColumn(1).width = 22;
   explanation.getColumn(2).width = 10;
   explanation.getColumn(3).width = 110;
-  for (const line of TEMPLATE_EXPLANATION) explanation.addRow([line]);
+  for (const line of content.explanation) explanation.addRow([line]);
   explanation.getRow(1).font = { bold: true, size: 14 };
-  for (const sheet of [TEMPLATE_SHEETS.bookings, TEMPLATE_SHEETS.holdings]) {
+  for (const sheet of [content.bookings, content.holdings]) {
     explanation.addRow([]);
-    explanation.addRow([`Blatt "${sheet.name}"`]).font = { bold: true };
-    explanation.addRow(['Spalte', 'Pflicht', 'Beschreibung']).font = {
+    explanation.addRow([content.labels.sheet(sheet.name)]).font = {
       bold: true,
     };
+    explanation.addRow([
+      content.labels.column,
+      content.labels.required,
+      content.labels.description,
+    ]).font = { bold: true };
     for (const column of sheet.columns) {
       explanation.addRow([
         column.name,
@@ -79,8 +87,8 @@ export async function buildTemplateWorkbook(): Promise<Uint8Array> {
     }
   }
 
-  const bookings = addDataSheet(workbook, TEMPLATE_SHEETS.bookings);
-  addDataSheet(workbook, TEMPLATE_SHEETS.holdings);
+  const bookings = addDataSheet(workbook, content.bookings);
+  addDataSheet(workbook, content.holdings);
 
   const kindColumn = columnLetter(
     Object.values(BOOKING_COLUMNS).findIndex(
@@ -99,8 +107,8 @@ export async function buildTemplateWorkbook(): Promise<Uint8Array> {
     allowBlank: false,
     formulae: [`"${BOOKING_KINDS.join(',')}"`],
     showErrorMessage: true,
-    errorTitle: 'Art',
-    error: 'Bitte einen Wert aus der Liste wählen.',
+    errorTitle: BOOKING_COLUMNS.kind.name,
+    error: content.labels.kindListError,
   });
 
   const buffer = await workbook.xlsx.writeBuffer();

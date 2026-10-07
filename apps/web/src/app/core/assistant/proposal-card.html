@@ -1,0 +1,101 @@
+@let p = proposal(); @let s = shown();
+<div
+  class="lk-panel flex flex-col gap-2 p-3 text-sm"
+  [class.border-destructive]="p.effect === 'destructive' && p.status === 'pending'"
+>
+  <div class="flex min-w-0 items-start justify-between gap-2">
+    <p class="min-w-0 font-medium break-words">{{ p.title }}</p>
+    <span
+      hlmBadge
+      class="shrink-0"
+      [variant]="p.effect === 'destructive' ? 'destructive' : p.effect === 'write' ? 'secondary' : 'outline'"
+      >{{ 'assistant.effect.' + p.effect | translate }}</span
+    >
+  </div>
+  @if (s.summary) {
+  <p class="text-muted-foreground break-words">{{ s.summary }}</p>
+  } @if (s.changes.length > 0) {
+  <ul class="flex flex-col gap-1.5 border-t pt-2 text-xs">
+    @for (change of s.changes; track $index) {
+    <li class="flex min-w-0 flex-col">
+      <span class="text-muted-foreground">{{ change.label }}</span>
+      <span class="flex min-w-0 flex-wrap items-baseline gap-1 break-all">
+        @if (change.before !== null) {
+        <span class="text-muted-foreground line-through"
+          >{{ change.before }}</span
+        >
+        <span aria-hidden="true">{{ 'chat.proposal.arrow' | translate }}</span>
+        } @if (change.after !== null) {
+        <span class="font-medium">{{ change.after }}</span>
+        } @else {
+        <span class="text-muted-foreground"
+          >{{ 'chat.proposal.removed' | translate }}</span
+        >
+        }
+      </span>
+    </li>
+    }
+  </ul>
+  } @switch (p.status) { @case ('pending') {
+  <div class="flex flex-wrap justify-end gap-2 pt-1">
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      type="button"
+      [disabled]="chat.deciding()"
+      (click)="chat.cancel(p)"
+    >
+      {{ 'chat.proposal.cancel' | translate }}
+    </button>
+    <button
+      hlmBtn
+      size="sm"
+      type="button"
+      [variant]="p.effect === 'destructive' ? 'destructive' : 'default'"
+      [disabled]="chat.deciding()"
+      (click)="chat.confirm(p)"
+    >
+      {{ 'chat.proposal.confirm' | translate }}
+    </button>
+  </div>
+  } @case ('executed') {
+  <p class="flex items-start gap-2" role="status">
+    <ng-icon
+      name="lucideCircleCheck"
+      size="16"
+      class="text-primary mt-0.5 shrink-0"
+      aria-hidden="true"
+    />
+    <span class="break-words"
+      >{{ 'chat.proposal.status.executed' | translate }} @if
+      (p.outcome?.summary; as summary) { {{ summary }} }</span
+    >
+  </p>
+  } @case ('failed') {
+  <p class="text-destructive flex items-start gap-2" role="status">
+    <ng-icon
+      name="lucideCircleX"
+      size="16"
+      class="mt-0.5 shrink-0"
+      aria-hidden="true"
+    />
+    <span class="break-words"
+      >{{ 'chat.proposal.status.failed' | translate }} @if (s.error; as error) {
+      {{ error }} }</span
+    >
+  </p>
+  } @case ('cancelled') {
+  <p class="text-muted-foreground flex items-center gap-2" role="status">
+    <ng-icon name="lucideBan" size="16" class="shrink-0" aria-hidden="true" />
+    {{ 'chat.proposal.status.cancelled' | translate }}
+  </p>
+  } } @if (p.projectId) {
+  <a
+    class="text-primary self-start text-xs underline underline-offset-2"
+    [routerLink]="['/app/projects', p.projectId]"
+    (click)="chat.navigated()"
+    >{{ 'chat.proposal.openProject' | translate }}</a
+  >
+  }
+</div>

@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   BOOKING_KINDS,
   type Booking,
+  HINT_SEVERITIES,
   type Holding,
   MISSING_FILE_KINDS,
   type MissingFileHint,
@@ -28,6 +29,7 @@ import {
   type ProjectFileStatus,
 } from '../domain/project-file';
 import type { ProjectFileView } from '../application/file-views';
+import { originWalletId } from '../../wallets/domain/wallet';
 import type { FilePreview } from '../application/queries/file-content.query';
 import type { MappingPreview } from '../application/queries/preview-mapping.query';
 
@@ -113,11 +115,13 @@ export class ProjectFileResponseDto {
   @ApiProperty() holdingCount!: number;
   @ApiProperty() errorCount!: number;
   @ApiProperty({
-    enum: ['uploaded', 'from_project', 'derived'],
+    enum: ['uploaded', 'from_project', 'derived', 'wallet'],
     description:
-      'derived = a standard-format file the AI converted from another file of this project (a PDF)',
+      'derived = a standard-format file the AI converted from another file of this project (a PDF); wallet = the records a wallet fetch derived (F6.3)',
   })
-  origin!: 'uploaded' | 'from_project' | 'derived';
+  origin!: 'uploaded' | 'from_project' | 'derived' | 'wallet';
+  @ApiProperty({ type: String, format: 'uuid', nullable: true })
+  originWalletId!: string | null;
   @ApiProperty({ type: String, format: 'uuid', nullable: true })
   originProjectId!: string | null;
   @ApiProperty({ type: String, nullable: true })
@@ -131,6 +135,7 @@ export class ProjectFileResponseDto {
   static from(file: ProjectFileView): ProjectFileResponseDto {
     const fromProject = file.origin.startsWith(FROM_PROJECT);
     const derivedFrom = derivedFromId(file.origin) ?? null;
+    const wallet = originWalletId(file.origin) ?? null;
     return {
       id: file.id,
       sha256: file.sha256,
@@ -149,7 +154,10 @@ export class ProjectFileResponseDto {
         ? 'from_project'
         : derivedFrom
           ? 'derived'
-          : 'uploaded',
+          : wallet
+            ? 'wallet'
+            : 'uploaded',
+      originWalletId: wallet,
       originProjectId: fromProject
         ? file.origin.slice(FROM_PROJECT.length)
         : null,
@@ -173,15 +181,19 @@ export class FileGroupDto {
 }
 
 export class MissingFileHintDto {
+  @ApiProperty({ description: 'Stable key (see GET …/hints)' }) key!: string;
   @ApiProperty() platform!: string;
-  @ApiProperty() accountId!: string;
+  @ApiProperty({ description: "'' = the whole platform" }) accountId!: string;
+  @ApiProperty({ type: [String] }) accounts!: string[];
   @ApiProperty({ enum: MISSING_FILE_KINDS }) kind!: string;
+  @ApiProperty({ enum: HINT_SEVERITIES }) severity!: string;
   @ApiPropertyOptional() date?: string;
+  @ApiPropertyOptional() zeroBalance?: boolean;
   @ApiProperty({ description: 'i18n key with the instructions' })
   hintKey!: string;
 
   static from(hint: MissingFileHint): MissingFileHintDto {
-    return { ...hint };
+    return { ...hint, accounts: [...hint.accounts] };
   }
 }
 
@@ -319,6 +331,11 @@ export class RowErrorDto {
   code!: string;
   @ApiPropertyOptional() column?: string;
   @ApiPropertyOptional() sheet?: string;
+}
+
+export class RowErrorsResponseDto {
+  @ApiProperty() total!: number;
+  @ApiProperty({ type: [RowErrorDto] }) errors!: RowErrorDto[];
 }
 
 export class ImportNoteDto {

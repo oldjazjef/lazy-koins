@@ -9,6 +9,7 @@ import {
   GetMailDraftHandler,
   ListExportsHandler,
 } from './application/exports.handlers';
+import { DataExportHandler } from './application/data-export.handlers';
 import { ExportsController } from './exports.controller';
 import { ExportsService } from './exports.service';
 
@@ -26,6 +27,9 @@ import { ExportsService } from './exports.service';
     ListExportsHandler,
     GetExportContentHandler,
     GetMailDraftHandler,
+    DataExportHandler,
   ],
+  // The tool layer (tools/) calls the same façade as the controller.
+  exports: [ExportsService],
 })
 export class ExportsModule {}

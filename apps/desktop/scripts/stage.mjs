@@ -70,6 +70,8 @@ await esbuild.build({
     // entry.ts installs the fatal-error dialog, then loads main.ts.
     main: path.join(repoRoot, 'apps/desktop/src/main/entry.ts'),
     preload: path.join(repoRoot, 'apps/desktop/src/preload/preload.ts'),
+    // F11.16: the stdio MCP proxy (ELECTRON_RUN_AS_NODE=1 lazy-koins <app>/mcp-stdio.js).
+    'mcp-stdio': path.join(repoRoot, 'apps/desktop/src/mcp/stdio-proxy.ts'),
   },
   outdir: out,
   bundle: true,

@@ -8,6 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, isAbsolute, join, normalize, resolve } from 'node:path';
+import { type DesktopLocale, isDesktopLocale } from './messages';
 
 /** The database file inside the data folder. */
 export const DATABASE_FILE = 'lazykoins.db';
@@ -21,6 +22,10 @@ export const CONFIG_FILE = 'desktop-config.json';
 export interface DesktopConfig {
   /** The chosen data folder; absent = the default (`<userData>/data`). */
   dataDir?: string;
+  /** F11.13 "System-Benachrichtigungen"; absent = on. */
+  systemNotifications?: boolean;
+  /** F11.2: the app's language for menus and dialogs; absent = the system's. */
+  locale?: DesktopLocale;
 }
 
 export function defaultDataDir(userData: string): string {
@@ -34,9 +39,19 @@ export function readConfig(userData: string): DesktopConfig {
     );
     if (raw && typeof raw === 'object') {
       const dataDir = (raw as Record<string, unknown>)['dataDir'];
-      return typeof dataDir === 'string' && isAbsolute(dataDir)
-        ? { dataDir }
-        : {};
+      const notifications = (raw as Record<string, unknown>)[
+        'systemNotifications'
+      ];
+      const locale = (raw as Record<string, unknown>)['locale'];
+      return {
+        ...(isDesktopLocale(locale) ? { locale } : {}),
+        ...(typeof dataDir === 'string' && isAbsolute(dataDir)
+          ? { dataDir }
+          : {}),
+        ...(typeof notifications === 'boolean'
+          ? { systemNotifications: notifications }
+          : {}),
+      };
     }
   } catch {
     // Missing or unreadable: the defaults.

@@ -1,8 +1,9 @@
 import {
   BadRequestException,
-  ConflictException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { projectClosed } from '../../common/http/api-errors';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -19,6 +20,7 @@ import {
   type RecordSummary,
   validateCorrectionData,
 } from '@lazykoins/engine';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -38,11 +40,7 @@ import { CalculationInputService } from './calculation-input.service';
 
 /** F4.5: a closed project accepts no change — no recalculation, correction or tick either. */
 export function assertProjectOpen(project: Project): void {
-  if (project.status === 'closed') {
-    throw new ConflictException(
-      'The project is closed: reopen it first, then change it',
-    );
-  }
+  if (project.status === 'closed') throw projectClosed();
 }
 
 export interface ResultView {
@@ -72,6 +70,7 @@ export class CalculateProjectHandler implements ICommandHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly inputs: CalculationInputService,
     private readonly snapshots: CalculationSnapshotRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -88,6 +87,8 @@ export class CalculateProjectHandler implements ICommandHandler<
       result,
       records,
     });
+    // Open items, positions without a price, hints, "seit dem Versand geändert" (F11.12).
+    await this.projectNotifications?.calculated(userId, project.id);
     return { snapshot: meta, stale: false, result, files: assembled.files };
   }
 }
@@ -118,10 +119,51 @@ export class GetResultHandler implements IQueryHandler<
     const files = await this.inputs.fileRefs(project.id);
     if (!snapshot) return { snapshot: null, stale: true, result: null, files };
     const { result, ...meta } = snapshot;
-    const stale =
-      meta.engineVersion !== ENGINE_VERSION ||
-      (await this.inputs.inputHash(project)) !== meta.inputHash;
+    const stale = await this.inputs.isStale(project, meta);
     return { snapshot: meta, stale, result, files };
+  }
+}
+
+/** The project header's line (F7.6): when it was calculated and whether that is out of date. */
+export interface ResultStatus {
+  /** null = never calculated. */
+  readonly calculatedAt: string | null;
+  /** The data changed since the latest calculation; false without one. */
+  readonly stale: boolean;
+}
+
+export class GetResultStatusQuery {
+  constructor(
+    readonly userId: string,
+    readonly projectId: string,
+  ) {}
+}
+
+/** Cheap: the snapshot's figures row and the input hash — no result JSON, no file read. */
+@QueryHandler(GetResultStatusQuery)
+export class GetResultStatusHandler implements IQueryHandler<
+  GetResultStatusQuery,
+  ResultStatus
+> {
+  constructor(
+    private readonly projects: ProjectRepositoryPort,
+    private readonly inputs: CalculationInputService,
+    private readonly snapshots: CalculationSnapshotRepositoryPort,
+  ) {}
+
+  async execute({
+    userId,
+    projectId,
+  }: GetResultStatusQuery): Promise<ResultStatus> {
+    const project = await loadOwnProject(this.projects, userId, projectId);
+    const figures = (await this.snapshots.latestFigures([project.id])).get(
+      project.id,
+    );
+    if (!figures) return { calculatedAt: null, stale: false };
+    return {
+      calculatedAt: figures.calculatedAt,
+      stale: await this.inputs.isStale(project, figures),
+    };
   }
 }
 
@@ -305,6 +347,7 @@ export class UpdateOpenItemHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly states: OpenItemStateRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -315,10 +358,13 @@ export class UpdateOpenItemHandler implements ICommandHandler<
   }: UpdateOpenItemCommand): Promise<OpenItemState> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     assertProjectOpen(project);
-    return this.states.save(project.id, itemKey, {
+    const saved = await this.states.save(project.id, itemKey, {
       done: changes.done,
       note: changes.note?.trim(),
     });
+    // The last open item ticked off resolves "offene Punkte" (F11.11).
+    await this.projectNotifications?.openItemsChanged(userId, project.id);
+    return saved;
   }
 }
 
@@ -381,6 +427,7 @@ export class CreateCorrectionHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly corrections: CorrectionRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -397,15 +444,19 @@ export class CreateCorrectionHandler implements ICommandHandler<
         statusCode: 400,
         error: 'Bad Request',
         message: 'The correction is invalid',
+        code: 'invalidCorrection',
         issues: validation.issues,
       });
     }
     const trimmed = reason.trim();
     if (trimmed === '') throw new BadRequestException('reason is required');
-    return this.corrections.create(project.id, {
+    const created = await this.corrections.create(project.id, {
       data: validation.data,
       reason: trimmed,
     });
+    // A correction after sending: "seit dem Versand geändert" (F4.7 → F11.12).
+    await this.projectNotifications?.sentChanged(userId, project.id);
+    return created;
   }
 }
 
@@ -427,6 +478,7 @@ export class SetCorrectionUndoneHandler implements ICommandHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly corrections: CorrectionRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -443,6 +495,7 @@ export class SetCorrectionUndoneHandler implements ICommandHandler<
     }
     const updated = await this.corrections.setUndone(correctionId, undone);
     if (!updated) throw new NotFoundException('No such correction');
+    await this.projectNotifications?.sentChanged(userId, project.id);
     return updated;
   }
 }

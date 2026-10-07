@@ -10,9 +10,19 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
+import { LanguageService } from '../../../../core/i18n/language.service';
+import {
+  type ActivityProgress,
+  ActivityService,
+} from '../../../../core/activity/activity.service';
 import type {
   FileAssignmentRequest,
   FilePreview,
+  FileRowErrors,
+  HintStatus,
+  ProjectHint,
+  ProjectHints,
   Mapping,
   MappingPreview,
   ProjectFile,
@@ -53,6 +63,8 @@ export class ProjectFilesService {
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
+  private readonly activity = inject(ActivityService);
+  private readonly language = inject(LanguageService);
 
   readonly projectId = signal<string | undefined>(undefined);
 
@@ -60,6 +72,20 @@ export class ProjectFilesService {
     const id = this.projectId();
     return id ? apiUrl(`/projects/${id}/files`) : undefined;
   });
+
+  /** F5.8 "Hinweise" — the tab, its badge and the summary in the files area share it. */
+  readonly hints = httpResource<ProjectHints>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/hints`) : undefined;
+  });
+  readonly openHints = computed(() =>
+    this.hints.hasValue() ? this.hints.value().open : 0,
+  );
+
+  /** A file whose mapping assignment the files area should open (set from a hint). */
+  readonly pendingAssign = signal<string | null>(null);
+  /** The platform the hints table is filtered to (set from a link in the checks). */
+  readonly hintPlatform = signal<string | null>(null);
 
   readonly projectMappings = httpResource<ProjectMapping[]>(() => {
     const id = this.projectId();
@@ -70,6 +96,17 @@ export class ProjectFilesService {
   readonly myMappings = httpResource<Mapping[]>(() =>
     this.projectId() ? apiUrl('/mappings') : undefined,
   );
+
+  constructor() {
+    // A file added/removed/reassigned, a mapping edited or re-applied (here or on the mappings
+    // page), a wallet fetched, a hint settled, the assistant: the files area and the hints follow.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () => changes.projectVersion(this.projectId()),
+      [this.overview, this.hints, this.projectMappings],
+    );
+    reloadOn(() => changes.globalVersion('mappings'), [this.myMappings]);
+  }
 
   readonly files = computed<ProjectFile[]>(() =>
     this.overview.hasValue()
@@ -124,11 +161,40 @@ export class ProjectFilesService {
     messages: { success: 'files.assigned', error: 'files.assignFailed' },
   });
 
+  private readonly hintAction = defineAction<
+    { key: string; status: HintStatus; note: string },
+    unknown
+  >({
+    run: (body) =>
+      firstValueFrom(
+        this.http.patch(apiUrl(`/projects/${this.requireId()}/hints`), body),
+      ),
+    messages: { error: 'hints.saveFailed' },
+  });
+
   private readonly busyStatus = this.actions.status<unknown>('project-files');
   readonly isBusy = computed(() => this.busyStatus()?.state === 'pending');
 
+  /** Upload progress for the activity indicator ("Dateien werden hochgeladen (2/5)"). */
+  private readonly uploadActivity = computed<ActivityProgress | null>(() => {
+    const items = this.uploadQueue();
+    if (items.length < 2) return null;
+    return {
+      done: items.filter((i) => i.state === 'done' || i.state === 'failed')
+        .length,
+      total: items.length,
+    };
+  });
+
   /** F5.1: several files, one request each, in order; every failure is its own toast. */
   async upload(files: readonly File[]): Promise<void> {
+    await this.activity.track('activity.upload', () => this.uploadAll(files), {
+      params: { count: files.length },
+      progress: this.uploadActivity,
+    });
+  }
+
+  private async uploadAll(files: readonly File[]): Promise<void> {
     const projectId = this.requireId();
     const batch = files.map((file) => ({
       id: ++this.seq,
@@ -166,7 +232,6 @@ export class ProjectFilesService {
     }
     if (added > 0) {
       this.notifications.info('files.upload.added', { count: added });
-      this.reload();
     }
   }
 
@@ -212,7 +277,6 @@ export class ProjectFilesService {
 
   async remove(file: ProjectFile): Promise<void> {
     await this.actions.run(this.removeAction, file, { key: 'project-files' });
-    this.reload();
   }
 
   async assign(
@@ -224,7 +288,6 @@ export class ProjectFilesService {
       { file, assignment },
       { key: 'project-files' },
     );
-    this.reload();
   }
 
   /** What a stored or unsaved mapping would read from a file; schema issues instead of a 400 toast. */
@@ -270,7 +333,6 @@ export class ProjectFilesService {
         labelKey: 'mappings.openPage',
         onClick: () => void this.router.navigate(['/app/mappings', created.id]),
       });
-      this.reloadMappings();
       return { ok: true, mapping: created };
     } catch (error) {
       const issues = specIssues(error);
@@ -318,31 +380,59 @@ export class ProjectFilesService {
     }
   }
 
+  /**
+   * F11.2: in the app's language (explanations, example notes); the column headers stay German —
+   * they are the format.
+   */
   async downloadTemplate(kind: TemplateKind): Promise<void> {
+    const language = encodeURIComponent(this.language.locale());
     const path =
       kind === 'xlsx'
-        ? '/standard-format/template.xlsx'
-        : `/standard-format/template.csv?type=${kind}`;
+        ? `/standard-format/template.xlsx?language=${language}`
+        : `/standard-format/template.csv?type=${kind}&language=${language}`;
     try {
       const response = await this.fetchBlob(path as `/${string}`);
       saveBlob(
         this.document,
         response.body ?? new Blob(),
-        fileNameFrom(response.headers.get('Content-Disposition'), 'vorlage'),
+        fileNameFrom(
+          response.headers.get('Content-Disposition'),
+          'lazy-koins-template',
+        ),
       );
     } catch {
       this.notifications.error('files.downloadFailed');
     }
   }
 
-  reload(): void {
-    this.overview.reload();
-    this.reloadMappings();
+  // --- Hinweise (F5.8) ---
+
+  /** "Als in Ordnung markieren" / "Ignorieren" (with a note) and "Wieder öffnen". */
+  async setHintStatus(
+    hint: ProjectHint,
+    status: HintStatus,
+    note = '',
+  ): Promise<void> {
+    await this.actions.run(
+      this.hintAction,
+      { key: hint.key, status, note },
+      { key: `hint:${hint.key}` },
+    );
   }
 
-  private reloadMappings(): void {
-    this.projectMappings.reload();
-    this.myMappings.reload();
+  /** "Zeilenfehler ansehen": the rows the file's own reader could not read. */
+  rowErrors(file: { id: string }, rows = 100): Promise<FileRowErrors> {
+    return firstValueFrom(
+      this.http.get<FileRowErrors>(
+        apiUrl(`/projects/${this.requireId()}/files/${file.id}/row-errors`),
+        { params: { rows } },
+      ),
+    );
+  }
+
+  /** Asks the files area to open the mapping assignment of this file (from a hint). */
+  requestAssign(fileId: string): void {
+    this.pendingAssign.set(fileId);
   }
 
   private fetchBlob(path: `/${string}`): Promise<HttpResponse<Blob>> {

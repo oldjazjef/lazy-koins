@@ -13,8 +13,9 @@ import type { RateEntry } from '../rates/rate-table';
  * which never change. Applying them is pure; every application reports what it changed
  * (before/after) so the history can show it, and an undone correction is simply left out.
  *
- * - `price_override` (F9.1): the CHF price of an asset on a day (a position at 31.12., an income
- *   booking's day) — it becomes a `manual` rate and wins over every other source.
+ * - `price_override` (F9.1): the price of an asset on a day in the project's tax currency
+ *   (`priceChf` — the name predates F4.1a; a position at 31.12., an income booking's day) — it
+ *   becomes a `manual` rate and wins over every other source.
  * - `reclassify` (F9.2): another kind for one booking (income / no income / spam / loss /
  *   transfer …).
  * - `manual_booking`, `manual_holding` (F9.3): a forgotten platform, a hard fork, a loss, a
@@ -146,6 +147,8 @@ export function applyCorrections(
   bookings: readonly Booking[],
   holdings: readonly Holding[],
   corrections: readonly Correction[],
+  /** The project's tax currency (F4.1a): a price override (`priceChf`) is a price in it. */
+  taxCurrency = 'CHF',
 ): CorrectedRecords {
   const outBookings: Booking[] = [...bookings];
   const indexOf = new Map(outBookings.map((b, i) => [b.id, i] as const));
@@ -164,7 +167,7 @@ export function applyCorrections(
         rates.push({
           kind: 'price',
           asset: data.asset,
-          currency: 'CHF',
+          currency: taxCurrency,
           date: data.date,
           value: toDecimalString(parseDecimal(data.priceChf)),
           source: 'manual',

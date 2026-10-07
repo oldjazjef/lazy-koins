@@ -1,3 +1,4 @@
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -11,7 +12,9 @@ import type {
   AiSettings,
   SaveAiSettingsRequest,
 } from '../../../../core/api/api.types';
+import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { type AiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
 
 /** A provider the user can pick in one click; the rest is editable. */
@@ -75,9 +78,14 @@ export class AiSettingsPageService {
   private readonly http = inject(HttpClient);
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
+  private readonly aiErrors = inject(AiErrorNotifier);
+  /** The chat's status (available, consent) follows these settings. */
+  private readonly events = inject(AssistantEvents);
 
   readonly settings = httpResource<AiSettings>(() => apiUrl('/ai/settings'));
   readonly testResult = signal<AiConnectionTest | null>(null);
+  /** The last failed test, with the provider's details (shown under the buttons). */
+  readonly testError = signal<AiErrorInfo | null>(null);
   readonly testing = signal(false);
 
   private readonly saveAction = defineAction<SaveAiSettingsRequest, AiSettings>(
@@ -92,9 +100,10 @@ export class AiSettingsPageService {
   private readonly status = this.actions.status<AiSettings>(KEY);
   readonly isSaving = computed(() => this.status()?.state === 'pending');
 
+  /** `message` = the success toast; `null` = none (the setup wizard moves on instead). */
   async save(
     request: SaveAiSettingsRequest,
-    message = 'settings.ai.saved',
+    message: string | null = 'settings.ai.saved',
   ): Promise<boolean> {
     try {
       const saved = await this.actions.run(this.saveAction, request, {
@@ -102,8 +111,10 @@ export class AiSettingsPageService {
         silent: true,
       });
       this.settings.set(saved);
+      this.events.settingsChanged();
       this.testResult.set(null);
-      this.notifications.success(message);
+      this.testError.set(null);
+      if (message) this.notifications.success(message);
       return true;
     } catch (error) {
       this.notifications.error(aiErrorKey(error));
@@ -127,11 +138,14 @@ export class AiSettingsPageService {
     );
   }
 
-  /** One tiny request without user data, with the SAVED settings. */
-  /** `draft` = the form's current values (unsaved ones included); omitted = the saved settings. */
+  /**
+   * One tiny request without user data. `draft` = the form's current values (unsaved ones
+   * included); omitted = the saved settings. A failure is kept with its details for the panel.
+   */
   async test(draft?: TestAiConnectionRequest): Promise<void> {
     this.testing.set(true);
     this.testResult.set(null);
+    this.testError.set(null);
     try {
       this.testResult.set(
         await firstValueFrom(
@@ -142,7 +156,7 @@ export class AiSettingsPageService {
         ),
       );
     } catch (error) {
-      this.notifications.error(aiErrorKey(error));
+      this.testError.set(this.aiErrors.notify(error));
     } finally {
       this.testing.set(false);
     }

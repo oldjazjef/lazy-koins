@@ -28,23 +28,54 @@ export abstract class UsdPriceSourcePort implements RateSourcePort {
   abstract dailyUsd(request: SeriesRequest): Promise<RateEntry[]>;
 }
 
-/** Daily CHF prices of a crypto asset (CoinGecko, the user's API key). */
-export abstract class ChfPriceSourcePort implements RateSourcePort {
+/** The outcome of a key check ("Testen", F11.0s) — never contains the key. */
+export interface KeyCheckResult {
+  readonly ok: boolean;
+  /** Why it failed: the key, the provider's limit, the network, … */
+  readonly code?:
+    'invalidKey' | 'rateLimited' | 'network' | 'timeout' | 'providerError';
+  readonly status: number | null;
+  /** The provider's own message, redacted (no key in it). */
+  readonly providerMessage: string | null;
+  /** scheme://host/path that was called — never the query. */
+  readonly url: string;
+  readonly millis: number;
+}
+
+/**
+ * Daily prices of a crypto asset in a fiat currency — the project's tax currency (CoinGecko
+ * `vs_currency`, the user's API key; F4.1a).
+ */
+export abstract class FiatPriceSourcePort implements RateSourcePort {
   abstract readonly name: RateEntry['source'];
-  abstract dailyChf(
+  abstract dailyFiat(
     request: SeriesRequest & {
       readonly coinId: string;
       readonly apiKey: string;
+      /** ISO 4217 code (CHF, EUR, …). */
+      readonly currency: string;
     },
   ): Promise<RateEntry[]>;
+
+  /** One cheap authenticated request that proves the key works (no prices, no user data). */
+  abstract checkKey(apiKey: string): Promise<KeyCheckResult>;
 }
 
-/** Daily ECB reference rates of USD and EUR in CHF (Frankfurter). */
+/**
+ * Daily ECB reference rates of one currency in another (Frankfurter): USD → T and EUR → T for the
+ * project's tax currency T (F4.1a; CHF by default).
+ */
 export abstract class FxRateSourcePort implements RateSourcePort {
   abstract readonly name: RateEntry['source'];
-  abstract dailyChf(
-    base: 'USD' | 'EUR',
+  abstract daily(
+    base: string,
+    quote: string,
     from: string,
     to: string,
   ): Promise<RateEntry[]>;
+}
+
+/** The exchange rates a project in `taxCurrency` fetches: USD and EUR in it (F4.1a). */
+export function fxBasesFor(taxCurrency: string): readonly string[] {
+  return ['USD', 'EUR'].filter((base) => base !== taxCurrency);
 }

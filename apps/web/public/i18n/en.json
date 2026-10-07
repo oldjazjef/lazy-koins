@@ -1,0 +1,2710 @@
+{
+  "app": {
+    "name": "lazy-koins",
+    "version": "lazy-koins v{{version}} ({{commit}})"
+  },
+  "actions": {
+    "undo": "Undo"
+  },
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "save": "Save",
+    "close": "Close",
+    "actions": "Actions",
+    "pagination": {
+      "label": "Pages",
+      "range": "Row {{from}}–{{to}} of {{total}}",
+      "pageSize": "Per page",
+      "page": "Page {{page}} of {{count}}",
+      "first": "First page",
+      "previous": "Previous page",
+      "next": "Next page",
+      "last": "Last page"
+    }
+  },
+  "dateRange": {
+    "empty": "Choose a period",
+    "clear": "Clear period",
+    "previous": "Previous period",
+    "next": "Next period",
+    "presets": "Suggestions",
+    "maxDays": "A period may cover at most {{days}} days.",
+    "taxYear": "Tax year {{year}}"
+  },
+  "dateField": {
+    "open": "Open calendar",
+    "clear": "Clear date",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "outOfRange": "The date must lie between {{min}} and {{max}}.",
+    "notAfter": "The date may not be after {{max}}.",
+    "notBefore": "The date may not be before {{min}}.",
+    "letter": {
+      "day": "D",
+      "month": "M",
+      "year": "Y"
+    }
+  },
+  "countries": {
+    "CH": "Switzerland"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "projects": "Projects",
+    "mappings": "Mappings",
+    "signOut": "Sign out",
+    "toggleTheme": "Toggle light/dark",
+    "settings": "Settings",
+    "profile": "Profile",
+    "userMenu": "User menu",
+    "wallets": "Wallets",
+    "dashboard": "Dashboard",
+    "chat": "Assistant",
+    "library": "Library",
+    "myMappings": "My mappings"
+  },
+  "login": {
+    "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "register": "Create account",
+    "forgotPassword": "Forgot password?",
+    "or": "or",
+    "withGoogle": "Sign in with Google",
+    "emailInvalid": "Please enter a valid email address.",
+    "passwordTooShort": "The password must be at least 6 characters long.",
+    "failed": "Sign-in failed",
+    "registerFailed": "Could not create the account",
+    "resetSent": "We've sent you a link to reset your password.",
+    "resetFailed": "Could not send the reset link",
+    "dev": {
+      "hint": "Development mode: sign in with any email address, no password.",
+      "submit": "Continue"
+    }
+  },
+  "projects": {
+    "status": {
+      "in_progress": "In progress",
+      "reviewed": "Reviewed",
+      "closed": "Closed"
+    },
+    "fields": {
+      "name": "Name",
+      "taxYear": "Tax year",
+      "country": "Country",
+      "canton": "Canton",
+      "status": "Status",
+      "notes": "Notes",
+      "createdAt": "Created",
+      "updatedAt": "Last modified",
+      "wealth": "Wealth",
+      "income": "Income",
+      "taxCurrency": "Tax currency"
+    },
+    "list": {
+      "title": "Projects",
+      "subtitle": "One project per tax year.",
+      "new": "New project",
+      "empty": "No projects yet. Create one for your tax year.",
+      "loadFailed": "Could not load projects.",
+      "stale": "out of date",
+      "staleTitle": "Data changed since the calculation – recalculate in the project"
+    },
+    "form": {
+      "title": "New project",
+      "namePlaceholder": "e.g. Taxes 2025",
+      "cantonPlaceholder": "Select canton",
+      "submit": "Create project",
+      "created": "Project created",
+      "createFailed": "Could not create the project",
+      "nameRequired": "Please enter a name.",
+      "nameTooLong": "The name is too long (120 characters at most).",
+      "taxYearInvalid": "Please enter a tax year between 2009 and 2100.",
+      "cantonRequired": "Please select a canton.",
+      "notesTooLong": "The notes are too long (5000 characters at most).",
+      "taxCurrencyHint": "Wealth and income are valued and reported in this currency. Defaults to the country's currency (Switzerland: CHF).",
+      "taxCurrencyInvalid": "Select a currency.",
+      "taxCurrencyOthers": "Other currencies"
+    },
+    "detail": {
+      "title": "Project",
+      "subtitle": "Tax year {{year}}",
+      "stale": "Data changed since the last calculation – the result and checks still show the previous state.",
+      "editTitle": "Details",
+      "factsTitle": "Overview",
+      "closedHint": "This project is closed and read-only. Reopen it to make changes.",
+      "saved": "Saved",
+      "saveFailed": "Could not save the change",
+      "reopen": "Reopen",
+      "reopened": "Project reopened",
+      "reopenTitle": "Reopen project?",
+      "reopenBody": "The project is closed. Once reopened it can be changed — statements you have already passed on may no longer be correct afterwards.",
+      "delete": "Delete",
+      "deleted": "Project deleted",
+      "deleteFailed": "Could not delete the project",
+      "deleteTitle": "Delete project?",
+      "deleteBody": "The project will be deleted with all its data. This cannot be undone.",
+      "notFound": "This project doesn't exist (any more).",
+      "loadFailed": "Could not load the project.",
+      "backToList": "Back to projects",
+      "currencyTitle": "Change tax currency?",
+      "currencyBody": "Everything will now be valued and reported in {{currency}} instead of {{previous}}. The last calculation will then be outdated: update the rates (Rates › Update rates) and recalculate. The ESTV rate list (Kursliste) only applies to CHF.",
+      "currencyConfirm": "Change currency"
+    },
+    "followUp": {
+      "open": "Create follow-up project",
+      "title": "Create follow-up project",
+      "subtitle": "From {{name}} – the previous year's project stays unchanged.",
+      "factsTitle": "New project",
+      "defaultName": "Taxes {{year}}",
+      "existing": "There is already a project for this year ({{names}}).",
+      "files": "Files",
+      "filesHint": "Linked, not copied. Preselected: files whose period extends into the new year.",
+      "noPlatform": "No platform",
+      "noFiles": "This project has no files.",
+      "wallets": "Wallets",
+      "corrections": "Corrections",
+      "correctionsHint": "Only those that apply beyond the year (reclassifications of bookings that also occur in the new year; manual bookings). Rate overrides at 31.12. are not offered.",
+      "noCorrections": "No correction applies beyond the year.",
+      "reclassify": "Reclassification to “{{kind}}”",
+      "manualBooking": "Manual booking {{quantity}} {{asset}} ({{platform}})",
+      "openItems": "Open items",
+      "openItemsHint": "Items not yet resolved are carried over as open items in the new project.",
+      "noOpenItems": "No open items.",
+      "notes": "Carry over notes",
+      "all": "All",
+      "none": "None",
+      "summary": "Carried over: {{files}} file(s), {{wallets}} wallet(s), {{corrections}} correction(s) and {{openItems}} open item(s).",
+      "summaryNotes": "Plus the notes.",
+      "create": "Create follow-up project",
+      "created": "Follow-up project created",
+      "createFailed": "Could not create the follow-up project",
+      "walletsHint": "The project's wallets are linked to the new project (preselected); their fetched data appears there as derived files. Manual balances at 31.12. belong to the year and stay here.",
+      "noWallets": "This project has no wallets."
+    },
+    "import": {
+      "button": "Import project",
+      "done": "Project imported",
+      "failed": "Could not import the project package (damaged, modified, or not a lazy-koins package)"
+    },
+    "carryover": {
+      "title": "Carried over",
+      "from": "from {{name}}",
+      "fromPackage": "from a package ({{name}})",
+      "done": "Done",
+      "kind": {
+        "project": "Follow-up project",
+        "file": "File",
+        "correction": "Correction",
+        "open_item": "Open item",
+        "notes": "Notes",
+        "wallet": "Wallet"
+      }
+    },
+    "sent": {
+      "badge": "Sent to tax advisor (Treuhänder) on {{date}}",
+      "changedSince": "changed since it was sent",
+      "notYet": "Not yet sent to the tax advisor.",
+      "exports": "{{count}} statements",
+      "reason": {
+        "calculation": "new calculation",
+        "export": "new statement",
+        "correction": "correction",
+        "file": "new file"
+      },
+      "via": {
+        "mail": "by email",
+        "post": "by post",
+        "personal": "in person",
+        "other": "other"
+      },
+      "mark": "Mark as sent",
+      "markTitle": "Mark as sent",
+      "markHint": "If you delivered the documents another way (post, in person, your own email client).",
+      "date": "Date",
+      "way": "Method",
+      "recipient": "Recipient",
+      "note": "Note",
+      "whichExports": "Which statements",
+      "marked": "Marked as sent",
+      "undo": "Undo",
+      "undoTitle": "Reset sent status?",
+      "undoBody": "The project will count as not sent again. The email log is kept.",
+      "undone": "Sent status reset",
+      "failed": "Could not change the sent status",
+      "dateInvalid": "Date is missing or in the future"
+    }
+  },
+  "bookings": {
+    "kind": {
+      "trade": "Trade",
+      "deposit": "Deposit",
+      "withdrawal": "Withdrawal",
+      "fee": "Fee",
+      "transfer": "Transfer (own accounts)",
+      "income_interest": "Income: interest/Earn",
+      "income_staking": "Income: staking",
+      "income_airdrop": "Income: airdrop",
+      "income_launchpool": "Income: launchpool",
+      "income_hardfork": "Income: hardfork",
+      "loss": "Loss",
+      "spam": "Spam",
+      "unknown": "Unknown"
+    }
+  },
+  "files": {
+    "title": "Files",
+    "subtitle": "Exports from your exchanges and wallets. The originals stay unchanged and can be downloaded at any time.",
+    "closedHint": "The project is closed: files can be viewed and downloaded, but not changed.",
+    "empty": "No files yet. Upload the exports for this tax year.",
+    "loadFailed": "Could not load files.",
+    "removed": "File removed from the project",
+    "removeFailed": "Could not remove the file",
+    "assigned": "Assignment saved",
+    "assignFailed": "Could not save the assignment",
+    "downloadFailed": "Download failed",
+    "size": "{{kind}} · {{kb}} kB",
+    "records": "{{bookings}} bookings · {{holdings}} holdings",
+    "rowErrorCount": "{{count}} rows with errors",
+    "removeTitle": "Remove file?",
+    "removeBody": "“{{name}}” will be removed from this project. The file is only deleted permanently once no project uses it any more.",
+    "upload": {
+      "drop": "Drag files here (CSV, XLSX, PDF) – several at once are possible.",
+      "pick": "Choose files",
+      "limits": "20 MB per file at most. The standard format and saved mappings are recognised automatically.",
+      "progress": "Upload progress",
+      "added": "{{count}} file(s) added",
+      "tooBig": "File is larger than 20 MB",
+      "duplicate": "This file is already in the project",
+      "closed": "The project is closed",
+      "unsupported": "Only CSV, XLSX and PDF are accepted",
+      "unreadable": "The file could not be read",
+      "failed": "Upload failed",
+      "state": {
+        "queued": "waiting",
+        "uploading": "uploading …",
+        "done": "done",
+        "failed": "failed"
+      }
+    },
+    "template": {
+      "label": "Template in the standard format:",
+      "xlsx": "Excel (XLSX)",
+      "bookingsCsv": "Bookings (CSV)",
+      "holdingsCsv": "Holdings (CSV)"
+    },
+    "missing": {
+      "howTo": {
+        "noYearData": "This account has no bookings at all in the tax year. Upload the history for the whole year (History → Export). If the account was closed beforehand, mark the hint as OK.",
+        "noYearDataZero": "The bookings end before the tax year, and afterwards the account was empty (balance 0) – nothing can be missing. For information only.",
+        "startsLate": "Download an export from the platform starting no later than 01.01. – usually under History → Export – and upload it here. If the account was only opened later, everything is fine.",
+        "endsEarly": "Export the history up to at least 31.12. (History → Export, adjust the period). If there were no movements afterwards, everything is fine.",
+        "endsEarlyZero": "After the last booking the account balance was 0 – nothing can be missing afterwards. For information only; mark the hint as OK if the account is no longer in use.",
+        "noYearEndBalance": "Upload the account statement at 31.12. (usually under Documents/Statements), read a PDF statement with AI, or enter the holdings manually or in the “Holdings” sheet of the template – this lets the balance according to the bookings be checked. A statement for the whole platform applies to all its sub-accounts."
+      }
+    },
+    "group": {
+      "unread": "No platform (receipts and files not yet read)"
+    },
+    "fields": {
+      "name": "File",
+      "status": "Status",
+      "period": "Period",
+      "records": "Content",
+      "added": "Uploaded",
+      "origin": "Origin",
+      "actions": "Actions"
+    },
+    "status": {
+      "standard": "Standard format",
+      "mapped": "Read with mapping",
+      "needs_mapping": "Mapping missing",
+      "evidence_only": "Receipt only"
+    },
+    "origin": {
+      "fromProject": "from project “{{name}}”",
+      "uploaded": "new",
+      "unknownProject": "unknown",
+      "derived": "from “{{name}}” (AI)",
+      "unknownFile": "removed file",
+      "wallet": "from wallet fetch"
+    },
+    "actions": {
+      "preview": "Preview",
+      "download": "Download",
+      "assign": "Assign",
+      "remove": "Remove",
+      "aiMapping": "Create mapping with AI",
+      "aiStatement": "Read with AI"
+    },
+    "preview": {
+      "description": "The first rows of the file, unchanged.",
+      "openInTab": "Open in new tab",
+      "sheet": "Sheet “{{name}}”: {{shown}} of {{total}} rows",
+      "failed": "Could not load the preview"
+    },
+    "assign": {
+      "title": "Assign “{{name}}”",
+      "body": "Choose a mapping that translates this file's columns into the standard format, check the preview and assign it. Or keep the file as a receipt only.",
+      "mapping": "Mapping",
+      "choose": "Choose mapping …",
+      "preview": "Preview",
+      "apply": "Assign",
+      "newMapping": "New mapping",
+      "automatic": "Detect automatically",
+      "evidenceOnly": "Receipt only"
+    },
+    "rowErrors": {
+      "required": "Required value missing.",
+      "invalidNumber": "Not a valid number.",
+      "invalidTimestamp": "Not a valid timestamp.",
+      "timeZoneMissing": "Timestamp without time zone.",
+      "invalidKind": "Unknown kind.",
+      "invalidDate": "Not a valid date (YYYY-MM-DD).",
+      "negative": "Must not be negative.",
+      "headerNotFound": "The mapping's header row was not found in the file."
+    },
+    "takeOver": {
+      "open": "Take over from another project",
+      "title": "Take over files from other projects",
+      "hint": "The files are linked, not copied, and are read the same way as there.",
+      "already": "already in the project",
+      "empty": "Your other projects have no files.",
+      "confirm": "Take over {{count}}",
+      "done": "{{count}} file(s) taken over",
+      "failed": "Could not take over the files",
+      "loadFailed": "Could not load the other projects"
+    }
+  },
+  "mappings": {
+    "title": "Mappings",
+    "subtitle": "A mapping translates a platform's export into the standard format. Here you can see which mappings are used to read this project's files – you can edit and delete them on the Mappings page.",
+    "withAi": "Create with AI",
+    "empty": "This project doesn't use a mapping yet.",
+    "saved": "Mapping saved",
+    "saveFailed": "Mapping could not be saved",
+    "checkFailed": "Check failed",
+    "reapplyFailed": "Files could not be re-read",
+    "reapplyTitle": "Re-read files?",
+    "reapplyBody": "{{count}} file(s) use this mapping. Should they be re-read with the new version? Closed projects remain unchanged.",
+    "reapplyLater": "Later",
+    "reapply": "Re-read",
+    "upload": {
+      "button": "Upload mapping (.json)",
+      "notJson": "The file is not JSON",
+      "invalid": "The mapping is invalid"
+    },
+    "fields": {
+      "name": "Name",
+      "platform": "Platform",
+      "origin": "Origin",
+      "files": "Files",
+      "updated": "Modified"
+    },
+    "origin": {
+      "ai": "AI",
+      "manual": "manual",
+      "copied": "uploaded",
+      "library": "from library"
+    },
+    "actions": {
+      "download": "Download as JSON"
+    },
+    "editor": {
+      "newTitle": "New mapping",
+      "description": "The mapping as JSON. “Check” validates it and shows what it reads from the selected file.",
+      "json": "Mapping (JSON)",
+      "invalidJson": "This is not valid JSON.",
+      "issues": "The mapping is not valid yet:",
+      "checkFile": "Check with file",
+      "checkHint": "No preview yet – choose “Check”.",
+      "check": "Check",
+      "noCheckFile": "No file is read with this mapping yet, so there is no preview. “Save” still validates the mapping completely."
+    },
+    "preview": {
+      "totals": "{{bookings}} bookings, {{holdings}} holdings, {{errors}} errors, {{notes}} hints.",
+      "period": "Period {{from}} – {{to}}.",
+      "row": "Row",
+      "timestamp": "Time (UTC)",
+      "account": "Account",
+      "kind": "Kind",
+      "asset": "Asset",
+      "quantity": "Quantity",
+      "fee": "Fee",
+      "rawType": "Original type",
+      "holdings": "Holdings",
+      "errors": "Rows with errors",
+      "errorAt": "Row {{row}}, column {{column}}:"
+    },
+    "allMappings": "All mappings",
+    "openPage": "Open mapping",
+    "list": {
+      "subtitle": "All your mappings. They apply to all your projects: files with the same columns are read with them automatically on upload.",
+      "new": "New mapping",
+      "newDescription": "Upload a sample file (CSV or XLSX) – you'll see its columns, can generate a template from it or have AI write the mapping, and see live what the mapping reads from the file. “Save” validates the mapping completely.",
+      "search": "Search",
+      "searchPlaceholder": "Name or platform",
+      "sort": "Sort by",
+      "sortBy": {
+        "name": "Name",
+        "platform": "Platform",
+        "updated": "Last modified",
+        "files": "Number of files"
+      },
+      "empty": "No mappings yet. A mapping translates a platform's export (for example the Kraken ledger) into the lazy-koins standard format. A mapping you create in a project – by hand, uploaded or with AI – is available in all your projects.",
+      "noMatch": "No mapping matches your search.",
+      "loadFailed": "The mappings could not be loaded.",
+      "usage": "{{files}} file(s) in {{projects}} project(s)",
+      "unused": "not used",
+      "version": "Version",
+      "usedBy": "Used by"
+    },
+    "detail": {
+      "factsTitle": "Details",
+      "fingerprint": "Recognises columns",
+      "created": "Created",
+      "jsonTitle": "Mapping (JSON)",
+      "edit": "Edit",
+      "editHint": "Change the JSON and see live what it reads from the sample file (a file that uses this mapping is already loaded). The files keep their current result until you have them re-read.",
+      "usageTitle": "Used in",
+      "usageEmpty": "No file is read with this mapping yet. Upload an export with these columns in a project – it will be read with this mapping automatically.",
+      "project": "Project",
+      "taxYear": "Tax year",
+      "status": "Status",
+      "files": "Files",
+      "notFound": "This mapping doesn't exist (any more).",
+      "loadFailed": "The mapping could not be loaded.",
+      "backToList": "Back to mappings",
+      "delete": "Delete",
+      "deleteTitle": "Delete mapping?",
+      "deleteBody": "“{{name}}” will be permanently deleted.",
+      "deleteFiles": "These files will no longer be read afterwards and will need a mapping again:",
+      "deleteNoFiles": "No file uses this mapping.",
+      "deleteClosed": "A closed project uses this mapping. Reopen the project, then you can delete the mapping.",
+      "deleted": "Mapping deleted",
+      "deleteFailed": "The mapping could not be deleted",
+      "reapplyClosed": "Of these, in closed projects: {{count}} – they remain unchanged.",
+      "reapplied": "{{reapplied}} file(s) re-read.",
+      "reappliedSkipped": "{{reapplied}} file(s) re-read, {{skipped}} in closed projects left unchanged."
+    },
+    "sample": {
+      "title": "Sample file",
+      "notStored": "For this edit only – the file is not stored and not added to any project.",
+      "drop": "Drag export here (CSV or XLSX)",
+      "pick": "Choose file",
+      "fromProjectPick": "Choose a file from a project",
+      "limits": "20 MB at most, same as for uploads.",
+      "loading": "Reading file …",
+      "project": "Project",
+      "chooseProject": "Choose project …",
+      "file": "File",
+      "chooseFile": "Choose file …",
+      "noFiles": "No CSV or XLSX file in this project",
+      "use": "Use",
+      "remove": "Different file",
+      "template": "Template from file",
+      "size": "{{kb}} KB",
+      "rows": "{{count}} rows",
+      "sheet": "Sheet “{{name}}”",
+      "fromProject": "from “{{name}}”",
+      "recognisedStandard": "This file is in the standard format – it doesn't need a mapping.",
+      "recognisedBy": "Already recognised today with:",
+      "noSample": "Upload a sample file above, then you'll see here live what the mapping reads from it.",
+      "tabPreview": "Preview",
+      "tabRaw": "File (raw)",
+      "previewing": "Updating preview …",
+      "previewFailed": "The preview could not be created.",
+      "stale": "The JSON is currently invalid – the preview shows the last valid state.",
+      "invalidSpec": "The mapping is not valid yet – the hints are shown next to the JSON.",
+      "rawHint": "The first rows as they appear in the file. Header row probably in row {{row}} (highlighted); rows above it are preamble.",
+      "moreRows": "{{shown}} of {{total}} rows shown.",
+      "aiProposal": "AI proposal – check it in the preview before you save.",
+      "fingerprint": {
+        "this": "This file would be recognised with this mapping on upload.",
+        "other": "On upload, “{{name}}” would be chosen instead – it matches the columns more closely.",
+        "standard": "The file is in the standard format: it is read without a mapping.",
+        "none": "The columns in match.headers don't match this file – it would not be recognised."
+      },
+      "addToProject": "After saving, also add to",
+      "noProject": "no project",
+      "addedToProject": "File added to the project and read with the new mapping",
+      "openFile": "Open file",
+      "notTable": "This is not a readable table (CSV or XLSX)",
+      "empty": "The file is empty",
+      "loadFailed": "The file could not be loaded"
+    }
+  },
+  "ai": {
+    "next": "Next",
+    "loading": "Loading settings and excerpt …",
+    "working": "The AI is working – with local models this can take a minute …",
+    "meta": "Model {{model}}, {{rounds}} round(s).",
+    "usage": "Usage: {{input}} input and {{output}} output tokens.",
+    "noUsage": "The provider doesn't report token usage.",
+    "notReady": {
+      "title": "AI is not set up",
+      "disabled": "The AI plugin is turned off. Turn it on in the settings and choose a provider.",
+      "notConfigured": "The AI plugin is turned on but not fully set up yet: the API key or the address of a local model is missing.",
+      "withoutAi": "Everything still works without AI: download the template in the standard format or write a mapping by hand.",
+      "openSettings": "Go to settings",
+      "openSetup": "Set up AI"
+    },
+    "consent": {
+      "mappingBody": "For the mapping, this excerpt of the file is sent to {{provider}} (model {{model}}, address {{address}}). The AI only writes the mapping, not the bookings; nothing is saved without your confirmation.",
+      "statementBody": "To read the holdings, this text from the PDF is sent to {{provider}} (model {{model}}, address {{address}}). Nothing is saved without your confirmation.",
+      "payload": "This is what will be sent:",
+      "alsoSent": "The general instructions and the expected response format (JSON schema) are sent as well – they contain none of your data.",
+      "agree": "I agree to this excerpt being sent to the provider. (One-time consent – before every request you will see again what is sent. Can be revoked in the settings.)",
+      "send": "Send",
+      "defaultModel": "Default",
+      "defaultAddress": "Default"
+    },
+    "mapping": {
+      "title": "Create mapping with AI",
+      "pickFile": "For which file should the AI write a mapping?",
+      "pickFileLabel": "File",
+      "noFile": "No file needs a mapping.",
+      "reviewTitle": "Review AI proposal",
+      "reviewBody": "This is how the mapping would read “{{name}}”. Check kinds, errors and unknown values, adjust the JSON if needed and then save it.",
+      "kindCounts": "Kinds in the whole file",
+      "unknownValues": "Unmapped values",
+      "save": "Save mapping",
+      "saved": "Mapping saved – the file has now been read. Files with the same structure will be recognised without AI in the future.",
+      "problems": {
+        "invalidSpec": "The mapping is not valid yet.",
+        "headerNotFound": "The header row was not found in the file.",
+        "noRecords": "The mapping doesn't read a single booking.",
+        "rowErrors": "Many rows cannot be read.",
+        "unknownKinds": "Many bookings don't have a kind yet (unknown)."
+      }
+    },
+    "statement": {
+      "title": "Read account statement with AI",
+      "reviewTitle": "Review holdings",
+      "reviewBody": "The AI read these holdings. Each quantity was compared with the PDF text. Choose what to adopt – a new file in the standard format is created, and the PDF remains as supporting evidence.",
+      "truncated": "The PDF is long: only the first pages were sent.",
+      "none": "The AI found no holdings.",
+      "keep": "Adopt",
+      "verbatim": "found in PDF",
+      "priceChf": "{{value}} CHF",
+      "priceUsd": "{{value}} USD",
+      "save": "Adopt {{count}} holdings",
+      "saved": "Holdings saved as a file in the standard format.",
+      "duplicate": "Exactly these holdings are already in the project as a file.",
+      "fields": {
+        "asset": "Asset",
+        "quantity": "Quantity",
+        "printed": "In PDF",
+        "asOf": "Reference date",
+        "platform": "Platform · Account",
+        "price": "Rate",
+        "page": "Page",
+        "check": "Check"
+      },
+      "issues": {
+        "notVerbatim": "Quantity not in PDF",
+        "pageMismatch": "different page",
+        "invalidNumber": "not a number",
+        "ambiguousSeparator": "separator unclear",
+        "priceNotVerbatim": "Rate not in PDF",
+        "pageOutOfRange": "page missing",
+        "invalidRecord": "invalid"
+      }
+    },
+    "errors": {
+      "failed": "The AI request failed.",
+      "unreachable": "The server is not reachable.",
+      "closed": "The project is closed – reopen it first.",
+      "aiDisabled": "The AI plugin is turned off.",
+      "aiNotConfigured": "The AI plugin is not set up yet.",
+      "consentRequired": "Please agree to sending first.",
+      "keyUnreadable": "The stored API key can no longer be decrypted – please enter it again.",
+      "privateUrl": "Local addresses are not allowed on this server.",
+      "invalidUrl": "The address is not a valid http(s) URL.",
+      "encryptionUnavailable": "API keys cannot be stored on this server.",
+      "noText": "The PDF contains no text (scanned?). Enter the holdings by hand.",
+      "invalidAnswer": "The AI's response didn't have the expected format.",
+      "invalidKey": "The provider rejects the API key.",
+      "rateLimited": "Too many requests to the provider – please try again later.",
+      "network": "The provider is not reachable (check the address – is the local model running?).",
+      "timeout": "The provider took too long to respond.",
+      "badResponse": "The provider's response was unusable.",
+      "providerError": "The provider reports an error.",
+      "modelNotFound": "The model or address doesn't exist at the provider."
+    },
+    "details": {
+      "show": "Show details",
+      "summary": "Error",
+      "status": "Provider HTTP status",
+      "providerMessage": "Provider message",
+      "providerType": "Error type / code",
+      "url": "Address",
+      "model": "Model",
+      "code": "Error code",
+      "cause": "Cause",
+      "detail": "Details",
+      "hint": "Tip",
+      "copy": "Copy details",
+      "copied": "Copied"
+    },
+    "hints": {
+      "key": "Check the API key: copied correctly, still valid and for this provider?",
+      "model": "Check the model name and the address (for OpenAI-compatible providers up to and including /v1).",
+      "rateLimit": "Limit reached or no credit left – check your account with the provider or try again later.",
+      "refused": "Nobody is answering at this address – is the local server (Ollama, LM Studio) running and is the port correct?",
+      "notFound": "The host name is unknown – check the address for typos.",
+      "tls": "The server's certificate is invalid – check the address (https vs. http).",
+      "timeout": "The provider didn't respond in time – a local model takes a long time to load the first time; try again.",
+      "address": "Check the address: a public http(s) address without user, query or fragment.",
+      "unreachable": "The lazy-koins API is not reachable – is the server running?"
+    },
+    "errorDetails": {
+      "show": "Details",
+      "title": "AI provider error details"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "storage": {
+      "title": "Storage location",
+      "subtitle": "Where lazy-koins keeps your data and original files",
+      "intro": "All projects, files and settings live in a single database file in this folder. You can pick your own folder, including the sync folder of OneDrive, Google Drive or Proton Drive.",
+      "default": "Default",
+      "synced": "Synced with {{provider}}",
+      "folder": "Folder",
+      "database": "Database",
+      "version": "App version",
+      "syncWarning": "This folder is synced by {{provider}}. Never open lazy-koins on two devices at the same time, and after closing it, wait until syncing has finished. On startup, lazy-koins warns you if the data is currently open on another device.",
+      "conflicts": "The folder contains conflict copies of the database (created by the sync service). lazy-koins keeps working with lazykoins.db; check the copies and delete them afterwards:",
+      "hint": "When you switch, lazy-koins asks whether to copy your existing data to the new folder or open existing data there, and then restarts.",
+      "choose": "Choose folder …",
+      "useDefault": "Use default folder",
+      "reveal": "Open folder",
+      "restarting": "lazy-koins is restarting with the new storage location …",
+      "failed": "The storage location could not be changed.",
+      "loadFailed": "The storage location could not be read."
+    },
+    "ai": {
+      "title": "AI plugin",
+      "subtitle": "AI provider for mappings and account statements",
+      "intro": "The AI writes mappings for unknown exports and reads holdings from PDF account statements. Only a small excerpt is sent, and you see it before every request. Without AI, everything still works with the template and mappings.",
+      "loadFailed": "The settings could not be loaded.",
+      "enabled": "Use AI plugin",
+      "provider": "Provider",
+      "providers": {
+        "openai_compatible": "OpenAI-compatible",
+        "anthropic": "Anthropic"
+      },
+      "presets": {
+        "label": "Quick pick",
+        "openai": "OpenAI",
+        "anthropic": "Anthropic (Claude)",
+        "mistral": "Mistral",
+        "groq": "Groq",
+        "openrouter": "OpenRouter",
+        "ollama": "Ollama (local)",
+        "lmstudio": "LM Studio (local)"
+      },
+      "baseUrl": "Address (Base URL)",
+      "baseUrlPlaceholder": "empty = provider default",
+      "baseUrlHint": "OpenAI-compatible: up to and including /v1, e.g. http://localhost:11434/v1 for Ollama.",
+      "privateUrlsHint": "Local addresses (localhost, home network) are not allowed on this server.",
+      "model": "Model",
+      "modelPlaceholder": "empty = default model",
+      "apiKey": "API key",
+      "apiKeyPlaceholder": "Paste key",
+      "apiKeyKeep": "leave empty = keep the stored key",
+      "apiKeyStored": "Stored (encrypted): {{hint}}",
+      "apiKeyNone": "No key stored – not needed for local models.",
+      "apiKeyRemove": "Remove key",
+      "keyRemoved": "API key removed",
+      "noEncryption": "No key can be stored on this server (SETTINGS_ENCRYPTION_KEY is missing). Local models without a key still work.",
+      "saved": "AI settings saved",
+      "test": "Test connection",
+      "testing": "Testing connection …",
+      "testOk": "Connection works: {{model}} responded in {{millis}} ms.",
+      "status": {
+        "ready": "ready",
+        "off": "off",
+        "notConfigured": "incomplete"
+      },
+      "consent": {
+        "title": "Consent (privacy)",
+        "body": "Before data is sent to a provider for the first time, the app asks for your consent. Before every request, you see exactly what is sent.",
+        "given": "Consent given on {{date}}.",
+        "none": "No consent yet – it will be requested with the first request.",
+        "revoke": "Revoke consent"
+      },
+      "consentRevoked": "Consent revoked",
+      "form": {
+        "providerRequired": "Please choose a provider.",
+        "baseUrlInvalid": "Please enter an http(s) address.",
+        "modelTooLong": "The model name is too long.",
+        "apiKeyTooLong": "The key is too long."
+      }
+    },
+    "keysUnavailable": "Keys cannot be stored on this server (SETTINGS_ENCRYPTION_KEY is missing).",
+    "noKey": "No key stored",
+    "removeKey": "Remove key",
+    "saved": "Settings saved",
+    "saveFailed": "Settings could not be saved",
+    "fields": {
+      "onlineRates": "Allow rate lookups from the internet",
+      "coingeckoKey": "CoinGecko API key",
+      "etherscanKey": "Etherscan API key"
+    },
+    "sections": {
+      "label": "Settings sections",
+      "rates": "Rates",
+      "wallets": "Wallets",
+      "ai": "AI plugin",
+      "storage": "Storage location",
+      "system": "System",
+      "mail": "Mail",
+      "mcp": "MCP"
+    },
+    "system": {
+      "title": "System",
+      "subtitle": "Which version is running and where the source code lives.",
+      "version": "Version",
+      "commit": "Commit",
+      "builtAt": "Built on",
+      "runtime": "Runtime",
+      "runtimeWeb": "Web app",
+      "runtimeDesktop": "Desktop app",
+      "repository": "Source code",
+      "support": "Support",
+      "supportLink": "Buy me a coffee",
+      "setupTitle": "Setup",
+      "setupHint": "The setup wizard from the first launch: Profile, tax advisor (Treuhänder), AI, rates, wallets, mail and PIN, step by step. Everything can still be changed individually in Profile and Settings.",
+      "setupAgain": "Run setup again",
+      "osNotifications": "System notifications",
+      "osNotificationsHint": "Also show errors and required actions as an operating system notification. They never contain keys, passwords or bookings."
+    },
+    "rates": {
+      "title": "Rate lookups",
+      "subtitle": "Rates from the internet, CoinGecko key, ESTV rate list (Kursliste)",
+      "hint": "When off, lazy-koins fetches no rates from the internet; stored and manually entered rates still apply.",
+      "coingeckoHint": "For assets without a Binance rate (CoinGecko demo key). Stored encrypted.",
+      "estvTitle": "Import ESTV rate list (Kursliste) manually",
+      "estvHint": "Fallback if the automatic download doesn't work: the rate list (XML from ictax.admin.ch or CSV asset;kurs_chf;datum) applies per project and takes precedence over all fetched rates.",
+      "project": "Project"
+    },
+    "wallets": {
+      "title": "Wallets & networks",
+      "subtitle": "Keys and addresses for wallet lookups",
+      "hint": "Keys are stored encrypted and never shown again (only the last characters). \"Test\" checks the values in the form – even unsaved ones – with a request that contains none of your data.",
+      "urlHint": "Empty = public default address (placeholder). Local addresses are blocked on a server.",
+      "test": "Test",
+      "testing": "Testing …",
+      "testOk": "Connection ok: {{detail}} ({{millis}} ms)",
+      "fields": {
+        "etherscanKey": "Etherscan API key (V2)",
+        "heliusKey": "Helius API key",
+        "subscanKey": "Subscan API key",
+        "solanaRpcUrl": "Custom Solana RPC address (optional)",
+        "esploraUrl": "Esplora address",
+        "koiosUrl": "Koios address",
+        "cosmosLcdUrl": "Cosmos LCD address"
+      },
+      "services": {
+        "etherscan": {
+          "title": "EVM networks (Etherscan)",
+          "hint": "One key for Ethereum, BNB Chain, Polygon, Arbitrum, Optimism and Base. The free plan doesn't cover all chains – enter missing ones manually with a receipt."
+        },
+        "solana": {
+          "title": "Solana",
+          "hint": "Helius key (recommended) or your own RPC address; with neither, the public, heavily rate-limited endpoint is used."
+        },
+        "esplora": {
+          "title": "Bitcoin (Esplora)",
+          "hint": "Addresses and xpub/ypub/zpub via mempool.space or your own Esplora server. No key needed."
+        },
+        "koios": {
+          "title": "Cardano (Koios)",
+          "hint": "Staking income is fetched; enter the balance at 31.12. manually with a receipt. No key needed."
+        },
+        "subscan": {
+          "title": "Polkadot (Subscan)",
+          "hint": "Staking income with a Subscan key; enter the balance at 31.12. manually with a receipt."
+        },
+        "cosmos": {
+          "title": "Cosmos (LCD)",
+          "hint": "Network check and current balance only – enter the balance at 31.12. and income manually with a receipt."
+        }
+      }
+    },
+    "mail": {
+      "title": "Mailer (SMTP)",
+      "subtitle": "Mail to the tax advisor: mailer and text template",
+      "intro": "So that \"Send to tax advisor\" can email the statements directly. Without a mailer, you get text to copy and your mail program (without attachments).",
+      "loadFailed": "The mail settings could not be loaded.",
+      "enabled": "Use mailer",
+      "status": {
+        "off": "off",
+        "ready": "ready",
+        "notConfigured": "incomplete"
+      },
+      "host": "Server (SMTP)",
+      "hostPlaceholder": "e.g. smtp.my-provider.ch",
+      "port": "Port",
+      "security": "Encryption",
+      "securities": {
+        "starttls": "STARTTLS (usually port 587)",
+        "tls": "TLS/SSL (usually port 465)",
+        "none": "None (local/testing only)"
+      },
+      "securityHint": "Certificates are always verified. You'll find these details with your mail provider.",
+      "privateHostsHint": "Local servers (localhost, home network) are not allowed on this server.",
+      "username": "Username",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password",
+      "passwordKeep": "leave empty = keep the stored password",
+      "passwordStored": "Stored (encrypted), ends in {{hint}}. It is never shown again.",
+      "passwordNone": "No password stored.",
+      "passwordRemove": "Remove password",
+      "passwordRemoved": "Password removed",
+      "noEncryption": "No password can be stored on this server (SETTINGS_ENCRYPTION_KEY is missing).",
+      "fromName": "Sender name",
+      "fromAddress": "Sender address",
+      "test": "Send test mail to me ({{to}})",
+      "testing": "Sending test mail …",
+      "testOk": "Test mail sent to {{to}} ({{millis}} ms).",
+      "saved": "Mail settings saved",
+      "form": {
+        "hostInvalid": "Server name only, e.g. smtp.example.ch (without smtp:// and port)",
+        "portInvalid": "Port between 1 and 65535",
+        "addressInvalid": "Not a valid email address",
+        "tooLong": "Too long"
+      },
+      "template": {
+        "title": "Text template for the tax advisor",
+        "intro": "Subject and body of the mail to the tax advisor. Placeholders are filled with the project's values when sending. The template applies to all projects.",
+        "default": "Default",
+        "subject": "Subject",
+        "body": "Body",
+        "placeholders": "Placeholders",
+        "placeholdersHint": "Click to insert the placeholder at the cursor position.",
+        "preview": "Preview",
+        "previewHint": "With sample values.",
+        "unknown": "Unknown placeholders: {{names}}",
+        "resetAction": "Reset to default",
+        "resetTitle": "Reset template?",
+        "resetBody": "Your own template will be deleted; the default template applies again.",
+        "saved": "Template saved",
+        "reset": "Default template restored",
+        "loadFailed": "The template could not be loaded.",
+        "subjectRequired": "Subject is missing",
+        "subjectTooLong": "Subject too long (max. 300 characters)",
+        "bodyRequired": "Body is missing",
+        "bodyTooLong": "Body too long (max. 20 000 characters)"
+      }
+    },
+    "keyTest": {
+      "button": "Test",
+      "testing": "Checking key …",
+      "ok": "The key works ({{millis}} ms).",
+      "failed": "The test could not be run.",
+      "noKey": "Enter a key first.",
+      "offline": "Rate lookups from the internet are turned off on this server – the key cannot be checked.",
+      "status": "HTTP status",
+      "message": "Provider response",
+      "url": "Address",
+      "codes": {
+        "invalidKey": "The key was rejected.",
+        "rateLimited": "Too many requests – the provider's limit has been reached.",
+        "network": "The provider is not reachable.",
+        "timeout": "The provider did not respond in time.",
+        "providerError": "The provider reported an error."
+      },
+      "hints": {
+        "invalidKey": "Check that you copied the whole key and that it matches the plan (CoinGecko: a \"Demo\" key).",
+        "rateLimited": "Wait a minute and then test again.",
+        "network": "Check the internet connection, a firewall or a proxy on this computer or server.",
+        "timeout": "Try again later.",
+        "providerError": "The provider's message below may help; otherwise try again later."
+      }
+    }
+  },
+  "workspace": {
+    "label": "Project sections",
+    "tabs": {
+      "general": "General",
+      "files": "Files",
+      "hints": "Hints",
+      "wallets": "Wallets",
+      "rates": "Rates",
+      "result": "Result",
+      "checks": "Checks",
+      "corrections": "Corrections",
+      "exports": "Exports"
+    }
+  },
+  "calculation": {
+    "calculated": "Recalculated",
+    "calculateFailed": "Calculation failed"
+  },
+  "records": {
+    "title": "Underlying bookings",
+    "count": "{{shown}} of {{total}} entries",
+    "file": "File",
+    "row": "Row",
+    "at": "Time (UTC)",
+    "kind": "Kind",
+    "asset": "Platform · Asset",
+    "quantity": "Quantity",
+    "fee": "Fee",
+    "raw": "Original row",
+    "correction": "Correction (manual)",
+    "unknownFile": "File no longer in the project",
+    "holding": "Holding"
+  },
+  "result": {
+    "calculatedAt": "Calculated on {{date}}",
+    "stale": "Data changed – recalculate",
+    "calculate": "Recalculate",
+    "wealth": "Tax value at 31.12.{{year}}",
+    "income": "Income {{year}}",
+    "missingPrices": "{{count}} values without a rate – see Checks and Rates.",
+    "missingShort": "{{count}} without rate",
+    "wealthTitle": "Wealth by platform/wallet",
+    "incomeTitle": "Income by category",
+    "earnGapTitle": "Earn gap (difference method)",
+    "earnGapHint": "Gap = (holding at end − holding at start) − the year's bookings excluding internal transfers. Only positive gaps count as income (average rate for the year).",
+    "oneOffTitle": "One-off events (hardforks, airdrops, losses)",
+    "noPositions": "No positions at 31.12.",
+    "notCalculated": "Not calculated yet. Upload files, update the rates and calculate.",
+    "loadFailed": "Could not load the result.",
+    "recordsFailed": "Could not load bookings",
+    "estvMissing": "Add ESTV rate",
+    "total": "Total",
+    "fields": {
+      "platform": "Platform/wallet",
+      "positions": "Positions",
+      "valueChf": "Value {{currency}}",
+      "asset": "Asset",
+      "account": "Account",
+      "quantity": "Quantity",
+      "priceChf": "Rate {{currency}}",
+      "source": "Source",
+      "actions": "Actions",
+      "category": "Category",
+      "bookings": "Bookings",
+      "date": "Date",
+      "netQuantity": "Net quantity",
+      "grossChf": "Gross {{currency}}",
+      "start": "Start",
+      "end": "End",
+      "booked": "Booked",
+      "gap": "Gap",
+      "event": "Event"
+    },
+    "actions": {
+      "overridePrice": "Override rate",
+      "setQuantity": "Enter quantity",
+      "reclassify": "Reclassify"
+    },
+    "status": {
+      "ok": "OK",
+      "missingPrice": "Rate missing",
+      "spam": "Spam (hidden)",
+      "negative": "Negative"
+    },
+    "gapStatus": {
+      "negative": "negative – check",
+      "missingPrice": "Rate missing"
+    },
+    "quantitySource": {
+      "statement": "Account statement",
+      "ledger": "Ledger",
+      "manual": "Manual"
+    },
+    "priceOrigin": {
+      "home": "{{currency}}",
+      "override": "Overridden",
+      "estv": "ESTV rate list (Kursliste)",
+      "recordChf": "{{currency}} rate per receipt",
+      "recordUsd": "USD rate per receipt",
+      "recordValueUsd": "Platform's USD value",
+      "pegged": "Stablecoin = 1 USD",
+      "fx": "Exchange rate",
+      "tableChf": "Daily rate {{currency}}",
+      "tableUsd": "Daily close USD"
+    },
+    "category": {
+      "interest": "Interest / Earn",
+      "staking": "Staking",
+      "airdrop": "Airdrop",
+      "launchpool": "Launchpool",
+      "hardfork": "Hardfork",
+      "earn_gap": "Earn gap"
+    },
+    "currencyChanged": "This calculation is in {{currency}}; the project is now in {{projectCurrency}}. Update the rates and recalculate."
+  },
+  "checks": {
+    "title": "Checks",
+    "items": "{{count}} open items",
+    "openItems": "Open items ({{count}} unresolved)",
+    "noItems": "No open items.",
+    "loadFailed": "Could not load the checks.",
+    "saveFailed": "Could not save the open item",
+    "showRecords": "Show bookings",
+    "addNote": "Add note",
+    "fields": {
+      "done": "Done",
+      "item": "Item",
+      "impact": "Impact {{currency}} (estimated)",
+      "note": "Note"
+    },
+    "light": {
+      "green": "green",
+      "yellow": "yellow",
+      "red": "red",
+      "grey": "not applicable"
+    },
+    "kind": {
+      "ledgerVsStatement": "Ledger balance = account statement balance",
+      "earnGap": "Missing Earn income reported",
+      "unmatchedWithdrawals": "Withdrawals without a matching booking",
+      "unmatchedDeposits": "Inflows without a matching booking (possible income)",
+      "openingBalance": "Opening balance = prior-year closing balance",
+      "missingPrices": "Positions without a rate",
+      "unclassified": "Unassigned bookings",
+      "walletNetworks": "Wallets checked on all networks"
+    },
+    "reason": {
+      "balanceDiffers": "Ledger {{actual}} ≠ account statement {{expected}} (difference {{difference}})",
+      "ledgerBalanceDiffers": "Sum of bookings {{actual}} ≠ balance column {{expected}}",
+      "negativeBalance": "Negative holding {{quantity}} – bookings are missing",
+      "negativeEarnGap": "Negative Earn gap {{gap}} – check the holding or history",
+      "earnGapWithoutPrice": "Earn gap {{gap}} without an average rate for the year",
+      "withdrawalWithoutDeposit": "Withdrawal {{quantity}} on {{date}} with no receipt in an own account",
+      "depositWithoutWithdrawal": "Inflow {{quantity}} on {{date}} with no origin – possible income",
+      "openingDiffers": "Opening balance {{actual}} ≠ prior-year closing balance {{expected}}",
+      "positionWithoutPrice": "No rate at 31.12. – add the ESTV rate or override the rate",
+      "incomeWithoutPrice": "{{count}} income bookings without a rate",
+      "oneOffWithoutPrice": "One-off event without a rate – add the ESTV rate",
+      "unclassifiedBookings": "{{count}} bookings “{{rawType}}” unassigned – mapping or correction",
+      "walletNetworksNotAvailable": "The automatic check of wallets on all networks is not available yet – please check manually.",
+      "walletNetworksUnchecked": "Networks not (fully) checked yet – use “Check networks” in the Wallets tab",
+      "walletNetworkNotSelected": "Used on this network, but not selected for the wallet",
+      "walletNetworkNotFetched": "Not fetched yet – use “Fetch” in the Wallets tab",
+      "walletManualBalanceMissing": "Balance at 31.12. missing – enter it manually with a receipt",
+      "walletFetchFailed": "Fetch failed – check the key/plan or enter the balance manually with a receipt"
+    },
+    "comparison": {
+      "title": "Comparison with {{year}}",
+      "wealth": "Wealth (prior year → change)",
+      "income": "Income (prior year → change)",
+      "new": "New positions",
+      "removed": "Positions no longer held",
+      "hint": "From the prior year's most recently calculated project."
+    },
+    "hintsNote": "{{count}} open hints about the files (missing periods, statements, unrecognised files) – they are not in this list.",
+    "platformHints": "{{count}} hints about {{platform}}"
+  },
+  "corrections": {
+    "newTitle": "New correction",
+    "newHint": "Corrections don't change original data; they are applied on every calculation and can be undone.",
+    "submit": "Record correction",
+    "clear": "Clear",
+    "closedHint": "The project is closed – no new corrections.",
+    "historyTitle": "History",
+    "empty": "No corrections yet.",
+    "undo": "Undo",
+    "redo": "Reapply",
+    "created": "Correction recorded",
+    "createFailed": "Correction could not be recorded",
+    "changed": "Correction changed",
+    "changeFailed": "Correction could not be changed",
+    "type": {
+      "price_override": "Override rate",
+      "reclassify": "Reclassify booking",
+      "manual_booking": "Manual booking",
+      "manual_holding": "Manual holding"
+    },
+    "status": {
+      "applied": "applied",
+      "undone": "undone",
+      "targetMissing": "Booking not found",
+      "pending": "not calculated yet"
+    },
+    "fields": {
+      "type": "Correction type",
+      "reason": "Reason",
+      "asset": "Asset",
+      "date": "Date",
+      "priceChf": "Rate {{currency}}",
+      "priceChfOptional": "Rate {{currency}} (optional)",
+      "bookingId": "Booking (ID)",
+      "kind": "New kind",
+      "platform": "Platform/wallet",
+      "account": "Account",
+      "timestamp": "Time (UTC)",
+      "quantity": "Quantity (signed)",
+      "fee": "Fee (optional)",
+      "asOf": "Reference date",
+      "evidence": "Evidence",
+      "createdAt": "Recorded",
+      "before": "Before",
+      "after": "After",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "errors": {
+      "required": "Please fill in all required fields.",
+      "reason": "Please provide a reason.",
+      "reasonTooLong": "The reason is too long.",
+      "decimal": "Please enter a number with a period as the decimal separator.",
+      "positive": "Please enter a positive number with a period as the decimal separator.",
+      "date": "Please choose a date.",
+      "kind": "Please choose a kind.",
+      "tooLong": "The text is too long."
+    }
+  },
+  "rates": {
+    "online": "Rate lookups from the internet: on",
+    "offline": "Rate lookups from the internet: off (Settings)",
+    "refresh": "Refresh rates",
+    "refreshAll": "Fetch all again",
+    "estvImport": "Import ESTV rate list (Kursliste)",
+    "hint": "Rates are stored per project (ECB exchange rates, Binance daily close, CoinGecko with key). The calculation only reads stored rates; overrides and ESTV values take precedence. ESTV rate list (Kursliste): XML from ictax.admin.ch or CSV asset;kurs_chf;datum.",
+    "summary": "Fetched: {{fx}} exchange rates",
+    "refreshed": "Rates refreshed",
+    "refreshFailed": "Rates could not be refreshed",
+    "overridden": "Rate saved",
+    "overrideFailed": "Rate could not be saved",
+    "removed": "Rate removed",
+    "removeFailed": "Rate could not be removed",
+    "estvFailed": "The ESTV rate list (Kursliste) could not be imported",
+    "estvImported": "{{count}} ESTV rates imported",
+    "loadFailed": "The rates could not be loaded.",
+    "overrideTitle": "Override rate",
+    "overrideHint": "E.g. USD/{{currency}} as of 31.12. or an asset's rate in {{currency}}. Takes precedence over all other sources.",
+    "override": "Override",
+    "remove": "Remove",
+    "manualTitle": "Overridden rates and ESTV values",
+    "seriesTitle": "Stored rate series",
+    "search": "Search asset",
+    "empty": "No rates stored yet.",
+    "noYearEnd": "no rate",
+    "fields": {
+      "kind": "Kind",
+      "asset": "Asset / currency",
+      "currency": "In",
+      "date": "Date",
+      "value": "Value",
+      "source": "Source",
+      "actions": "Actions",
+      "points": "Days",
+      "range": "Period",
+      "yearEnd": "Rate 31.12.{{year}}",
+      "fetchedAt": "Fetched"
+    },
+    "kind": {
+      "price": "Rate",
+      "fx": "Exchange rate"
+    },
+    "source": {
+      "manual": "Overridden",
+      "estv": "ESTV rate list (Kursliste)",
+      "binance": "Binance",
+      "coingecko": "CoinGecko",
+      "ecb": "ECB"
+    },
+    "status": {
+      "fetched": "fetched",
+      "cached": "already stored",
+      "notFound": "not found",
+      "failed": "Error"
+    },
+    "errors": {
+      "asset": "Please enter an asset symbol.",
+      "date": "Please choose a date.",
+      "value": "Please enter a positive value with a period as the decimal separator."
+    },
+    "estvNotApplicable": "The ESTV rate list (Kursliste) only applies to projects in CHF – this project is in {{currency}}. Rates come from the ECB, Binance and CoinGecko."
+  },
+  "exports": {
+    "createTitle": "Create statement",
+    "createHint": "For the tax authority: only declared values and how they were derived, without open items. Based on the current result (if data has changed, it is recalculated first); each statement is saved with its date.",
+    "internal": {
+      "title": "Internal review report",
+      "hint": "Not for the tax authority: checks with traffic lights, open items with notes, positions without a rate, earn gap warnings and missing files – for you and your tax advisor (Treuhänder). It is not attached to the tax advisor's mail automatically."
+    },
+    "groups": {
+      "statements": "Statements for the tax authority",
+      "internal": "Internal"
+    },
+    "confirm": {
+      "title": "Create statement despite open items?",
+      "message": "There are still {{count}} open items. Create anyway?",
+      "hint": "The statement does not contain the open items – it is for the tax authority. Resolve them first in the checks or record them in the internal review report.",
+      "toChecks": "Go to checks",
+      "create": "Create anyway"
+    },
+    "listTitle": "Created statements",
+    "empty": "No statements created yet.",
+    "loadFailed": "The statements could not be loaded.",
+    "created": "Statement created",
+    "createFailed": "Statement could not be created",
+    "download": "Download",
+    "downloadFailed": "Download failed",
+    "kind": {
+      "simple_pdf": "Simple (PDF)",
+      "simple_xlsx": "Simple (Excel)",
+      "detailed_pdf": "Detailed (PDF)",
+      "detailed_xlsx": "Detailed (Excel)",
+      "internal_report_pdf": "Internal review report (PDF)",
+      "internal_report_xlsx": "Internal review report (Excel)"
+    },
+    "fields": {
+      "createdAt": "Created",
+      "kind": "Statement",
+      "wealth": "Wealth {{currency}}",
+      "income": "Income {{currency}}",
+      "actions": "Actions"
+    },
+    "mail": {
+      "open": "Mail to tax advisor",
+      "title": "Draft mail to the tax advisor",
+      "hint": "Text to copy – nothing is sent. Name and address come from the settings.",
+      "to": "To",
+      "subject": "Subject",
+      "body": "Text",
+      "copy": "Copy",
+      "copied": "Copied to clipboard",
+      "copyFailed": "Copying failed",
+      "failed": "Mail draft not available – calculate first"
+    },
+    "data": {
+      "title": "Data",
+      "hint": "Bookings and holdings in the standard format – with corrections applied, the rate used and rate source, as well as source file and row. The file can be imported again unchanged.",
+      "platform": "Platform",
+      "account": "Account",
+      "asset": "Asset",
+      "kind": "Kind",
+      "allKinds": "All kinds",
+      "period": "Period",
+      "csvBookings": "Bookings (CSV)",
+      "csvHoldings": "Holdings (CSV)",
+      "xlsx": "Bookings + holdings (Excel)",
+      "package": "Download project package",
+      "packageHint": "The project package (.lkproj.zip) contains original files, mappings, corrections with history, rates, review notes and the created statements – for import into the web or desktop app.",
+      "failed": "The data export failed",
+      "packageFailed": "The project package could not be created"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Details for the statements and the mail draft.",
+    "personalTitle": "Personal details",
+    "personalHint": "Shown in the header of the statements and in the mail draft to the tax advisor.",
+    "formatTitle": "Language and format",
+    "formatHint": "Applies at once to the whole app, to new exports and to the mail to your tax advisor.",
+    "noCanton": "No canton",
+    "fields": {
+      "displayName": "Name",
+      "canton": "Canton of residence",
+      "advisorName": "Tax advisor (Treuhänder)",
+      "advisorEmail": "Tax advisor email",
+      "numberFormat": "Number format",
+      "dateFormat": "Date format",
+      "language": "Language"
+    },
+    "numberFormats": {
+      "deCH": "1’234.56",
+      "en": "1,234.56"
+    },
+    "dateFormats": {
+      "ddMMyyyy": "31.12.2025",
+      "yyyyMMdd": "2025-12-31",
+      "ddMMyyyySlash": "31/12/2025",
+      "MMddyyyySlash": "12/31/2025"
+    },
+    "errors": {
+      "tooLong": "The text is too long.",
+      "email": "Please enter a valid email address."
+    },
+    "data": {
+      "title": "Data",
+      "hint": "All your data as an account package: each project as a project package, all mappings, settings and profile – without API keys. Can be imported into this or another account (later also into the desktop app).",
+      "download": "Download all data",
+      "import": "Import account package",
+      "downloadFailed": "The account package could not be created",
+      "imported": "Account package imported",
+      "importFailed": "The account package could not be imported",
+      "importSummary": "{{projects}} project(s) imported, {{created}} mapping(s) new, {{reused}} reused.",
+      "limits": "Packages up to 200 MB (up to 50 MB via the web server); settings are only applied if this account doesn't have any yet."
+    }
+  },
+  "wallets": {
+    "title": "Wallets",
+    "created": "Wallet saved.",
+    "saved": "Changes saved.",
+    "deleted": "Wallet deleted.",
+    "checked": "Networks checked.",
+    "fetched": "Fetch complete – the projects using this wallet are updated.",
+    "check": "Check networks",
+    "checking": "Checking …",
+    "fetch": "Fetch",
+    "fetching": "Fetching …",
+    "notSelected": "not selected",
+    "txCount": "{{count}} transactions",
+    "truncated": "History truncated – older transactions are missing",
+    "addressesScanned": "{{scanned}} addresses checked, {{used}} used",
+    "spamHidden": "{{count}} spam tokens hidden",
+    "usedIn": "Used in:",
+    "used": {
+      "yes": "used",
+      "no": "never used",
+      "unknown": "not checked"
+    },
+    "fetchStatus": {
+      "ok": "fetched {{date}}",
+      "none": "not fetched"
+    },
+    "coverage": {
+      "history": "automatic (full history)",
+      "income": "Income automatic, balance manual",
+      "manual": "manual with evidence"
+    },
+    "network": {
+      "bitcoin": "Bitcoin",
+      "ethereum": "Ethereum",
+      "bsc": "BNB Chain",
+      "polygon": "Polygon",
+      "arbitrum": "Arbitrum",
+      "optimism": "Optimism",
+      "base": "Base",
+      "solana": "Solana",
+      "cardano": "Cardano",
+      "polkadot": "Polkadot",
+      "cosmos": "Cosmos"
+    },
+    "kind": {
+      "evm": "EVM address (same address on all EVM networks)",
+      "bitcoinAddress": "Bitcoin address",
+      "bitcoinXpub": "Bitcoin xpub/ypub/zpub (all addresses are derived)",
+      "solana": "Solana address",
+      "cardano": "Cardano address",
+      "polkadot": "Polkadot address",
+      "cosmos": "Cosmos address"
+    },
+    "notes": {
+      "l1FeeNotIncluded": "L1 data fees are not included (small deviation possible).",
+      "balanceManual": "Please enter the balance at 31.12. manually with evidence.",
+      "incomeManual": "Please enter income manually.",
+      "fake": "Test data (LK_CHAINS_FAKE)."
+    },
+    "spamReason": {
+      "namePattern": "Name contains “Claim”, a web address or similar",
+      "zeroValue": "only transfers with a value of 0",
+      "addressPoisoning": "Sender resembles one of your destination addresses",
+      "unverifiedDust": "unverified, receive-only",
+      "fakeSymbol": "copies the ticker of a well-known token"
+    },
+    "secret": {
+      "title": "This looks like a seed phrase or a private key.",
+      "text": "Detected: {{kind}}. The input was not saved and has been removed from the form. Never enter secret keys – lazy-koins only needs the public address. If you entered it anywhere, treat it as compromised.",
+      "kind": {
+        "seedPhrase": "seed phrase (BIP-39)",
+        "privateKeyHex": "private key (hex)",
+        "privateKeyWif": "private key (WIF)",
+        "extendedPrivateKey": "extended private key (xprv/zprv)",
+        "solanaSecretKey": "Solana secret key"
+      }
+    },
+    "errors": {
+      "failed": "The request failed.",
+      "unreachable": "The server is unreachable.",
+      "closed": "The project is closed.",
+      "secretRefused": "Seed phrases and private keys are not accepted.",
+      "unknownAddress": "Not a supported public address.",
+      "labelRequired": "Please enter a label.",
+      "networkNotForAddress": "This address does not match the network.",
+      "usedByClosedProject": "A closed project contains this wallet – it cannot be deleted.",
+      "offline": "Internet lookups are turned off (Settings › Rates).",
+      "notConfigured": "The key for this network is missing (Settings › Wallets & networks).",
+      "invalidKey": "The key was rejected.",
+      "rateLimited": "Too many requests – please try again later.",
+      "chainNotOnPlan": "Not included in the key’s plan – enter the balance manually with evidence.",
+      "network": "The service is unreachable.",
+      "timeout": "The service did not respond in time.",
+      "badResponse": "Unexpected response from the service.",
+      "providerError": "The service reports an error.",
+      "invalidAddress": "The service rejects the address.",
+      "unsupported": "This network is not supported.",
+      "privateUrl": "Local addresses are not allowed on this server.",
+      "invalidUrl": "Not a valid address (https://…, without parameters).",
+      "evidenceNotPdf": "The evidence must be a PDF of the project."
+    },
+    "fields": {
+      "label": "Label",
+      "address": "Address",
+      "networks": "Networks",
+      "notes": "Notes",
+      "network": "Network",
+      "used": "Used",
+      "coverage": "Fetch",
+      "fetch": "Last fetch",
+      "movements": "Movements",
+      "today": "Balance today",
+      "usedOn": "Used on",
+      "fetchedAt": "Fetched",
+      "projects": "Projects"
+    },
+    "list": {
+      "subtitle": "Your wallet addresses – selectable in projects",
+      "new": "Add wallet",
+      "empty": "No wallets yet.",
+      "loadFailed": "The wallets could not be loaded.",
+      "search": "Search",
+      "noMatch": "No wallet matches the search.",
+      "notChecked": "not checked",
+      "nowhere": "nowhere",
+      "failed": "{{count}} networks failed",
+      "privacy": "Public addresses only. Lookups go to public services (Etherscan, mempool.space, …) and only when you choose “Check networks” or “Fetch”."
+    },
+    "form": {
+      "newTitle": "Add wallet",
+      "editTitle": "Wallet",
+      "subtitle": "Public address, networks and notes",
+      "cardTitle": "Details",
+      "hint": "Never enter a seed phrase or a private key – they are detected and rejected.",
+      "addressHint": "Public address (0x…, bc1…, addr1…) or, for Bitcoin, xpub/ypub/zpub.",
+      "addressFixed": "The address is fixed – to use a different address, create a new wallet.",
+      "networksHint": "Selected networks are fetched; “Check networks” shows where the address has been used.",
+      "loadFailed": "The wallet could not be loaded.",
+      "labelRequired": "Please enter a label.",
+      "labelTooLong": "The label is too long.",
+      "addressTooLong": "The address is too long.",
+      "notesTooLong": "The notes are too long."
+    },
+    "networks": {
+      "title": "Networks",
+      "hint": "“Check networks” asks every possible network whether the address has ever been used. “Fetch” retrieves the history of the selected networks and updates the projects using this wallet."
+    },
+    "tokens": {
+      "title": "Tokens and spam",
+      "hint": "Spam tokens (e.g. “Claim” in the name, transfers with a value of 0, address poisoning) are hidden. With “not spam”, a token counts again.",
+      "asset": "Token",
+      "contract": "Contract / mint",
+      "verdict": "Classification",
+      "action": "Action",
+      "spam": "Spam",
+      "notSpam": "not spam (manual)",
+      "ok": "ok",
+      "markNotSpam": "not spam",
+      "undo": "reset",
+      "none": "No tokens fetched yet.",
+      "markedNotSpam": "Marked as “not spam”.",
+      "reset": "Classification reset."
+    },
+    "delete": {
+      "button": "Delete",
+      "title": "Delete wallet?",
+      "text": "The wallet and its fetched data will be deleted, and its derived files will disappear from all open projects.",
+      "confirm": "Delete"
+    },
+    "project": {
+      "intro": "Wallets of this project. What is fetched ends up as a derived file (standard format) in the files and so feeds into the calculation, checks and exports.",
+      "loadFailed": "The project’s wallets could not be loaded.",
+      "add": "Add wallet",
+      "choose": "Choose wallet …",
+      "addButton": "Add",
+      "remove": "Remove from project",
+      "added": "Wallet added.",
+      "removed": "Wallet removed from the project.",
+      "empty": "This project has no wallets yet.",
+      "files": "Derived files:"
+    },
+    "balances": {
+      "title": "Balances at {{date}} (manual)",
+      "hint": "For networks that cannot be fetched (or only for income): enter the balance with evidence (PDF). It counts as an account statement for the wallet and network.",
+      "asset": "Asset",
+      "quantity": "Quantity",
+      "date": "Reference date",
+      "evidence": "Evidence (PDF)",
+      "noEvidence": "Evidence removed",
+      "chooseEvidence": "Choose PDF …",
+      "upload": "Upload PDF",
+      "note": "Note",
+      "add": "Add balance",
+      "remove": "Remove",
+      "added": "Balance added.",
+      "removed": "Balance removed."
+    }
+  },
+  "hints": {
+    "title": "Hints",
+    "subtitle": "What might be missing or wrong in the project’s files – with possible solutions. Hints marked as OK stay resolved even after a recalculation.",
+    "summary": "{{count}} open hints about the files",
+    "show": "Show hints",
+    "badge": "{{count}} open hints",
+    "counts": "{{open}} open · {{dismissed}} resolved or ignored",
+    "none": "No hints – the files cover the tax year.",
+    "noneFiltered": "No hints for this filter.",
+    "loadFailed": "The hints could not be loaded.",
+    "saveFailed": "The hint could not be saved",
+    "unreadFiles": "Unrecognised files",
+    "groupCount": "{{count}} hints, {{open}} open",
+    "wholePlatform": "whole platform",
+    "openItems": "{{count}} open items in the checks",
+    "more": "Show details and solutions",
+    "less": "Hide details",
+    "accounts": "Affected accounts: {{accounts}}",
+    "noteLabel": "Note:",
+    "filter": {
+      "kind": "Type",
+      "status": "Status",
+      "allKinds": "All types",
+      "allStatuses": "All",
+      "platform": "Platform: {{platform}}"
+    },
+    "sort": {
+      "label": "Sort by",
+      "severity": "Urgency",
+      "kind": "Type",
+      "date": "Date"
+    },
+    "fields": {
+      "kind": "Type",
+      "account": "Account / file",
+      "description": "Description",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Action"
+    },
+    "kind": {
+      "noYearData": "Missing file",
+      "startsLate": "Gap at the start",
+      "endsEarly": "Gap at the end",
+      "noYearEndBalance": "No holdings at 31.12.",
+      "unrecognisedFile": "Unrecognised file",
+      "rowErrors": "File with row errors"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "status": {
+      "open": "open",
+      "done": "resolved",
+      "ignored": "ignored"
+    },
+    "short": {
+      "noYearData": "No bookings in {{year}} – the history ends on {{date}}.",
+      "noYearDataZero": "History ends on {{date}}, balance 0 afterwards – nothing is missing.",
+      "startsLate": "Bookings only begin on {{date}}.",
+      "endsEarly": "Bookings end on {{date}}, something is missing up to 31.12.{{year}}.",
+      "endsEarlyZero": "Bookings end on {{date}}; balance 0 afterwards – nothing can be missing.",
+      "noYearEndBalance": "No account statement at 31.12.{{year}} – the balance according to the bookings is not checked.",
+      "unrecognisedFile": "No mapping – the file is not included in the calculation.",
+      "rowErrors": "{{count}} rows could not be read."
+    },
+    "howTo": {
+      "unrecognisedFile": "There is no mapping yet for the structure of this file. Have the AI create one, assign an existing one, or mark the file as “evidence only”.",
+      "rowErrors": "Some rows have missing or invalid values (e.g. a timestamp without a time zone). Look at the rows, correct the file or the mapping, and upload it again."
+    },
+    "actions": {
+      "upload": "Upload file",
+      "aiStatement": "Read account statement with AI",
+      "aiMapping": "Create mapping with AI",
+      "manualHolding": "Enter holding manually",
+      "template": "Download template",
+      "holdingsTemplate": "Download “Holdings” template",
+      "assign": "Assign mapping",
+      "rowErrors": "View row errors",
+      "markOk": "Mark as OK",
+      "reopen": "Reopen"
+    },
+    "dismiss": {
+      "title": "Mark hint as OK",
+      "note": "Note (optional)",
+      "placeholder": "e.g. account no longer used after 09.02.",
+      "ignore": "Ignore"
+    },
+    "upload": {
+      "title": "Upload file for {{platform}}",
+      "detected": "Platform and account are detected from the file (standard format or mapping)."
+    },
+    "rowErrors": {
+      "title": "Row errors in {{name}}",
+      "count": "{{shown}} of {{total}} errors",
+      "column": "Column",
+      "problem": "Problem"
+    }
+  },
+  "notifications": {
+    "heading": "Notifications",
+    "bell": "Notifications",
+    "bellUnread": "Notifications, {{count}} unread",
+    "hideResolved": "Hide resolved",
+    "empty": "No notifications – all done.",
+    "loadFailed": "The notifications could not be loaded.",
+    "updateFailed": "The notification could not be updated.",
+    "general": "General",
+    "markRead": "Mark as read",
+    "markAllRead": "Mark all as read",
+    "dismiss": "Dismiss",
+    "showAll": "Show all",
+    "resolved": "resolved",
+    "unread": "unread",
+    "read": "read",
+    "osBody": "lazy-koins",
+    "retryDone": "Rates were fetched again",
+    "retryFailed": "Fetching the rates again failed",
+    "kind": {
+      "error": "Error",
+      "action": "Action needed",
+      "info": "Info",
+      "success": "Success"
+    },
+    "action": {
+      "show": "Show",
+      "retry": "Try again",
+      "checkKey": "Check key",
+      "checkSettings": "Check settings",
+      "toFile": "Go to file",
+      "toFiles": "Go to files",
+      "toHint": "Go to hint",
+      "toChecks": "Go to checks",
+      "toRates": "Go to rates",
+      "toExports": "Go to statements",
+      "toStorage": "Check storage location",
+      "toSetup": "Set up"
+    },
+    "title": {
+      "rates": {
+        "fetchFailed": "Rates could not be fetched: {{assets}}",
+        "missingPrices": "{{count}} position(s) or income without a rate"
+      },
+      "estv": {
+        "fetchFailed": "ESTV rate list (Kursliste) {{year}} could not be retrieved ({{reason}})",
+        "newVersion": "New version available: {{label}}"
+      },
+      "key": {
+        "invalid": "Key for {{service}} invalid or expired"
+      },
+      "ai": {
+        "callFailed": "AI call failed: {{code}}"
+      },
+      "mail": {
+        "sendFailed": "Mail to the tax advisor could not be sent ({{reason}})",
+        "sent": "Mail sent to the tax advisor ({{count}} attachments)"
+      },
+      "export": {
+        "failed": "Statement could not be created: {{kind}}"
+      },
+      "package": {
+        "importFailed": "Package import failed ({{reason}})"
+      },
+      "wallet": {
+        "fetchFailed": "Wallet fetch failed: {{label}} – {{networks}} ({{reason}})"
+      },
+      "file": {
+        "needsMapping": "File without mapping: {{name}}",
+        "rowErrors": "{{count}} row errors in {{name}}",
+        "readFailed": "File could not be read: {{name}}"
+      },
+      "hints": {
+        "open": "{{count}} open hints about missing files"
+      },
+      "checks": {
+        "openItems": "{{count}} open items after the calculation"
+      },
+      "project": {
+        "changedSinceSent": "Changed since it was sent to the tax advisor: {{reasons}}"
+      },
+      "desktop": {
+        "syncConflict": "Sync conflict: {{count}} conflict copy(ies) of the database found"
+      },
+      "task": {
+        "done": "Done: {{task}}",
+        "failed": "Failed: {{task}}"
+      },
+      "setup": {
+        "incomplete": "Setup incomplete: {{count}} item(s) still missing (e.g. key or mailer)"
+      }
+    },
+    "reason": {
+      "network": "unreachable",
+      "timeout": "timeout",
+      "http": "server error",
+      "badResponse": "unexpected response",
+      "tooLarge": "too large",
+      "badArchive": "invalid archive",
+      "badXml": "invalid data",
+      "notFound": "not published yet",
+      "processing": "processing failed",
+      "auth": "login rejected",
+      "tls": "encryption failed",
+      "connection": "no connection",
+      "dns": "unknown server",
+      "rejected": "rejected",
+      "protocol": "protocol error",
+      "unknown": "unknown error",
+      "notZip": "not a ZIP file",
+      "unsafePath": "unsafe path in package",
+      "manifest": "not a lazy-koins package",
+      "tampered": "package modified",
+      "version": "newer package version",
+      "content": "invalid content",
+      "unexpected": "unexpected error",
+      "notConfigured": "key missing",
+      "invalidKey": "key rejected",
+      "rateLimited": "too many requests",
+      "chainNotOnPlan": "network not in plan",
+      "providerError": "provider error",
+      "invalidAddress": "invalid address",
+      "unsupported": "not supported"
+    },
+    "page": {
+      "title": "Notifications",
+      "subtitle": "Errors, actions needed and completed tasks – they disappear on their own once the cause is fixed.",
+      "kind": "Type",
+      "allKinds": "All types",
+      "project": "Project",
+      "allProjects": "All projects",
+      "status": "Status",
+      "message": "Notification",
+      "when": "Time",
+      "statuses": {
+        "all": "Open",
+        "unread": "Unread",
+        "resolved": "Including resolved"
+      }
+    },
+    "service": {
+      "ai": "AI",
+      "coingecko": "CoinGecko",
+      "mail": "mail (SMTP)",
+      "chain": "network lookups"
+    }
+  },
+  "activity": {
+    "running": "{{label}} …",
+    "withProgress": "{{label}} ({{done}}/{{total}}) …",
+    "withPercent": "{{label}} ({{percent}} %) …",
+    "several": "{{count}} tasks running",
+    "expand": "Show running tasks",
+    "collapse": "Hide running tasks",
+    "show": "Show",
+    "calculate": "Calculating result",
+    "rates": "Updating rates",
+    "estv": "Importing ESTV rate list (Kursliste)",
+    "estvUpdate": "Retrieving ESTV rate list (Kursliste) {{year}} · {{phase}}",
+    "export": "Creating statement ({{kind}})",
+    "upload": "Uploading files",
+    "reapply": "Applying mapping to the files",
+    "ai": {
+      "mapping": "AI is creating a mapping for {{name}}",
+      "statement": "AI is reading the account statement {{name}}",
+      "statementSave": "Checking and saving holdings from {{name}}",
+      "mappingReady": "Mapping suggestion for {{name}} is ready",
+      "statementReady": "Account statement {{name}} has been read"
+    },
+    "libraryTake": "Taking mapping from the library"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Your crypto wealth across all projects – from the same data and rates as the tax calculation.",
+    "empty": "No project yet – create one and upload files, then the overview appears here.",
+    "loadFailed": "The dashboard could not be loaded.",
+    "recordsFailed": "The bookings could not be loaded.",
+    "total": "Total value at {{date}}",
+    "sinceStart": "since {{date}}",
+    "noStartValue": "There was no valued holding at the start of the period.",
+    "chartLabel": "Total value in {{currency}} per day",
+    "allocation": "Allocation by asset",
+    "unreadable": "{{count}} file(s) could not be read and are missing from the overview.",
+    "period": {
+      "label": "Period",
+      "ytd": "Current year",
+      "last12": "Last 12 months",
+      "taxYear": "Tax year {{year}}"
+    },
+    "kpi": {
+      "label": "Key figures for the period",
+      "deposits": "Deposits (In)",
+      "withdrawals": "Withdrawals (Out)",
+      "income": "Income",
+      "costs": "Costs / losses",
+      "tradingFees": "Trading fees",
+      "incomeShare": "{{pct}} % of wealth",
+      "missing": "{{count}} booking(s) without a rate not included",
+      "bookings": "{{count}} booking(s) – click for details"
+    },
+    "missing": {
+      "title": "Missing rates",
+      "body": "Without a rate (not counted as 0): {{assets}}.",
+      "afterRefresh": "After updating {{count}} asset(s), these rates are still missing."
+    },
+    "rates": {
+      "refresh": "Update rates",
+      "progress": "Loading rates {{done}}/{{total}}: {{asset}}",
+      "fx": "Exchange rates",
+      "offlineHint": "Rate lookups from the internet are turned off (Settings › Rates).",
+      "done": "Rates updated: {{fetched}} loaded, {{missing}} without a rate",
+      "offline": "Rate lookups from the internet are turned off",
+      "failed": "Rates could not be updated"
+    },
+    "holdings": {
+      "title": "Holdings",
+      "asOf": "Reference date {{date}} – expand for platforms and accounts",
+      "search": "Search asset or platform",
+      "empty": "No holdings on the reference date.",
+      "asset": "Asset",
+      "quantity": "Quantity",
+      "price": "Rate {{currency}}",
+      "value": "Market value {{currency}}",
+      "trend": "Rate trend",
+      "trendOf": "Rate trend {{asset}} over the period",
+      "noPrice": "no rate",
+      "status": {
+        "ok": "valued",
+        "missingPrice": "no rate",
+        "negative": "negative"
+      }
+    },
+    "card": {
+      "title": "Overview {{year}}"
+    },
+    "currency": {
+      "label": "Currency",
+      "note": "Your projects have different tax currencies. The dashboard does not convert: it shows the projects in {{currency}}. Choose another currency for the remaining projects."
+    }
+  },
+  "charts": {
+    "date": "Date",
+    "valueChf": "Value {{currency}}",
+    "missing": "No rate",
+    "missingOn": "No rate: {{assets}}",
+    "missingLegend": "Days on which at least one asset has no rate (not counted as 0)",
+    "asset": "Asset",
+    "share": "Share",
+    "others": "Other ({{count}})"
+  },
+  "estv": {
+    "title": "ESTV rate list (Kursliste) automatic",
+    "hint": "lazy-koins fetches the official rate list (ICTax) once per tax year and version for everyone, and checks daily whether the ESTV has published a newer version. The year-end rates of cryptocurrencies and foreign currencies (USD, EUR) come from it – ahead of all other sources.",
+    "disabled": "Automatic download is turned off on this server. Manual import remains possible.",
+    "offline": "Rate lookups from the internet are turned off – the rate list is not being fetched.",
+    "none": "No rate list loaded yet.",
+    "notLoaded": "not loaded",
+    "downloadedAt": "loaded {{date}}",
+    "lastCheck": "Last checked: {{date}}",
+    "update": "Update ESTV rate list",
+    "apply": "Apply new version",
+    "running": "Fetching rate list {{year}}",
+    "updated": "New version of the ESTV rate list loaded",
+    "current": "The ESTV rate list is up to date",
+    "checkFailed": "The ESTV rate list could not be fetched",
+    "updateFailed": "The ESTV rate list could not be updated",
+    "applyFailed": "The ESTV rate list could not be applied",
+    "applied": "{{count}} cryptocurrencies applied from {{label}}",
+    "noneForYear": "No ESTV rate list loaded for {{year}} yet",
+    "loadFailed": "The status of the ESTV rate list could not be loaded.",
+    "projectTitle": "ESTV rate list {{year}}",
+    "inUse": "In use: {{label}}",
+    "notApplied": "No ESTV values in this project yet.",
+    "newer": "Available: {{label}}",
+    "projectOffline": "Automatic download off (settings or server) – a stored version can still be applied.",
+    "matched": "{{count}} cryptocurrencies and {{fx}} exchange rates from the rate list",
+    "ambiguous": "{{asset}}: multiple entries in the rate list ({{names}}) – no ESTV value applied, please override the rate at 31.12.",
+    "fields": {
+      "year": "Tax year",
+      "version": "Version",
+      "crypto": "Cryptocurrencies",
+      "fx": "Foreign currencies",
+      "checked": "Last check"
+    },
+    "outcome": {
+      "updated": "newly loaded",
+      "current": "up to date",
+      "failed": "error"
+    },
+    "phase": {
+      "metadata": "check version",
+      "download": "download",
+      "parse": "read",
+      "store": "store"
+    }
+  },
+  "mail": {
+    "placeholders": {
+      "name": "Your name (Profile)",
+      "treuhaender": "Name of the tax advisor (Profile)",
+      "steuerjahr": "Tax year of the project",
+      "kanton": "Canton of the project",
+      "vermoegen": "Tax value at 31.12. with currency, e.g. “CHF 12’345.65” (latest calculation)",
+      "ertrag": "Income with currency (latest calculation)",
+      "anhaenge": "List of attachments (one line per file)",
+      "offene_punkte": "Open items from the checks that are not ticked off",
+      "datum": "Today’s date",
+      "projekt": "Name of the project"
+    },
+    "smtp": {
+      "kind": {
+        "auth": "Login rejected – check user or password.",
+        "tls": "Encryption failed – check the server’s encryption/port or certificate.",
+        "connection": "No connection to the server – check server name and port.",
+        "dns": "The server name is unknown.",
+        "timeout": "The server is not responding (timeout).",
+        "rejected": "The server rejected the mail (sender, recipient or size).",
+        "protocol": "Unexpected response – is this an SMTP server, and are port and encryption correct?",
+        "unknown": "The mail could not be sent."
+      },
+      "server": "Server",
+      "code": "SMTP code",
+      "command": "Command",
+      "errorCode": "Error code",
+      "response": "Server response"
+    },
+    "errors": {
+      "failed": "Mail request failed",
+      "unreachable": "Server unreachable",
+      "mailDisabled": "The mailer is turned off (Settings › Mail)",
+      "mailNotConfigured": "Set up the server and sender address first (Settings › Mail)",
+      "passwordUnreadable": "The saved password can no longer be read – please enter it again",
+      "privateHost": "Local servers are not allowed on this server",
+      "invalidHost": "Invalid server name",
+      "invalidAddress": "Not a valid email address",
+      "encryptionUnavailable": "Passwords cannot be stored on this server",
+      "confirmationRequired": "Please confirm sending",
+      "attachmentsTooLarge": "Attachments together exceed 20 MB",
+      "unknownExport": "An attachment does not belong to this project",
+      "emptyMail": "Subject and text must not be empty",
+      "unknownPlaceholders": "The template contains unknown placeholders",
+      "smtpFailed": "The mail server did not accept the mail"
+    },
+    "send": {
+      "cardTitle": "To tax advisor",
+      "cardHint": "Send the statements to the tax advisor by mail – or record that you delivered them another way.",
+      "open": "Send to tax advisor",
+      "title": "Send to tax advisor",
+      "hint": "Text from your template – you can still edit it here. Nothing is sent until you confirm.",
+      "noMailerHint": "No mailer set up: copy the text or open it in your mail app (add the attachments there yourself).",
+      "setUpMailer": "Set up mailer (Settings › Mail)",
+      "notCalculated": "Not calculated yet – wealth and income are missing from the text.",
+      "to": "To",
+      "toPlaceholder": "Tax advisor’s email",
+      "toRequired": "Recipient missing",
+      "cc": "CC",
+      "ccMe": "CC me ({{address}})",
+      "subject": "Subject",
+      "body": "Text",
+      "bodyEdited": "Text edited: the attachments list in the text is no longer updated automatically.",
+      "attachments": "Attachments",
+      "noAttachments": "No statements created yet.",
+      "noneSelected": "none",
+      "internalWarning": "Internal report – not intended for the tax advisor.",
+      "total": "Total {{total}} (max. {{max}})",
+      "tooLarge": "Total {{total}} – more than the {{max}} allowed",
+      "continue": "Continue to review",
+      "confirmTitle": "Review and send mail",
+      "confirmHint": "This is how the mail will go out. Only “Send now” sends it.",
+      "back": "Back",
+      "sendNow": "Send now",
+      "sending": "Sending …",
+      "sent": "Mail sent to the tax advisor",
+      "mailto": "Open in mail app"
+    },
+    "log": {
+      "title": "Sent mails",
+      "when": "When",
+      "to": "To",
+      "cc": "CC: {{cc}}",
+      "subject": "Subject",
+      "attachments": "Attachments",
+      "status": "Status",
+      "sent": "sent",
+      "failed": "failed"
+    }
+  },
+  "setup": {
+    "title": "Setup",
+    "subtitle": "A few steps so lazy-koins has everything it needs to work. You can postpone optional steps until later.",
+    "loadFailed": "The setup progress could not be loaded.",
+    "stepsLabel": "Setup steps",
+    "stepNumber": "Step {{number}}",
+    "stepOf": "Step {{number}} of {{total}}",
+    "required": "Required",
+    "optional": "optional",
+    "back": "Back",
+    "next": "Next",
+    "later": "Later",
+    "withoutAi": "Continue without AI",
+    "startApp": "Start app",
+    "firstProject": "Create first project",
+    "finishFailed": "Setup is not complete yet.",
+    "saveFailed": "The progress could not be saved.",
+    "stepIncomplete": "This step is not fully set up yet.",
+    "whereKey": "Where do I get the key?",
+    "state": {
+      "open": "open",
+      "done": "done",
+      "skipped": "skipped",
+      "error": "error"
+    },
+    "deepLink": {
+      "rates": "Set up rates"
+    },
+    "steps": {
+      "profile": {
+        "title": "Profile",
+        "intro": "Your name and canton of residence appear on the statements for the tax authority; the canton determines the form references. Language and number and date format apply to the whole app."
+      },
+      "advisor": {
+        "title": "Tax advisor (Treuhänder)",
+        "intro": "If someone helps you with your tax return: name and email address. “Send to tax advisor” then sends the statements straight to them."
+      },
+      "ai": {
+        "title": "AI plugin",
+        "intro": "An AI writes mappings for files lazy-koins doesn't know yet and reads PDF statements. It only receives the header row and a few sample rows – before anything is sent, you see exactly what goes out. Without AI, you create mappings by hand."
+      },
+      "rates": {
+        "title": "Rates",
+        "intro": "For valuation, lazy-koins needs rates: exchange rates (ECB), daily closing prices (Binance) and, with a free CoinGecko key, also coins that Binance doesn't list. The ESTV rate list (Kursliste) with the tax values as of 31.12. is fetched automatically."
+      },
+      "wallets": {
+        "title": "Wallets & networks",
+        "intro": "With an Etherscan key (one for all EVM chains such as Ethereum, Arbitrum or Polygon) and a Helius key (Solana), lazy-koins fetches holdings and income for your wallet addresses. Bitcoin and Cardano don't need a key."
+      },
+      "mail": {
+        "title": "Mail",
+        "intro": "With a mailer (SMTP), lazy-koins sends the statements straight to your tax advisor. Without a mailer, you copy the text into your own email app."
+      },
+      "storage": {
+        "title": "Data folder",
+        "intro": "Where the database and your original files are stored – in the app's folder or in a folder of your choice, including the sync folder of OneDrive, Google Drive or Proton Drive."
+      },
+      "pin": {
+        "title": "PIN",
+        "intro": "A PIN of 4 to 8 digits locks the app when you open it and after a pause. Only a slow hash is stored, never the PIN itself."
+      },
+      "summary": {
+        "title": "Summary",
+        "intro": "What is set up and what is missing – with what a gap means. Everything can be changed later in Profile and Settings."
+      }
+    },
+    "profile": {
+      "nameRequired": "Enter your name.",
+      "cantonRequired": "Select your canton of residence.",
+      "language": "Language",
+      "languageHint": "Applies at once; you can change it any time in your profile.",
+      "format": "Number and date format",
+      "number": "Number format",
+      "date": "Date format"
+    },
+    "ai": {
+      "consent": "I agree that the header row and a few sample rows of a file are sent to the selected provider when I choose “Create with AI”.",
+      "consentGiven": "Your consent has been given (can be revoked in Settings › AI)."
+    },
+    "rates": {
+      "estvAuto": "The ESTV rate list (Kursliste) is fetched automatically as soon as a project needs it.",
+      "estvLoaded": "The ESTV rate list (Kursliste) {{year}} is loaded."
+    },
+    "wallets": {
+      "note": "You can set up more networks (Polkadot/Subscan) and your own Esplora, Koios or Cosmos addresses in Settings › Wallets & networks.",
+      "addresses": "Add first wallet addresses"
+    },
+    "mail": {
+      "template": "The email to your tax advisor starts with the default template (subject, text with the figures and the open items).",
+      "templateLink": "Customize template"
+    },
+    "storage": {
+      "syncHint": "Never open lazy-koins on two devices at the same time with this folder, and after closing, wait until synchronization has finished.",
+      "restartHint": "The app restarts after the change. Choose “Copy” so your existing data comes along; setup then continues here.",
+      "webOnly": "The data folder can only be chosen in the desktop app."
+    },
+    "pin": {
+      "alreadySet": "A PIN is set. You can change it in your profile.",
+      "desktopHint": "In the desktop app, a PIN is required: it protects your data on this computer. Forgotten? It can be reset – you then have to re-enter the stored keys.",
+      "webHint": "Optional: in addition to signing in, the app asks for the PIN when you reopen it or have been inactive for a while."
+    },
+    "summary": {
+      "ok": "set up",
+      "missing": "missing",
+      "setUp": "Set up",
+      "items": {
+        "profile": {
+          "title": "Profile",
+          "ok": "Name and canton of residence appear on the statements.",
+          "missing": "Without a name and canton of residence, this information is missing on the statements."
+        },
+        "advisor": {
+          "title": "Tax advisor (Treuhänder)",
+          "ok": "“Send to tax advisor” knows the address.",
+          "missing": "Without a tax advisor, you enter the recipient address yourself when sending."
+        },
+        "ai": {
+          "title": "AI plugin",
+          "ok": "The AI can read unknown files and PDF statements.",
+          "missing": "Without the AI plugin, you create mappings for unknown files by hand."
+        },
+        "onlineRates": {
+          "title": "Rates from the internet",
+          "ok": "Rates are fetched when you choose “Update rates”.",
+          "missing": "Rate lookups are off: only saved and manually entered rates apply."
+        },
+        "coingeckoKey": {
+          "title": "CoinGecko key",
+          "ok": "Coins that Binance doesn't list also get a rate.",
+          "missing": "Without a CoinGecko key, rates are missing for coins that Binance doesn't list (e.g. FLR, SGB)."
+        },
+        "etherscanKey": {
+          "title": "Etherscan key",
+          "ok": "EVM wallets can be queried.",
+          "missing": "Without an Etherscan key, you enter holdings of EVM wallets by hand."
+        },
+        "mail": {
+          "title": "Mailer",
+          "ok": "The statements go straight to your tax advisor.",
+          "missing": "Without a mailer, you send the statements through your own email app."
+        },
+        "pin": {
+          "title": "PIN",
+          "ok": "The app is locked when opened and after a pause.",
+          "missing": "Without a PIN, only your sign-in protects your data."
+        }
+      }
+    }
+  },
+  "pin": {
+    "lockNow": "Lock now",
+    "changed": "The PIN was changed.",
+    "removed": "The PIN was removed.",
+    "autoLockSaved": "The automatic lock was saved.",
+    "lock": {
+      "title": "lazy-koins is locked",
+      "hint": "Enter your PIN to continue.",
+      "label": "PIN",
+      "placeholder": "PIN",
+      "pad": "Number pad",
+      "delete": "Delete last digit",
+      "unlock": "Unlock",
+      "wait": "Next attempt in {{seconds}} s.",
+      "attemptsLeft": "{{count}} attempts left before you must sign in again.",
+      "forgot": "Forgot PIN?",
+      "relogin": "Sign out and sign in again",
+      "reason": {
+        "idle": "Locked after a pause. Enter your PIN to continue.",
+        "lock-screen": "Locked because the screen was locked.",
+        "suspend": "Locked because the computer was in sleep mode.",
+        "unknown": "Enter your PIN to continue."
+      }
+    },
+    "forgot": {
+      "title": "Forgot PIN",
+      "desktopBody": "You can reset the PIN. Because it protects the stored keys, they are deleted in the process and must be re-entered:",
+      "keys": {
+        "ai": "the API key of the AI plugin",
+        "mail": "the mailer password",
+        "coingecko": "the CoinGecko key",
+        "etherscan": "the Etherscan key",
+        "chains": "the keys for other networks (Helius, Subscan)"
+      },
+      "confirm": "I understand that these keys will be deleted. Projects, files and settings are kept.",
+      "reset": "Reset PIN",
+      "webBody": "Sign in again with your account – the PIN is then removed and you can set a new one.",
+      "relogin": "Sign in again and reset PIN"
+    },
+    "form": {
+      "pin": "PIN (4–8 digits)",
+      "repeat": "Repeat PIN",
+      "current": "Current PIN",
+      "new": "New PIN",
+      "autoLock": "Lock automatically after",
+      "minutes": "{{count}} minutes of inactivity",
+      "invalid": "The PIN consists of 4 to 8 digits.",
+      "mismatch": "The two PINs don't match."
+    },
+    "settings": {
+      "title": "PIN lock",
+      "hintDesktop": "The app asks for the PIN at every start, after a pause and after the screen is locked.",
+      "hintWeb": "Optional: in addition to signing in, the app asks for the PIN when you reopen it or have been inactive for a while.",
+      "none": "No PIN set.",
+      "set": "Set PIN",
+      "change": "Change PIN",
+      "remove": "Remove PIN"
+    },
+    "errors": {
+      "wrongPin": "Wrong PIN.",
+      "pinThrottled": "Too many attempts – please wait.",
+      "reloginRequired": "Too many failed attempts: sign in again.",
+      "invalidPin": "The PIN consists of 4 to 8 digits.",
+      "currentPinRequired": "Enter the current PIN.",
+      "pinRequired": "A PIN is required in the desktop app.",
+      "confirmationRequired": "First confirm that the keys will be deleted.",
+      "noPin": "No PIN is set.",
+      "failed": "That didn't work. Please try again."
+    }
+  },
+  "chat": {
+    "title": "Assistant",
+    "new": "New chat",
+    "newConversation": "New chat",
+    "conversations": "Conversations",
+    "close": "Close assistant",
+    "rename": {
+      "action": "Rename",
+      "title": "Rename conversation",
+      "label": "Title",
+      "required": "Please enter a title.",
+      "tooLong": "At most 120 characters."
+    },
+    "delete": {
+      "action": "Delete conversation",
+      "title": "Delete conversation?",
+      "body": "All messages in this conversation will be deleted. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "renamed": "Conversation renamed",
+    "renameFailed": "Renaming failed",
+    "deleted": "Conversation deleted",
+    "deleteFailed": "Deleting failed",
+    "loadFailed": "The conversation could not be loaded",
+    "askFailed": "The question could not be sent",
+    "unavailable": "The assistant is currently unavailable.",
+    "setupHint": "The assistant uses the AI plugin. Set it up in the setup wizard.",
+    "openSettings": "Set up AI",
+    "consent": {
+      "title": "Before you ask",
+      "body": "Your chat messages and what the tools read for them (projects, figures, file rows) go to {{provider}} ({{model}}). You can revoke your consent in Settings.",
+      "accept": "Agree",
+      "defaultModel": "Default model"
+    },
+    "empty": "Ask me something about your projects, files, rates or results. I take into account what you currently have open.",
+    "thinking": "The assistant is thinking …",
+    "statusFailed": "The assistant's status could not be loaded.",
+    "loading": "Loading …",
+    "input": {
+      "label": "Your question",
+      "placeholder": "Ask a question … (Enter sends, Shift+Enter = new line)"
+    },
+    "send": "Send",
+    "toolsUsed": "Tools used ({{count}})",
+    "proposal": {
+      "arrow": "→",
+      "removed": "(removed)",
+      "cancel": "Cancel",
+      "confirm": "Run",
+      "openProject": "Open project",
+      "alreadyDecided": "This proposal has already been decided",
+      "failed": "The decision could not be saved",
+      "status": {
+        "executed": "Done ✓",
+        "failed": "Failed:",
+        "cancelled": "Cancelled"
+      },
+      "errors": {
+        "unknownTool": "unknown tool",
+        "invalidArguments": "invalid values",
+        "areaDisabled": "area not enabled",
+        "writeDisabled": "changes not allowed",
+        "notFound": "not found – it may have been deleted",
+        "conflict": "conflicts with the current state (e.g. the project is closed)",
+        "refused": "refused",
+        "failed": "unexpected error"
+      }
+    },
+    "upload": {
+      "drop": "Drag a file here (CSV, XLSX, PDF)",
+      "pick": "Choose file",
+      "show": "Show in Files"
+    },
+    "preview": {
+      "fallback": "With these values:",
+      "priceOverride": "Override the price of {{asset}} on {{date}}",
+      "reclassify": "Reclassify booking {{booking}}",
+      "manualBooking": "Manual booking {{asset}} on {{platform}}",
+      "manualHolding": "Manual holding {{asset}} on {{platform}}",
+      "openItem": "Edit open item: {{item}}",
+      "createExport": "Create export: {{kind}}",
+      "sendMail": "Send mail to {{to}}",
+      "hintStatus": "Set hint {{hint}} to “{{status}}”",
+      "removeFile": "Remove file “{{file}}” from the project",
+      "createMapping": "Save new mapping “{{name}}”",
+      "updateMapping": "Replace mapping “{{name}}” (version {{from}} → {{to}})",
+      "deleteMapping": "Delete mapping “{{name}}”",
+      "createProject": "New project “{{name}}” for {{year}} ({{canton}})",
+      "updateProject": "Change project “{{name}}”",
+      "deleteProject": "Permanently delete project “{{name}}” ({{year}})",
+      "updateSettings": "Change profile/settings",
+      "label": {
+        "reason": "Reason",
+        "price": "Price {{asset}} ({{unit}})",
+        "kind": "Type",
+        "booking": "Booking",
+        "holdingAt": "Holding at {{date}}",
+        "done": "Done",
+        "note": "Note",
+        "export": "Export",
+        "openItems": "Open items",
+        "to": "To",
+        "subject": "Subject",
+        "attachments": "Attachments",
+        "status": "Status",
+        "file": "File",
+        "mapping": "Mapping",
+        "version": "Version",
+        "name": "Name",
+        "taxYear": "Tax year",
+        "canton": "Canton",
+        "notes": "Notes",
+        "taxCurrency": "Tax currency",
+        "project": "Project",
+        "displayName": "Name",
+        "advisorName": "Tax advisor (Treuhänder)",
+        "advisorEmail": "Tax advisor email",
+        "onlineRates": "Online rate lookups",
+        "libraryEntry": "Library",
+        "stars": "Stars",
+        "privacyFindings": "Values that look personal",
+        "pseudonym": "Display name"
+      },
+      "value": {
+        "noPrice": "no price",
+        "override": "{{price}} {{unit}} (override)",
+        "yes": "yes",
+        "no": "no",
+        "anonymous": "Anonymous",
+        "findingsRemoved": "{{count}} removed",
+        "findingsKept": "{{count}} kept"
+      },
+      "publishMapping": "Publish mapping \"{{name}}\" to the library",
+      "publishMappingVersion": "Publish version {{version}} of \"{{name}}\" to the library",
+      "takeLibraryMapping": "Take mapping \"{{name}}\" (version {{version}}) from the library",
+      "rateLibraryMapping": "Rate mapping \"{{name}}\"",
+      "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library"
+    },
+    "event": {
+      "executed": "Done: {{title}}",
+      "cancelled": "Cancelled: {{title}}",
+      "failed": "Failed: {{title}} – {{reason}}"
+    }
+  },
+  "assistant": {
+    "effect": {
+      "readOnly": "Read",
+      "write": "Write",
+      "destructive": "Destructive"
+    },
+    "title": "Assistant",
+    "intro": "How the assistant behaves in chat. Your instruction replaces the default instruction; the safety rules always apply in addition.",
+    "prompt": {
+      "label": "Instruction (system prompt)",
+      "default": "Default",
+      "hint": "{{count}} / {{max}} characters. Empty = default instruction.",
+      "reset": "Reset to default",
+      "tooLong": "At most {{max}} characters."
+    },
+    "safety": {
+      "title": "Safety rules",
+      "hint": "These rules always apply – even with your own instruction – and cannot be changed."
+    },
+    "consent": {
+      "title": "Consent for the chat",
+      "given": "Agreed on {{date}}.",
+      "none": "No consent yet – the chat asks for it when you ask your first question.",
+      "revoke": "Revoke consent",
+      "revoked": "Consent for the chat revoked"
+    },
+    "saved": "Instruction saved",
+    "reset": "Default instruction restored",
+    "saveFailed": "Saving failed",
+    "loadFailed": "The assistant settings could not be loaded."
+  },
+  "mcp": {
+    "subtitle": "MCP server for AI clients such as Claude Desktop or Claude Code",
+    "title": "MCP server",
+    "status": {
+      "on": "Active",
+      "off": "Off"
+    },
+    "intro": "Through the Model Context Protocol (MCP), AI clients can use the tools of lazy-koins – only in the areas you allow, and only with a token.",
+    "enabled": "Enable MCP server",
+    "areasLabel": "Allowed areas",
+    "areas": {
+      "projects": "Projects",
+      "files": "Files",
+      "mappings": "Mappings",
+      "rates": "Rates",
+      "results": "Results",
+      "checks": "Checks",
+      "corrections": "Corrections",
+      "exports": "Exports",
+      "wallets": "Wallets",
+      "settings": "Settings",
+      "mail": "Mail"
+    },
+    "allowWrite": "Allow write tools",
+    "allowWriteWarning": "This lets a connected client change data (for example, add corrections or assign files). Only allow this for clients you trust.",
+    "saved": "MCP settings saved",
+    "saveFailed": "Saving failed",
+    "loadFailed": "The MCP settings could not be loaded.",
+    "copy": "Copy",
+    "copied": "Copied to clipboard",
+    "copyFailed": "Copying was not possible",
+    "connect": {
+      "title": "Connect",
+      "intro": "Add the server in your AI client.",
+      "endpoint": "Endpoint (Streamable HTTP)",
+      "desktopNote": "Desktop app: the HTTP endpoint is only reachable on this computer (127.0.0.1), and its port changes on every start. It's therefore better to use the stdio configuration.",
+      "placeholderHint": "The examples contain the placeholder <TOKEN>. If you create a token below, it is inserted here – only while you stay on this page.",
+      "stdio": "Claude Desktop (stdio, recommended)",
+      "stdioHint": "Starts lazy-koins as a local MCP server. Add to claude_desktop_config.json.",
+      "claudeDesktop": "Claude Desktop (claude_desktop_config.json)",
+      "claudeDesktopHint": "Connects via mcp-remote (requires Node.js).",
+      "claudeCode": "Claude Code",
+      "http": "Other clients (Streamable HTTP)"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "intro": "Every client needs a token. A token is only shown when it is created; revoked or expired tokens no longer work.",
+      "create": "Create token",
+      "empty": "No tokens yet.",
+      "loadFailed": "The tokens could not be loaded.",
+      "fields": {
+        "name": "Name",
+        "state": "Status",
+        "expires": "Expires",
+        "lastUsed": "Last used",
+        "created": "Created"
+      },
+      "state": {
+        "active": "Active",
+        "expired": "Expired",
+        "revoked": "Revoked"
+      },
+      "never": "No expiry",
+      "unused": "Never",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke token?",
+      "revokeBody": "Clients using the token “{{name}}” lose access immediately.",
+      "revoked": "Token revoked",
+      "revokeFailed": "Revoking failed",
+      "createTitle": "Create token",
+      "createBody": "Give the token a name that lets you recognize the client.",
+      "namePlaceholder": "e.g. Claude Desktop laptop",
+      "nameRequired": "Please enter a name.",
+      "nameTooLong": "At most 80 characters.",
+      "expiry": {
+        "30": "30 days",
+        "90": "90 days",
+        "365": "365 days",
+        "never": "No expiry"
+      },
+      "createdTitle": "Token created",
+      "createdBody": "Copy the token now and enter it in your client.",
+      "onceWarning": "The token is only shown now – never again afterwards.",
+      "snippetsHint": "The configuration examples on this page now contain it.",
+      "createFailed": "The token could not be created"
+    },
+    "tools": {
+      "title": "Tools",
+      "intro": "What a connected client can use, by area. Write and destructive tools only with permission.",
+      "areaOff": "(not allowed)",
+      "empty": "No tools."
+    },
+    "audit": {
+      "title": "Log",
+      "intro": "Every tool call from the chat and via MCP (the last 200).",
+      "sourceFilter": "Source",
+      "allSources": "All",
+      "source": {
+        "chat": "Chat",
+        "mcp": "MCP"
+      },
+      "empty": "No calls yet.",
+      "loadFailed": "The log could not be loaded.",
+      "fields": {
+        "time": "Time",
+        "source": "Source",
+        "tool": "Tool",
+        "args": "Arguments",
+        "status": "Status",
+        "duration": "Duration"
+      },
+      "status": {
+        "ok": "OK",
+        "error": "Error",
+        "refused": "Refused",
+        "proposed": "Proposed"
+      },
+      "millis": "{{ms}} ms"
+    }
+  },
+  "errors": {
+    "api": {
+      "projectClosed": "The project is closed – reopen it first.",
+      "noCalculation": "The project has not been calculated yet.",
+      "offline": "Online rate lookups are switched off.",
+      "estvAutoOff": "The automatic ESTV rate list (Kursliste) is switched off on this server.",
+      "usedByClosedProject": "A closed project uses it – reopen that project first.",
+      "duplicateFile": "This file is already in the project.",
+      "alreadyDecided": "This has already been decided.",
+      "invalidCorrection": "The correction is invalid.",
+      "promptTooLong": "The prompt is too long.",
+      "tooManyTokens": "Too many active tokens – revoke one first.",
+      "setupIncomplete": "Required setup steps are still missing.",
+      "stepIncomplete": "This step is not complete yet.",
+      "stepRequired": "This step is required.",
+      "evidenceNotPdf": "The receipt must be a PDF of the project.",
+      "encryptionUnavailable": "Keys cannot be stored on this server (SETTINGS_ENCRYPTION_KEY is not set).",
+      "confirmationRequired": "Please confirm first.",
+      "consentRequired": "Your consent is still missing.",
+      "alreadyPublished": "You have already published exactly this mapping.",
+      "ownEntry": "You cannot rate your own mappings.",
+      "publishLimit": "You have published enough mappings today – try again tomorrow.",
+      "privacyFindings": "The mapping contains values that look personal – remove or confirm them.",
+      "specTooLarge": "The mapping is too large for the library."
+    },
+    "status": {
+      "unreachable": "The server cannot be reached.",
+      "badRequest": "The input was not accepted.",
+      "unauthorized": "Your sign-in has expired – please sign in again.",
+      "forbidden": "Not permitted.",
+      "notFound": "Not found – it may have been deleted.",
+      "conflict": "Conflicts with the current state – reload the page and try again.",
+      "tooLarge": "Too large.",
+      "unprocessable": "The data could not be processed.",
+      "locked": "The app is locked.",
+      "rateLimited": "Too many requests – please wait a moment.",
+      "server": "Server error – please try again later."
+    }
+  },
+  "library": {
+    "title": "Mapping library",
+    "subtitle": "Mappings of all users – take them, rate them, publish your own",
+    "loadFailed": "The library could not be loaded.",
+    "empty": "No mappings in the library yet. Publish the first one!",
+    "noMatch": "No mapping matches the search.",
+    "search": "Search",
+    "searchPlaceholder": "Name, platform or description",
+    "allPlatforms": "All platforms",
+    "sort": "Sort",
+    "sortBy": {
+      "rating": "Best rated",
+      "usage": "Most taken",
+      "newest": "Newest",
+      "name": "Name"
+    },
+    "mine": "mine",
+    "publishedAt": "published on {{date}}",
+    "anonymous": "Anonymous",
+    "ratingCount": "({{count}})",
+    "ratingSummary": "{{average}} of 5 · {{count}} ratings",
+    "versionShort": "v{{version}}",
+    "usage": "taken {{count}}×",
+    "fields": {
+      "name": "Name",
+      "platform": "Platform",
+      "rating": "Rating",
+      "usage": "Taken",
+      "author": "By",
+      "version": "Version",
+      "description": "Description",
+      "published": "Published",
+      "updated": "Last changed"
+    },
+    "actions": {
+      "view": "View",
+      "take": "Take",
+      "rate": "Rate",
+      "newVersion": "New version",
+      "delete": "Delete from library"
+    },
+    "take": {
+      "failed": "Taking failed",
+      "done": "Taken as your own mapping",
+      "doneAssigned": "Taken and assigned to the file",
+      "existing": "You already have this version – your mapping stays as it is"
+    },
+    "rate": {
+      "failed": "Rating failed",
+      "done": "Thanks for your rating",
+      "removed": "Rating removed",
+      "title": "Rate \"{{name}}\"",
+      "body": "How well does this mapping read your files? 1 to 5 stars – you can change it any time.",
+      "remove": "Remove rating"
+    },
+    "delete": {
+      "done": "Removed from the library",
+      "failed": "Removing failed",
+      "title": "Delete from the library?",
+      "body": "\"{{name}}\" disappears from the library. Whoever took it keeps their copy – their projects stay unchanged."
+    },
+    "rating": {
+      "readable": "{{average}} of 5 stars",
+      "yours": "Your rating",
+      "stars": "{{count}} stars",
+      "ownEntry": "This is your own mapping – the others can rate it."
+    },
+    "detail": {
+      "jsonTitle": "Mapping (JSON)",
+      "takeHint": "Taking it creates your own copy in your mappings. Later versions or deleting it here do not change your copy.",
+      "factsTitle": "Details",
+      "fingerprint": "Recognises files with the columns",
+      "notFound": "This mapping is not (or no longer) in the library."
+    },
+    "matches": {
+      "title": "Found in the library: {{count}} matching mappings",
+      "body": "Others have already published mappings for this file layout. \"Take\" creates your own copy and reads the file with it – without AI."
+    },
+    "origin": {
+      "label": "Library",
+      "version": "taken, version {{version}}",
+      "newer": "New version available: version {{version}}",
+      "takeNewer": "Take new version",
+      "gone": "Version {{version}} – no longer in the library, your copy still applies"
+    },
+    "publish": {
+      "button": "Publish mapping",
+      "fromMapping": "Publish to library",
+      "title": "Publish to the library",
+      "titleVersion": "Publish a new version",
+      "description": "Check exactly what becomes public: all users of this server see the JSON below. Your e-mail and your name are never shown.",
+      "sourceMapping": "One of your mappings",
+      "choose": "Choose a mapping …",
+      "orFile": "or a file",
+      "invalid": "The file is not a valid mapping:",
+      "notFound": "This mapping or library entry is not yours.",
+      "reviewFailed": "The check failed.",
+      "publicNote": "Others can view it, take it (as their own copy) and rate it. Only you can delete it again.",
+      "asNewVersion": "Publish as new version {{version}} of your existing entry",
+      "authorName": "Display name (public)",
+      "authorHint": "Empty = \"Anonymous\". Do not use your real name unless you want to.",
+      "json": "Will be published like this ({{size}} bytes):",
+      "tooLarge": "Too large – at most {{max}} bytes.",
+      "confirm": "I have checked the JSON and want to publish it like this.",
+      "keepFindings": "Keep {{count}} findings on purpose (no personal data).",
+      "submit": "Publish",
+      "done": "Published to the library",
+      "doneVersion": "Version {{version}} published",
+      "open": "Show",
+      "failed": "Publishing failed"
+    },
+    "findings": {
+      "title": "Privacy check",
+      "none": "Nothing found that looks like account numbers, addresses, e-mails, IBANs or names.",
+      "intro": "These values look personal. Ticked ones are removed before publishing:",
+      "removeHint": "Removed while ticked.",
+      "editHint": "Cannot be removed here – change it in the mapping itself.",
+      "kind": {
+        "email": "E-mail",
+        "iban": "IBAN",
+        "walletAddress": "Wallet address",
+        "accountId": "Account/customer number",
+        "personName": "Name",
+        "secret": "Secret key"
+      }
+    }
+  }
+}

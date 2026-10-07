@@ -23,6 +23,18 @@ export class InMemoryImportMappingRepository extends ImportMappingRepositoryPort
     return this.rows.get(id);
   }
 
+  async findByLibrary(
+    ownerId: string,
+    libraryId: string,
+  ): Promise<ImportMapping[]> {
+    return [...this.rows.values()]
+      .filter(
+        (mapping) =>
+          mapping.ownerId === ownerId && mapping.library?.id === libraryId,
+      )
+      .sort((a, b) => (b.library?.version ?? 0) - (a.library?.version ?? 0));
+  }
+
   async create(
     ownerId: string,
     input: SaveMappingInput,
@@ -37,6 +49,7 @@ export class InMemoryImportMappingRepository extends ImportMappingRepositoryPort
       fingerprint: mappingFingerprint(input.spec),
       version: MAPPING_VERSION,
       origin: input.origin,
+      ...(input.library ? { library: input.library } : {}),
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     };

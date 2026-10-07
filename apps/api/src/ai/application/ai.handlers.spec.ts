@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
   BadGatewayException,
+  BadRequestException,
   ConflictException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -28,9 +29,11 @@ import {
   type AiCompletion,
   AiCompletionPort,
   type AiCompletionRequest,
+  type AiConverseTurn,
   type AiConnection,
   AiProviderError,
 } from '../../integrations/ai/ai-completion.port';
+import { sampleFileOf } from '../../mappings/application/sample-file';
 import { InMemoryImportMappingRepository } from '../../mappings/testing/in-memory-import-mapping.repository';
 import { InMemoryProjectRepository } from '../../projects/testing/in-memory-project.repository';
 import { InMemoryAiSettingsRepository } from '../testing/in-memory-ai-settings.repository';
@@ -40,10 +43,16 @@ import { AiSources } from './ai-sources';
 import {
   AcceptAiMappingCommand,
   AcceptAiMappingHandler,
+  AcceptSampleMappingCommand,
+  AcceptSampleMappingHandler,
   GenerateMappingCommand,
   GenerateMappingHandler,
+  GenerateSampleMappingCommand,
+  GenerateSampleMappingHandler,
   GetMappingPayloadHandler,
   GetMappingPayloadQuery,
+  GetSampleMappingPayloadHandler,
+  GetSampleMappingPayloadQuery,
 } from './mapping.handlers';
 import {
   GetAiSettingsHandler,
@@ -85,6 +94,10 @@ class FakeAi extends AiCompletionPort {
   answer(...values: unknown[]): this {
     this.answers.push(...values);
     return this;
+  }
+
+  converse(): Promise<AiConverseTurn> {
+    return Promise.reject(new Error('FakeAi: no conversations here'));
   }
 
   async complete(
@@ -196,6 +209,25 @@ async function setup(
       new AcceptAiMappingHandler(projects, files, mappings, bus).execute(
         new AcceptAiMappingCommand('anna', project.id, fileId, spec),
       ),
+    samplePayload: (bytes: Uint8Array) =>
+      new GetSampleMappingPayloadHandler(gate, sources).execute(
+        new GetSampleMappingPayloadQuery(
+          'anna',
+          sampleFileOf('bitfinex.csv', bytes),
+        ),
+      ),
+    generateSample: (bytes: Uint8Array, consent = true) =>
+      new GenerateSampleMappingHandler(gate, sources, analysis, ai).execute(
+        new GenerateSampleMappingCommand(
+          'anna',
+          sampleFileOf('bitfinex.csv', bytes),
+          consent,
+        ),
+      ),
+    acceptSample: (spec: unknown) =>
+      new AcceptSampleMappingHandler(mappings).execute(
+        new AcceptSampleMappingCommand('anna', spec),
+      ),
     statementPayload: (fileId: string) =>
       new GetStatementPayloadHandler(projects, files, gate, sources).execute(
         new GetStatementPayloadQuery('anna', project.id, fileId),
@@ -302,11 +334,106 @@ describe('AI settings (F5.13)', () => {
     expect(await t.settings.find('anna')).toBeUndefined();
   });
 
+  it('answers a failed test with the precise, redacted details (502)', async () => {
+    const t = await setup();
+    t.ai.answer(
+      new AiProviderError('invalidKey', {
+        status: 401,
+        url: 'https://api.example.com/v1/chat/completions',
+        providerMessage:
+          'Incorrect API key provided: sk-typed-only-abcdef. Bearer sk-typed-only-abcdef',
+        providerType: 'invalid_request_error',
+        providerCode: 'invalid_api_key',
+      }),
+    );
+    const error = await t
+      .testConnection({
+        provider: 'openai_compatible',
+        baseUrl: 'https://api.example.com/v1',
+        model: 'gpt-x',
+        apiKey: 'sk-typed-only-abcdef',
+      })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(BadGatewayException);
+    const body = (error as BadGatewayException).getResponse();
+    expect(body).toMatchObject({
+      statusCode: 502,
+      code: 'invalidKey',
+      status: 401,
+      url: 'https://api.example.com/v1/chat/completions',
+      model: 'gpt-x',
+      providerType: 'invalid_request_error',
+      providerCode: 'invalid_api_key',
+    });
+    expect((body as { providerMessage: string }).providerMessage).toContain(
+      'Incorrect API key provided',
+    );
+    expect((body as { detail: string }).detail).toContain('HTTP 401');
+    expect(JSON.stringify(body)).not.toContain('typed-only');
+  });
+
+  it('says what is missing when the plugin is not ready (409 detail)', async () => {
+    const t = await setup();
+    const notReady = await t
+      .testConnection({ provider: 'anthropic', baseUrl: '', model: '' })
+      .catch((e: unknown) => e);
+    expect(codeOf(notReady)).toBe('aiNotConfigured');
+    expect(
+      (
+        (notReady as ConflictException).getResponse() as {
+          detail?: string;
+        }
+      ).detail,
+    ).toContain('API key');
+  });
+
   it('tests while the plugin is switched off (nothing of the user is sent)', async () => {
     const t = await setup();
     await t.save({ enabled: false });
     t.ai.answer({ ok: true });
     expect(await t.testConnection()).toMatchObject({ ok: true });
+  });
+});
+
+describe('AI mapping from the editor sample file (F5.13, F5.14)', () => {
+  it('previews and sends the same payload, only with consent, and stores nothing', async () => {
+    const t = await setup();
+    await t.save();
+    const preview = await t.samplePayload(BITFINEX);
+    expect(preview.consentGiven).toBe(false);
+    expect(preview.payload.fileName).toBe('bitfinex.csv');
+
+    const refused = await t
+      .generateSample(BITFINEX, false)
+      .catch((e: unknown) => e);
+    expect(codeOf(refused)).toBe('consentRequired');
+    expect(t.ai.requests).toHaveLength(0);
+
+    t.ai.answer(BITFINEX_SPEC);
+    const candidate = await t.generateSample(BITFINEX, true);
+    expect(t.ai.requests[0]?.request.messages[0]?.content).toContain(
+      JSON.stringify(preview.payload),
+    );
+    expect(candidate.valid).toBe(true);
+    expect(candidate.preview?.totals.bookings).toBeGreaterThan(0);
+    expect(t.files.stored.size).toBe(0);
+    expect(t.mappings.rows.size).toBe(0);
+
+    // The reviewed proposal is saved as an AI mapping; an invalid one is refused with its issues.
+    const saved = await t.acceptSample(candidate.spec);
+    expect(saved).toMatchObject({ origin: 'ai', platform: 'bitfinex' });
+    const invalid = await t
+      .acceptSample({ format: 'x' })
+      .catch((e: unknown) => e);
+    expect(invalid).toBeInstanceOf(BadRequestException);
+    expect(t.mappings.rows.size).toBe(1);
+  });
+
+  it('refuses while the plugin is off', async () => {
+    const t = await setup();
+    const error = await t.samplePayload(BITFINEX).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ConflictException);
+    expect(codeOf(error)).toBe('aiDisabled');
   });
 });
 
@@ -413,7 +540,7 @@ describe('AI mapping (F5.13, F5.14)', () => {
     const t = await setup();
     await t.save();
     const file = await t.upload('bitfinex.csv', BITFINEX);
-    t.ai.answer(new AiProviderError('rateLimited', 429));
+    t.ai.answer(new AiProviderError('rateLimited', { status: 429 }));
     const error = await t.generate(file.id).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(BadGatewayException);
     expect(codeOf(error)).toBe('rateLimited');

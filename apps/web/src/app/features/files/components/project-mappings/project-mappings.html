@@ -41,82 +41,80 @@
       </button>
     </div>
 
-    @let entries = service.projectMappings.value() ?? []; @if (entries.length
-    === 0) {
+    @if (pager.total() === 0) {
     <p class="text-muted-foreground text-sm">
       {{ 'mappings.empty' | translate }}
     </p>
     } @else {
     <div hlmTableContainer class="lk-panel">
-      <table hlmTable>
+      <table hlmTable class="table-fixed">
+        <colgroup>
+          <col />
+          <col class="w-32" />
+          <col class="hidden w-28 lg:table-column" />
+          <col class="hidden w-1/4 md:table-column" />
+          <col class="hidden w-36 lg:table-column" />
+          <col class="w-14" />
+        </colgroup>
         <thead hlmTHead>
           <tr hlmTr>
             <th hlmTh>{{ 'mappings.fields.name' | translate }}</th>
             <th hlmTh>{{ 'mappings.fields.platform' | translate }}</th>
-            <th hlmTh>{{ 'mappings.fields.origin' | translate }}</th>
-            <th hlmTh>{{ 'mappings.fields.files' | translate }}</th>
-            <th hlmTh>{{ 'mappings.fields.updated' | translate }}</th>
-            <th hlmTh class="text-right">
-              <span class="sr-only"
-                >{{ 'files.fields.actions' | translate }}</span
-              >
+            <th hlmTh class="hidden lg:table-cell">
+              {{ 'mappings.fields.origin' | translate }}
+            </th>
+            <th hlmTh class="hidden md:table-cell">
+              {{ 'mappings.fields.files' | translate }}
+            </th>
+            <th hlmTh class="hidden lg:table-cell">
+              {{ 'mappings.fields.updated' | translate }}
+            </th>
+            <th hlmTh class="lk-sticky-actions text-right">
+              <span class="sr-only">{{ 'common.actions' | translate }}</span>
             </th>
           </tr>
         </thead>
         <tbody hlmTBody>
-          @for (entry of entries; track entry.mapping.id) {
+          @for (entry of pager.visible(); track entry.mapping.id) {
           <tr hlmTr>
-            <td hlmTd class="font-medium">
+            <td hlmTd class="max-w-0 font-medium">
               <a
                 class="hover:underline"
                 [routerLink]="['/app/mappings', entry.mapping.id]"
+                [lkTruncate]="entry.mapping.name"
                 >{{ entry.mapping.name }}</a
               >
             </td>
-            <td hlmTd>{{ entry.mapping.platform }}</td>
-            <td hlmTd>
+            <td hlmTd class="max-w-0">
+              <span [lkTruncate]="entry.mapping.platform"
+                >{{ entry.mapping.platform }}</span
+              >
+            </td>
+            <td hlmTd class="hidden lg:table-cell">
               <span hlmBadge variant="outline"
                 >{{ 'mappings.origin.' + entry.mapping.origin | translate
                 }}</span
               >
             </td>
-            <td hlmTd class="text-sm">
-              @for (file of entry.files; track file.id; let last = $last) { {{
-              file.displayName }}@if (!last) {, } }
+            <td hlmTd class="hidden max-w-0 text-sm md:table-cell">
+              @let names = fileNames(entry);
+              <span [lkTruncate]="names">{{ names }}</span>
             </td>
-            <td hlmTd class="tabular-nums">
-              {{ entry.mapping.updatedAt | date: 'dd.MM.yyyy HH:mm' }}
+            <td hlmTd class="hidden tabular-nums lg:table-cell">
+              {{ entry.mapping.updatedAt | lkDate: 'dateTime' }}
             </td>
-            <td hlmTd class="text-right whitespace-nowrap">
-              <button
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                type="button"
-                [attr.aria-label]="'mappings.actions.download' | translate"
-                (click)="service.downloadMapping(entry.mapping)"
-              >
-                <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
-              </button>
-              <a
-                hlmBtn
-                variant="ghost"
-                size="icon"
-                [routerLink]="['/app/mappings', entry.mapping.id]"
-                [attr.aria-label]="'mappings.openPage' | translate"
-              >
-                <ng-icon
-                  name="lucideExternalLink"
-                  size="16"
-                  aria-hidden="true"
-                />
-              </a>
+            <td hlmTd class="lk-sticky-actions text-right">
+              <lk-row-actions
+                [actions]="actions"
+                (selected)="act($event, entry)"
+              />
             </td>
           </tr>
           }
         </tbody>
       </table>
     </div>
+    <lk-paginator [pager]="pager" />
     }
   </div>
 </section>

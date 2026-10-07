@@ -9,18 +9,30 @@ import {
 } from '../common/throttling/throttling';
 import { AccessTokenGuard } from '../auth/access-token.guard';
 import { AiModule } from '../ai/ai.module';
+import { AssistantModule } from '../assistant/assistant.module';
+import { McpModule } from '../mcp/mcp.module';
 import { AuthModule } from '../auth/auth.module';
 import { validateEnv } from '../config/env';
 import { CalculationModule } from '../calculation/calculation.module';
+import { CarryoverModule } from '../carryover/carryover.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
+import { PackagesModule } from '../packages/packages.module';
+import { PinLockGuard } from '../pin/pin-lock.guard';
+import { PinModule } from '../pin/pin.module';
+import { SetupModule } from '../setup/setup.module';
 import { ExportsModule } from '../exports/exports.module';
 import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { MailModule } from '../mail/mail.module';
+import { LibraryModule } from '../library/library.module';
 import { MappingsModule } from '../mappings/mappings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PersistenceModule } from '../persistence/persistence.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { RatesModule } from '../rates/rates.module';
 import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
+import { WalletsModule } from '../wallets/wallets.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -41,16 +53,28 @@ import { AppController } from './app.controller';
     PersistenceModule,
     // Global: identity-token verifier → its adapter (chosen by AUTH_MODE).
     IntegrationsModule,
+    // Global: the notification centre (F11.11) every feature raises into.
+    NotificationsModule,
     AuthModule,
     UsersModule,
     ProjectsModule,
     FilesModule,
     MappingsModule,
+    LibraryModule,
     SettingsModule,
     CalculationModule,
     RatesModule,
     ExportsModule,
     AiModule,
+    WalletsModule,
+    MailModule,
+    DashboardModule,
+    CarryoverModule,
+    PackagesModule,
+    AssistantModule,
+    McpModule,
+    PinModule,
+    SetupModule,
   ],
   controllers: [AppController],
   providers: [
@@ -59,6 +83,8 @@ import { AppController } from './app.controller';
     // on the user the token named). All bound here so the order lives in one place.
     { provide: APP_GUARD, useClass: IpThrottlerGuard },
     { provide: APP_GUARD, useClass: AccessTokenGuard },
+    // F11.0p: a user with a PIN gets 423 for data requests until unlocked (needs the user).
+    { provide: APP_GUARD, useExisting: PinLockGuard },
     { provide: APP_GUARD, useClass: AccountThrottlerGuard },
   ],
 })

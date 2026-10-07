@@ -7,7 +7,11 @@ import {
 import { IntegrationsModule } from '../integrations.module';
 import { HostPdfRenderer, registerHostPdfPrinter } from './host-pdf.renderer';
 import { PlaywrightPdfRenderer } from './playwright-pdf.renderer';
-import { type PdfPrintOptions, PDF_PRINT_OPTIONS } from './print-options';
+import {
+  type PdfPrintOptions,
+  PDF_PRINT_OPTIONS,
+  printOptionsFor,
+} from './print-options';
 import { selectPdfRenderer } from './select-pdf-renderer';
 
 const PDF = new TextEncoder().encode('%PDF-1.7 fake');
@@ -59,5 +63,17 @@ describe('PDF renderer selection', () => {
     expect(PDF_PRINT_OPTIONS.format).toBe('A4');
     expect(PDF_PRINT_OPTIONS.footerTemplate).toContain('pageNumber');
     expect(PDF_PRINT_OPTIONS.footerTemplate).toContain('totalPages');
+  });
+
+  it('numbers the pages in the document language (F11.2)', () => {
+    expect(printOptionsFor('<html lang="de-CH"><p>x</p></html>')).toBe(
+      PDF_PRINT_OPTIONS,
+    );
+    expect(printOptionsFor('<p>x</p>')).toBe(PDF_PRINT_OPTIONS);
+    const en = printOptionsFor(
+      '<!doctype html><html lang="en"><p>x</p></html>',
+    );
+    expect(en.footerTemplate).toContain('Page <span class="pageNumber">');
+    expect(en.footerTemplate).not.toContain('Seite');
   });
 });

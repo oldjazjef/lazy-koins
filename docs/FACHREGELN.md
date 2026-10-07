@@ -14,7 +14,9 @@ Plattformen beschreiben, was diese Mappings ausdrücken müssen.
 - Deklariert werden **Vermögen per 31.12.** (Wertschriftenverzeichnis) und **Ertrag** des Jahres
   (Einkommen aus beweglichem Vermögen). Kapitalgewinne im Privatvermögen sind steuerfrei und
   werden nicht ausgewiesen.
-- Bewertung in CHF. Ertrag zum Zuflusszeitpunkt (Tageskurs), Vermögen zum Stichtag 31.12.
+- Bewertung in CHF (Steuerwährung des Projekts, ANFORDERUNGEN F4.1a: Vorgabe aus dem Land,
+  Schweiz → CHF; siehe „Kurse in einer anderen Steuerwährung“). Ertrag zum Zuflusszeitpunkt
+  (Tageskurs), Vermögen zum Stichtag 31.12.
 
 ## Bestand per 31.12.
 
@@ -34,12 +36,26 @@ Plattformen beschreiben, was diese Mappings ausdrücken müssen.
   Polygon, Arbitrum, Optimism, Base, BNB Chain); dort nur Spam gefunden → vermerken.
 - Netzwerke ohne freie historische Abfrage (z. B. BNB Chain): Saldo manuell mit Beleg, sonst
   offener Punkt.
+- EVM im Detail (Umsetzung): eine fehlgeschlagene Tx bewegt keinen Wert, ihr Gas ist aber bezahlt
+  → Gebühr-Buchung (nur Gas). Auf Optimism/Base ist die L1-Datengebühr nicht in
+  `gasUsed × gasPrice` enthalten (kleine Abweichung möglich, beim Abruf vermerkt). **Annahme**,
+  im Zweifel mit dem Saldo laut Explorer abgleichen.
+- Bitcoin: je Transaktion Σ Ausgänge an eigene Adressen − Σ Eingänge von eigenen Adressen; hat die
+  Wallet bezahlt, ist die Netzwerkgebühr ihre Gebühr. Bei xpub/ypub/zpub zählen alle abgeleiteten
+  Empfangs- und Wechselgeld-Adressen (Gap-Limit 20).
+- Cardano, Polkadot: Staking-Erträge werden abgerufen (Ertrag am Beginn der Epoche, in der sie
+  verfügbar wurden); Saldo per 31.12. manuell mit Beleg. Cosmos: alles manuell mit Beleg.
+- Spam (ausgeblendet, überschreibbar „kein Spam“): Name mit „Claim“, Webadresse o. Ä.; nur
+  Transfers mit Wert 0; Absender ähnelt einer eigenen Zieladresse (Adress-Vergiftung);
+  unverifizierte, nur erhaltene Token; kopiertes Kürzel bekannter Token. Spam-Token erscheinen als
+  `SPAM:<Kürzel>`, damit ein falscher „USDT“ die echte Position nicht berührt.
 
 ## Kurse
 
 Rangfolge je Position (erste vorhandene gilt):
 
-1. **ESTV-Kurs** (Kursliste, manuell/Override) – CHF je Einheit
+1. **ESTV-Kurs** (Kursliste, automatisch bezogen oder manuell importiert; Override geht vor) –
+   CHF je Einheit per 31.12., Quelle „ESTV-Kursliste <Jahr>, Stand <Datum>“
 2. **Kurs CHF direkt** – z. B. aus dem Kraken Account Statement (CHF-Bewertung per Stichtag)
 3. **Kurs USD × USD/CHF** des Stichtags
 
@@ -49,11 +65,29 @@ Rangfolge je Position (erste vorhandene gilt):
   letzter Kurs ≤ Datum, höchstens **14 Tage** alt, sonst erster Kurs danach (≤ 14 Tage); sonst
   kein Kurs. Weitere Quellen: Börsen-Kerzen (Kraken/Bitfinex), CoinGecko.
 - Umbenannte Assets beim Kursabruf abbilden (z. B. `MATIC` → `POL` ab der Umstellung).
-- Devisen: EZB-Referenzkurse, fehlende Tage mit dem letzten Fixing auffüllen; Stichtagskurs =
-  letztes Fixing ≤ 31.12. Für die Deklaration durch den ESTV-Wert ersetzbar (Parameter).
+- Devisen per 31.12.: **zuerst der ESTV-Jahresendkurs** (USD, EUR aus der Kursliste, Quelle
+  „ESTV-Kursliste <Jahr>, Stand <Datum>“); fehlt er, das letzte EZB-Fixing ≤ 31.12. Alle anderen
+  Tage: EZB-Referenzkurse, fehlende Tage mit dem letzten Fixing auffüllen.
 - Jede Position nennt ihre **Mengenquelle** und **Kursquelle**. Ohne Kurs: Position bleibt mit
   Menge, Wert leer, Status „ohne Kurswert“, Fussnote „Kein Kurswert verfügbar; nicht im Total
   enthalten.“; intern zählt sie als offener Punkt (Prüfbericht).
+
+### Kurse in einer anderen Steuerwährung (F4.1a)
+
+Ist die Steuerwährung T nicht CHF (z. B. EUR), gilt dieselbe Rangfolge in T:
+
+1. **Override** in T (überschriebener Kurs) – die ESTV-Kursliste gilt **nicht** (sie ist in CHF).
+2. **Kurs in T direkt** (CoinGecko in T); ein CHF-Kurs aus dem Beleg wird nicht verwendet.
+3. **Kurs USD × USD/T** des Tages (Binance-Tagesschluss, USD-Wert der Plattform).
+
+- Stablecoins und `USD` = 1 USD × USD/T; T selbst = 1; andere Währungen über ihren Kurs in T.
+- Devisen: EZB-Referenzkurse USD → T und EUR → T (Frankfurter), letztes Fixing ≤ Tag, fehlende
+  Tage aufgefüllt. Fehlt ein Paar, wird über USD, EUR oder CHF gekreuzt (z. B. CHF/EUR =
+  1 / EUR/CHF; GBP/EUR = GBP/USD × USD/EUR).
+- Earn-Lücke: Jahresmittel der Tageskurse USD × USD/T.
+- Auszüge: alle Spalten und Summen in T („Wert EUR“), Parameter USD/T und EUR/T.
+- Eine Änderung der Steuerwährung macht die Berechnung veraltet; Kurse neu laden und neu
+  berechnen. Das Dashboard summiert nie über Währungen: es zeigt je Währung deren Projekte.
 
 ## Ertrag
 

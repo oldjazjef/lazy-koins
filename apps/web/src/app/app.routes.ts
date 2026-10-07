@@ -1,5 +1,6 @@
 import type { Route } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { setupGuard } from './core/setup/setup-state.service';
 
 export const appRoutes: Route[] = [
   { path: '', pathMatch: 'full', redirectTo: 'app' },
@@ -12,10 +13,16 @@ export const appRoutes: Route[] = [
     // Everything behind sign-in lives under /app, inside the shell with the header.
     path: 'app',
     canActivate: [authGuard],
+    // F11.0s: until the setup wizard is finished, /app/* opens it.
+    canActivateChild: [setupGuard],
     loadComponent: () =>
       import('./core/layout/app-shell').then((m) => m.AppShell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'projects' },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+        path: 'dashboard',
+        loadChildren: () => import('./features/dashboard/dashboard.routes'),
+      },
       {
         path: 'projects',
         loadChildren: () => import('./features/projects/projects.routes'),
@@ -24,6 +31,18 @@ export const appRoutes: Route[] = [
         path: 'mappings',
         loadChildren: () => import('./features/mappings/mappings.routes'),
       },
+      // The library moved under Mappings (/app/mappings/library); older links still work.
+      { path: 'library', redirectTo: 'mappings/library', pathMatch: 'full' },
+      { path: 'library/:id', redirectTo: 'mappings/library/:id' },
+      {
+        path: 'wallets',
+        loadChildren: () => import('./features/wallets/wallets.routes'),
+      },
+      {
+        path: 'notifications',
+        loadChildren: () =>
+          import('./features/notifications/notifications.routes'),
+      },
       {
         path: 'profile',
         loadChildren: () => import('./features/profile/profile.routes'),
@@ -31,6 +50,10 @@ export const appRoutes: Route[] = [
       {
         path: 'settings',
         loadChildren: () => import('./features/settings/settings.routes'),
+      },
+      {
+        path: 'setup',
+        loadChildren: () => import('./features/setup/setup.routes'),
       },
     ],
   },

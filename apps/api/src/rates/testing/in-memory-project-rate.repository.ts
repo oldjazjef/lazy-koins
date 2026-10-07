@@ -1,9 +1,14 @@
 import type { RateEntry } from '@lazykoins/engine';
-import type { ProjectRate, RateKey } from '../domain/project-rate';
+import type {
+  ProjectRate,
+  RateKey,
+  StoredRateEntry,
+} from '../domain/project-rate';
 import { ProjectRateRepositoryPort } from '../ports/project-rate.repository.port';
 import {
-  ChfPriceSourcePort,
+  FiatPriceSourcePort,
   FxRateSourcePort,
+  type KeyCheckResult,
   type SeriesRequest,
   UsdPriceSourcePort,
 } from '../ports/rate-source.port';
@@ -24,12 +29,13 @@ export class InMemoryProjectRateRepository extends ProjectRateRepositoryPort {
 
   async upsertMany(
     projectId: string,
-    entries: readonly RateEntry[],
+    entries: readonly StoredRateEntry[],
   ): Promise<number> {
     for (const entry of entries) {
       this.seq += 1;
       this.rows.set(keyOf(projectId, entry), {
         ...entry,
+        note: entry.note ?? null,
         id: `r${this.seq}`,
         projectId,
         fetchedAt: '2026-01-01T00:00:00.000Z',
@@ -52,6 +58,8 @@ function datesOf(from: string, to: string): string[] {
 export class FakeUsdSource extends UsdPriceSourcePort {
   readonly name = 'binance' as const;
   readonly calls: SeriesRequest[] = [];
+  /** Symbols whose request fails (network error). */
+  readonly failFor = new Set<string>();
 
   constructor(private readonly prices: Readonly<Record<string, string>>) {
     super();
@@ -59,6 +67,11 @@ export class FakeUsdSource extends UsdPriceSourcePort {
 
   async dailyUsd(request: SeriesRequest): Promise<RateEntry[]> {
     this.calls.push(request);
+    if (this.failFor.has(request.symbol)) {
+      throw Object.assign(new Error('binance: request failed'), {
+        status: null,
+      });
+    }
     const value = this.prices[request.symbol];
     if (value === undefined) return [];
     return datesOf(request.from, request.to).map((date) => ({
@@ -72,40 +85,76 @@ export class FakeUsdSource extends UsdPriceSourcePort {
   }
 }
 
-export class FakeChfSource extends ChfPriceSourcePort {
+export class FakeFiatSource extends FiatPriceSourcePort {
   readonly name = 'coingecko' as const;
-  readonly calls: (SeriesRequest & { coinId: string; apiKey: string })[] = [];
+  readonly calls: (SeriesRequest & {
+    coinId: string;
+    apiKey: string;
+    currency: string;
+  })[] = [];
+  /** Every request fails with this HTTP status (401 = key refused). */
+  failWithStatus: number | undefined;
 
-  async dailyChf(
-    request: SeriesRequest & { coinId: string; apiKey: string },
+  async dailyFiat(
+    request: SeriesRequest & {
+      coinId: string;
+      apiKey: string;
+      currency: string;
+    },
   ): Promise<RateEntry[]> {
     this.calls.push(request);
+    if (this.failWithStatus !== undefined) {
+      throw Object.assign(new Error('coingecko: request failed'), {
+        status: this.failWithStatus,
+      });
+    }
     return datesOf(request.from, request.to).map((date) => ({
       kind: 'price',
       asset: request.asset,
-      currency: 'CHF',
+      currency: request.currency,
       date,
       value: '1.5',
       source: 'coingecko',
     }));
   }
+
+  async checkKey(apiKey: string): Promise<KeyCheckResult> {
+    const ok = apiKey.startsWith('CG-');
+    return {
+      ok,
+      ...(ok ? {} : { code: 'invalidKey' as const }),
+      status: ok ? 200 : 401,
+      providerMessage: ok ? null : 'invalid key',
+      url: 'https://api.coingecko.com/api/v3/ping',
+      millis: 1,
+    };
+  }
 }
 
 export class FakeFxSource extends FxRateSourcePort {
   readonly name = 'ecb' as const;
+  /** `USD` / `EUR` for a CHF project (as before), `USD>EUR` for another quote. */
   readonly calls: string[] = [];
 
-  async dailyChf(
-    base: 'USD' | 'EUR',
+  async daily(
+    base: string,
+    quote: string,
     from: string,
     to: string,
   ): Promise<RateEntry[]> {
-    this.calls.push(base);
-    const value = base === 'USD' ? '0.8' : '0.93';
+    this.calls.push(quote === 'CHF' ? base : `${base}>${quote}`);
+    const value =
+      quote === 'CHF'
+        ? base === 'USD'
+          ? '0.8'
+          : '0.93'
+        : base === 'USD'
+          ? '0.86'
+          : '1.08';
     return datesOf(from, to).map((date) => ({
       kind: 'fx',
       asset: base,
-      currency: 'CHF',
+      currency: quote,
       date,
       value,
       source: 'ecb',

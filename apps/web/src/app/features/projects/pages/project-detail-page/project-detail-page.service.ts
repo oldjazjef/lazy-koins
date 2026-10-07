@@ -9,6 +9,10 @@ import type {
   Project,
   UpdateProjectRequest,
 } from '../../../../core/api/api.types';
+import type { ProjectSentStatus } from '../../../../core/api/mail.types';
+import type { ResultStatus } from '../../../../core/api/calculation.types';
+import type { Carryover } from '../../../../core/api/dashboard.types';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 
 /**
  * Page-scoped: the project on screen (provided by the page, keyed by the route's id). The API
@@ -27,6 +31,84 @@ export class ProjectDetailPageService {
     const id = this.projectId();
     return id ? apiUrl(`/projects/${id}`) : undefined;
   });
+
+  /** F4.7: sent to the Treuhänder; follows sends, marks, exports and calculations. */
+  readonly sent = httpResource<ProjectSentStatus>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/sent`) : undefined;
+  });
+
+  /** What this project took over, and from where (F4.4, F4.4a, F10.8). */
+  readonly carryovers = httpResource<Carryover[]>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/carryovers`) : undefined;
+  });
+
+  /** F7.6: "Daten geändert – neu berechnen" in the header, whatever tab is on screen. */
+  readonly resultStatus = httpResource<ResultStatus>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/result/status`) : undefined;
+  });
+  readonly isStale = computed(
+    () => this.resultStatus.hasValue() && this.resultStatus.value().stale,
+  );
+
+  constructor() {
+    // Every change to this project (in the workspace, by the assistant, on the mappings page …)
+    // refreshes the header: facts, F4.7 state, carry-overs and the stale line.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () => changes.projectVersion(this.projectId()),
+      [this.project, this.sent, this.carryovers, this.resultStatus],
+    );
+  }
+
+  private readonly carriedItemAction = defineAction<
+    { id: string; carryover: Carryover; done: boolean },
+    unknown
+  >({
+    run: ({ id, carryover, done }) =>
+      firstValueFrom(
+        this.http.patch(apiUrl(`/projects/${id}/open-items`), {
+          key: `carried:${carryover.id}`,
+          done,
+        }),
+      ),
+    messages: { error: 'checks.saveFailed' },
+  });
+
+  /** A carried-over open item ticked off in this project. */
+  async setCarriedDone(carryover: Carryover, done: boolean): Promise<void> {
+    await this.actions.run(
+      this.carriedItemAction,
+      { id: this.requireId(), carryover, done },
+      { key: `carried:${carryover.id}` },
+    );
+  }
+
+  private readonly calculateAction = defineAction<string, unknown>({
+    run: (id) =>
+      firstValueFrom(this.http.post(apiUrl(`/projects/${id}/calculate`), {})),
+    messages: {
+      success: 'calculation.calculated',
+      error: 'calculation.calculateFailed',
+    },
+  });
+
+  /** Shared with the workspace's buttons (same ActionRunner key). */
+  private readonly calculateStatus =
+    this.actions.status<unknown>('project-workspace');
+  readonly isCalculating = computed(
+    () => this.calculateStatus()?.state === 'pending',
+  );
+
+  /** "Neu berechnen" from the header; every view follows through DataChanges. */
+  async calculate(): Promise<void> {
+    await this.actions.run(this.calculateAction, this.requireId(), {
+      key: 'project-workspace',
+      activity: { label: 'activity.calculate' },
+    });
+  }
 
   /** F4.5: read-only while closed. */
   readonly isClosed = computed(

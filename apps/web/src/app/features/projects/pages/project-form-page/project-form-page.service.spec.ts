@@ -16,6 +16,7 @@ const project = (over: Partial<Project> = {}): Project => ({
   taxYear: 2025,
   country: 'CH',
   canton: 'BE',
+  taxCurrency: 'CHF',
   status: 'in_progress',
   notes: '',
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -89,11 +90,15 @@ describe('ProjectFormSchema', () => {
     name: ' Steuern 2025 ',
     taxYear: 2025,
     canton: 'ZH',
+    taxCurrency: 'CHF',
     notes: '',
   };
 
   it('accepts a complete project and trims the name', () => {
     expect(ProjectFormSchema.parse(valid).name).toBe('Steuern 2025');
+    expect(
+      ProjectFormSchema.parse({ ...valid, taxCurrency: 'EUR' }),
+    ).toMatchObject({ taxCurrency: 'EUR' });
   });
 
   it.each([
@@ -102,6 +107,8 @@ describe('ProjectFormSchema', () => {
     [{ taxYear: 2025.5 }, 'projects.form.taxYearInvalid'],
     [{ canton: '' }, 'projects.form.cantonRequired'],
     [{ canton: 'XX' }, 'projects.form.cantonRequired'],
+    [{ taxCurrency: 'XYZ' }, 'projects.form.taxCurrencyInvalid'],
+    [{ taxCurrency: 'eur' }, 'projects.form.taxCurrencyInvalid'],
   ])('rejects %j with an i18n key', (patch, message) => {
     const result = ProjectFormSchema.safeParse({ ...valid, ...patch });
     expect(result.success).toBe(false);

@@ -1,9 +1,15 @@
-import type { Sheet, SourceFile } from '@lazykoins/engine';
+import type { ImportResult, Sheet, SourceFile } from '../importers/importer';
 
 /**
- * F5.14: **exactly** what is sent to the AI provider to write a mapping — a compact sample of the
- * file, never the whole file. The app shows this object to the user before anything is sent, and
- * the request sends this same object (serialised as JSON) as the user message.
+ * A compact **sample** of a tabular file — never the whole file. Two users:
+ *
+ * - F5.14: **exactly** what is sent to the AI provider to write a mapping. The app shows this
+ *   object to the user before anything is sent, and the request sends this same object
+ *   (serialised as JSON) as the user message.
+ * - The mapping editor's "Beispieldatei": the raw table (preamble visible), the header guess and
+ *   the category-like columns that seed `specSkeleton`.
+ *
+ * Contents:
  *
  * - the file name and, for a CSV, the detected encoding and delimiter;
  * - the first rows **as they are** (preamble rows above the header included, so the model can
@@ -178,7 +184,7 @@ function distinctValues(
 }
 
 /** Numbers, dates/times, long hex/base58 strings (hashes, addresses). */
-function looksLikeData(value: string): boolean {
+export function looksLikeData(value: string): boolean {
   const v = value.trim();
   if (/^[-+]?[\d\s'’.,]*\d[\d\s'’.,]*(e[-+]?\d+)?$/i.test(v)) return true;
   if (/^\d{1,4}[-./]\d{1,2}[-./]\d{1,4}/.test(v)) return true;
@@ -205,4 +211,33 @@ function cut(max: number): (value: string) => string {
 
 function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** What a mapping made of a file, by kind — the review shown next to every preview. */
+export interface KindSummary {
+  readonly kindCounts: Readonly<Record<string, number>>;
+  /** Raw type values of the bookings left `unknown`, most frequent first (at most 30). */
+  readonly unknownValues: readonly {
+    readonly value: string;
+    readonly count: number;
+  }[];
+}
+
+export function kindSummary(result: ImportResult): KindSummary {
+  const kindCounts: Record<string, number> = {};
+  const unknownCounts = new Map<string, number>();
+  for (const booking of result.bookings) {
+    kindCounts[booking.kind] = (kindCounts[booking.kind] ?? 0) + 1;
+    if (booking.kind === 'unknown') {
+      const value = booking.rawType;
+      unknownCounts.set(value, (unknownCounts.get(value) ?? 0) + 1);
+    }
+  }
+  return {
+    kindCounts,
+    unknownValues: [...unknownCounts.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count || compareText(a.value, b.value))
+      .slice(0, 30),
+  };
 }

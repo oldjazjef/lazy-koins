@@ -19,7 +19,7 @@ export async function internalWorkbook(data: ExportData): Promise<Uint8Array> {
   workbook.creator = 'lazy-koins';
   workbook.created = new Date(data.createdAt);
 
-  const summary = workbook.addWorksheet('Übersicht');
+  const summary = workbook.addWorksheet(report.overviewSheet);
   summary.addRow([report.title]).font = WARNING_FONT;
   summary.addRow([report.meta]);
   summary.addRow([report.note]).font = {
@@ -53,10 +53,8 @@ export async function internalWorkbook(data: ExportData): Promise<Uint8Array> {
     }
     setWidths(
       sheet,
-      section.columns.map((column) =>
-        column.startsWith('Beschreibung') || column.startsWith('Hinweis')
-          ? 80
-          : 18,
+      section.columns.map((_, index) =>
+        section.wide.includes(index) ? 80 : 18,
       ),
     );
   }

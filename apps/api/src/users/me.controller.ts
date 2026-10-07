@@ -8,6 +8,7 @@ import {
 import type { AuthenticatedUser } from '../auth/authenticated-user';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
+import { AllowWhileLocked } from '../pin/pin-lock.guard';
 import { MeResponseDto } from './dto/me-response.dto';
 import { UsersService } from './users.service';
 
@@ -19,6 +20,8 @@ export class MeController {
   constructor(private readonly users: UsersService) {}
 
   @Get()
+  // The app needs who is signed in before the PIN screen (F11.0p); it holds no project data.
+  @AllowWhileLocked()
   @ApiOperation({ summary: 'My account (created on first sign-in)' })
   @ApiOkResponse({ type: MeResponseDto })
   async me(@CurrentUser() user: AuthenticatedUser): Promise<MeResponseDto> {

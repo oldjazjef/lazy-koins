@@ -4,8 +4,10 @@ import {
   computed,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
+import { ProjectFilesService } from '../../../files/components/project-files/project-files.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -16,15 +18,19 @@ import type { OpenItem } from '../../../../core/api/calculation.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe, QuantityPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
 
 /**
- * Prüfungen (F8.1) with traffic lights, the open items (F8.2: tick off, note, estimated CHF
+ * Prüfungen (F8.1) with traffic lights, the open items (F8.2: tick off, note, estimated
  * impact, records behind them) and the previous-year comparison (F8.3).
  */
 @Component({
   selector: 'lk-project-checks',
   imports: [
     TranslatePipe,
+    Paginator,
+    Truncate,
     ChfPipe,
     QuantityPipe,
     EmptyState,
@@ -39,11 +45,33 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
 })
 export class ProjectChecks {
   protected readonly service = inject(ProjectWorkspaceService);
+  protected readonly files = inject(ProjectFilesService);
 
   readonly closed = input(false);
+  /** To the Hinweise (F5.8) of a platform, or all of them (null). */
+  readonly showHints = output<string | null>();
+
+  /** Open hints per platform — an open item links to the file hints of its platform. */
+  protected readonly hintsByPlatform = computed(() => {
+    const counts = new Map<string, number>();
+    const hints = this.files.hints.hasValue()
+      ? this.files.hints.value().hints
+      : [];
+    for (const hint of hints) {
+      if (hint.status !== 'open' || !hint.platform) continue;
+      counts.set(hint.platform, (counts.get(hint.platform) ?? 0) + 1);
+    }
+    return counts;
+  });
 
   protected readonly view = computed(() =>
     this.service.checks.hasValue() ? this.service.checks.value() : undefined,
+  );
+
+  /** Open items (F8.2), 10 per page. */
+  protected readonly itemsPager = paginate(
+    computed(() => this.view()?.items ?? []),
+    { storageKey: 'open-items' },
   );
 
   protected readonly openCount = computed(

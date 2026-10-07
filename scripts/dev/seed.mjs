@@ -10,6 +10,11 @@
  * Idempotent: the user is matched on their uid, and a user who already has projects gets none
  * added. Run `pnpm db:deploy` first. Refuses to run with NODE_ENV=production.
  *
+ * F11.2: the project names and notes stay German on purpose. They are user data (what Anna typed),
+ * not app text — the app never translates what a user entered, so an English UI shows them as
+ * they are, exactly like a real user's projects. Anna has no language set (`locale` NULL): the app
+ * follows the browser until she picks one in Profil › Sprache und Format.
+ *
  * Usage: pnpm db:seed   (reads DATABASE_URL from the environment or apps/api/.env)
  */
 import { randomUUID } from 'node:crypto';

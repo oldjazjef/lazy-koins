@@ -31,11 +31,13 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { BEARER_SCHEME } from '../openapi/security-schemes';
 import {
   DeleteRateQueryDto,
+  EstvApplyResponseDto,
   ManualRateDto,
   RatesQueryDto,
   RatesResponseDto,
   RefreshRatesDto,
   RefreshResponseDto,
+  RefreshStatusResponseDto,
 } from './dto/rates.dto';
 import { RatesService } from './rates.service';
 
@@ -89,6 +91,19 @@ export class RatesController {
     )) as unknown as RefreshResponseDto;
   }
 
+  @Get('refresh/status')
+  @ApiOperation({
+    summary:
+      'Progress of a running "Kurse aktualisieren" (the app polls it only while its request runs)',
+  })
+  @ApiOkResponse({ type: RefreshStatusResponseDto })
+  async refreshStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+  ): Promise<RefreshStatusResponseDto> {
+    return { ...(await this.rates.refreshStatus(user.userId, projectId)) };
+  }
+
   @Put('manual')
   @ApiOperation({ summary: 'Override a rate for one day (F7.4)' })
   @ApiOkResponse()
@@ -112,6 +127,24 @@ export class RatesController {
     @Query() query: DeleteRateQueryDto,
   ): Promise<void> {
     await this.rates.deleteManual(user.userId, projectId, query);
+  }
+
+  @Post('estv/apply')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Take the stored ESTV Kursliste of the tax year into the project (F7.4a) — no network',
+  })
+  @ApiOkResponse({ type: EstvApplyResponseDto })
+  @ApiConflictResponse({ description: 'The project is closed (F4.5)' })
+  async applyEstv(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+  ): Promise<EstvApplyResponseDto> {
+    return (await this.rates.applyEstv(
+      user.userId,
+      projectId,
+    )) as unknown as EstvApplyResponseDto;
   }
 
   @Post('estv')

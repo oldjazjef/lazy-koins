@@ -1,0 +1,174 @@
+<lk-page-header
+  [title]="'notifications.page.title' | translate"
+  [subtitle]="'notifications.page.subtitle' | translate"
+>
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    [disabled]="centre.unread() === 0"
+    (click)="service.markAllRead()"
+  >
+    <ng-icon name="lucideCheckCheck" size="16" aria-hidden="true" />
+    {{ 'notifications.markAllRead' | translate }}
+  </button>
+</lk-page-header>
+
+<div class="mb-4 flex flex-wrap items-end gap-4">
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="notifications-kind"
+      >{{ 'notifications.page.kind' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="notifications-kind"
+      [ngModel]="service.kind()"
+      (ngModelChange)="setKind($event)"
+    >
+      <option value="">{{ 'notifications.page.allKinds' | translate }}</option>
+      @for (kind of service.kinds; track kind) {
+      <option [value]="kind">
+        {{ 'notifications.kind.' + kind | translate }}
+      </option>
+      }
+    </select>
+  </div>
+  <div class="flex min-w-48 flex-col gap-2">
+    <label hlmLabel for="notifications-project"
+      >{{ 'notifications.page.project' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="notifications-project"
+      [ngModel]="service.projectId()"
+      (ngModelChange)="service.projectId.set($event)"
+    >
+      <option value="">
+        {{ 'notifications.page.allProjects' | translate }}
+      </option>
+      @if (service.projects.hasValue()) { @for (project of
+      service.projects.value(); track project.id) {
+      <option [value]="project.id">
+        {{ project.name }} ({{ project.taxYear }})
+      </option>
+      } }
+    </select>
+  </div>
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="notifications-status"
+      >{{ 'notifications.page.status' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="notifications-status"
+      [ngModel]="service.status()"
+      (ngModelChange)="setStatus($event)"
+    >
+      @for (status of statuses; track status) {
+      <option [value]="status">
+        {{ 'notifications.page.statuses.' + status | translate }}
+      </option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (service.notifications.isLoading() && !service.notifications.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.notifications.error()) {
+<lk-empty-state [message]="'notifications.loadFailed' | translate">
+  <button hlmBtn variant="outline" type="button" (click)="service.refresh()">
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.rows().length === 0) {
+<lk-empty-state [message]="'notifications.empty' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col class="w-12" />
+      <col />
+      <col class="hidden w-48 md:table-column" />
+      <col class="w-36" />
+      <col class="hidden w-28 lg:table-column" />
+      <col class="w-14" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>
+          <span class="sr-only"
+            >{{ 'notifications.page.kind' | translate }}</span
+          >
+        </th>
+        <th hlmTh>{{ 'notifications.page.message' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'notifications.page.project' | translate }}
+        </th>
+        <th hlmTh>{{ 'notifications.page.when' | translate }}</th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'notifications.page.status' | translate }}
+        </th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (row of pager.visible(); track row.notification.id) { @let n =
+      row.notification;
+      <tr hlmTr data-notification-row>
+        <td hlmTd>
+          <ng-icon
+            [name]="icons[n.kind]"
+            size="16"
+            [class]="classes[n.kind]"
+            [attr.aria-label]="'notifications.kind.' + n.kind | translate"
+          />
+        </td>
+        <td hlmTd class="max-w-0">
+          <span [class.font-medium]="row.unread" [lkTruncate]="row.title"
+            >{{ row.title }}</span
+          >
+          @if (n.projectName) {
+          <span
+            class="text-muted-foreground text-xs md:hidden"
+            [lkTruncate]="n.projectName"
+            >{{ n.projectName }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="hidden max-w-0 md:table-cell">
+          @let project = n.projectName ?? ('notifications.general' | translate);
+          <span class="text-muted-foreground" [lkTruncate]="project"
+            >{{ project }}</span
+          >
+        </td>
+        <td hlmTd class="tabular-nums">
+          <span [attr.title]="n.occurredAt | lkDate: 'dateTime'"
+            >{{ row.when }}</span
+          >
+        </td>
+        <td hlmTd class="hidden lg:table-cell">
+          <span class="text-muted-foreground text-xs">
+            {{ (row.resolved ? 'notifications.resolved' : row.unread ?
+            'notifications.unread' : 'notifications.read') | translate }}
+          </span>
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions().get(n.id) ?? []"
+            (selected)="act($event, n)"
+          />
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+}

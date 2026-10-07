@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -10,6 +10,7 @@ import type {
   OpenItem,
   ResultView,
 } from '../../../../core/api/calculation.types';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { correctionBody } from '../project-corrections/correction-form';
 import { ProjectWorkspaceService } from './project-workspace.service';
@@ -64,7 +65,7 @@ async function setup() {
   TestBed.configureTestingModule({
     providers: [
       ProjectWorkspaceService,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
@@ -90,6 +91,8 @@ describe('ProjectWorkspaceService', () => {
 
   it('loads the result, and each tab only when it is shown', async () => {
     const { service, http } = await setup();
+    // User rule (08.10.2026): a project opens on "Allgemein" (data, facts, chart).
+    expect(service.tab()).toBe('general');
     expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
     service.tab.set('rates');
     await settle();
@@ -111,6 +114,12 @@ describe('ProjectWorkspaceService', () => {
     expect(request.request.method).toBe('POST');
     request.flush(view('200'));
     await done;
+    // The calculation is reported (DataChanges): the result reloads — the old one stays on
+    // screen meanwhile.
+    await settle();
+    expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
+    http.expectOne('/api/projects/p1/result').flush(view('200'));
+    await settle();
     expect(service.result.value()?.snapshot?.wealthChf).toBe('200');
     expect(notifications.success).toHaveBeenCalledWith(
       'calculation.calculated',
@@ -138,14 +147,17 @@ describe('ProjectWorkspaceService', () => {
     const request = http.expectOne('/api/projects/p1/rates/refresh');
     expect(request.request.body).toEqual({ force: false });
     request.flush(
-      { message: 'Rate lookups on the internet are switched off (settings)' },
+      {
+        message: 'Rate lookups on the internet are switched off (settings)',
+        code: 'offline',
+      },
       { status: 409, statusText: 'Conflict' },
     );
     await expect(refused).rejects.toBeDefined();
-    expect(notifications.error).toHaveBeenCalledWith(
-      'rates.refreshFailed',
-      'Rate lookups on the internet are switched off (settings)',
-    );
+    // F11.2: the reason by its code, in the user's language.
+    expect(notifications.error).toHaveBeenCalledWith('rates.refreshFailed', {
+      key: 'errors.api.offline',
+    });
   });
 
   it('ticks off an open item and starts a correction from a figure (F8.2, F9)', async () => {
@@ -165,6 +177,7 @@ describe('ProjectWorkspaceService', () => {
     await saved;
     await settle();
     http.expectOne('/api/projects/p1/checks').flush(checks);
+    http.expectOne('/api/projects/p1/result').flush(view());
 
     service.startCorrection({
       type: 'price_override',
@@ -176,6 +189,69 @@ describe('ProjectWorkspaceService', () => {
     http.expectOne('/api/projects/p1/corrections').flush([]);
   });
 
+  it('shows a rate refresh in the activity indicator with the progress it polls', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const { service, http } = await setup();
+      const activity = TestBed.inject(ActivityService);
+      const refreshing = service.refreshRates(true);
+      const request = http.expectOne('/api/projects/p1/rates/refresh');
+      expect(activity.tasks().map((t) => t.label)).toEqual(['activity.rates']);
+      expect(activity.tasks()[0]?.progress()).toBeNull();
+
+      vi.advanceTimersByTime(1000);
+      http
+        .expectOne('/api/projects/p1/rates/refresh/status')
+        .flush({ running: true, done: 12, total: 40, current: 'DOT' });
+      await settle();
+      expect(activity.tasks()[0]?.progress()).toEqual({ done: 12, total: 40 });
+
+      request.flush({ fx: 0, assets: [] });
+      await refreshing;
+      expect(activity.count()).toBe(0);
+      expect(service.refreshProgress()).toBeNull();
+      // No polling after the request ended.
+      vi.advanceTimersByTime(3000);
+      http.expectNone('/api/projects/p1/rates/refresh/status');
+      await settle();
+      http.expectOne('/api/projects/p1/result').flush(view());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows the ESTV import and an export as activities; the export toast offers the download', async () => {
+    const { service, http, notifications } = await setup();
+    const activity = TestBed.inject(ActivityService);
+    const imported = service.importKursliste(
+      new File(['<xml/>'], 'kursliste.xml'),
+    );
+    expect(activity.tasks().map((t) => t.label)).toEqual(['activity.estv']);
+    http
+      .expectOne('/api/projects/p1/rates/estv')
+      .flush({ imported: 3, skipped: 0 });
+    await imported;
+    expect(activity.count()).toBe(0);
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+
+    const created = service.createExport('simple_pdf');
+    expect(activity.tasks()[0]?.label).toBe('activity.export');
+    http.expectOne('/api/projects/p1/exports').flush({
+      id: 'e1',
+      kind: 'simple_pdf',
+      fileName: 'a.pdf',
+    });
+    await created;
+    expect(activity.count()).toBe(0);
+    expect(notifications.success).toHaveBeenCalledWith(
+      'exports.created',
+      expect.objectContaining({ labelKey: 'exports.download' }),
+    );
+    await settle();
+    http.expectOne('/api/projects/p1/result').flush(view());
+  });
+
   it('creates an export and downloads it', async () => {
     const { service, http } = await setup();
     const created = service.createExport('detailed_xlsx');
@@ -185,6 +261,34 @@ describe('ProjectWorkspaceService', () => {
     await created;
     await settle();
     http.expectOne('/api/projects/p1/result').flush(view());
+  });
+
+  it('sends the data export period as the picked ISO days, and none when cleared (F10.7)', async () => {
+    const { service, http } = await setup();
+    const withPeriod = service.downloadData('csv', 'bookings', {
+      asset: 'BTC',
+      from: '2025-12-29',
+      to: '2026-01-04',
+    });
+    const request = http.expectOne((r) =>
+      r.url.endsWith('/projects/p1/data-export'),
+    );
+    expect(request.request.params.get('from')).toBe('2025-12-29');
+    expect(request.request.params.get('to')).toBe('2026-01-04');
+    request.flush(new Blob(['x']));
+    await withPeriod.catch(() => undefined);
+
+    const cleared = service.downloadData('xlsx', 'bookings', {
+      from: '',
+      to: '',
+    });
+    const second = http.expectOne((r) =>
+      r.url.endsWith('/projects/p1/data-export'),
+    );
+    expect(second.request.params.has('from')).toBe(false);
+    expect(second.request.params.has('to')).toBe(false);
+    second.flush(new Blob(['x']));
+    await cleared.catch(() => undefined);
   });
 
   it('asks before a statement while open items exist, then creates it on confirm (F10.2a)', async () => {

@@ -4,7 +4,14 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { desktopBridge } from '../../core/desktop/desktop-bridge';
 
 /** The sections of Einstellungen (ANFORDERUNGEN §11), each a sub-route. */
-export const SETTINGS_SECTIONS = ['rates', 'wallets', 'ai', 'system'] as const;
+export const SETTINGS_SECTIONS = [
+  'rates',
+  'wallets',
+  'ai',
+  'mail',
+  'mcp',
+  'system',
+] as const;
 
 /** Desktop app only (F3.1): where the data lives. */
 export const DESKTOP_SETTINGS_SECTIONS = ['storage'] as const;

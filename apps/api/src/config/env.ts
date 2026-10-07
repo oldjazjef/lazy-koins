@@ -140,6 +140,15 @@ export class Env {
   @IsIn(['', 'true', 'false'])
   AI_ALLOW_PRIVATE_URLS = '';
 
+  /**
+   * Whether users may point their mailer (F11.10) at private/loopback SMTP hosts (a local relay,
+   * a dev SMTP sink). The API opens the connection, so on a shared server that would reach its
+   * own network. Empty = allowed with AUTH_MODE `local` (desktop) and `dev`, refused with
+   * `firebase` — the same rule as `AI_ALLOW_PRIVATE_URLS`.
+   */
+  @IsIn(['', 'true', 'false'])
+  MAIL_ALLOW_PRIVATE_HOSTS = '';
+
   // --- Rates, exports ---
 
   /**
@@ -152,6 +161,35 @@ export class Env {
   /** Network for rate lookups (F11.3) at all; `false` keeps the API offline for every user. */
   @IsIn(['true', 'false'])
   RATES_ONLINE = 'true';
+
+  /**
+   * `1` = the wallet lookups (F6.3/F6.4) answer from synthetic fake chains, no network and no
+   * keys needed — for development and demos. Refused with NODE_ENV=production.
+   */
+  @IsIn(['', '0', '1'])
+  LK_CHAINS_FAKE = '';
+
+  /**
+   * Development only: waits this long before each series of "Kurse aktualisieren", so the
+   * progress in the app's activity indicator can be watched. Refused outside development/test.
+   */
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(10_000)
+  RATES_DEV_DELAY_MS = 0;
+
+  /**
+   * F7.4a: download the ESTV Kursliste (ICTax) automatically — on demand and once a day when a
+   * newer version exists. `false` switches it off (the manual Kursliste import stays). Also off
+   * with `RATES_ONLINE=false`.
+   */
+  @IsIn(['true', 'false'])
+  ESTV_AUTO = 'true';
+
+  /** The ICTax API; only a local fake server (`scripts/dev/fake-ictax-server.mjs`) differs. */
+  @IsUrl({ require_tld: false, require_protocol: true })
+  ESTV_BASE_URL = 'https://www.ictax.admin.ch';
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */
@@ -161,6 +199,15 @@ export function aiPrivateUrlsAllowed(
   return env.AI_ALLOW_PRIVATE_URLS === ''
     ? env.AUTH_MODE !== 'firebase'
     : env.AI_ALLOW_PRIVATE_URLS === 'true';
+}
+
+/** Whether SMTP hosts may be private or loopback (see `MAIL_ALLOW_PRIVATE_HOSTS`). */
+export function mailPrivateHostsAllowed(
+  env: Pick<Env, 'MAIL_ALLOW_PRIVATE_HOSTS' | 'AUTH_MODE'>,
+): boolean {
+  return env.MAIL_ALLOW_PRIVATE_HOSTS === ''
+    ? env.AUTH_MODE !== 'firebase'
+    : env.MAIL_ALLOW_PRIVATE_HOSTS === 'true';
 }
 
 export function validateEnv(raw: Record<string, unknown>): Env {
@@ -198,6 +245,23 @@ export function validateEnv(raw: Record<string, unknown>): Env {
   }
   if (env.AUTH_MODE !== 'local' && env.LOCAL_MODE === 'true') {
     messages.push('  LOCAL_MODE: `true` is only valid with AUTH_MODE=local');
+  }
+
+  if (env.LK_CHAINS_FAKE === '1' && env.NODE_ENV === NodeEnv.Production) {
+    messages.push(
+      '  LK_CHAINS_FAKE: fake chains answer with synthetic data — never in production',
+    );
+  }
+
+  // A deliberate slowdown has no place outside development.
+  if (
+    env.RATES_DEV_DELAY_MS > 0 &&
+    env.NODE_ENV !== NodeEnv.Development &&
+    env.NODE_ENV !== NodeEnv.Test
+  ) {
+    messages.push(
+      '  RATES_DEV_DELAY_MS: only with NODE_ENV=development or test',
+    );
   }
 
   if (messages.length > 0) {

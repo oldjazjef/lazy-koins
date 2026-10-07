@@ -69,18 +69,101 @@ export const AI_ERROR_CODES = [
 export type AiErrorCode = (typeof AI_ERROR_CODES)[number];
 
 /**
- * A failed call, mapped to a code. `message` never contains the key or the request body; the
- * provider's own error text is kept short for the log.
+ * What went wrong, precisely enough to fix it (user rule: "genaue Fehlerinfos"). Every text is
+ * already **redacted** (`redactSecrets`: no key, no `Bearer …`, no `sk-…`) and short (≤ 500
+ * characters) when an adapter builds it; the gate redacts once more with the actual key.
+ */
+export interface AiErrorDetails {
+  /** The provider's HTTP status. */
+  readonly status?: number;
+  /** The provider's own error text (OpenAI/Anthropic `error.message`, Ollama `error`). */
+  readonly providerMessage?: string;
+  /** OpenAI `error.type` / Anthropic `error.type` (`authentication_error`, …). */
+  readonly providerType?: string;
+  /** OpenAI `error.code` (`invalid_api_key`, `model_not_found`, …). */
+  readonly providerCode?: string;
+  /** `scheme://host/path` that was called — never the query. */
+  readonly url?: string;
+  readonly model?: string;
+  /** A transport failure's system cause (`ECONNREFUSED`, `ENOTFOUND`, a TLS code) or a short reason. */
+  readonly cause?: string;
+  /** Set on `timeout`: how long was waited. */
+  readonly timeoutMs?: number;
+}
+
+/**
+ * A failed call, mapped to a code plus redacted details. Neither `message` nor `details` ever
+ * contain the key or the request body.
  */
 export class AiProviderError extends Error {
   constructor(
     readonly code: AiErrorCode,
-    readonly status?: number,
-    detail?: string,
+    readonly details: AiErrorDetails = {},
   ) {
-    super(detail ? `${code}: ${detail}` : code);
+    const reason = details.providerMessage ?? details.cause;
+    super(reason ? `${code}: ${reason}` : code);
     this.name = 'AiProviderError';
   }
+
+  get status(): number | undefined {
+    return this.details.status;
+  }
+
+  /** The same failure with context the caller knows (URL, model); existing values win. */
+  with(context: AiErrorDetails): AiProviderError {
+    return new AiProviderError(this.code, { ...context, ...this.details });
+  }
+}
+
+/** A tool the model may call (F11.14): the tool layer's name, description and JSON Schema. */
+export interface AiToolSpec {
+  /** `^[a-zA-Z0-9_-]{1,64}$` — both providers require it. */
+  readonly name: string;
+  readonly description: string;
+  /** JSON Schema of the arguments; always `type: "object"`. */
+  readonly inputSchema: Record<string, unknown>;
+}
+
+/** One tool call of the model; `input` is untrusted — the tool layer validates it. */
+export interface AiToolCall {
+  readonly id: string;
+  readonly name: string;
+  readonly input: unknown;
+}
+
+/** A turn of a conversation with tools, provider-neutral. */
+export type AiChatMessage =
+  | { readonly role: 'user'; readonly content: string }
+  | {
+      readonly role: 'assistant';
+      readonly content: string;
+      readonly toolCalls?: readonly AiToolCall[];
+    }
+  | {
+      readonly role: 'tool';
+      readonly toolCallId: string;
+      readonly name: string;
+      /** The tool's result as text (JSON). */
+      readonly content: string;
+      readonly isError?: boolean;
+    };
+
+export interface AiConverseRequest {
+  readonly system: string;
+  readonly messages: readonly AiChatMessage[];
+  readonly tools: readonly AiToolSpec[];
+  readonly maxTokens?: number;
+  readonly timeoutMs?: number;
+}
+
+export interface AiConverseTurn {
+  /** The model's text of this turn ('' when it only calls tools). */
+  readonly text: string;
+  readonly toolCalls: readonly AiToolCall[];
+  readonly model: string;
+  readonly usage?: AiUsage;
+  /** Why the model stopped: answered, wants tools, ran out of tokens, or something else. */
+  readonly stop: 'end' | 'toolUse' | 'maxTokens' | 'other';
 }
 
 export abstract class AiCompletionPort {
@@ -88,4 +171,14 @@ export abstract class AiCompletionPort {
     connection: AiConnection,
     request: AiCompletionRequest,
   ): Promise<AiCompletion>;
+
+  /**
+   * One turn of a conversation with tool use (F11.14): OpenAI-compatible `tools`/`tool_calls`,
+   * Anthropic `tools`/`tool_use`. The caller runs the tools and calls again with their results
+   * (the loop and its limit live in the chat, not here). Non-streaming.
+   */
+  abstract converse(
+    connection: AiConnection,
+    request: AiConverseRequest,
+  ): Promise<AiConverseTurn>;
 }

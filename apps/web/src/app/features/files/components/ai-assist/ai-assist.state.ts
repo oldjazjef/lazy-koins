@@ -1,7 +1,9 @@
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { ActivityService } from '../../../../core/activity/activity.service';
 import { apiUrl } from '../../../../core/api/api-url';
 import type {
   AiRequestPreview,
@@ -17,7 +19,7 @@ import type {
   StatementCandidate,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
+import { type AiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { ProjectFilesService } from '../project-files/project-files.service';
 
 export type AiMode = 'mapping' | 'statement';
@@ -49,7 +51,9 @@ export class AiAssistState {
   private readonly http = inject(HttpClient);
   private readonly files = inject(ProjectFilesService);
   private readonly notifications = inject(NotificationService);
+  private readonly aiErrors = inject(AiErrorNotifier);
   private readonly router = inject(Router);
+  private readonly activity = inject(ActivityService);
 
   readonly step = signal<AiStep>('closed');
   readonly mode = signal<AiMode>('mapping');
@@ -83,6 +87,8 @@ export class AiAssistState {
     () => this.candidate()?.usage ?? this.statement()?.usage ?? null,
   );
   readonly busy = signal(false);
+  /** The last failed request with the provider's details (shown in the dialog, expandable). */
+  readonly error = signal<AiErrorInfo | null>(null);
 
   /** Table files without a mapping — the choice when started from the mappings section. */
   readonly filesNeedingMapping = computed(() =>
@@ -145,21 +151,41 @@ export class AiAssistState {
   async send(): Promise<void> {
     const file = this.file();
     if (!file || !this.canSend()) return;
+    this.error.set(null);
     this.step.set('working');
+    // The provider may take a minute: the activity indicator shows it, and when the dialog was
+    // closed meanwhile, the toast offers to open the proposal.
+    const review: AiStep =
+      this.mode() === 'mapping' ? 'mappingReview' : 'statementReview';
+    const ready = () =>
+      this.step() === 'working'
+        ? null
+        : {
+            key: `activity.ai.${this.mode()}Ready`,
+            params: { name: file.displayName },
+            action: {
+              labelKey: 'activity.show',
+              onClick: () => this.step.set(review),
+            },
+          };
     try {
       const body = { consent: this.consentChecked() };
       if (this.mode() === 'mapping') {
-        const candidate = await firstValueFrom(
+        const candidate = await this.activity.track(
+          'activity.ai.mapping',
           this.http.post<MappingCandidate>(apiUrl(this.base(file)), body),
+          { params: { name: file.displayName }, success: ready },
         );
         this.candidate.set(candidate);
         this.specText.set(JSON.stringify(candidate.spec, null, 2));
         this.issues.set(candidate.issues);
         this.preview.set(candidate.preview);
-        this.step.set('mappingReview');
+        if (this.step() === 'working') this.step.set('mappingReview');
       } else {
-        const statement = await firstValueFrom(
+        const statement = await this.activity.track(
+          'activity.ai.statement',
           this.http.post<StatementCandidate>(apiUrl(this.base(file)), body),
+          { params: { name: file.displayName }, success: ready },
         );
         this.statement.set(statement);
         this.kept.set(
@@ -170,11 +196,11 @@ export class AiAssistState {
               .map(({ index }) => index),
           ),
         );
-        this.step.set('statementReview');
+        if (this.step() === 'working') this.step.set('statementReview');
       }
     } catch (error) {
       this.fail(error);
-      this.step.set('consent');
+      if (this.step() === 'working') this.step.set('consent');
     }
   }
 
@@ -215,7 +241,6 @@ export class AiAssistState {
           void this.router.navigate(['/app/mappings', saved.mapping.id]),
       });
       this.close();
-      this.files.reload();
     } catch (error) {
       const issues = specIssuesOf(error);
       if (issues) {
@@ -248,14 +273,16 @@ export class AiAssistState {
     if (holdings.length === 0) return;
     this.busy.set(true);
     try {
-      await firstValueFrom(
+      // The API reads the PDF again and re-checks every quantity before storing.
+      await this.activity.track(
+        'activity.ai.statementSave',
         this.http.post<ProjectFile>(apiUrl(`${this.base(file)}/accept`), {
           holdings,
         }),
+        { params: { name: file.displayName } },
       );
       this.notifications.success('ai.statement.saved');
       this.close();
-      this.files.reload();
     } catch (error) {
       if (
         error instanceof HttpErrorResponse &&
@@ -291,11 +318,16 @@ export class AiAssistState {
     }
   }
 
+  /**
+   * The toast says what failed in the user's language; the dialog's error panel keeps the
+   * technical details (the API's English one-line detail, the provider's own words — F11.2).
+   */
   private fail(error: unknown): void {
-    this.notifications.error(aiErrorKey(error));
+    this.error.set(this.aiErrors.notify(error));
   }
 
   private reset(): void {
+    this.error.set(null);
     this.request.set(null);
     this.consentChecked.set(false);
     this.candidate.set(null);

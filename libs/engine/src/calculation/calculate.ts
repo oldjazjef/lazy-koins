@@ -1,4 +1,5 @@
 import { type Booking, isIncome } from '../bookings/booking';
+import { walletCheckItems } from './wallet-check';
 import {
   applyCorrections,
   isCorrectionRecord,
@@ -29,6 +30,7 @@ import {
   feeOf,
   ledgerBalances,
   overlay,
+  platformWideStatements,
   positionsAt,
   statementBalances,
 } from './balances';
@@ -51,6 +53,7 @@ import {
   type PriceColumns,
   type RecordSummary,
 } from './types';
+import { bookingSummary, holdingSummary } from './records';
 
 /**
  * The calculation (F7): a pure, deterministic function of the project's standard records,
@@ -113,6 +116,7 @@ export function calculate(input: CalculationInput): CalculationResult {
     input.bookings,
     input.holdings,
     input.corrections,
+    rules.homeCurrency,
   );
   const bookings = [...corrected.bookings].sort(
     (a, b) => compareText(a.timestamp, b.timestamp) || compareText(a.id, b.id),
@@ -122,7 +126,10 @@ export function calculate(input: CalculationInput): CalculationResult {
   );
   const bookingById = new Map(bookings.map((b) => [b.id, b] as const));
   const holdingById = new Map(holdings.map((h) => [h.id, h] as const));
-  const table = new RateTable([...input.rates, ...corrected.rates]);
+  const table = new RateTable(
+    [...input.rates, ...corrected.rates],
+    rules.homeCurrency,
+  );
   const inYear = (b: Booking) =>
     b.timestamp >= yearStartTs && b.timestamp < cutoffTs;
   const quoteAt = (asset: string, date: string) =>
@@ -342,6 +349,64 @@ export function calculate(input: CalculationInput): CalculationResult {
         light: 'red',
         platform: any.platform,
         accountId: any.accountId,
+        asset,
+        date: yearEnd,
+        params: {
+          expected: str(expected),
+          actual: str(actual),
+          difference: str(difference),
+        },
+        impactChf: impactOf(asset, difference, yearEnd),
+        recordIds: [...(s?.ids ?? []), ...(l?.ids ?? [])],
+      });
+    }
+  }
+  // A platform-wide statement (accounts the ledger does not use) is checked against the sum of
+  // all the platform's ledger accounts, asset by asset — it replaced them in the positions.
+  for (const [platform, wide] of platformWideStatements(
+    ledgerEnd,
+    statementsEnd,
+  )) {
+    applicable.ledgerVsStatement = true;
+    const summed = (keys: readonly string[], from: Balances) => {
+      const out = new Map<string, { quantity: Decimal; ids: string[] }>();
+      for (const key of keys) {
+        for (const balance of from.get(key)?.values() ?? []) {
+          const entry = out.get(balance.asset) ?? { quantity: ZERO, ids: [] };
+          entry.quantity = entry.quantity.plus(balance.quantity);
+          entry.ids.push(...balance.ids);
+          out.set(balance.asset, entry);
+        }
+      }
+      return out;
+    };
+    const statement = summed(wide.statements, statementsEnd);
+    const ledger = summed(wide.ledgers, ledgerEnd);
+    const statementAccount =
+      wide.statements.length === 1
+        ? (statementsEnd
+            .get(wide.statements[0] ?? '')
+            ?.values()
+            .next().value?.accountId ?? null)
+        : null;
+    const assets = [...new Set([...statement.keys(), ...ledger.keys()])].sort(
+      compareText,
+    );
+    for (const asset of assets) {
+      const s = statement.get(asset);
+      const l = ledger.get(asset);
+      const expected = s?.quantity ?? ZERO;
+      const actual = l?.quantity ?? ZERO;
+      if (expected.eq(actual)) continue;
+      if (expected.abs().lt(dust) && actual.abs().lt(dust)) continue;
+      const difference = actual.minus(expected);
+      items.ledgerVsStatement.push({
+        key: `ledgerVsStatement:${platform}|*|${asset}`,
+        check: 'ledgerVsStatement',
+        reason: 'balanceDiffers',
+        light: 'red',
+        platform,
+        accountId: statementAccount,
         asset,
         date: yearEnd,
         params: {
@@ -625,20 +690,10 @@ export function calculate(input: CalculationInput): CalculationResult {
     });
   }
 
-  // F6.4 is not built yet: say so instead of pretending the check passed.
-  items.walletNetworks.push({
-    key: 'walletNetworks:notAvailable',
-    check: 'walletNetworks',
-    reason: 'walletNetworksNotAvailable',
-    light: 'yellow',
-    platform: null,
-    accountId: null,
-    asset: null,
-    date: null,
-    params: {},
-    impactChf: null,
-    recordIds: [],
-  });
+  // F6.4 / F8.1: every wallet of the project checked and fetched on all its networks.
+  const wallets = input.wallets ?? [];
+  applicable.walletNetworks = wallets.length > 0;
+  items.walletNetworks.push(...walletCheckItems(wallets));
 
   const checks: Check[] = CHECK_KINDS.map((kind) => ({
     kind,
@@ -711,43 +766,11 @@ export function calculate(input: CalculationInput): CalculationResult {
   for (const rid of [...referenced].sort(compareText)) {
     const booking = bookingById.get(rid);
     if (booking) {
-      records[rid] = {
-        id: rid,
-        type: 'booking',
-        sourceFileId: booking.sourceFileId,
-        row: booking.row,
-        platform: booking.platform,
-        accountId: booking.accountId,
-        asset: booking.asset,
-        quantity: str(booking.quantity),
-        at: booking.timestamp,
-        kind: booking.kind,
-        fee: opt(booking.fee),
-        feeAsset: booking.fee ? (booking.feeAsset ?? booking.asset) : null,
-        rawType: booking.rawType,
-        raw: booking.raw ?? null,
-      };
+      records[rid] = bookingSummary(booking);
       continue;
     }
     const holding = holdingById.get(rid);
-    if (holding) {
-      records[rid] = {
-        id: rid,
-        type: 'holding',
-        sourceFileId: holding.sourceFileId,
-        row: holding.row,
-        platform: holding.platform,
-        accountId: holding.accountId,
-        asset: holding.asset,
-        quantity: str(holding.quantity),
-        at: holding.asOf,
-        kind: null,
-        fee: null,
-        feeAsset: null,
-        rawType: holding.evidence ?? null,
-        raw: holding.raw ?? null,
-      };
-    }
+    if (holding) records[rid] = holdingSummary(holding);
   }
 
   const usdChf = table.fx('USD', yearEnd);
@@ -756,6 +779,7 @@ export function calculate(input: CalculationInput): CalculationResult {
     engineVersion: ENGINE_VERSION,
     taxYear,
     country: rules.country,
+    currency: rules.homeCurrency,
     yearEnd,
     totals: {
       wealthChf: str(wealth),
@@ -788,7 +812,7 @@ export function calculate(input: CalculationInput): CalculationResult {
 }
 
 /** One income booking, valued at arrival (FACHREGELN, Ertrag). */
-function incomeLine(
+export function incomeLine(
   booking: Booking,
   table: RateTable,
   rules: CountryRules,
@@ -831,9 +855,14 @@ function incomeLine(
   if (spamPattern.test(booking.asset)) {
     return { ...base, ...none, status: 'spam' };
   }
-  const override = table.lookup('price', booking.asset, 'CHF', date, 0, [
-    'manual',
-  ]);
+  const override = table.lookup(
+    'price',
+    booking.asset,
+    rules.homeCurrency,
+    date,
+    0,
+    ['manual'],
+  );
   if (!override && booking.valueUsd !== undefined) {
     const fx = table.fx('USD', date);
     if (!fx) return { ...base, ...none, status: 'missingPrice' };
@@ -945,7 +974,7 @@ function earnGapsOf(
  * end after it; the closest in time wins, each deposit pairs once. Fiat is left out — it comes
  * from and goes to a bank.
  */
-function matchTransfers(
+export function matchTransfers(
   bookings: readonly Booking[],
   rules: CountryRules,
 ): {

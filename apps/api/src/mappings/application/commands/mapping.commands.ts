@@ -1,6 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException, Optional } from '@nestjs/common';
+import { conflict } from '../../../common/http/api-errors';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { ProjectFileRepositoryPort } from '../../../files/ports/project-file.repository.port';
+import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import type { ImportMapping, MappingOrigin } from '../../domain/import-mapping';
 import { ImportMappingRepositoryPort } from '../../ports/import-mapping.repository.port';
@@ -95,6 +97,7 @@ export class DeleteMappingHandler implements ICommandHandler<
     private readonly mappings: ImportMappingRepositoryPort,
     private readonly files: ProjectFileRepositoryPort,
     private readonly projects: ProjectRepositoryPort,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({ userId, mappingId }: DeleteMappingCommand): Promise<number> {
@@ -106,11 +109,17 @@ export class DeleteMappingHandler implements ICommandHandler<
     );
     for (const projectId of projectIds) {
       if ((await this.projects.findById(projectId))?.status === 'closed') {
-        throw new ConflictException(
+        throw conflict(
+          'usedByClosedProject',
           'A closed project uses this mapping: reopen it first, then delete the mapping',
         );
       }
     }
-    return this.mappings.delete(mapping.id);
+    const reset = await this.mappings.delete(mapping.id);
+    // Its files need a mapping again (F11.12).
+    for (const projectId of projectIds) {
+      await this.projectNotifications?.filesChanged(userId, projectId);
+    }
+    return reset;
   }
 }

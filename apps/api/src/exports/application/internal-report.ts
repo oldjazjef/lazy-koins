@@ -1,24 +1,17 @@
 import { CHECK_KINDS, type Light } from '@lazykoins/engine';
 import type { ExportData } from './export-data';
-import {
-  CHECK_LABELS,
-  chf,
-  describeHint,
-  describeItem,
-  LIGHT_LABELS,
-  oneOffLabel,
-  quantity,
-  swissDate,
-} from './export-texts';
+import { kitOf, metaLine } from './export-texts';
+import { DE_CH_EXPORT_TEXTS } from './texts/export-texts.de-ch';
 
 /**
  * The internal check report (F10.2a): everything the statements for the tax authority leave out —
  * check lights, open items (with tick and note), positions and events without a price, Earn-gap
- * warnings and missing-file hints. One model, rendered as Excel and as HTML/PDF.
+ * warnings and missing-file hints. One model, rendered as Excel and as HTML/PDF, in the user's
+ * language (F11.2).
  */
 
-export const INTERNAL_TITLE =
-  'Interner Prüfbericht – nicht für die Steuerbehörde';
+/** The German title (the English one is in `ExportTexts.internal.title`). */
+export const INTERNAL_TITLE = DE_CH_EXPORT_TEXTS.internal.title;
 
 export interface ReportCell {
   readonly text: string;
@@ -32,6 +25,8 @@ export interface ReportSection {
   readonly columns: readonly string[];
   /** Index of the columns holding figures (right-aligned). */
   readonly numeric: readonly number[];
+  /** Index of the columns with long text (wide in Excel). */
+  readonly wide: readonly number[];
   readonly rows: readonly (readonly ReportCell[])[];
   /** Shown instead of an empty table. */
   readonly empty: string;
@@ -39,160 +34,168 @@ export interface ReportSection {
 
 export interface InternalReport {
   readonly title: string;
+  /** The Excel's first sheet. */
+  readonly overviewSheet: string;
   readonly meta: string;
   readonly note: string;
   readonly figures: readonly (readonly [string, string])[];
   readonly sections: readonly ReportSection[];
+  /** `<html lang>`. */
+  readonly lang: string;
 }
 
-const t = (text: string, extra: Partial<ReportCell> = {}): ReportCell => ({
+const c = (text: string, extra: Partial<ReportCell> = {}): ReportCell => ({
   text,
   ...extra,
 });
 
 export function internalReport(data: ExportData): InternalReport {
+  const k = kitOf(data);
+  const { t } = k;
+  const r = t.internal;
+  const { col } = t;
   const { result } = data;
+  const T = data.rules.homeCurrency;
   const open = data.items.filter((item) => !item.done).length;
 
   const checks: ReportSection = {
-    title: 'Prüfungen',
-    columns: ['Prüfung', 'Ampel', 'Punkte', 'Auswirkung CHF'],
+    title: r.checks,
+    columns: [r.check, r.light, r.points, r.impact(T)],
     numeric: [2, 3],
+    wide: [],
     rows: CHECK_KINDS.flatMap((kind) => {
-      const check = result.checks.find((c) => c.kind === kind);
+      const check = result.checks.find((x) => x.kind === kind);
       return check
         ? [
             [
-              t(CHECK_LABELS[kind]),
-              t(LIGHT_LABELS[check.light], { light: check.light }),
-              t(String(check.items)),
-              t(chf(check.impactChf)),
+              c(t.checkLabels[kind]),
+              c(t.lightLabels[check.light], { light: check.light }),
+              c(String(check.items)),
+              c(k.chf(check.impactChf)),
             ],
           ]
         : [];
     }),
-    empty: 'Keine Prüfungen berechnet.',
+    empty: r.noChecks,
   };
 
   const items: ReportSection = {
-    title: 'Offene Punkte',
+    title: r.openItems,
     columns: [
-      'Status',
-      'Thema',
-      'Beschreibung',
-      'Geschätzte Auswirkung CHF',
-      'Notiz',
+      col.status,
+      r.topic,
+      r.description,
+      r.estimatedImpact(T),
+      r.itemNote,
     ],
     numeric: [3],
+    wide: [2],
     rows: [...data.items]
       .sort((a, b) => Number(a.done) - Number(b.done))
       .map((item) => [
-        t(item.done ? 'erledigt' : 'offen'),
-        t(CHECK_LABELS[item.check]),
-        t(describeItem(item)),
-        t(chf(item.impactChf)),
-        t(item.note),
+        c(item.done ? r.done : r.open),
+        c(t.checkLabels[item.check]),
+        c(k.describeItem(item)),
+        c(k.chf(item.impactChf)),
+        c(item.note),
       ]),
-    empty: 'Keine offenen Punkte.',
+    empty: r.noOpenItems,
   };
 
   const unpriced: ReportSection = {
-    title: 'Ohne Kurs',
+    title: r.unpriced,
     columns: [
-      'Art',
-      'Datum',
-      'Plattform',
-      'Konto',
-      'Asset',
-      'Menge',
-      'Hinweis',
+      col.kind,
+      col.date,
+      col.platform,
+      col.account,
+      col.asset,
+      col.quantity,
+      r.hint,
     ],
     numeric: [5],
+    wide: [6],
     rows: [
       ...result.positions
         .filter((p) => p.status === 'missingPrice' || p.status === 'negative')
         .map((p) => [
-          t('Position 31.12.'),
-          t(`31.12.${data.taxYear}`),
-          t(p.platform),
-          t(p.accountId),
-          t(p.asset),
-          t(quantity(p.quantity)),
-          t(
-            p.status === 'negative'
-              ? 'negativer Saldo – Buchungen fehlen?'
-              : 'kein Kurs per 31.12. – ESTV-Kurs nachtragen',
-          ),
+          c(r.positionAtYearEnd),
+          c(k.date(`${data.taxYear}-12-31`)),
+          c(p.platform),
+          c(p.accountId),
+          c(p.asset),
+          c(k.quantity(p.quantity)),
+          c(p.status === 'negative' ? r.negativeBalance : r.noYearEndPrice),
         ]),
       ...result.income
         .filter((l) => l.status === 'missingPrice')
         .map((l) => [
-          t('Ertrag'),
-          t(swissDate(l.date)),
-          t(l.platform),
-          t(l.accountId),
-          t(l.asset),
-          t(quantity(l.quantityNet)),
-          t(`kein Tageskurs (${l.rawType}) – Kurs nachtragen`),
+          c(r.incomeKind),
+          c(k.date(l.date)),
+          c(l.platform),
+          c(l.accountId),
+          c(l.asset),
+          c(k.quantity(l.quantityNet)),
+          c(r.noDailyPrice(l.rawType)),
         ]),
       ...result.oneOffEvents
         .filter((ev) => ev.valueChf === null)
         .map((ev) => [
-          t(oneOffLabel(ev.kind)),
-          t(swissDate(ev.timestamp)),
-          t(ev.platform),
-          t(ev.accountId),
-          t(ev.asset),
-          t(quantity(ev.quantity)),
-          t('Kurs fehlt – ESTV-Kurs nachtragen'),
+          c(k.oneOffLabel(ev.kind)),
+          c(k.date(ev.timestamp)),
+          c(ev.platform),
+          c(ev.accountId),
+          c(ev.asset),
+          c(k.quantity(ev.quantity)),
+          c(r.priceMissing),
         ]),
     ],
-    empty: 'Alle Positionen und Erträge haben einen Kurs.',
+    empty: r.allPriced,
   };
 
   const gaps: ReportSection = {
-    title: 'Earn-Lücke',
-    columns: ['Plattform', 'Konto', 'Asset', 'Lücke', 'Hinweis'],
+    title: r.earnGap,
+    columns: [col.platform, col.account, col.asset, col.gap, r.hint],
     numeric: [3],
+    wide: [4],
     rows: result.earnGaps
       .filter((gap) => gap.status !== 'income')
       .map((gap) => [
-        t(gap.platform),
-        t(gap.accountId),
-        t(gap.asset),
-        t(quantity(gap.gapQuantity)),
-        t(
-          gap.status === 'negative'
-            ? 'negative Lücke – Bestand oder Historie prüfen'
-            : 'kein Jahresmittelkurs – Kurs nachtragen',
-        ),
+        c(gap.platform),
+        c(gap.accountId),
+        c(gap.asset),
+        c(k.quantity(gap.gapQuantity)),
+        c(gap.status === 'negative' ? r.negativeGap : r.noAveragePrice),
       ]),
-    empty: 'Keine Warnungen zur Earn-Lücke.',
+    empty: r.noGapWarnings,
   };
 
   const files: ReportSection = {
-    title: 'Dateien',
-    columns: ['Hinweis zu fehlenden Dateien'],
+    title: r.files,
+    columns: [r.missingFileHint],
     numeric: [],
-    rows: data.hints.map((hint) => [t(describeHint(hint))]),
-    empty: 'Keine Hinweise zu fehlenden Dateien.',
+    wide: [0],
+    rows: data.hints.map((hint) => [c(k.describeHint(hint))]),
+    empty: r.noFileHints,
   };
 
   return {
-    title: INTERNAL_TITLE,
-    meta: `${data.projectName} · ${data.ownerName} · Steuerjahr ${data.taxYear} · Kanton ${data.canton} · erstellt am ${swissDate(data.createdAt)} · berechnet am ${swissDate(data.calculatedAt)} · lazy-koins ${data.appVersion}`,
-    note: 'Arbeitsunterlage für dich und deinen Treuhänder – nicht der Steuererklärung beilegen. Die Auszüge für die Steuerbehörde enthalten diese Punkte nicht.',
+    title: r.title,
+    overviewSheet: r.overviewSheet,
+    meta: `${data.projectName} · ${metaLine(data, k)} · lazy-koins ${data.appVersion}`,
+    note: r.note,
     figures: [
       [
         `${data.rules.labels.wealthTitle}${data.taxYear}`,
-        `CHF ${chf(result.totals.wealthChf)}`,
+        `${T} ${k.chf(result.totals.wealthChf)}`,
       ],
       [
         `${data.rules.labels.incomeTitle} ${data.taxYear}`,
-        `CHF ${chf(result.totals.incomeChf)}`,
+        `${T} ${k.chf(result.totals.incomeChf)}`,
       ],
-      ['Offene Punkte', `${open} offen, ${data.items.length - open} erledigt`],
+      [r.openItems, r.openSummary(open, data.items.length - open)],
     ],
     sections: [checks, items, unpriced, gaps, files],
+    lang: t.htmlLang,
   };
 }

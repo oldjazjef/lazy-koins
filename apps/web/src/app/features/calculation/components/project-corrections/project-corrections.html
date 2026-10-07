@@ -40,11 +40,12 @@
         <label hlmLabel for="corr-date"
           >{{ 'corrections.fields.date' | translate }}</label
         >
-        <input hlmInput id="corr-date" type="date" formControlName="date" />
+        <lk-date-field inputId="corr-date" formControlName="date" />
       </div>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-price"
-          >{{ 'corrections.fields.priceChf' | translate }}</label
+          >{{ 'corrections.fields.priceChf' | translate: { currency:
+          service.currency() } }}</label
         >
         <input
           hlmInput
@@ -143,7 +144,8 @@
       </div>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-price2"
-          >{{ 'corrections.fields.priceChfOptional' | translate }}</label
+          >{{ 'corrections.fields.priceChfOptional' | translate: { currency:
+          'CHF' } }}</label
         >
         <input
           hlmInput
@@ -191,11 +193,12 @@
         <label hlmLabel for="corr-date3"
           >{{ 'corrections.fields.asOf' | translate }}</label
         >
-        <input hlmInput id="corr-date3" type="date" formControlName="date" />
+        <lk-date-field inputId="corr-date3" formControlName="date" />
       </div>
       <div class="flex flex-col gap-2">
         <label hlmLabel for="corr-price3"
-          >{{ 'corrections.fields.priceChfOptional' | translate }}</label
+          >{{ 'corrections.fields.priceChfOptional' | translate: { currency:
+          'CHF' } }}</label
         >
         <input
           hlmInput
@@ -249,51 +252,70 @@
   <lk-empty-state [message]="'corrections.empty' | translate" />
   } @else {
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col class="w-36" />
+        <col class="w-40" />
+        <col />
+        <col class="hidden w-48 lg:table-column" />
+        <col class="hidden w-48 md:table-column" />
+        <col class="w-32" />
+        <col class="w-14" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'corrections.fields.createdAt' | translate }}</th>
           <th hlmTh>{{ 'corrections.fields.type' | translate }}</th>
           <th hlmTh>{{ 'corrections.fields.reason' | translate }}</th>
-          <th hlmTh>{{ 'corrections.fields.before' | translate }}</th>
-          <th hlmTh>{{ 'corrections.fields.after' | translate }}</th>
+          <th hlmTh class="hidden lg:table-cell">
+            {{ 'corrections.fields.before' | translate }}
+          </th>
+          <th hlmTh class="hidden md:table-cell">
+            {{ 'corrections.fields.after' | translate }}
+          </th>
           <th hlmTh>{{ 'corrections.fields.status' | translate }}</th>
-          <th hlmTh class="text-right">
-            <span class="sr-only"
-              >{{ 'corrections.fields.actions' | translate }}</span
-            >
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
           </th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (correction of service.corrections.value(); track correction.id) {
+        @for (correction of historyPager.visible(); track correction.id) {
         <tr hlmTr [class.text-muted-foreground]="correction.undoneAt">
-          <td hlmTd class="tabular-nums whitespace-nowrap">
-            {{ correction.createdAt | date: 'dd.MM.yyyy HH:mm' }}
+          <td hlmTd class="align-top tabular-nums">
+            {{ correction.createdAt | lkDate: 'dateTime' }}
           </td>
-          <td hlmTd>{{ 'corrections.type.' + correction.type | translate }}</td>
-          <td hlmTd>{{ correction.reason }}</td>
-          <td hlmTd class="text-xs">
+          <td hlmTd class="max-w-0 align-top">
+            @let type = 'corrections.type.' + correction.type | translate;
+            <span [lkTruncate]="type">{{ type }}</span>
+          </td>
+          <td hlmTd class="max-w-0 align-top">
+            <span [lkTruncate]="correction.reason"
+              >{{ correction.reason }}</span
+            >
+          </td>
+          <td hlmTd class="hidden max-w-0 align-top text-xs lg:table-cell">
             @for (entry of entries(correction.applied?.before); track entry[0])
-            {
-            <span class="block"
+            { @let before = entry[0] + ' ' + entry[1];
+            <span [lkTruncate]="before"
               ><span class="text-muted-foreground">{{ entry[0] }}</span> {{
               entry[1] }}</span
             >
             } @empty { – }
           </td>
-          <td hlmTd class="text-xs">
+          <td hlmTd class="hidden max-w-0 align-top text-xs md:table-cell">
             @if (correction.applied) { @for (entry of
-            entries(correction.applied.after); track entry[0]) {
-            <span class="block"
+            entries(correction.applied.after); track entry[0]) { @let after =
+            entry[0] + ' ' + entry[1];
+            <span [lkTruncate]="after"
               ><span class="text-muted-foreground">{{ entry[0] }}</span> {{
               entry[1] }}</span
             >
-            } } @else {
-            <code class="break-all">{{ correction.data | json }}</code>
+            } } @else { @let data = correction.data | json;
+            <code class="font-mono" [lkTruncate]="data">{{ data }}</code>
             }
           </td>
-          <td hlmTd>
+          <td hlmTd class="align-top">
             @if (correction.undoneAt) {
             <span hlmBadge variant="outline"
               >{{ 'corrections.status.undone' | translate }}</span
@@ -312,26 +334,18 @@
             >
             }
           </td>
-          <td hlmTd class="text-right">
-            @if (!closed()) {
-            <button
-              hlmBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              [disabled]="service.isBusy()"
-              (click)="undo(correction, !correction.undoneAt)"
-            >
-              {{ (correction.undoneAt ? 'corrections.redo' : 'corrections.undo')
-              | translate }}
-            </button>
-            }
+          <td hlmTd class="lk-sticky-actions text-right align-top">
+            <lk-row-actions
+              [actions]="actionsFor(correction)"
+              (selected)="undo(correction, $event === 'undo')"
+            />
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="historyPager" />
   } } @else {
   <hlm-skeleton class="h-32 w-full" />
   }

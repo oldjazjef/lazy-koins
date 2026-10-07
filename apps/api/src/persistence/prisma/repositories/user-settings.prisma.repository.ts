@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { isLocale } from '../../../common/i18n/locale';
 import type { UserSettings as UserSettingsRow } from '../../../generated/prisma/client';
 import {
   DATE_FORMATS,
@@ -33,6 +34,7 @@ function toSettings(row: UserSettingsRow): UserSettings {
     canton: row.canton,
     advisorName: row.advisorName,
     advisorEmail: row.advisorEmail,
+    locale: isLocale(row.locale) ? row.locale : null,
     numberFormat: (NUMBER_FORMATS as readonly string[]).includes(
       row.numberFormat,
     )
@@ -70,6 +72,7 @@ export class UserSettingsPrismaRepository extends UserSettingsRepositoryPort {
       canton: input.canton,
       advisorName: input.advisorName,
       advisorEmail: input.advisorEmail,
+      locale: input.locale,
       numberFormat: input.numberFormat,
       dateFormat: input.dateFormat,
       onlineRates: input.onlineRates,

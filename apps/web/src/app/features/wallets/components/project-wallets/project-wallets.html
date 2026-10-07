@@ -1,0 +1,322 @@
+@if (service.overview.isLoading() && !service.overview.hasValue()) {
+<hlm-skeleton class="h-48 w-full" />
+} @else if (service.overview.error()) {
+<lk-empty-state [message]="'wallets.project.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.overview.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.overview.hasValue()) { @let overview =
+service.overview.value();
+<div class="flex flex-col gap-6">
+  <p class="text-muted-foreground max-w-3xl text-sm">
+    {{ 'wallets.project.intro' | translate }}
+  </p>
+
+  @if (!closed()) {
+  <div class="flex flex-wrap items-end gap-3">
+    @if (overview.available.length > 0) {
+    <div class="flex min-w-64 flex-col gap-2">
+      <label hlmLabel for="project-wallet-add"
+        >{{ 'wallets.project.add' | translate }}</label
+      >
+      <select
+        hlmInput
+        id="project-wallet-add"
+        [ngModel]="toAdd()"
+        (ngModelChange)="toAdd.set($event)"
+      >
+        <option value="">{{ 'wallets.project.choose' | translate }}</option>
+        @for (wallet of overview.available; track wallet.id) {
+        <option [value]="wallet.id">{{ wallet.label }}</option>
+        }
+      </select>
+    </div>
+    <button
+      hlmBtn
+      type="button"
+      [disabled]="!toAdd() || service.busy() !== null"
+      (click)="add()"
+    >
+      {{ 'wallets.project.addButton' | translate }}
+    </button>
+    }
+    <a hlmBtn variant="outline" routerLink="/app/wallets/new"
+      >{{ 'wallets.list.new' | translate }}</a
+    >
+  </div>
+  } @for (entry of overview.wallets; track entry.wallet.id) { @let wallet =
+  entry.wallet;
+  <section hlmCard>
+    <div hlmCardHeader>
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 hlmCardTitle>
+            <a
+              class="hover:underline"
+              [routerLink]="['/app/wallets', wallet.id]"
+              >{{ wallet.label }}</a
+            >
+          </h3>
+          <p
+            class="text-muted-foreground truncate font-mono text-xs"
+            [title]="wallet.address"
+          >
+            {{ wallet.address }}
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            [disabled]="service.busy() !== null"
+            (click)="service.checkNetworks(wallet.id)"
+          >
+            {{ (service.busy() === 'check:' + wallet.id ? 'wallets.checking' :
+            'wallets.check') | translate }}
+          </button>
+          <button
+            hlmBtn
+            size="sm"
+            type="button"
+            [disabled]="service.busy() !== null || closed()"
+            (click)="service.fetch(wallet.id)"
+          >
+            {{ (service.busy() === 'fetch:' + wallet.id ? 'wallets.fetching' :
+            'wallets.fetch') | translate }}
+          </button>
+          @if (!closed()) {
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            [disabled]="service.busy() !== null"
+            (click)="service.remove(wallet.id)"
+          >
+            {{ 'wallets.project.remove' | translate }}
+          </button>
+          }
+        </div>
+      </div>
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      <lk-network-status [wallet]="wallet" />
+
+      @if (entry.files.length > 0) {
+      <p class="text-sm">
+        {{ 'wallets.project.files' | translate }} @for (file of entry.files;
+        track file.id) {
+        <span class="mr-2 font-mono text-xs">{{ file.displayName }}</span>
+        }
+      </p>
+      }
+
+      <div class="flex flex-col gap-2">
+        <h4 class="text-sm font-medium">
+          {{ 'wallets.balances.title' | translate: { date: overview.yearEnd } }}
+        </h4>
+        <p class="text-muted-foreground text-xs">
+          {{ 'wallets.balances.hint' | translate }}
+        </p>
+        @if (entry.balances.length > 0) {
+        <div hlmTableContainer class="lk-panel">
+          <table hlmTable class="table-fixed">
+            <colgroup>
+              <col class="w-32" />
+              <col class="w-24" />
+              <col class="w-40" />
+              <col class="hidden w-28 md:table-column" />
+              <col />
+              <col class="w-14" />
+            </colgroup>
+            <thead hlmTHead>
+              <tr hlmTr>
+                <th hlmTh>{{ 'wallets.fields.network' | translate }}</th>
+                <th hlmTh>{{ 'wallets.balances.asset' | translate }}</th>
+                <th hlmTh class="text-right">
+                  {{ 'wallets.balances.quantity' | translate }}
+                </th>
+                <th hlmTh class="hidden md:table-cell">
+                  {{ 'wallets.balances.date' | translate }}
+                </th>
+                <th hlmTh>{{ 'wallets.balances.evidence' | translate }}</th>
+                <th hlmTh class="lk-sticky-actions text-right">
+                  <span class="sr-only"
+                    >{{ 'common.actions' | translate }}</span
+                  >
+                </th>
+              </tr>
+            </thead>
+            <tbody hlmTBody>
+              @for (balance of entry.balances; track balance.id) {
+              <tr hlmTr>
+                <td hlmTd>
+                  {{ 'wallets.network.' + balance.network | translate }}
+                </td>
+                <td hlmTd class="max-w-0">
+                  <span [lkTruncate]="balance.asset">{{ balance.asset }}</span>
+                </td>
+                <td hlmTd class="text-right tabular-nums">
+                  {{ balance.quantity | lkQuantity: 18 }}
+                </td>
+                <td hlmTd class="hidden tabular-nums md:table-cell">
+                  {{ balance.asOf }}
+                </td>
+                <td hlmTd class="max-w-0 text-sm">
+                  @let evidence = balance.evidenceName ??
+                  ('wallets.balances.noEvidence' | translate);
+                  <span [lkTruncate]="evidence">{{ evidence }}</span>
+                </td>
+                <td hlmTd class="lk-sticky-actions text-right">
+                  <lk-row-actions
+                    [actions]="balanceActions()"
+                    (selected)="service.removeBalance(wallet.id, balance.id)"
+                  />
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        } @if (!closed()) { @if (editing() === wallet.id) {
+        <div class="lk-panel flex flex-col gap-3 p-4">
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="flex flex-col gap-2">
+              <label hlmLabel [for]="'bal-net-' + wallet.id"
+                >{{ 'wallets.fields.network' | translate }}</label
+              >
+              <select
+                hlmInput
+                [id]="'bal-net-' + wallet.id"
+                [ngModel]="draft().network"
+                (ngModelChange)="patch({ network: $event })"
+              >
+                @for (network of wallet.possibleNetworks; track network) {
+                <option [value]="network">
+                  {{ 'wallets.network.' + network | translate }}
+                </option>
+                }
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label hlmLabel [for]="'bal-asset-' + wallet.id"
+                >{{ 'wallets.balances.asset' | translate }}</label
+              >
+              <input
+                hlmInput
+                [id]="'bal-asset-' + wallet.id"
+                type="text"
+                [ngModel]="draft().asset"
+                (ngModelChange)="patch({ asset: $event })"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label hlmLabel [for]="'bal-qty-' + wallet.id"
+                >{{ 'wallets.balances.quantity' | translate }}</label
+              >
+              <input
+                hlmInput
+                [id]="'bal-qty-' + wallet.id"
+                type="text"
+                inputmode="decimal"
+                [ngModel]="draft().quantity"
+                (ngModelChange)="patch({ quantity: $event })"
+              />
+            </div>
+          </div>
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="flex min-w-64 flex-1 flex-col gap-2">
+              <label hlmLabel [for]="'bal-evidence-' + wallet.id"
+                >{{ 'wallets.balances.evidence' | translate }}</label
+              >
+              <select
+                hlmInput
+                [id]="'bal-evidence-' + wallet.id"
+                [ngModel]="draft().evidenceFileId"
+                (ngModelChange)="patch({ evidenceFileId: $event })"
+              >
+                <option value="">
+                  {{ 'wallets.balances.chooseEvidence' | translate }}
+                </option>
+                @for (file of service.receipts(); track file.id) {
+                <option [value]="file.id">{{ file.displayName }}</option>
+                }
+              </select>
+            </div>
+            <button
+              hlmBtn
+              variant="outline"
+              type="button"
+              [disabled]="service.busy() !== null"
+              (click)="receiptPicker.click()"
+            >
+              {{ 'wallets.balances.upload' | translate }}
+            </button>
+            <input
+              #receiptPicker
+              class="sr-only"
+              type="file"
+              accept=".pdf,application/pdf"
+              (change)="receiptPicked($event)"
+            />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label hlmLabel [for]="'bal-note-' + wallet.id"
+              >{{ 'wallets.balances.note' | translate }}</label
+            >
+            <input
+              hlmInput
+              [id]="'bal-note-' + wallet.id"
+              type="text"
+              [ngModel]="draft().note"
+              (ngModelChange)="patch({ note: $event })"
+            />
+          </div>
+          <div class="flex justify-end gap-2">
+            <button
+              hlmBtn
+              variant="outline"
+              type="button"
+              (click)="editing.set(null)"
+            >
+              {{ 'common.cancel' | translate }}
+            </button>
+            <button
+              hlmBtn
+              type="button"
+              [disabled]="!canSave() || service.busy() !== null"
+              (click)="saveBalance(wallet.id)"
+            >
+              {{ 'common.save' | translate }}
+            </button>
+          </div>
+        </div>
+        } @else {
+        <div>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="openBalance(entry)"
+          >
+            {{ 'wallets.balances.add' | translate }}
+          </button>
+        </div>
+        } }
+      </div>
+    </div>
+  </section>
+  } @empty {
+  <lk-empty-state [message]="'wallets.project.empty' | translate" />
+  }
+</div>
+}

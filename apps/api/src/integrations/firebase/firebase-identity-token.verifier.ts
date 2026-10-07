@@ -30,6 +30,10 @@ export class FirebaseIdentityTokenVerifier extends IdentityTokenVerifierPort {
         emailVerified: decoded.email_verified === true,
         name: typeof decoded['name'] === 'string' ? decoded['name'] : null,
         signInProvider: decoded.firebase.sign_in_provider,
+        // Seconds since the epoch of the actual sign-in (stays the same across token refreshes).
+        ...(typeof decoded.auth_time === 'number'
+          ? { authTime: new Date(decoded.auth_time * 1000).toISOString() }
+          : {}),
       };
     } catch (error) {
       this.logger.debug(

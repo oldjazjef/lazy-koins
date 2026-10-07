@@ -3,9 +3,17 @@
  * are kept sealed (`enc:v1:…`, secret-box.ts) and never leave the API — views carry a hint.
  */
 
-export const NUMBER_FORMATS = ['de-CH'] as const;
+import type { Locale } from '../../common/i18n/locale';
+
+/** F11.2: `de-CH` = 1’234.56, `en` = 1,234.56. */
+export const NUMBER_FORMATS = ['de-CH', 'en'] as const;
 export type NumberFormat = (typeof NUMBER_FORMATS)[number];
-export const DATE_FORMATS = ['dd.MM.yyyy'] as const;
+export const DATE_FORMATS = [
+  'dd.MM.yyyy',
+  'yyyy-MM-dd',
+  'dd/MM/yyyy',
+  'MM/dd/yyyy',
+] as const;
 export type DateFormat = (typeof DATE_FORMATS)[number];
 
 /** The keys a user can store; mirrored by columns `<name>_key`. */
@@ -18,6 +26,8 @@ export interface UserSettings {
   readonly canton: string;
   readonly advisorName: string;
   readonly advisorEmail: string;
+  /** F11.2: the language of app and exports; `null` = not chosen yet (exports in German). */
+  readonly locale: Locale | null;
   readonly numberFormat: NumberFormat;
   readonly dateFormat: DateFormat;
   readonly onlineRates: boolean;
@@ -33,6 +43,7 @@ export interface UpdateSettingsInput {
   readonly canton?: string;
   readonly advisorName?: string;
   readonly advisorEmail?: string;
+  readonly locale?: Locale;
   readonly numberFormat?: NumberFormat;
   readonly dateFormat?: DateFormat;
   readonly onlineRates?: boolean;
@@ -48,6 +59,7 @@ export function defaultSettings(userId: string): UserSettings {
     canton: '',
     advisorName: '',
     advisorEmail: '',
+    locale: null,
     numberFormat: 'de-CH',
     dateFormat: 'dd.MM.yyyy',
     onlineRates: true,

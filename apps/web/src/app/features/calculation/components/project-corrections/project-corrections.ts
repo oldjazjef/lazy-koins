@@ -1,13 +1,16 @@
-import { DatePipe, JsonPipe } from '@angular/common';
+import { JsonPipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { lucideRedo2, lucideUndo2 } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -25,6 +28,13 @@ import {
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
 import { correctionBody, type CorrectionFormValue } from './correction-form';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import { DateField } from '../../../../shared/components/date-field';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
 
 /**
  * Korrekturen (F9): a form for price overrides, reclassifications and manual bookings or
@@ -34,10 +44,14 @@ import { correctionBody, type CorrectionFormValue } from './correction-form';
 @Component({
   selector: 'lk-project-corrections',
   imports: [
-    DatePipe,
+    LkDatePipe,
+    DateField,
     JsonPipe,
     ReactiveFormsModule,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     EmptyState,
     ...HlmBadgeImports,
     ...HlmButtonImports,
@@ -59,6 +73,47 @@ export class ProjectCorrections {
   readonly taxYear = input.required<number>();
 
   protected readonly error = signal<string | null>(null);
+
+  /** The history (F9.4), newest first as the API sends it, 10 per page. */
+  protected readonly historyPager = paginate(
+    computed(() =>
+      this.service.corrections.hasValue()
+        ? this.service.corrections.value()
+        : [],
+    ),
+    { storageKey: 'corrections' },
+  );
+
+  /** Undo or redo — one action; none while the project is closed (F4.5). */
+  private readonly undoActions = computed(() => {
+    const base = { hidden: this.closed(), disabled: this.service.isBusy() };
+    return {
+      undo: [
+        {
+          id: 'undo',
+          labelKey: 'corrections.undo',
+          icon: lucideUndo2,
+          ...base,
+        },
+      ] as readonly RowAction<'undo' | 'redo'>[],
+      redo: [
+        {
+          id: 'redo',
+          labelKey: 'corrections.redo',
+          icon: lucideRedo2,
+          ...base,
+        },
+      ] as readonly RowAction<'undo' | 'redo'>[],
+    };
+  });
+
+  protected actionsFor(
+    correction: Correction,
+  ): readonly RowAction<'undo' | 'redo'>[] {
+    return correction.undoneAt
+      ? this.undoActions().redo
+      : this.undoActions().undo;
+  }
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     type: ['price_override' as CorrectionType],

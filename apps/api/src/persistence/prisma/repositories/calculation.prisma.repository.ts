@@ -91,7 +91,11 @@ export class CalculationSnapshotPrismaRepository extends CalculationSnapshotRepo
     if (!row) return undefined;
     return {
       ...toMeta(row),
-      result: JSON.parse(row.result) as StoredResult,
+      // Snapshots of engine version ≤ 3 predate the tax currency (F4.1a): they are CHF.
+      result: {
+        currency: 'CHF',
+        ...(JSON.parse(row.result) as object),
+      } as StoredResult,
     };
   }
 
@@ -120,6 +124,8 @@ export class CalculationSnapshotPrismaRepository extends CalculationSnapshotRepo
         wealthChf: true,
         incomeChf: true,
         createdAt: true,
+        inputHash: true,
+        engineVersion: true,
       },
     });
     for (const row of rows) {
@@ -128,6 +134,8 @@ export class CalculationSnapshotPrismaRepository extends CalculationSnapshotRepo
         wealthChf: row.wealthChf,
         incomeChf: row.incomeChf,
         calculatedAt: toIsoString(row.createdAt),
+        inputHash: row.inputHash,
+        engineVersion: row.engineVersion,
       });
     }
     return out;

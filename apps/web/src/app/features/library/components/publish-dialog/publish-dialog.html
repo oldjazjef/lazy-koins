@@ -1,0 +1,246 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="w-full sm:max-w-4xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ title() | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'library.publish.description' | translate }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-5">
+        @if (publish.source() === null) {
+        <!-- 1. Source -->
+        <div class="lk-form-row">
+          <div class="lk-field">
+            <label
+              hlmLabel
+              for="publish-source"
+              [title]="'library.publish.sourceMapping' | translate"
+              >{{ 'library.publish.sourceMapping' | translate }}</label
+            >
+            <select
+              hlmInput
+              id="publish-source"
+              [ngModel]="''"
+              (ngModelChange)="chooseMapping($event)"
+            >
+              <option value="">
+                {{ 'library.publish.choose' | translate }}
+              </option>
+              @for (mapping of publish.myMappings.value() ?? []; track
+              mapping.id) {
+              <option [value]="mapping.id">
+                {{ mapping.name }} ({{ mapping.platform }})
+              </option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="text-muted-foreground"
+            >{{ 'library.publish.orFile' | translate }}</span
+          >
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="filePicker.click()"
+          >
+            <ng-icon name="lucideUpload" size="14" aria-hidden="true" />
+            {{ 'mappings.upload.button' | translate }}
+          </button>
+          <input
+            #filePicker
+            id="publish-file"
+            class="sr-only"
+            type="file"
+            accept=".json,application/json"
+            (change)="picked($event)"
+          />
+        </div>
+        } @if (publish.issues().length > 0) {
+        <div class="text-destructive flex flex-col gap-1 text-sm" role="alert">
+          <p class="font-medium">{{ 'library.publish.invalid' | translate }}</p>
+          <ul class="list-disc pl-5 font-mono text-xs">
+            @for (issue of publish.issues(); track $index) {
+            <li>{{ issue.path || '/' }}: {{ issue.message }}</li>
+            }
+          </ul>
+        </div>
+        } @if (publish.failure(); as failure) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ failure | translate }}
+        </p>
+        } @if (publish.review(); as review) {
+        <!-- 2. What becomes public -->
+        <div class="lk-panel flex flex-col gap-1 p-4 text-sm">
+          <p class="font-medium">{{ review.name }} · {{ review.platform }}</p>
+          <p class="text-muted-foreground">
+            {{ 'library.publish.publicNote' | translate }}
+          </p>
+          @if (review.existing && !review.target) {
+          <label class="mt-2 flex items-center gap-2">
+            <input type="checkbox" (change)="publish.asNewVersion(true)" />
+            {{ 'library.publish.asNewVersion' | translate: { version:
+            review.existing.version + 1 } }}
+          </label>
+          } @else if (review.target) {
+          <label class="mt-2 flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked
+              [disabled]="!review.existing"
+              (change)="publish.asNewVersion(false)"
+            />
+            {{ 'library.publish.asNewVersion' | translate: { version:
+            review.target.nextVersion } }}
+          </label>
+          }
+        </div>
+
+        <!-- Privacy scan -->
+        <section class="flex flex-col gap-2" aria-labelledby="publish-findings">
+          <h4 id="publish-findings" class="flex items-center gap-2 font-medium">
+            <ng-icon name="lucideShieldAlert" size="16" aria-hidden="true" />
+            {{ 'library.findings.title' | translate }}
+          </h4>
+          @if (publish.findings().length === 0) {
+          <p class="text-muted-foreground text-sm">
+            {{ 'library.findings.none' | translate }}
+          </p>
+          } @else {
+          <p class="text-sm">{{ 'library.findings.intro' | translate }}</p>
+          <ul class="flex flex-col gap-2">
+            @for (finding of publish.findings(); track finding.path) {
+            <li class="lk-panel flex items-start gap-3 p-3 text-sm">
+              @if (finding.removable) {
+              <input
+                type="checkbox"
+                class="mt-1"
+                [id]="'finding-' + $index"
+                [checked]="publish.selected().has(finding.path)"
+                (change)="publish.toggle(finding.path)"
+              />
+              }
+              <label
+                class="flex min-w-0 flex-1 flex-col gap-1"
+                [for]="'finding-' + $index"
+              >
+                <span class="flex flex-wrap items-center gap-2">
+                  <span hlmBadge variant="outline"
+                    >{{ 'library.findings.kind.' + finding.kind | translate
+                    }}</span
+                  >
+                  <code class="text-muted-foreground text-xs"
+                    >{{ finding.path }}</code
+                  >
+                </span>
+                <span class="font-mono text-xs break-all"
+                  >{{ finding.value }}</span
+                >
+                <span class="text-muted-foreground text-xs">
+                  {{ (finding.removable ? 'library.findings.removeHint' :
+                  'library.findings.editHint') | translate }}
+                </span>
+              </label>
+            </li>
+            }
+          </ul>
+          }
+        </section>
+
+        <!-- 3. Pseudonym, description -->
+        <div class="lk-form-row">
+          <div class="lk-field">
+            <label
+              hlmLabel
+              for="publish-author"
+              [title]="'library.publish.authorName' | translate"
+              >{{ 'library.publish.authorName' | translate }}</label
+            >
+            <input
+              hlmInput
+              id="publish-author"
+              maxlength="40"
+              [placeholder]="'library.anonymous' | translate"
+              [ngModel]="publish.authorName()"
+              (ngModelChange)="publish.authorName.set($event)"
+            />
+            <span class="text-muted-foreground text-xs"
+              >{{ 'library.publish.authorHint' | translate }}</span
+            >
+          </div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label hlmLabel for="publish-description"
+            >{{ 'library.fields.description' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="publish-description"
+            rows="3"
+            maxlength="1000"
+            [ngModel]="publish.description()"
+            (ngModelChange)="publish.description.set($event)"
+          ></textarea>
+        </div>
+
+        <!-- The exact JSON -->
+        <div class="flex flex-col gap-1">
+          <p class="text-sm font-medium">
+            {{ 'library.publish.json' | translate: { size: review.size } }}
+          </p>
+          @if (publish.tooLarge()) {
+          <p class="text-destructive text-sm" role="alert">
+            {{ 'library.publish.tooLarge' | translate: { max: review.maxSize }
+            }}
+          </p>
+          }
+          <pre
+            class="bg-muted max-h-80 overflow-auto rounded p-4 font-mono text-xs break-all whitespace-pre-wrap"
+          >
+{{ publish.json() }}</pre>
+        </div>
+
+        <!-- 4. Confirmation -->
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            class="mt-1"
+            [checked]="publish.confirmed()"
+            (change)="publish.confirmed.set(!publish.confirmed())"
+          />
+          {{ 'library.publish.confirm' | translate }}
+        </label>
+        @if (publish.remaining().length > 0) {
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            class="mt-1"
+            [checked]="publish.acknowledged()"
+            (change)="publish.acknowledged.set(!publish.acknowledged())"
+          />
+          {{ 'library.publish.keepFindings' | translate: { count:
+          publish.remaining().length } }}
+        </label>
+        } } @else if (publish.loading()) {
+        <hlm-skeleton class="h-48 w-full" />
+        }
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!publish.canPublish()"
+        (click)="publish.publish()"
+      >
+        {{ 'library.publish.submit' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

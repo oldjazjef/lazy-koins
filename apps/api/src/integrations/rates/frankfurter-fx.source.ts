@@ -5,7 +5,8 @@ import { type Fetcher, getJson, SerialGate } from './http-rate-client';
 const BASE = 'https://api.frankfurter.app';
 
 /**
- * ECB reference rates through Frankfurter (no key): USD/CHF and EUR/CHF per working day. Missing
+ * ECB reference rates through Frankfurter (no key): one currency in another per working day —
+ * USD/CHF and EUR/CHF, or USD/EUR, … for another tax currency (F4.1a). Missing
  * days (weekends, holidays) are not invented here — the engine forward-fills from the last fixing
  * (FACHREGELN, Devisen).
  */
@@ -17,12 +18,14 @@ export class FrankfurterFxSource extends FxRateSourcePort {
     super();
   }
 
-  async dailyChf(
-    base: 'USD' | 'EUR',
+  async daily(
+    base: string,
+    quote: string,
     from: string,
     to: string,
   ): Promise<RateEntry[]> {
-    const url = `${BASE}/${from}..${to}?from=${base}&to=CHF`;
+    if (base === quote) return [];
+    const url = `${BASE}/${from}..${to}?from=${encodeURIComponent(base)}&to=${encodeURIComponent(quote)}`;
     const body = await getJson(this.fetcher, this.gate, this.name, url);
     const rates =
       typeof body === 'object' && body !== null && 'rates' in body
@@ -34,13 +37,13 @@ export class FrankfurterFxSource extends FxRateSourcePort {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
       const value =
         typeof perCurrency === 'object' && perCurrency !== null
-          ? (perCurrency as Record<string, unknown>)['CHF']
+          ? (perCurrency as Record<string, unknown>)[quote]
           : undefined;
       if (typeof value !== 'string') continue;
       out.push({
         kind: 'fx',
         asset: base,
-        currency: 'CHF',
+        currency: quote,
         date,
         value,
         source: this.name,

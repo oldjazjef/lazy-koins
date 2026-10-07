@@ -17,13 +17,17 @@ export const RATE_SOURCES = [
 ] as const;
 export type RateSource = (typeof RATE_SOURCES)[number];
 
-/** `price`: one unit of `asset` in `currency`. `fx`: one `asset` (USD, EUR) in `currency` (CHF). */
+/**
+ * `price`: one unit of `asset` in `currency`. `fx`: one `asset` (USD, EUR) in `currency` (the tax
+ * currency — CHF, EUR, …, F4.1a).
+ */
 export type RateKind = 'price' | 'fx';
 
 export interface RateEntry {
   readonly kind: RateKind;
   readonly asset: string;
-  readonly currency: 'CHF' | 'USD';
+  /** ISO 4217 code: USD, or a tax currency (CHF, EUR, …). */
+  readonly currency: string;
   /** ISO date (`2025-12-31`), the day the rate is for (UTC). */
   readonly date: string;
   /** Decimal string. */
@@ -53,7 +57,10 @@ export type PriceOrigin =
   | 'tableUsd';
 
 export interface PriceQuote {
-  /** CHF per unit. */
+  /**
+   * Tax currency per unit (F4.1a: CHF, EUR, …). The name stays `…Chf` for the stored snapshots
+   * and the API types; the currency is `RateTable.quote` = `rules.homeCurrency`.
+   */
   readonly priceChf: Decimal;
   readonly origin: PriceOrigin;
   /** The underlying source (`binance`, `ecb`, `record`, …). */
@@ -87,10 +94,22 @@ function compareText(a: string, b: string): number {
 /** Exchange rates are forward-filled from the last fixing (weekends, holidays) for this long. */
 const FX_FILL_DAYS = 14;
 
+/** Currencies a cross rate may go through when no direct pair is stored (F4.1a). */
+const FX_PIVOTS = ['USD', 'EUR', 'CHF'] as const;
+
 export class RateTable {
   private readonly series = new Map<string, Point[]>();
+  /** `kind|ASSET|currency|date` → the winning point of that day. */
+  private readonly byDay = new Map<string, Point>();
 
-  constructor(entries: readonly RateEntry[]) {
+  /**
+   * @param quote the tax currency (F4.1a) every price and `fx()` is expressed in — CHF unless
+   *   the project chose another one.
+   */
+  constructor(
+    entries: readonly RateEntry[],
+    readonly quote = 'CHF',
+  ) {
     const best = new Map<string, Point>();
     for (const entry of entries) {
       const key = `${entry.kind}|${entry.asset.toUpperCase()}|${entry.currency}`;
@@ -105,6 +124,7 @@ export class RateTable {
         best.set(dayKey, point);
     }
     for (const [dayKey, point] of best) {
+      this.byDay.set(dayKey, point);
       const key = dayKey.slice(0, dayKey.lastIndexOf('|'));
       const list = this.series.get(key) ?? [];
       list.push(point);
@@ -121,23 +141,43 @@ export class RateTable {
   lookup(
     kind: RateKind,
     asset: string,
-    currency: 'CHF' | 'USD',
+    currency: string,
     date: string,
     tolerance: number,
     sources?: readonly RateSource[],
   ): Point | undefined {
-    const list = this.series.get(`${kind}|${asset.toUpperCase()}|${currency}`);
+    const key = `${kind}|${asset.toUpperCase()}|${currency}`;
+    const list = this.series.get(key);
     if (!list) return undefined;
-    const usable = sources
-      ? list.filter((p) => sources.includes(p.source))
-      : list;
+    if (sources && tolerance === 0) {
+      // Same day only (overrides, ESTV): one map lookup instead of a scan — the dashboard asks
+      // this for every day of a range.
+      const point = this.byDay.get(`${key}|${date}`);
+      return point && sources.includes(point.source) ? point : undefined;
+    }
     let before: Point | undefined;
     let after: Point | undefined;
-    for (const point of usable) {
-      if (point.date <= date) before = point;
-      else {
-        after = point;
-        break;
+    if (!sources) {
+      // Binary search: the last point on or before the day.
+      let low = 0;
+      let high = list.length - 1;
+      let found = -1;
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if ((list[mid] as Point).date <= date) {
+          found = mid;
+          low = mid + 1;
+        } else high = mid - 1;
+      }
+      before = found >= 0 ? list[found] : undefined;
+      after = list[found + 1];
+    } else {
+      for (const point of list.filter((p) => sources.includes(p.source))) {
+        if (point.date <= date) before = point;
+        else {
+          after = point;
+          break;
+        }
       }
     }
     if (before && daysBetween(before.date, date) <= tolerance) return before;
@@ -145,19 +185,78 @@ export class RateTable {
     return undefined;
   }
 
-  /** One unit of `base` (USD, EUR) in CHF on a day, forward-filled (ECB, FACHREGELN). */
+  /**
+   * One unit of `base` (USD, EUR, …) in the tax currency on a day, forward-filled (ECB,
+   * FACHREGELN). A stored pair `base → quote` wins; otherwise the inverse pair; otherwise a cross
+   * rate through USD, EUR or CHF (F4.1a: GBP in an EUR project = GBP/USD × USD/EUR). With CHF
+   * as the tax currency the stored USD/CHF and EUR/CHF pairs answer exactly as before.
+   */
   fx(base: string, date: string): Point | undefined {
-    if (base === 'CHF') {
+    return this.fxPair(base.toUpperCase(), this.quote, date, true);
+  }
+
+  private fxPair(
+    base: string,
+    quote: string,
+    date: string,
+    viaPivot: boolean,
+  ): Point | undefined {
+    if (base === quote) {
       return { date, value: new EngineDecimal(1), source: 'ecb' };
     }
-    return this.lookup('fx', base, 'CHF', date, FX_FILL_DAYS);
+    const direct = this.lookup('fx', base, quote, date, FX_FILL_DAYS);
+    if (direct) return direct;
+    const inverse = this.lookup('fx', quote, base, date, FX_FILL_DAYS);
+    if (inverse && !inverse.value.isZero()) {
+      return {
+        date: inverse.date,
+        value: new EngineDecimal(1).div(inverse.value),
+        source: inverse.source,
+      };
+    }
+    if (!viaPivot) return undefined;
+    for (const pivot of FX_PIVOTS) {
+      if (pivot === base || pivot === quote) continue;
+      const first = this.fxPair(base, pivot, date, false);
+      const second = first ? this.fxPair(pivot, quote, date, false) : undefined;
+      if (first && second) {
+        return {
+          date: first.date < second.date ? first.date : second.date,
+          value: first.value.times(second.value),
+          source: first.source === second.source ? first.source : 'ecb',
+        };
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * The days in [from, to] with a fixing for `base` in the tax currency: the stored pair's own
+   * days, else the days of every series a cross rate may be built from (the yearly average).
+   */
+  fxDays(base: string, from: string, to: string): readonly string[] {
+    const upper = base.toUpperCase();
+    const direct = this.pointsBetween('fx', upper, this.quote, from, to);
+    if (direct.length > 0) return direct.map((p) => p.date);
+    const days = new Set<string>();
+    for (const [key, list] of this.series) {
+      const [kind, asset, currency] = key.split('|');
+      if (kind !== 'fx') continue;
+      const touches = [asset, currency].some(
+        (code) => code === upper || code === this.quote,
+      );
+      if (!touches) continue;
+      for (const p of list)
+        if (p.date >= from && p.date <= to) days.add(p.date);
+    }
+    return [...days].sort(compareText);
   }
 
   /** Every point of a series within [from, to], in date order. */
   pointsBetween(
     kind: RateKind,
     asset: string,
-    currency: 'CHF' | 'USD',
+    currency: string,
     from: string,
     to: string,
   ): readonly Point[] {
@@ -173,16 +272,19 @@ export interface OwnPrice {
 }
 
 /**
- * CHF per unit of `asset` on `date`, by the FACHREGELN priority (the first that exists wins):
+ * Tax-currency price per unit of `asset` on `date` (F4.1a: the currency T = `rules.homeCurrency`,
+ * CHF by default), by the FACHREGELN priority (the first that exists wins):
  *
- * 1. the home currency itself (CHF = 1);
- * 2. an override for that day (F7.4, F9.1) — `manual` rates;
- * 3. the ESTV Kursliste value for that day;
- * 4. the record's own CHF price ("Kurs CHF direkt", e.g. a statement valuation);
- * 5. the record's own USD price × USD/CHF of the day;
- * 6. USD-pegged assets (stablecoins, USD) = 1 USD × USD/CHF; other fiat via its CHF rate (EUR);
- * 7. a stored CHF price (CoinGecko) within the tolerance;
- * 8. a stored USD price (Binance close, CoinGecko) within the tolerance × USD/CHF of the day.
+ * 1. the tax currency itself (T = 1);
+ * 2. an override in T for that day (F7.4, F9.1) — `manual` rates;
+ * 3. the ESTV Kursliste value for that day — **only when T = CHF** (the list is in CHF);
+ * 4. the record's own price in T ("Kurs CHF direkt" — the standard format has a CHF column, so
+ *    only for T = CHF);
+ * 5. the record's own USD price × USD/T of the day;
+ * 6. USD-pegged assets (stablecoins, USD) = 1 USD × USD/T; other fiat via its rate in T (EUR/CHF,
+ *    CHF/EUR, … — cross rates through USD/EUR when no direct pair is stored);
+ * 7. a stored price in T (CoinGecko `vs_currency = T`) within the tolerance;
+ * 8. a stored USD price (Binance close, CoinGecko) within the tolerance × USD/T of the day.
  *
  * `undefined` = no price: the figure stays without value and becomes an open point.
  */
@@ -194,7 +296,8 @@ export function unitPriceChf(
   own: OwnPrice = {},
 ): PriceQuote | undefined {
   const upper = asset.toUpperCase();
-  if (upper === rules.homeCurrency) {
+  const tax = rules.homeCurrency;
+  if (upper === tax) {
     return {
       priceChf: new EngineDecimal(1),
       origin: 'home',
@@ -202,7 +305,7 @@ export function unitPriceChf(
       date,
     };
   }
-  const override = table.lookup('price', upper, 'CHF', date, 0, ['manual']);
+  const override = table.lookup('price', upper, tax, date, 0, ['manual']);
   if (override) {
     return {
       priceChf: override.value,
@@ -211,11 +314,14 @@ export function unitPriceChf(
       date,
     };
   }
-  const estv = table.lookup('price', upper, 'CHF', date, 0, ['estv']);
+  const estv =
+    tax === 'CHF'
+      ? table.lookup('price', upper, 'CHF', date, 0, ['estv'])
+      : undefined;
   if (estv) {
     return { priceChf: estv.value, origin: 'estv', source: 'estv', date };
   }
-  if (own.priceChf !== undefined) {
+  if (own.priceChf !== undefined && tax === 'CHF') {
     return {
       priceChf: own.priceChf,
       origin: 'recordChf',
@@ -251,13 +357,7 @@ export function unitPriceChf(
       ? { priceChf: rate.value, origin: 'fx', source: rate.source, date }
       : undefined;
   }
-  const chf = table.lookup(
-    'price',
-    upper,
-    'CHF',
-    date,
-    rules.priceToleranceDays,
-  );
+  const chf = table.lookup('price', upper, tax, date, rules.priceToleranceDays);
   if (chf) {
     return {
       priceChf: chf.value,
@@ -287,9 +387,10 @@ export function unitPriceChf(
 }
 
 /**
- * The yearly average CHF price (FACHREGELN, Earn-Lücke): the mean over the year's daily USD
- * closes × USD/CHF of each day; without USD prices the mean of stored CHF prices. USD-pegged
- * assets average the USD/CHF rate itself.
+ * The yearly average price in the tax currency (FACHREGELN, Earn-Lücke): the mean over the year's
+ * daily USD closes × USD/T of each day; without USD prices the mean of stored prices in T.
+ * USD-pegged assets average the USD/T rate itself (over the fixing days of the pair, or of the
+ * series a cross rate is built from).
  */
 export function yearlyAverageChf(
   table: RateTable,
@@ -306,12 +407,17 @@ export function yearlyAverageChf(
       : values
           .reduce((a, b) => a.plus(b), new EngineDecimal(0))
           .div(values.length);
-  if (upper === rules.homeCurrency) return new EngineDecimal(1);
+  const tax = rules.homeCurrency;
+  if (upper === tax) return new EngineDecimal(1);
   if (rules.usdPegged.includes(upper) || rules.fiat.includes(upper)) {
     const base = rules.usdPegged.includes(upper) ? 'USD' : upper;
-    return mean(
-      table.pointsBetween('fx', base, 'CHF', from, to).map((p) => p.value),
-    );
+    if (base === tax) return new EngineDecimal(1);
+    const values: Decimal[] = [];
+    for (const day of table.fxDays(base, from, to)) {
+      const fx = table.fx(base, day);
+      if (fx) values.push(fx.value);
+    }
+    return mean(values);
   }
   const daily: Decimal[] = [];
   for (const point of table.pointsBetween('price', upper, 'USD', from, to)) {
@@ -320,6 +426,6 @@ export function yearlyAverageChf(
   }
   if (daily.length > 0) return mean(daily);
   return mean(
-    table.pointsBetween('price', upper, 'CHF', from, to).map((p) => p.value),
+    table.pointsBetween('price', upper, tax, from, to).map((p) => p.value),
   );
 }

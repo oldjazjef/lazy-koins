@@ -104,13 +104,14 @@ describe('CoinGecko market chart', () => {
         body: `{"prices":[[${day('2025-12-31')},85000.12],[${day('2025-12-31') + 3600000},85100.5],[${day('2026-01-01')},86000]]}`,
       },
     });
-    const entries = await new CoinGeckoSource(fetcher).dailyChf({
+    const entries = await new CoinGeckoSource(fetcher).dailyFiat({
       asset: 'BTC',
       symbol: 'BTC',
       from: '2025-12-31',
       to: '2026-01-01',
       coinId: 'bitcoin',
       apiKey: 'demo-key',
+      currency: 'CHF',
     });
     expect(entries.map((e) => [e.date, e.value, e.currency])).toEqual([
       ['2025-12-31', '85100.5', 'CHF'],
@@ -118,6 +119,74 @@ describe('CoinGecko market chart', () => {
     ]);
     expect(calls[0]?.url).toContain('vs_currency=chf');
     expect(calls[0]?.headers['x-cg-demo-api-key']).toBe('demo-key');
+  });
+
+  it('asks in the tax currency of the project (F4.1a)', async () => {
+    const { fetcher, calls } = fakeFetch({
+      '/coins/bitcoin/market_chart/range': {
+        status: 200,
+        body: `{"prices":[[${day('2025-12-31')},80000.5]]}`,
+      },
+    });
+    const entries = await new CoinGeckoSource(fetcher).dailyFiat({
+      asset: 'BTC',
+      symbol: 'BTC',
+      from: '2025-12-31',
+      to: '2025-12-31',
+      coinId: 'bitcoin',
+      apiKey: 'demo-key',
+      currency: 'EUR',
+    });
+    expect(entries.map((e) => [e.value, e.currency])).toEqual([
+      ['80000.5', 'EUR'],
+    ]);
+    expect(calls[0]?.url).toContain('vs_currency=eur');
+  });
+});
+
+describe('CoinGecko key check (F11.0s "Testen")', () => {
+  it('pings with the key: ok', async () => {
+    const { fetcher, calls } = fakeFetch({
+      '/ping': { status: 200, body: '{"gecko_says":"(V3) To the Moon!"}' },
+    });
+    const result = await new CoinGeckoSource(fetcher).checkKey('CG-good');
+    expect(result).toMatchObject({ ok: true, status: 200 });
+    expect(calls[0]?.headers['x-cg-demo-api-key']).toBe('CG-good');
+  });
+
+  it('a refused key: invalidKey with the provider message, never the key', async () => {
+    const { fetcher } = fakeFetch({
+      '/ping': {
+        status: 401,
+        body: '{"status":{"error_code":10010,"error_message":"Invalid API Key CG-secret-key-1234"}}',
+      },
+    });
+    const result = await new CoinGeckoSource(fetcher).checkKey(
+      'CG-secret-key-1234',
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      code: 'invalidKey',
+      status: 401,
+      url: 'https://api.coingecko.com/api/v3/ping',
+    });
+    expect(result.providerMessage).toContain('Invalid API Key');
+    expect(JSON.stringify(result)).not.toContain('CG-secret-key-1234');
+  });
+
+  it('429 = rateLimited, a network error = network', async () => {
+    const limited = fakeFetch({ '/ping': { status: 429, body: 'slow down' } });
+    expect(
+      await new CoinGeckoSource(limited.fetcher).checkKey('k-1234'),
+    ).toMatchObject({ ok: false, code: 'rateLimited' });
+    const broken: Fetcher = async () => {
+      throw new TypeError('fetch failed');
+    };
+    expect(await new CoinGeckoSource(broken).checkKey('k-1234')).toMatchObject({
+      ok: false,
+      code: 'network',
+      status: null,
+    });
   });
 });
 
@@ -129,8 +198,9 @@ describe('Frankfurter (ECB)', () => {
         body: '{"amount":1.0,"base":"USD","start_date":"2025-12-29","end_date":"2026-01-02","rates":{"2025-12-29":{"CHF":0.79123},"2025-12-30":{"CHF":0.7905}}}',
       },
     });
-    const entries = await new FrankfurterFxSource(fetcher).dailyChf(
+    const entries = await new FrankfurterFxSource(fetcher).daily(
       'USD',
+      'CHF',
       '2025-12-29',
       '2026-01-02',
     );
@@ -152,6 +222,33 @@ describe('Frankfurter (ECB)', () => {
         source: 'ecb',
       },
     ]);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('reads any pair the tax currency needs (F4.1a): USD/EUR', async () => {
+    const { fetcher, calls } = fakeFetch({
+      'api.frankfurter.app/2025-12-29..2026-01-02?from=USD&to=EUR': {
+        status: 200,
+        body: '{"amount":1.0,"base":"USD","rates":{"2025-12-30":{"EUR":0.85123}}}',
+      },
+    });
+    const source = new FrankfurterFxSource(fetcher);
+    expect(
+      await source.daily('USD', 'EUR', '2025-12-29', '2026-01-02'),
+    ).toEqual([
+      {
+        kind: 'fx',
+        asset: 'USD',
+        currency: 'EUR',
+        date: '2025-12-30',
+        value: '0.85123',
+        source: 'ecb',
+      },
+    ]);
+    // A currency in itself is 1 — nothing to ask.
+    expect(
+      await source.daily('EUR', 'EUR', '2025-12-29', '2026-01-02'),
+    ).toEqual([]);
     expect(calls).toHaveLength(1);
   });
 });

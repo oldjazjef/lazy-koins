@@ -1,0 +1,309 @@
+<lk-page-header
+  [title]="(isNew() ? 'wallets.form.newTitle' : 'wallets.form.editTitle') | translate"
+  [subtitle]="'wallets.form.subtitle' | translate"
+>
+  <a hlmBtn variant="outline" routerLink="/app/wallets"
+    >{{ 'common.back' | translate }}</a
+  >
+</lk-page-header>
+
+@if (!isNew() && service.wallet.isLoading() && !service.wallet.hasValue()) {
+<hlm-skeleton class="h-48 w-full max-w-3xl" />
+} @else if (!isNew() && service.wallet.error()) {
+<p class="text-destructive text-sm">
+  {{ 'wallets.form.loadFailed' | translate }}
+</p>
+} @else {
+<div class="flex flex-col gap-6">
+  @if (service.refused(); as kind) {
+  <div
+    class="border-destructive text-destructive max-w-3xl rounded-md border p-4 text-sm"
+    role="alert"
+  >
+    <p class="font-medium">{{ 'wallets.secret.title' | translate }}</p>
+    <p>
+      {{ 'wallets.secret.text' | translate: { kind: ('wallets.secret.kind.' +
+      kind | translate) } }}
+    </p>
+  </div>
+  }
+
+  <form class="max-w-3xl" [formGroup]="form" (ngSubmit)="submit()">
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle>{{ 'wallets.form.cardTitle' | translate }}</h2>
+        <p hlmCardDescription>{{ 'wallets.form.hint' | translate }}</p>
+      </div>
+      <div hlmCardContent class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="wallet-label"
+            >{{ 'wallets.fields.label' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="wallet-label"
+            type="text"
+            autocomplete="off"
+            formControlName="label"
+          />
+          @if (form.controls.label.touched &&
+          form.controls.label.errors?.['zod']; as error) {
+          <p class="text-destructive text-sm">{{ error | translate }}</p>
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="wallet-address"
+            >{{ 'wallets.fields.address' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="wallet-address"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            class="font-mono"
+            formControlName="address"
+            [readonly]="!isNew()"
+            (blur)="inspect()"
+          />
+          <p class="text-muted-foreground text-xs">
+            @if (isNew()) { {{ 'wallets.form.addressHint' | translate }} } @else
+            { {{ 'wallets.form.addressFixed' | translate }} }
+          </p>
+          @if (kind(); as k) {
+          <p class="text-sm">{{ 'wallets.kind.' + k | translate }}</p>
+          } @if (unknownAddress()) {
+          <p class="text-destructive text-sm">
+            {{ 'wallets.errors.unknownAddress' | translate }}
+          </p>
+          }
+        </div>
+        @if (possible().length > 0) {
+        <fieldset class="flex flex-col gap-2">
+          <legend class="mb-2 text-sm font-medium">
+            {{ 'wallets.fields.networks' | translate }}
+          </legend>
+          <div class="flex flex-wrap gap-4">
+            @for (network of possible(); track network) {
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                [checked]="selected().has(network)"
+                (change)="toggle(network, $event)"
+              />
+              {{ 'wallets.network.' + network | translate }}
+            </label>
+            }
+          </div>
+          <p class="text-muted-foreground text-xs">
+            {{ 'wallets.form.networksHint' | translate }}
+          </p>
+        </fieldset>
+        }
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="wallet-notes"
+            >{{ 'wallets.fields.notes' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="wallet-notes"
+            rows="3"
+            formControlName="notes"
+          ></textarea>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2">
+          @if (!isNew()) {
+          <button
+            hlmBtn
+            variant="ghost"
+            type="button"
+            (click)="confirmDelete.set(true)"
+          >
+            {{ 'wallets.delete.button' | translate }}
+          </button>
+          }
+          <button
+            hlmBtn
+            type="submit"
+            [disabled]="service.busy() !== null || (!isNew() && form.pristine)"
+          >
+            {{ 'common.save' | translate }}
+          </button>
+        </div>
+      </div>
+    </section>
+  </form>
+
+  @if (!isNew() && service.wallet.hasValue()) { @let wallet =
+  service.wallet.value();
+  <section class="flex flex-col gap-3">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="text-lg font-semibold">
+        {{ 'wallets.networks.title' | translate }}
+      </h2>
+      <div class="flex flex-wrap gap-2">
+        <button
+          hlmBtn
+          variant="outline"
+          type="button"
+          [disabled]="service.busy() !== null"
+          (click)="service.checkNetworks()"
+        >
+          {{ (service.busy() === 'check' ? 'wallets.checking' : 'wallets.check')
+          | translate }}
+        </button>
+        <button
+          hlmBtn
+          type="button"
+          [disabled]="service.busy() !== null"
+          (click)="service.fetch()"
+        >
+          {{ (service.busy() === 'fetch' ? 'wallets.fetching' : 'wallets.fetch')
+          | translate }}
+        </button>
+      </div>
+    </div>
+    <p class="text-muted-foreground max-w-3xl text-sm">
+      {{ 'wallets.networks.hint' | translate }}
+    </p>
+    <lk-network-status [wallet]="wallet" />
+    @if (wallet.projects.length > 0) {
+    <p class="text-sm">
+      {{ 'wallets.usedIn' | translate }} @for (project of wallet.projects; track
+      project.id) {
+      <a
+        class="mr-2 hover:underline"
+        [routerLink]="['/app/projects', project.id]"
+        >{{ project.name }}</a
+      >
+      }
+    </p>
+    }
+  </section>
+
+  <section class="flex flex-col gap-3">
+    <h2 class="text-lg font-semibold">
+      {{ 'wallets.tokens.title' | translate }}
+    </h2>
+    <p class="text-muted-foreground max-w-3xl text-sm">
+      {{ 'wallets.tokens.hint' | translate }}
+    </p>
+    @if (tokenRows().length > 0) {
+    <div hlmTableContainer class="lk-panel">
+      <table hlmTable class="table-fixed">
+        <colgroup>
+          <col />
+          <col class="w-32" />
+          <col class="hidden w-48 md:table-column" />
+          <col class="w-56" />
+          <col class="hidden w-24 md:table-column" />
+          <col class="w-14" />
+        </colgroup>
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh>{{ 'wallets.tokens.asset' | translate }}</th>
+            <th hlmTh>{{ 'wallets.fields.network' | translate }}</th>
+            <th hlmTh class="hidden md:table-cell">
+              {{ 'wallets.tokens.contract' | translate }}
+            </th>
+            <th hlmTh>{{ 'wallets.tokens.verdict' | translate }}</th>
+            <th hlmTh class="hidden text-right md:table-cell">
+              {{ 'wallets.fields.movements' | translate }}
+            </th>
+            <th hlmTh class="lk-sticky-actions text-right">
+              <span class="sr-only">{{ 'common.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (token of tokenPager.visible(); track token.rowKey) {
+          <tr hlmTr>
+            <td hlmTd class="max-w-0">
+              <span class="font-medium" [lkTruncate]="token.asset"
+                >{{ token.asset }}</span
+              >
+              @if (token.tokenName) {
+              <span
+                class="text-muted-foreground text-xs"
+                [lkTruncate]="token.tokenName"
+                >{{ token.tokenName }}</span
+              >
+              }
+            </td>
+            <td hlmTd class="text-sm">
+              {{ 'wallets.network.' + token.network | translate }}
+            </td>
+            <td hlmTd class="hidden max-w-0 md:table-cell">
+              <span class="font-mono text-xs" [lkTruncate]="token.tokenKey"
+                >{{ token.tokenKey }}</span
+              >
+            </td>
+            <td hlmTd class="max-w-0 text-sm">
+              @if (token.spam) {
+              <span hlmBadge variant="destructive"
+                >{{ 'wallets.tokens.spam' | translate }}</span
+              >
+              } @else if (token.overridden) {
+              <span hlmBadge variant="secondary"
+                >{{ 'wallets.tokens.notSpam' | translate }}</span
+              >
+              } @else {
+              <span hlmBadge variant="outline"
+                >{{ 'wallets.tokens.ok' | translate }}</span
+              >
+              } @for (reason of token.reasons; track reason) { @let text =
+              'wallets.spamReason.' + reason | translate;
+              <span class="text-muted-foreground text-xs" [lkTruncate]="text"
+                >{{ text }}</span
+              >
+              }
+            </td>
+            <td hlmTd class="hidden text-right tabular-nums md:table-cell">
+              {{ token.movements }}
+            </td>
+            <td hlmTd class="lk-sticky-actions text-right">
+              <lk-row-actions
+                [actions]="tokenActions().get(token.rowKey) ?? []"
+                (selected)="tokenAct($event, token)"
+              />
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <lk-paginator [pager]="tokenPager" />
+    } @else if (service.tokens.hasValue()) {
+    <p class="text-muted-foreground text-sm">
+      {{ 'wallets.tokens.none' | translate }}
+    </p>
+    }
+  </section>
+  }
+</div>
+}
+
+<hlm-dialog [state]="deleteState()" (stateChanged)="deleteChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-lg">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'wallets.delete.title' | translate }}</h3>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <p class="text-sm">{{ 'wallets.delete.text' | translate }}</p>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        [disabled]="service.busy() !== null"
+        (click)="remove()"
+      >
+        {{ 'wallets.delete.confirm' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

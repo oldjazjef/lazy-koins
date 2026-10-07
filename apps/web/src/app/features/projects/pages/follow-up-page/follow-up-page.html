@@ -1,0 +1,327 @@
+@if (service.options.hasValue()) { @let options = service.options.value();
+<lk-page-header
+  [title]="'projects.followUp.title' | translate"
+  [subtitle]="'projects.followUp.subtitle' | translate: { name: options.source.name }"
+  [back]="true"
+/>
+
+<form class="flex flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()">
+  <section hlmCard>
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'projects.followUp.factsTitle' | translate }}</h2>
+      @if (options.existing.length > 0) {
+      <p hlmCardDescription>
+        {{ 'projects.followUp.existing' | translate: { names:
+        options.existing[0]?.name } }}
+      </p>
+      }
+    </div>
+    <div hlmCardContent class="grid gap-4 sm:grid-cols-3">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="follow-name"
+          >{{ 'projects.fields.name' | translate }}</label
+        >
+        <input hlmInput id="follow-name" type="text" formControlName="name" />
+        @if ( form.controls.name.touched && form.controls.name.errors?.['zod'];
+        as error ) {
+        <p class="text-destructive text-sm">{{ error | translate }}</p>
+        }
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="follow-year"
+          >{{ 'projects.fields.taxYear' | translate }}</label
+        >
+        <input
+          hlmInput
+          id="follow-year"
+          type="number"
+          formControlName="taxYear"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="follow-canton"
+          >{{ 'projects.fields.canton' | translate }}</label
+        >
+        <select hlmInput id="follow-canton" formControlName="canton">
+          @for (canton of cantons; track canton) {
+          <option [value]="canton">{{ canton }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Files per platform, preselected when they reach into the new year -->
+  <section hlmCard>
+    <div hlmCardHeader class="flex flex-wrap items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <h2 hlmCardTitle>{{ 'projects.followUp.files' | translate }}</h2>
+        <p hlmCardDescription>
+          {{ 'projects.followUp.filesHint' | translate }}
+        </p>
+      </div>
+      @if (options.files.length > 0) {
+      <div class="flex gap-1">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('files', true)"
+        >
+          {{ 'projects.followUp.all' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('files', false)"
+        >
+          {{ 'projects.followUp.none' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+    <div hlmCardContent class="flex flex-col gap-4">
+      @for (group of fileGroups(); track group.platform) {
+      <fieldset class="flex flex-col gap-1">
+        <legend class="text-muted-foreground mb-1 text-sm font-medium">
+          {{ group.platform ?? ('projects.followUp.noPlatform' | translate) }}
+        </legend>
+        @for (file of group.files; track file.projectFileId) {
+        <label
+          class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1"
+        >
+          <input
+            type="checkbox"
+            [checked]="service.isSelected('files', file.projectFileId)"
+            (change)="toggle('files', file.projectFileId)"
+          />
+          <span class="min-w-0 flex-1" [lkTruncate]="file.displayName"
+            >{{ file.displayName }}</span
+          >
+          <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
+            @if (file.periodFrom && file.periodTo) { {{ file.periodFrom | lkDate
+            }} – {{ file.periodTo | lkDate }} } @else { {{ 'files.status.' +
+            file.status | translate }} }
+          </span>
+        </label>
+        }
+      </fieldset>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'projects.followUp.noFiles' | translate }}
+      </p>
+      }
+    </div>
+  </section>
+
+  <!-- Wallets (F4.4a, F6): linked to the new project, preselected -->
+  <section hlmCard>
+    <div hlmCardHeader class="flex flex-wrap items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <h2 hlmCardTitle>{{ 'projects.followUp.wallets' | translate }}</h2>
+        <p hlmCardDescription>
+          {{ 'projects.followUp.walletsHint' | translate }}
+        </p>
+      </div>
+      @if ((options.wallets ?? []).length > 0) {
+      <div class="flex gap-1">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('wallets', true)"
+        >
+          {{ 'projects.followUp.all' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('wallets', false)"
+        >
+          {{ 'projects.followUp.none' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+    <div hlmCardContent class="flex flex-col gap-1">
+      @for (wallet of options.wallets ?? []; track wallet.walletId) {
+      <label
+        class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1"
+      >
+        <input
+          type="checkbox"
+          [checked]="service.isSelected('wallets', wallet.walletId)"
+          (change)="toggle('wallets', wallet.walletId)"
+        />
+        <span class="min-w-0 flex-1" [lkTruncate]="wallet.label"
+          >{{ wallet.label }}</span
+        >
+        <span
+          class="text-muted-foreground max-w-48 shrink-0 font-mono text-xs"
+          [lkTruncate]="wallet.address"
+          >{{ wallet.address }}</span
+        >
+      </label>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'projects.followUp.noWallets' | translate }}
+      </p>
+      }
+    </div>
+  </section>
+
+  <!-- Corrections that apply beyond the year -->
+  <section hlmCard>
+    <div hlmCardHeader class="flex flex-wrap items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <h2 hlmCardTitle>{{ 'projects.followUp.corrections' | translate }}</h2>
+        <p hlmCardDescription>
+          {{ 'projects.followUp.correctionsHint' | translate }}
+        </p>
+      </div>
+      @if (options.corrections.length > 0) {
+      <div class="flex gap-1">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('corrections', true)"
+        >
+          {{ 'projects.followUp.all' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('corrections', false)"
+        >
+          {{ 'projects.followUp.none' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+    <div hlmCardContent class="flex flex-col gap-1">
+      @for (correction of options.corrections; track correction.id) {
+      <label
+        class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1"
+      >
+        <input
+          type="checkbox"
+          [checked]="service.isSelected('corrections', correction.id)"
+          (change)="toggle('corrections', correction.id)"
+        />
+        <span class="min-w-0 flex-1" [lkTruncate]="correction.reason"
+          >{{ describe(correction) }}</span
+        >
+        <span class="text-muted-foreground min-w-0 shrink truncate text-xs"
+          >{{ correction.reason }}</span
+        >
+      </label>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'projects.followUp.noCorrections' | translate }}
+      </p>
+      }
+    </div>
+  </section>
+
+  <!-- Open items not done yet -->
+  <section hlmCard>
+    <div hlmCardHeader class="flex flex-wrap items-start gap-2">
+      <div class="min-w-0 flex-1">
+        <h2 hlmCardTitle>{{ 'projects.followUp.openItems' | translate }}</h2>
+        <p hlmCardDescription>
+          {{ 'projects.followUp.openItemsHint' | translate }}
+        </p>
+      </div>
+      @if (options.openItems.length > 0) {
+      <div class="flex gap-1">
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('openItems', true)"
+        >
+          {{ 'projects.followUp.all' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="all('openItems', false)"
+        >
+          {{ 'projects.followUp.none' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+    <div hlmCardContent class="flex flex-col gap-1">
+      @for (open of options.openItems; track open.key) {
+      <label
+        class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1"
+      >
+        <input
+          type="checkbox"
+          [checked]="service.isSelected('openItems', open.key)"
+          (change)="toggle('openItems', open.key)"
+        />
+        <span class="min-w-0 flex-1 truncate"
+          >{{ 'checks.reason.' + open.item.reason | translate: open.item.params
+          }}</span
+        >
+        <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
+          {{ open.item.platform }} {{ open.item.asset }} @if
+          (open.item.impactChf) { · {{ open.item.impactChf | lkChf:
+          options.taxCurrency }} }
+        </span>
+      </label>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'projects.followUp.noOpenItems' | translate }}
+      </p>
+      }
+    </div>
+  </section>
+
+  <!-- Notes -->
+  <section hlmCard>
+    <div hlmCardContent class="pt-6">
+      <label class="flex items-center gap-3">
+        <input
+          type="checkbox"
+          [checked]="service.takeNotes()"
+          [disabled]="options.notes.trim() === ''"
+          (change)="service.takeNotes.set(!service.takeNotes())"
+        />
+        <span>{{ 'projects.followUp.notes' | translate }}</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- Summary + create -->
+  <section class="lk-panel flex flex-wrap items-center gap-4 p-4">
+    <p class="min-w-0 flex-1 text-sm" role="status">
+      {{ 'projects.followUp.summary' | translate: service.summary() }} @if
+      (service.takeNotes()) { {{ 'projects.followUp.summaryNotes' | translate }}
+      }
+    </p>
+    <button hlmBtn type="submit" [disabled]="service.isBusy()">
+      {{ 'projects.followUp.create' | translate }}
+    </button>
+  </section>
+</form>
+} @else if (service.options.error()) {
+<lk-empty-state [message]="'projects.detail.loadFailed' | translate" />
+} @else {
+<hlm-skeleton class="h-96 w-full" />
+}

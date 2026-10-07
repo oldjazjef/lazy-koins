@@ -31,6 +31,7 @@ import {
   FigureRecordsResponseDto,
   OpenItemStateResponseDto,
   ResultResponseDto,
+  ResultStatusResponseDto,
   UpdateOpenItemDto,
 } from './dto/calculation.dto';
 
@@ -71,6 +72,20 @@ export class CalculationController {
       user.userId,
       projectId,
     )) as unknown as ResultResponseDto;
+  }
+
+  @Get('result/status')
+  @ApiOperation({
+    summary:
+      'When it was last calculated and whether that is stale — cheap, for headers and lists',
+  })
+  @ApiOkResponse({ type: ResultStatusResponseDto })
+  @ApiNotFoundResponse({ description: 'Missing, or not mine' })
+  resultStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+  ): Promise<ResultStatusResponseDto> {
+    return this.calculation.resultStatus(user.userId, projectId);
   }
 
   @Get('result/records')

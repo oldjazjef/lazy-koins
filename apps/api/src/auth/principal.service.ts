@@ -21,6 +21,10 @@ export class PrincipalService {
       known?.id ??
       (await this.users.upsertFromIdentity(identity, displayNameFor(identity)))
         .id;
-    return { userId: id, email: identity.email ?? '' };
+    return {
+      userId: id,
+      email: identity.email ?? '',
+      ...(identity.authTime ? { authTime: identity.authTime } : {}),
+    };
   }
 }

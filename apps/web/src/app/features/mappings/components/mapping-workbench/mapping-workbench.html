@@ -1,0 +1,503 @@
+@let sample = state.sample(); @let inspection = state.inspection();
+<div class="flex min-w-0 flex-col gap-4">
+  <!-- Beispieldatei: held for this session only, never stored -->
+  <section
+    class="lk-panel flex min-w-0 flex-col gap-3 p-4"
+    [attr.aria-labelledby]="idPrefix() + '-sample-title'"
+  >
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h4 class="text-sm font-medium" [id]="idPrefix() + '-sample-title'">
+          {{ 'mappings.sample.title' | translate }}
+        </h4>
+        <p class="text-muted-foreground text-xs">
+          {{ 'mappings.sample.notStored' | translate }}
+        </p>
+      </div>
+      @if (sample) {
+      <div class="flex flex-wrap gap-2">
+        <button
+          hlmBtn
+          size="sm"
+          variant="outline"
+          type="button"
+          [disabled]="!inspection"
+          (click)="state.applyTemplate()"
+        >
+          <ng-icon name="lucideWandSparkles" size="14" aria-hidden="true" />
+          {{ 'mappings.sample.template' | translate }}
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          variant="outline"
+          type="button"
+          [disabled]="state.aiStep() !== 'closed'"
+          (click)="state.startAi()"
+        >
+          <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+          {{ 'mappings.withAi' | translate }}
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          variant="ghost"
+          type="button"
+          (click)="state.clearSample()"
+        >
+          <ng-icon name="lucideX" size="14" aria-hidden="true" />
+          {{ 'mappings.sample.remove' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+
+    @if (sample) {
+    <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+      <ng-icon
+        name="lucideFileSpreadsheet"
+        size="16"
+        class="text-muted-foreground shrink-0"
+        aria-hidden="true"
+      />
+      <span class="min-w-0 max-w-full font-medium" [lkTruncate]="sample.name"
+        >{{ sample.name }}</span
+      >
+      <span class="text-muted-foreground text-xs">
+        {{ 'mappings.sample.size' | translate: { kb: (sample.size / 1024 |
+        lkNumber) } }} @if (inspection) { · {{ 'mappings.sample.rows' |
+        translate: { count: inspection.sample.rowCount } }} } @if
+        (inspection?.sample?.sheet; as sheet) { · {{ 'mappings.sample.sheet' |
+        translate: { name: sheet } }} } @if (sample.from; as from) { · {{
+        'mappings.sample.fromProject' | translate: { name: from.projectName } }}
+        }
+      </span>
+    </div>
+    @if (inspection?.recognisedBy; as recognised) { @if (recognised.standard) {
+    <p class="text-muted-foreground text-xs">
+      {{ 'mappings.sample.recognisedStandard' | translate }}
+    </p>
+    } @else if (recognised.mapping; as known) {
+    <p class="text-muted-foreground text-xs">
+      {{ 'mappings.sample.recognisedBy' | translate }}
+      <a class="hover:underline" [routerLink]="['/app/mappings', known.id]"
+        >{{ known.name }}</a
+      >
+    </p>
+    } } } @else {
+    <div
+      class="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors"
+      [class.border-primary]="dragging()"
+      [class.bg-muted]="dragging()"
+      (dragover)="dragOver($event)"
+      (dragleave)="dragLeave()"
+      (drop)="drop($event)"
+    >
+      <ng-icon name="lucideUpload" size="20" aria-hidden="true" />
+      <p class="text-sm">{{ 'mappings.sample.drop' | translate }}</p>
+      <div class="flex flex-wrap justify-center gap-2">
+        <button
+          hlmBtn
+          size="sm"
+          variant="outline"
+          type="button"
+          [disabled]="state.loadingSample()"
+          (click)="filePicker.click()"
+        >
+          {{ 'mappings.sample.pick' | translate }}
+        </button>
+        <input
+          #filePicker
+          class="sr-only"
+          type="file"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          [id]="idPrefix() + '-sample-file'"
+          [attr.aria-label]="'mappings.sample.pick' | translate"
+          (change)="picked($event)"
+        />
+        <button
+          hlmBtn
+          size="sm"
+          variant="outline"
+          type="button"
+          [disabled]="state.loadingSample()"
+          (click)="state.openPicker()"
+        >
+          <ng-icon name="lucideFolderOpen" size="14" aria-hidden="true" />
+          {{ 'mappings.sample.fromProjectPick' | translate }}
+        </button>
+      </div>
+      <p class="text-muted-foreground text-xs">
+        {{ 'mappings.sample.limits' | translate }}
+      </p>
+      @if (state.loadingSample()) {
+      <p class="text-muted-foreground text-xs" aria-live="polite">
+        {{ 'mappings.sample.loading' | translate }}
+      </p>
+      }
+    </div>
+
+    @if (state.picking()) {
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="flex min-w-48 flex-1 flex-col gap-1">
+        <label class="text-xs font-medium" [for]="idPrefix() + '-pick-project'"
+          >{{ 'mappings.sample.project' | translate }}</label
+        >
+        <select
+          hlmInput
+          [id]="idPrefix() + '-pick-project'"
+          [ngModel]="state.pickProjectId()"
+          (ngModelChange)="state.pickProject($event)"
+        >
+          <option value="">
+            {{ 'mappings.sample.chooseProject' | translate }}
+          </option>
+          @for (project of state.projects.value() ?? []; track project.id) {
+          <option [value]="project.id">
+            {{ project.name }} ({{ project.taxYear }})
+          </option>
+          }
+        </select>
+      </div>
+      <div class="flex min-w-48 flex-1 flex-col gap-1">
+        <label class="text-xs font-medium" [for]="idPrefix() + '-pick-file'"
+          >{{ 'mappings.sample.file' | translate }}</label
+        >
+        <select
+          hlmInput
+          [id]="idPrefix() + '-pick-file'"
+          [disabled]="!state.pickProjectId()"
+          [ngModel]="state.pickFileId()"
+          (ngModelChange)="state.pickFileId.set($event)"
+        >
+          <option value="">
+            {{ (state.pickProjectId() && !state.loadingFiles() &&
+            state.pickableFiles().length === 0 ? 'mappings.sample.noFiles' :
+            'mappings.sample.chooseFile') | translate }}
+          </option>
+          @for (file of state.pickableFiles(); track file.id) {
+          <option [value]="file.id">{{ file.displayName }}</option>
+          }
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button
+          hlmBtn
+          size="sm"
+          variant="ghost"
+          type="button"
+          (click)="state.closePicker()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          hlmBtn
+          size="sm"
+          type="button"
+          [disabled]="!state.pickFileId() || state.loadingSample()"
+          (click)="state.usePickedFile()"
+        >
+          {{ 'mappings.sample.use' | translate }}
+        </button>
+      </div>
+    </div>
+    } }
+  </section>
+
+  <div class="grid min-w-0 gap-4 lg:grid-cols-2">
+    <!-- The spec -->
+    <div class="flex min-w-0 flex-col gap-2">
+      <label class="text-sm font-medium" [for]="idPrefix() + '-json'"
+        >{{ 'mappings.editor.json' | translate }}</label
+      >
+      @if (state.aiCandidate(); as candidate) {
+      <div class="bg-muted rounded-md p-2 text-xs">
+        <p>
+          {{ 'mappings.sample.aiProposal' | translate }} {{ 'ai.meta' |
+          translate: { model: candidate.model, rounds: candidate.rounds } }} @if
+          (candidate.usage; as usage) { {{ 'ai.usage' | translate: { input:
+          usage.inputTokens, output: usage.outputTokens } }} } @else { {{
+          'ai.noUsage' | translate }} }
+        </p>
+        @if (candidate.problems.length > 0) {
+        <ul class="text-destructive list-disc pl-5">
+          @for (problem of candidate.problems; track problem) {
+          <li>{{ 'ai.mapping.problems.' + problem | translate }}</li>
+          }
+        </ul>
+        }
+      </div>
+      }
+      <textarea
+        hlmTextarea
+        class="max-h-[65vh] min-h-96 font-mono text-xs"
+        spellcheck="false"
+        [id]="idPrefix() + '-json'"
+        [ngModel]="state.text()"
+        (ngModelChange)="state.edit($event)"
+      ></textarea>
+      @if (state.invalidJson()) {
+      <p class="text-destructive text-sm">
+        {{ 'mappings.editor.invalidJson' | translate }}
+      </p>
+      } @if (state.issues().length > 0) {
+      <div class="text-destructive text-sm">
+        <p class="font-medium">{{ 'mappings.editor.issues' | translate }}</p>
+        <ul class="list-disc pl-5">
+          @for (issue of state.issues(); track $index) {
+          <li class="font-mono text-xs break-all">
+            {{ issue.path || '/' }}: {{ issue.message }}
+          </li>
+          }
+        </ul>
+      </div>
+      }
+    </div>
+
+    <!-- The sample: live preview or raw table -->
+    <div class="flex min-w-0 flex-col gap-3">
+      @if (!sample) {
+      <p class="text-muted-foreground text-sm">
+        {{ 'mappings.sample.noSample' | translate }}
+      </p>
+      } @else {
+      <div class="flex border-b" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          class="lk-tab"
+          [class.lk-tab-active]="state.tab() === 'preview'"
+          [attr.aria-selected]="state.tab() === 'preview'"
+          (click)="state.tab.set('preview')"
+        >
+          {{ 'mappings.sample.tabPreview' | translate }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="lk-tab"
+          [class.lk-tab-active]="state.tab() === 'raw'"
+          [attr.aria-selected]="state.tab() === 'raw'"
+          (click)="state.tab.set('raw')"
+        >
+          {{ 'mappings.sample.tabRaw' | translate }}
+        </button>
+      </div>
+
+      @if (state.tab() === 'preview') { @let live = state.live();
+      <div class="flex min-w-0 flex-col gap-3 text-sm" aria-live="polite">
+        @if (state.previewing()) {
+        <p class="text-muted-foreground text-xs">
+          {{ 'mappings.sample.previewing' | translate }}
+        </p>
+        } @if (state.previewFailed()) {
+        <p class="text-destructive text-xs">
+          {{ 'mappings.sample.previewFailed' | translate }}
+        </p>
+        } @if (state.invalidJson() && live) {
+        <p class="text-muted-foreground text-xs">
+          {{ 'mappings.sample.stale' | translate }}
+        </p>
+        } @if (live?.fingerprint; as fingerprint) {
+        <p class="flex items-start gap-2">
+          <span
+            class="lk-light mt-1"
+            [class.lk-light-green]="fingerprint.verdict === 'this'"
+            [class.lk-light-yellow]="fingerprint.verdict === 'other' || fingerprint.verdict === 'standard'"
+            [class.lk-light-red]="fingerprint.verdict === 'none'"
+            aria-hidden="true"
+          ></span>
+          <span
+            >{{ 'mappings.sample.fingerprint.' + fingerprint.verdict |
+            translate: { name: fingerprint.recognisedBy.mapping?.name ?? '' }
+            }}</span
+          >
+        </p>
+        } @if (live && !live.valid) {
+        <p class="text-muted-foreground text-xs">
+          {{ 'mappings.sample.invalidSpec' | translate }}
+        </p>
+        } @if (live?.valid && state.kindCounts().length > 0) {
+        <div>
+          <h5 class="mb-1 font-medium">
+            {{ 'ai.mapping.kindCounts' | translate }}
+          </h5>
+          <ul class="flex flex-wrap gap-2">
+            @for (entry of state.kindCounts(); track entry.kind) {
+            <li>
+              <span
+                hlmBadge
+                [variant]="entry.kind === 'unknown' ? 'destructive' : 'outline'"
+                >{{ 'bookings.kind.' + entry.kind | translate }}: {{ entry.count
+                }}</span
+              >
+            </li>
+            }
+          </ul>
+        </div>
+        } @if (live && live.unknownValues.length > 0) {
+        <div>
+          <h5 class="mb-1 font-medium">
+            {{ 'ai.mapping.unknownValues' | translate }}
+          </h5>
+          <ul class="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+            @for (unknown of live.unknownValues; track unknown.value) {
+            <li
+              class="min-w-0 max-w-full font-mono text-xs"
+              [lkTruncate]="unknown.value"
+            >
+              {{ unknown.value || '–' }} ({{ unknown.count }})
+            </li>
+            }
+          </ul>
+        </div>
+        } @if (live?.preview; as preview) {
+        <lk-mapping-preview [preview]="preview" />
+        } @else if (!live && !state.previewing()) {
+        <hlm-skeleton class="h-32 w-full" />
+        }
+      </div>
+      } @else {
+      <p class="text-muted-foreground text-xs">
+        {{ 'mappings.sample.rawHint' | translate: { row: state.headerRow() } }}
+      </p>
+      <div hlmTableContainer class="lk-panel max-h-96 overflow-auto">
+        <table hlmTable class="text-xs">
+          <tbody hlmTBody>
+            @for (row of state.rawRows(); track $index; let i = $index) {
+            <tr
+              hlmTr
+              [class.bg-muted]="i + 1 === state.headerRow()"
+              [class.font-medium]="i + 1 === state.headerRow()"
+              [class.text-muted-foreground]="i + 1 < state.headerRow()"
+            >
+              <td hlmTd class="text-muted-foreground text-right tabular-nums">
+                {{ i + 1 }}
+              </td>
+              @for (cell of cells(row); track $index) {
+              <td hlmTd class="max-w-64">
+                <span [lkTruncate]="cell">{{ cell }}</span>
+              </td>
+              }
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (inspection && inspection.sample.rowCount > state.rawRows().length) {
+      <p class="text-muted-foreground text-xs">
+        {{ 'mappings.sample.moreRows' | translate: { shown:
+        state.rawRows().length, total: inspection.sample.rowCount } }}
+      </p>
+      } } }
+    </div>
+  </div>
+</div>
+
+<!-- "Mit AI erstellen" from the sample: F5.14 — what is sent, before it is sent -->
+<hlm-dialog [state]="aiDialogState()" (stateChanged)="aiDialogChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
+    @let step = state.aiStep(); @if (step === 'loading') {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'ai.mapping.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'ai.loading' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <hlm-skeleton class="h-48 w-full" />
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } @if (step === 'notReady') {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'ai.notReady.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'ai.notReady.' + state.aiNotReadyReason() | translate }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <p class="text-muted-foreground text-sm">
+        {{ 'ai.notReady.withoutAi' | translate }}
+      </p>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <a
+        hlmBtn
+        routerLink="/app/setup"
+        [queryParams]="{ step: 'ai' }"
+        (click)="state.closeAi()"
+      >
+        {{ 'ai.notReady.openSetup' | translate }}
+      </a>
+    </hlm-dialog-footer>
+    } @if (step === 'consent' || step === 'working') { @if (state.aiRequest();
+    as request) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'ai.mapping.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'ai.consent.mappingBody' | translate: { provider:
+        ('settings.ai.providers.' + request.provider | translate), model:
+        request.model || ('ai.consent.defaultModel' | translate), address:
+        request.baseUrl || ('ai.consent.defaultAddress' | translate) } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (state.aiError(); as error) {
+      <lk-ai-error-panel [error]="error" />
+      }
+      <div class="flex flex-col gap-2">
+        <p class="text-sm font-medium">
+          {{ 'ai.consent.payload' | translate }}
+        </p>
+        <pre
+          class="bg-muted rounded p-3 font-mono text-xs break-all whitespace-pre-wrap"
+        >
+{{ state.aiPayloadText() }}</pre>
+        <p class="text-muted-foreground text-xs">
+          {{ 'ai.consent.alsoSent' | translate }}
+        </p>
+      </div>
+      @if (!request.consentGiven) {
+      <label class="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          class="mt-1"
+          [ngModel]="state.consentChecked()"
+          (ngModelChange)="state.consentChecked.set($event)"
+        />
+        <span>{{ 'ai.consent.agree' | translate }}</span>
+      </label>
+      } @if (step === 'working') {
+      <div class="flex flex-col gap-2" aria-live="polite">
+        <progress
+          class="w-full"
+          [attr.aria-label]="'ai.working' | translate"
+        ></progress>
+        <p class="text-muted-foreground text-sm">
+          {{ 'ai.working' | translate }}
+        </p>
+      </div>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!state.canSendAi() || step === 'working'"
+        (click)="state.sendAi()"
+      >
+        <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+        {{ 'ai.consent.send' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } }
+  </hlm-dialog-content>
+</hlm-dialog>

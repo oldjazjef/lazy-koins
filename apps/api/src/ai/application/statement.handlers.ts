@@ -149,16 +149,19 @@ export class ExtractStatementHandler implements ICommandHandler<
     let extraction: StatementExtraction | undefined;
     while (rounds < 2 && !extraction) {
       rounds += 1;
-      const answer = await this.gate.call(() =>
-        this.ai.complete(connection, {
-          system: STATEMENT_SYSTEM_PROMPT,
-          messages,
-          output: {
-            name: 'statement_holdings',
-            description: 'Balances per asset printed in the statement.',
-            schema: statementJsonSchema(),
-          },
-        }),
+      const answer = await this.gate.call(
+        () =>
+          this.ai.complete(connection, {
+            system: STATEMENT_SYSTEM_PROMPT,
+            messages,
+            output: {
+              name: 'statement_holdings',
+              description: 'Balances per asset printed in the statement.',
+              schema: statementJsonSchema(),
+            },
+          }),
+        connection,
+        { userId },
       );
       model = answer.model;
       if (answer.usage) {

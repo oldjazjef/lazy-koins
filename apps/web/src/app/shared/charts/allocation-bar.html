@@ -1,0 +1,68 @@
+<figure class="flex flex-col gap-3">
+  <svg
+    class="block h-6 w-full overflow-hidden rounded-md"
+    viewBox="0 0 100 10"
+    [attr.preserveAspectRatio]="'none'"
+    role="img"
+    [attr.aria-label]="label()"
+  >
+    <title>{{ label() }}</title>
+    @for (slice of slices(); track $index) {
+    <rect
+      [class]="'lk-alloc ' + slice.colour"
+      [attr.x]="slice.x"
+      y="0"
+      [attr.width]="slice.width"
+      height="10"
+    >
+      <title>
+        {{ slice.part.asset ?? ('charts.others' | translate: { count:
+        slice.part.assets }) }}: {{ slice.part.sharePct }} % · {{
+        slice.part.valueChf | lkChf: currency() }}
+      </title>
+    </rect>
+    }
+  </svg>
+  <figcaption>
+    <ul class="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+      @for (slice of slices(); track $index) {
+      <li class="flex min-w-0 items-center gap-2">
+        <span [class]="'lk-swatch ' + slice.colour" aria-hidden="true"></span>
+        <span class="truncate font-medium">
+          {{ slice.part.asset ?? ('charts.others' | translate: { count:
+          slice.part.assets }) }}
+        </span>
+        <span class="text-muted-foreground tabular-nums"
+          >{{ slice.part.sharePct }} %</span
+        >
+      </li>
+      }
+    </ul>
+  </figcaption>
+  <div class="sr-only">
+    <table>
+      <caption>
+        {{ label() }}
+      </caption>
+      <thead>
+        <tr>
+          <th>{{ 'charts.asset' | translate }}</th>
+          <th>{{ 'charts.share' | translate }}</th>
+          <th>{{ 'charts.valueChf' | translate: { currency: currency() } }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (slice of slices(); track $index) {
+        <tr>
+          <td>
+            {{ slice.part.asset ?? ('charts.others' | translate: { count:
+            slice.part.assets }) }}
+          </td>
+          <td>{{ slice.part.sharePct }} %</td>
+          <td>{{ slice.part.valueChf | lkChf }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</figure>

@@ -38,6 +38,10 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
   („Wert CHF“ → „Wert <Währung>“). Die ESTV-Kursliste gilt nur für CHF; bei anderer Währung
   greifen die übrigen Quellen bzw. die Landesregeln (F7.7). Eine Änderung der Währung verlangt
   eine Bestätigung und eine Neuberechnung.
+  Präzisiert (08.10.2026): wählbar sind die Währungen mit EZB-Referenzkursen (CHF, EUR, USD, GBP,
+  …); Devisen USD/EUR → Steuerwährung von der EZB, fehlende Paare über Kreuzkurse. Das Dashboard
+  rechnet Projekte verschiedener Währungen nicht um: es zeigt je Währung deren Projekte (Auswahl
+  mit Hinweis). Pakete ohne Angabe gelten als CHF.
 - **F4.2** Projektliste mit Status, Vermögen und Ertrag je Projekt.
 - **F4.3** Neues Projekt anlegen; Land, Kanton und Wallets werden aus dem neusten Projekt vorgeschlagen.
 - **F4.4** Aus älteren Projekten übernehmen: Dateien, Wallets und Korrekturen auswählen, gruppiert nach Plattform/Wallet. Eine übernommene Datei wird nicht doppelt gespeichert.
@@ -80,6 +84,26 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
 - **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
 - **F5.8** Fehlende Dateien anzeigen, z. B. „Kraken-Kontoauszug Dezember fehlt“ oder „Binance-Historie endet am 30.06.“, mit Anleitung, wo der Export zu finden ist.
+  - **Hinweise** als eigener Bereich im Projekt (Reiter mit Anzahl offener Hinweise; im
+    Dateibereich nur eine kurze Zusammenfassung „7 Hinweise → anzeigen“): Tabelle mit **Typ**
+    (Abzeichen mit Dringlichkeit Info/Warnung/Fehler: „Fehlende Datei“, „Lücke am Anfang“,
+    „Lücke am Ende“, „Kein Bestand per 31.12.“, „Nicht erkannte Datei“, „Datei mit
+    Zeilenfehlern“), Plattform/Konto, kurzer Beschreibung, Datum, **Status** (offen / erledigt /
+    ignoriert) und **Aktion**; sortierbar, filterbar nach Typ und Status, nach Plattform
+    gruppiert (einklappbar); die ausführliche Anleitung in einer aufklappbaren Zeile.
+  - **Lösungen je Typ**: Datei hochladen (für die Plattform), Kontoauszug mit AI auslesen (wenn
+    ein PDF der Plattform vorhanden ist), Bestand manuell erfassen (Korrektur, vorbelegt mit
+    Plattform/Konto/31.12.), Vorlage herunterladen, Mapping zuordnen bzw. mit AI erstellen,
+    Zeilenfehler ansehen; „Als in Ordnung markieren“ (mit Notiz, z. B. „Konto nach 09.02. nicht
+    mehr genutzt“), „Ignorieren“ und „Wieder öffnen“. Der Status wird je Projekt gespeichert und
+    bleibt nach einer Neuberechnung und neuen Dateien erhalten (stabiler Schlüssel je Hinweis).
+  - **Keine unnötigen Hinweise**: ein Kontoauszug per 31.12. für die ganze Plattform (z. B. ein
+    Kraken-Auszug über Spot- und Earn-Unterkonten) gilt für alle ihre Konten; gibt es gar keinen,
+    erscheint **ein** Hinweis je Plattform statt einer je Konto. Enden die Buchungen eines Kontos
+    vor dem 31.12. und ist sein Saldo danach 0, ist das nur eine Information (es kann nichts
+    fehlen) und es braucht keinen Auszug per 31.12. — der Hinweis erklärt das.
+  - Mit den Prüfungen (F8.1/F8.2) verknüpft, nicht doppelt: Dateiprobleme stehen nur bei den
+    Hinweisen; offene Punkte verlinken auf die Hinweise ihrer Plattform und umgekehrt.
 
 ## 5a. Standardformat, Mappings und AI-Umwandlung
 
@@ -110,6 +134,43 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
   Zustimmung; es wird angezeigt, was gesendet wird (Kopfzeile + wenige Beispielzeilen).
   AI-Nutzung ist ein-/ausschaltbar; ohne AI funktioniert alles mit Vorlage und Mappings.
 
+### Mapping-Bibliothek (nur Web-App)
+
+Wunsch 08.10.2026: „Ich möchte, dass es eine globale Datenbank gibt (nur Web-Version), die
+Mappings hält. Mappings können geratet werden. Man kann seine eigenen Mappings dort raufladen. Man
+kann nur sein eigenes Mapping von dort löschen. Wenn jemand dieses Mapping in sein Projekt
+verwendet, wird eine Kopie davon erstellt, damit beim globalen Löschen die User dieses Mapping
+weiter verwenden können.“ Die Bibliothek gibt es nur in der Web-App (alle Benutzer eines Servers
+teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittstelle antwortet 404).
+
+- **F5.15 Veröffentlichen und Löschen**: Ein eigenes Mapping (Mapping-Seite „In Bibliothek
+  veröffentlichen“) oder eine hochgeladene `.json` lässt sich in der Bibliothek veröffentlichen –
+  erst nach einem **Prüfschritt**: angezeigt wird genau das JSON, das öffentlich wird; eine
+  Datenschutz-Prüfung warnt vor Werten, die nach Konto-/Kundennummern, Wallet-Adressen, E-Mails,
+  IBANs oder Namen aussehen (Filterwerte, Asset-Aliase, Konstanten, Dateinamen-Muster,
+  Beschreibung) und bietet an, sie zu entfernen; veröffentlicht wird nur mit ausdrücklicher
+  Bestätigung (verbleibende Hinweise müssen bewusst beibehalten werden). Der Autor erscheint nur
+  unter einem selbst gewählten **Anzeigenamen** oder als „Anonym“ – nie mit E-Mail oder Namen
+  aus dem Profil. Eine neue Version des eigenen Eintrags erhöht dessen Versionsnummer; wer eine
+  ältere übernommen hat, behält seine Kopie (mit Hinweis „Neue Version verfügbar“). **Nur der
+  Autor** kann seinen Eintrag löschen (für alle anderen gibt es ihn dann nicht – 404); gelöscht
+  wird weich (für die Nachvollziehbarkeit), die Kopien bleiben unberührt. Schutz vor Missbrauch:
+  Grössenlimit des JSON, Ratenlimits fürs Veröffentlichen und Bewerten, höchstens 10 neue
+  Einträge pro Benutzer und Tag.
+- **F5.16 Übernehmen = Kopie**: „Übernehmen“ legt immer eine **eigene Kopie** in den Mappings des
+  Benutzers an (Herkunft `library:<Eintrag>@<Version>`); Projekte verwenden nur diese Kopie.
+  Spätere Versionen oder das Löschen des Eintrags ändern sie nicht; die Kopie lässt sich wie jedes
+  eigene Mapping bearbeiten und löschen. Braucht eine hochgeladene Datei ein Mapping und passen
+  Bibliothekseinträge zu ihrem Fingerabdruck, zeigt der Dateibereich „In der Bibliothek gefunden:
+  N passende Mappings“ mit „Übernehmen“ (Kopie + der Datei zuordnen) – vor dem AI-Angebot.
+- **F5.17 Bibliothek und Bewertung**: Seite „Bibliothek“ als Unterpunkt von „Mappings“ im Hauptmenü (nur Web): suchen (Name,
+  Plattform, Beschreibung), nach Plattform filtern, sortieren (Bewertung, Übernahmen, neueste,
+  Name), Detailseite mit JSON, Version, Angaben und „Übernehmen“. Jeder Benutzer kann einen
+  fremden Eintrag mit 1–5 Sternen bewerten (eine Bewertung pro Benutzer, änderbar, entfernbar;
+  eigene Einträge nicht); angezeigt werden Durchschnitt und Anzahl. Chat und MCP haben dieselben
+  Funktionen als Werkzeuge (suchen, ansehen, übernehmen, bewerten, eigenes veröffentlichen,
+  eigenes löschen) – strikt auf den angemeldeten Benutzer beschränkt (F11.16).
+
 ## 6. Wallets
 
 - **F6.1** Wallet-Adressen erfassen mit Bezeichnung und Netzwerken.
@@ -119,6 +180,12 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 - **F6.5** Für nicht abrufbare Netzwerke: Saldo manuell erfassen und Beleg anhängen.
 - **F6.6** Spam-/Scam-Tokens werden erkannt und ausgeblendet; manuell überschreibbar.
 - **F6.7** Benötigte API-Schlüssel (z. B. Etherscan) in den Einstellungen hinterlegen.
+
+Umsetzung (Stand 08.10.2026): automatisch abgerufen werden Bitcoin (Adresse oder xpub/ypub/zpub),
+die EVM-Netzwerke Ethereum, BNB Chain, Polygon, Arbitrum, Optimism, Base (Etherscan V2; was der
+Plan des Schlüssels nicht abdeckt, wird manuell erfasst) und Solana; bei Cardano und Polkadot nur
+die Staking-Erträge (Saldo per 31.12. manuell mit Beleg), Cosmos ganz manuell. Abgerufenes wird
+als abgeleitete Datei im Standardformat Teil des Projekts.
 
 ## 7. Berechnung
 
@@ -133,6 +200,13 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
   heruntergeladen und gespeichert (nicht pro Benutzer), danach regelmässig auf neue Stände
   geprüft. Kryptowährungen ohne ESTV-Kurs fallen auf die übrigen Quellen zurück (F7.4).
   Respektiert „Kursabfragen aus dem Internet“ (F11.3); der manuelle Import bleibt als Ersatz.
+  Präzisiert (08.10.2026): Prüfung täglich und beim Start (Desktop), Download nur bei neuerem
+  Stand (anderer Datei-Hash, nicht älter); auf dem Server abschaltbar (`ESTV_AUTO=false`).
+  Zuordnung über Kürzel, bekannte Umbenennungen und Namen; passen mehrere Einträge, wird **kein**
+  ESTV-Wert übernommen (Hinweis: Kurs per 31.12. überschreiben). Die ESTV-Jahresendkurse USD und
+  EUR gelten per 31.12. ebenfalls vor den EZB-Kursen. Ein neuer Stand wird mit „Kurse
+  aktualisieren“ bzw. „Neuen Stand übernehmen“ ins Projekt übernommen; die Berechnung ist danach
+  veraltet. Status (Stand je Jahr, letzte Prüfung, Fehler) unter Einstellungen › Kurse.
 - **F7.5** Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar (Klick auf Betrag → zugrunde liegende Buchungen → Quelldatei und Zeile).
 - **F7.6** Neuberechnung jederzeit per Knopfdruck; gleiche Daten ergeben gleiches Ergebnis.
 - **F7.7** Landesregeln sind austauschbar; zunächst nur Schweiz wählbar.
@@ -140,7 +214,10 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
 ## 8. Prüfungen
 
 - **F8.1** Prüf-Übersicht mit Ampel je Prüfung, mindestens: Börsensaldo laut Ledger = Saldo laut Kontoauszug · fehlende Earn-Erträge (Binance) ausgewiesen · Auszahlungen ohne Gegenbuchung · Zuflüsse ohne Gegenbuchung (möglicher Ertrag) · Anfangsbestand = Endbestand des Vorjahres · Positionen ohne Kurs · Wallets auf allen Netzwerken geprüft.
-- **F8.2** Offene Punkte mit geschätzter Auswirkung in CHF, abhakbar, mit Notiz.
+- **F8.2** Offene Punkte mit geschätzter Auswirkung in CHF, abhakbar, mit Notiz. Fehlende oder
+  fehlerhafte Dateien sind keine offenen Punkte, sondern Hinweise (F5.8): die Prüfungen zeigen
+  die Zahl offener Hinweise mit Link, ein offener Punkt verlinkt auf die Hinweise seiner
+  Plattform, ein Hinweis auf die offenen Punkte seines Kontos.
 - **F8.3** Vergleich mit dem Vorjahresprojekt (Vermögen, Ertrag, neue/weggefallene Positionen).
 
 ## 9. Korrekturen
@@ -222,14 +299,19 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   Solange gesperrt, beantwortet auch die lokale API keine Datenanfragen. PIN ändern im Profil
   (alter PIN nötig); PIN vergessen: Desktop – Zurücksetzen nur mit Bestätigung, dass
   verschlüsselte Schlüssel (AI, Mailer, Kurse) neu eingegeben werden müssen; Web – über den
-  Login (E-Mail) neu setzen.
+  Login (E-Mail) neu setzen. Präzisiert (07.10.2026): automatische Sperre nach 1–240 Minuten
+  ohne Aktivität (Vorgabe 15), auf dem Desktop auch beim Sperren des Bildschirms und im
+  Ruhezustand; Wartezeit nach Fehlversuchen 0, 1, 2, 5, 10, 30 s … bis 15 min; im Web nach
+  10 Fehlversuchen neue Anmeldung nötig; ein zweiter Tab, solange die App offen und entsperrt
+  ist, fragt nicht erneut.
 - **F11.0 Mappings** (eigene Seite im Hauptmenü, neben Dashboard und Projekte): alle Mappings
   des Benutzers – sie gelten für alle seine Projekte; ein in einem Projekt erstelltes Mapping
   steht in allen anderen zur Verfügung. Auflisten (Name, Plattform, Herkunft AI/manuell,
   zuletzt geändert), suchen, ansehen (JSON), bearbeiten mit Vorschau, löschen (mit Bestätigung
   und Hinweis auf betroffene Dateien), herunter- und hochladen. Je Mapping sichtbar, **welche
   Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
-  anderen.
+  anderen – ausser was jemand selbst in der Mapping-Bibliothek veröffentlicht (F5.15, nur Web);
+  eine dort übernommene Kopie ist ein eigenes Mapping (Herkunft „aus Bibliothek“).
 - **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
   Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
   Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.
@@ -256,7 +338,13 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   gespeichert (Web: am Benutzer; Desktop: lokal) und gilt sofort, ohne Neuladen. Vorgabe beim
   ersten Login: Browsersprache, sonst Deutsch. Exporte erscheinen in der eingestellten Sprache;
   steuerliche Fachbegriffe und Formularverweise kommen aus den Landesregeln (F10.3). Weitere
-  Sprachen = eine neue Übersetzungsdatei.
+  Sprachen = eine neue Übersetzungsdatei. Präzisiert (07.10.2026): Zahlenformat 1’234.56
+  (de-CH) oder 1,234.56 (en), Datumsformat TT.MM.JJJJ, JJJJ-MM-TT, TT/MM/JJJJ oder MM/TT/JJJJ;
+  eine neue Sprache bringt ihre Formate mit (Englisch: 1,234.56 und JJJJ-MM-TT), solange keine
+  eigenen gewählt sind. Im Englischen behalten Schweizer Fachbegriffe ohne Entsprechung den
+  amtlichen deutschen Begriff in Klammern (z. B. „securities list (Wertschriftenverzeichnis)“).
+  Der Datenexport im Standardformat (F10.7) behält seine deutschen Spaltennamen (Dateiformat,
+  wieder importierbar); nur die Info-Spalten folgen der Sprache.
 - **F11.3** Kursabfragen aus dem Internet ein-/ausschaltbar.
 
 ## 11a. Dashboard
@@ -301,6 +389,15 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   automatisch als Meldung in der Zentrale. Desktop: optional zusätzlich als System-Benachrichtigung
   (ein-/ausschaltbar in den Einstellungen); Web: nur in der App. Keine Meldung enthält Schlüssel,
   Passwörter oder Buchungsdetails.
+  Präzisiert (08.10.2026): Je Ursache gibt es **eine** Meldung (stabiler Schlüssel, z. B. „Kurse
+  für Projekt X“); tritt sie erneut auf, wird diese aktualisiert statt verdoppelt. Ein Zustand
+  (offene Punkte, Positionen ohne Kurs) wird nur bei einer Änderung wieder als ungelesen
+  gemeldet; „Ausblenden“ gilt, bis sich die Ursache ändert. Erledigte Meldungen werden nach
+  30 Tagen gelöscht. Aus der Aktivitätsanzeige landen Fehler immer, erfolgreiche Aufgaben nur,
+  wenn man die Seite inzwischen verlassen hat (sonst genügt die Erfolgsmeldung). System-
+  Benachrichtigungen (Desktop) nur für Fehler und Handlungsbedarf, standardmässig ein
+  (Einstellungen › System). „Einrichtung unvollständig“ (F11.0s) meldet, sobald der Assistent
+  gebaut ist.
 
 ## 11c. AI-Assistent und MCP
 
@@ -320,7 +417,8 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   **Jede ändernde Aktion wird vorher als Vorschlag gezeigt und erst nach ausdrücklicher
   Bestätigung ausgeführt**; alles landet im Korrekturverlauf bzw. Protokoll. Abgeschlossene
   Projekte bleiben schreibgeschützt. Gesendet werden nur die für die Frage nötigen Daten; die
-  Zustimmung F5.14 gilt sinngemäss. Verlauf pro Benutzer (löschbar).
+  Zustimmung F5.14 gilt sinngemäss (für den Chat einmalig als Hinweis bestätigt, in
+  Einstellungen › AI widerrufbar). Verlauf pro Benutzer (löschbar).
 
 - **F11.15 Prompt bearbeiten**: In Einstellungen › AI lässt sich der **Standard-Prompt** des
   Assistenten (System-Prompt: Rolle, Ton, Sprache, Grenzen) ansehen, bearbeiten und auf den
@@ -336,6 +434,35 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Anleitung/Konfigurationsschnipsel für gängige Clients. Web: Zugriff über persönliche
   Zugriffstoken (erstellen, benennen, Ablauf, widerrufen); Desktop: lokaler Server
   (stdio oder 127.0.0.1) ohne Netzwerkzugriff von aussen. Jeder MCP-Aufruf wird protokolliert.
+  Umsetzung: Streamable HTTP unter `/api/mcp` (Web und Desktop, Zugriffstoken auch auf dem
+  Desktop); der Desktop liefert zusätzlich einen stdio-Einstieg (`mcp-stdio.js`) mit, weil sich
+  sein lokaler Port bei jedem Start ändert.
+  **Jede MCP- und Chat-Werkzeug-Aktion ist strikt auf den angemeldeten Benutzer beschränkt**
+  (Benutzer nur aus dem Token/der Anmeldung, nie aus Argumenten; fremde Daten = 404).
+
+## 11b. Bedienung
+
+- **F11.20 Aktivitätsanzeige**: Alles, was im Hintergrund läuft und länger als etwa eine Sekunde
+  dauern kann (Kurse aktualisieren, ESTV-Kursliste, AI-Mapping und AI-Auszug, Uploads,
+  Neuberechnung, Auszüge PDF/Excel, Mapping erneut anwenden), erscheint unten rechts in einer
+  kleinen Leiste mit Spinner und Bezeichnung („Kurse werden aktualisiert (12/40) …“), wenn
+  möglich mit Fortschritt; laufen mehrere, „3 Aufgaben laufen“ mit aufklappbarer Liste. Sie
+  blockiert nichts, bleibt beim Wechsel der Seite sichtbar, liegt über Dialogen und Meldungen,
+  und wird am Ende zur Erfolgs- oder Fehlermeldung (wo sinnvoll mit Link, z. B. „Herunterladen“
+  oder „Anzeigen“). Barrierefrei (Statusmeldung für Screenreader, Spinner ohne Bewegung bei
+  „Bewegung reduzieren“), hell und dunkel. Die Benachrichtigungs-Zentrale (F11.13) übernimmt
+  die fertigen Aufgaben später von hier.
+- **U1 Tabellen**: Alle Tabellen passen ab 1024 px Breite ohne seitliches Scrollen. Zu lange
+  Texte werden mit „…“ abgeschnitten, der volle Text erscheint als Tooltip. Die Aktionen einer
+  Zeile stehen fix am rechten Rand: eine einzelne Aktion als Symbol-Knopf, mehrere hinter einem
+  Knopf mit drei senkrechten Punkten, der ein Menü öffnet (z. B. Dateien: Vorschau,
+  Herunterladen, Mit AI auslesen/erstellen, Zuordnen, Entfernen).
+- **U2 Seitenweise Anzeige**: Jede Tabelle, die gross werden kann, zeigt 10 Zeilen pro Seite
+  (wählbar 10 / 25 / 50 / 100, pro Tabelle gemerkt), mit „Zeile 1–10 von 57“ und Blättern.
+- **U3 Genaue AI-Fehler**: Schlägt eine AI-Anfrage oder der Verbindungstest fehl, zeigt die App
+  neben der Zusammenfassung die Details (HTTP-Status und Meldung des Anbieters, Adresse, Modell,
+  Fehlercode, Ursache) mit einem Hinweis, was zu prüfen ist, und „Details kopieren“. Der
+  API-Schlüssel erscheint nie in einer Meldung oder einem Log.
 
 ## 12. Abnahme
 

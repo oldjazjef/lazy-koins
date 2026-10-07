@@ -11,8 +11,14 @@ describe('DevAuthStrategy', () => {
     await strategy.signIn('  Anna@LazyKoins.dev ');
 
     expect(await new DevAuthStrategy().restore()).toBe(true);
-    expect(await strategy.token()).toBe('dev:anna@lazykoins.dev');
+    // With the sign-in time, like Firebase's auth_time (F11.0p "fresh sign-in").
+    expect(await strategy.token()).toMatch(/^dev:anna@lazykoins\.dev#\d{13}$/);
     expect(strategy.email()).toBe('anna@lazykoins.dev');
+  });
+
+  it('a session from before the sign-in time existed sends the plain token', async () => {
+    localStorage.setItem('lk-dev-auth-email', 'anna@lazykoins.dev');
+    expect(await new DevAuthStrategy().token()).toBe('dev:anna@lazykoins.dev');
   });
 
   it('forgets the session on sign-out', async () => {

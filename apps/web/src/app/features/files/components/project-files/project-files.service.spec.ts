@@ -1,4 +1,5 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -10,6 +11,8 @@ import type {
   ProjectFile,
   ProjectFiles,
 } from '../../../../core/api/api.types';
+import { ActivityService } from '../../../../core/activity/activity.service';
+import { LanguageService } from '../../../../core/i18n/language.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom } from '../../../../shared/files/save-blob';
 import { skeleton } from '../mapping-editor';
@@ -75,7 +78,7 @@ async function setup(files: ProjectFile[] = [file()]) {
     providers: [
       ProjectFilesService,
       MappingEditorState,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
@@ -102,15 +105,20 @@ async function pending(http: HttpTestingController, url: string) {
   throw new Error(`no request for ${url}`);
 }
 
-/** Answers the reloads that follow a change. */
+/**
+ * Answers the reloads that follow a change (DataChanges): the project's files and mappings
+ * always; my mappings only after a change to a mapping (`mappings: true`).
+ */
 async function flushReloads(
   http: HttpTestingController,
   files: ProjectFile[] = [],
+  { mappings = false } = {},
 ) {
   await settle();
   http.expectOne('/api/projects/p1/files').flush(overview(files));
   http.expectOne('/api/projects/p1/mappings').flush([]);
-  http.expectOne('/api/mappings').flush([mapping()]);
+  if (mappings) http.expectOne('/api/mappings').flush([mapping()]);
+  else http.expectNone('/api/mappings');
   await settle();
 }
 
@@ -124,7 +132,7 @@ const csv = (name: string, size = 10) =>
 describe('ProjectFilesService', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
     } finally {
       TestBed.resetTestingModule();
     }
@@ -153,8 +161,13 @@ describe('ProjectFilesService', () => {
       'application/octet-stream',
     );
     expect(first.request.body).toBeInstanceOf(File);
+    // The activity indicator shows the batch with its progress.
+    const activity = TestBed.inject(ActivityService);
+    expect(activity.tasks()[0]?.label).toBe('activity.upload');
+    expect(activity.tasks()[0]?.progress()).toEqual({ done: 0, total: 3 });
     first.flush(file({ id: 'new' }), { status: 201, statusText: 'Created' });
     await settle();
+    expect(activity.tasks()[0]?.progress()).toEqual({ done: 1, total: 3 });
     const second = http.expectOne((r) => r.method === 'POST');
     expect(second.request.params.get('name')).toBe('b.csv');
     second.flush(
@@ -280,6 +293,37 @@ describe('ProjectFilesService', () => {
   });
 });
 
+describe('template download (F11.2)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('asks for the template in the app language', async () => {
+    const { service, http } = await setup();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:x',
+      revokeObjectURL: () => undefined,
+    });
+    TestBed.inject(LanguageService).use('en');
+    for (const [kind, url] of [
+      ['xlsx', '/api/standard-format/template.xlsx?language=en'],
+      [
+        'bookings',
+        '/api/standard-format/template.csv?type=bookings&language=en',
+      ],
+    ] as const) {
+      const done = service.downloadTemplate(kind);
+      const request = http.expectOne(url);
+      request.flush(new Blob(['x']), {
+        headers: {
+          'Content-Disposition':
+            'attachment; filename="lazy-koins-template.xlsx"',
+        },
+      });
+      await done;
+    }
+  });
+});
+
 describe('upload messages and download names', () => {
   it('maps upload failures to messages', () => {
     const error = (status: number, body: unknown = null) =>
@@ -308,12 +352,68 @@ describe('upload messages and download names', () => {
     );
     expect(fileNameFrom(null, 'fallback.csv')).toBe('fallback.csv');
   });
+
+  it('loads the hints, dismisses one with a note and reopens it (F5.8)', async () => {
+    const { service, http } = await setup();
+    const hint = {
+      key: 'endsEarly:kraken|spot',
+      kind: 'endsEarly' as const,
+      severity: 'warning' as const,
+      platform: 'kraken',
+      accountId: 'spot',
+      accounts: ['spot'],
+      date: '2025-02-09',
+      zeroBalance: false,
+      hintKey: 'files.missing.howTo.endsEarly',
+      fileId: null,
+      fileName: null,
+      count: null,
+      status: 'open' as const,
+      note: '',
+    };
+    http
+      .expectOne('/api/projects/p1/hints')
+      .flush({ taxYear: 2025, hints: [hint], open: 1 });
+    await settle();
+    expect(service.openHints()).toBe(1);
+
+    const done = service.setHintStatus(
+      hint,
+      'done',
+      'Konto nach 09.02. nicht mehr genutzt',
+    );
+    const patch = http.expectOne('/api/projects/p1/hints');
+    expect(patch.request.method).toBe('PATCH');
+    expect(patch.request.body).toEqual({
+      key: hint.key,
+      status: 'done',
+      note: 'Konto nach 09.02. nicht mehr genutzt',
+    });
+    patch.flush({ key: hint.key, status: 'done', note: '' });
+    await done;
+    await settle();
+    http.expectOne('/api/projects/p1/hints').flush({
+      taxYear: 2025,
+      hints: [{ ...hint, status: 'done' }],
+      open: 0,
+    });
+    await settle();
+    expect(service.openHints()).toBe(0);
+
+    const reopened = service.setHintStatus(hint, 'open');
+    const again = http.expectOne(
+      (r) => r.url === '/api/projects/p1/hints' && r.method === 'PATCH',
+    );
+    expect(again.request.body).toMatchObject({ status: 'open' });
+    again.flush({ key: hint.key, status: 'open', note: '' });
+    await reopened;
+  });
 });
 
 describe('MappingEditorState', () => {
   afterEach(() => {
     try {
-      TestBed.inject(HttpTestingController).verify();
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
     } finally {
       TestBed.resetTestingModule();
     }
@@ -347,7 +447,9 @@ describe('MappingEditorState', () => {
     const saving = editor.save();
     http.expectOne('/api/mappings').flush(mapping({ id: 'm9' }));
     await settle();
-    // saveMapping reloads the mapping lists, then the file is assigned.
+    // The new mapping is reported (DataChanges): the files area and both mapping lists reload;
+    // then the file is assigned.
+    http.expectOne('/api/projects/p1/files').flush(overview([file()]));
     http.expectOne('/api/projects/p1/mappings').flush([]);
     http.expectOne('/api/mappings').flush([mapping()]);
     const patch = http.expectOne('/api/projects/p1/files/f1');
@@ -358,3 +460,13 @@ describe('MappingEditorState', () => {
     expect(editor.open()).toBe(false);
   });
 });
+
+/** The hints (F5.8) reload with the files; their own behaviour is tested separately. */
+function verifyIgnoringHints(http: HttpTestingController): void {
+  for (const request of http.match('/api/projects/p1/hints')) {
+    if (!request.cancelled) {
+      request.flush({ taxYear: 2025, hints: [], open: 0 });
+    }
+  }
+  http.verify();
+}

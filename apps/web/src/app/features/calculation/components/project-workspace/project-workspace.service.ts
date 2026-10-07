@@ -1,12 +1,15 @@
 import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, DOCUMENT, inject, Injectable, signal } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
+import type { ActivityProgress } from '../../../../core/activity/activity.service';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
 import {
   type ChecksView,
   type Correction,
+  type EstvApplySummary,
   type ExportKind,
   type FigureRecords,
   isInternalKind,
@@ -15,16 +18,26 @@ import {
   type OpenItem,
   type ProjectExport,
   type RatesView,
+  type RefreshStatus,
   type RefreshSummary,
   type ResultView,
   type StoredRate,
 } from '../../../../core/api/calculation.types';
+import type { DataExportFilter } from '../../../../core/api/dashboard.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
+
+/** How often a running rate refresh is asked for its progress. */
+const REFRESH_POLL_MS = 1000;
 
 /** The tabs of a project's workspace, in order. */
 export const WORKSPACE_TABS = [
+  'general',
   'files',
+  'hints',
+  'wallets',
   'rates',
   'result',
   'checks',
@@ -64,9 +77,15 @@ export class ProjectWorkspaceService {
   private readonly actions = inject(ActionRunner);
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
+  private readonly translate = inject(TranslateService);
+  private readonly changes = inject(DataChanges);
+  readonly estv = inject(EstvService);
 
   readonly projectId = signal<string | undefined>(undefined);
-  readonly tab = signal<WorkspaceTab>('files');
+  /** F4.1a: the project's tax currency (set by the workspace from the project). */
+  readonly projectCurrency = signal('CHF');
+  /** "Allgemein" (project data, facts, chart) first (user rule, 08.10.2026). */
+  readonly tab = signal<WorkspaceTab>('general');
 
   private url(path: string): string | undefined {
     const id = this.projectId();
@@ -75,7 +94,7 @@ export class ProjectWorkspaceService {
 
   readonly result = httpResource<ResultView>(() => this.url('/result'));
   readonly checks = httpResource<ChecksView>(() =>
-    this.tab() === 'checks' || this.tab() === 'result'
+    this.tab() === 'checks' || this.tab() === 'result' || this.tab() === 'hints'
       ? this.url('/checks')
       : undefined,
   );
@@ -89,7 +108,28 @@ export class ProjectWorkspaceService {
     this.tab() === 'exports' ? this.url('/exports') : undefined,
   );
 
+  constructor() {
+    // Every change to this project (a file, a mapping, a correction, rates, a calculation, the
+    // assistant …) refetches what the tabs show — only the tabs on screen (the others have no
+    // request) — so the result says "Daten geändert – neu berechnen" right away (user rule).
+    reloadOn(
+      () => this.changes.projectVersion(this.projectId()),
+      [this.result, this.checks, this.corrections, this.rates, this.exports],
+    );
+  }
+
+  /**
+   * The currency of the figures on screen (F4.1a): the latest calculation's — it may still be in
+   * the previous currency right after a change — else the project's.
+   */
+  readonly currency = computed(() => {
+    const view = this.result.hasValue() ? this.result.value() : undefined;
+    return view?.result?.currency ?? this.projectCurrency();
+  });
+
   readonly lastRefresh = signal<RefreshSummary | null>(null);
+  /** F7.4a: what the last refresh / "übernehmen" took from the ESTV Kursliste. */
+  readonly lastEstv = signal<EstvApplySummary | null>(null);
 
   /** The drill-down on screen (F7.5): which figure, and its records once loaded. */
   readonly recordsOf = signal<{ figureId: string; title: string } | null>(null);
@@ -160,6 +200,17 @@ export class ProjectWorkspaceService {
         }),
       ),
     messages: { success: 'rates.removed', error: 'rates.removeFailed' },
+  });
+
+  private readonly applyEstvAction = defineAction<string, EstvApplySummary>({
+    run: (id) =>
+      firstValueFrom(
+        this.http.post<EstvApplySummary>(
+          apiUrl(`/projects/${id}/rates/estv/apply`),
+          {},
+        ),
+      ),
+    messages: { error: 'estv.applyFailed' },
   });
 
   private readonly kurslisteAction = defineAction<
@@ -238,29 +289,96 @@ export class ProjectWorkspaceService {
           kind,
         }),
       ),
-    messages: { success: 'exports.created', error: 'exports.createFailed' },
+    // Success is toasted by createExport (with the download as its action).
+    messages: { error: 'exports.createFailed' },
   });
 
-  /** F7.6: recalculate, then every view shows the new snapshot. */
+  /** F7.6: recalculate; every view then shows the new snapshot (DataChanges). */
   async calculate(): Promise<void> {
-    const view = await this.actions.run(
-      this.calculateAction,
+    await this.actions.run(this.calculateAction, this.requireId(), {
+      key: 'project-workspace',
+      activity: { label: 'activity.calculate' },
+    });
+  }
+
+  /** "Kurse aktualisieren (12/40)": the API reports its progress while the request runs. */
+  readonly refreshProgress = signal<ActivityProgress | null>(null);
+
+  async refreshRates(force = false): Promise<void> {
+    const id = this.requireId();
+    const stop = this.pollRefreshStatus(id);
+    try {
+      const summary = await this.actions.run(
+        this.refreshAction,
+        { id, force },
+        {
+          key: 'project-workspace',
+          activity: { label: 'activity.rates', progress: this.refreshProgress },
+        },
+      );
+      this.lastRefresh.set(summary);
+      this.lastEstv.set(summary.estv);
+    } finally {
+      stop();
+    }
+  }
+
+  /** Polls `…/rates/refresh/status` only while the refresh runs; one request at a time. */
+  private pollRefreshStatus(id: string): () => void {
+    this.refreshProgress.set(null);
+    let inFlight = false;
+    let stopped = false;
+    const timer = setInterval(() => {
+      if (inFlight) return;
+      inFlight = true;
+      firstValueFrom(
+        this.http.get<RefreshStatus>(
+          apiUrl(`/projects/${id}/rates/refresh/status`),
+        ),
+      )
+        .then((status) => {
+          if (!stopped && status.running) {
+            this.refreshProgress.set({
+              done: status.done,
+              total: status.total,
+            });
+          }
+        })
+        .catch(() => undefined)
+        .finally(() => (inFlight = false));
+    }, REFRESH_POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+      this.refreshProgress.set(null);
+    };
+  }
+
+  /** F7.4a: takes the stored Kursliste of the tax year into the project (no network). */
+  async applyEstv(): Promise<void> {
+    const summary = await this.actions.run(
+      this.applyEstvAction,
       this.requireId(),
       { key: 'project-workspace' },
     );
-    this.result.set(view);
-    this.reloadDerived();
+    this.lastEstv.set(summary);
+    if (summary.label) {
+      this.notifications.info('estv.applied', {
+        count: summary.matched.length,
+        label: summary.label,
+      });
+    } else {
+      this.notifications.info('estv.noneForYear', { year: summary.year });
+    }
   }
 
-  async refreshRates(force = false): Promise<void> {
-    const summary = await this.actions.run(
-      this.refreshAction,
-      { id: this.requireId(), force },
-      { key: 'project-workspace' },
-    );
-    this.lastRefresh.set(summary);
-    this.rates.reload();
-    this.result.reload();
+  /**
+   * "ESTV-Kursliste aktualisieren" in the project: downloads the year's list when a newer one
+   * exists (the deployment's, F7.4a), then takes it into the project.
+   */
+  async updateEstv(taxYear: number): Promise<void> {
+    await this.estv.update(taxYear);
+    await this.applyEstv();
   }
 
   async setManualRate(rate: ManualRateRequest): Promise<void> {
@@ -269,8 +387,6 @@ export class ProjectWorkspaceService {
       { id: this.requireId(), rate },
       { key: 'project-workspace' },
     );
-    this.rates.reload();
-    this.result.reload();
   }
 
   async deleteManualRate(rate: StoredRate): Promise<void> {
@@ -279,21 +395,17 @@ export class ProjectWorkspaceService {
       { id: this.requireId(), rate },
       { key: 'project-workspace' },
     );
-    this.rates.reload();
-    this.result.reload();
   }
 
   async importKursliste(file: File): Promise<void> {
     const result = await this.actions.run(
       this.kurslisteAction,
       { id: this.requireId(), file },
-      { key: 'project-workspace' },
+      { key: 'project-workspace', activity: { label: 'activity.estv' } },
     );
     this.notifications.info('rates.estvImported', {
       count: result.imported,
     });
-    this.rates.reload();
-    this.result.reload();
   }
 
   /** F9: creates the correction and recalculates, so its before/after shows at once. */
@@ -324,17 +436,25 @@ export class ProjectWorkspaceService {
       { id: this.requireId(), key: item.key, ...changes },
       { key: `open-item:${item.key}` },
     );
-    this.checks.reload();
   }
 
+  /** F10: the toast offers the download right away (the user may have left the tab meanwhile). */
   async createExport(kind: ExportKind): Promise<void> {
-    await this.actions.run(
+    const created = await this.actions.run(
       this.exportAction,
       { id: this.requireId(), kind },
-      { key: 'project-workspace' },
+      {
+        key: 'project-workspace',
+        activity: {
+          label: 'activity.export',
+          params: { kind: this.translate.instant(`exports.kind.${kind}`) },
+        },
+      },
     );
-    this.exports.reload();
-    this.result.reload();
+    this.notifications.success('exports.created', {
+      labelKey: 'exports.download',
+      onClick: () => void this.download(created),
+    });
   }
 
   /**
@@ -445,9 +565,63 @@ export class ProjectWorkspaceService {
     }
   }
 
-  private reloadDerived(): void {
-    this.checks.reload();
-    this.corrections.reload();
+  /** F10.7: bookings/holdings in the standard format, filtered, as CSV or Excel. */
+  async downloadData(
+    format: 'csv' | 'xlsx',
+    type: 'bookings' | 'holdings',
+    filter: DataExportFilter,
+  ): Promise<void> {
+    const params: Record<string, string> = { format, type };
+    for (const [key, value] of Object.entries(filter)) {
+      if (typeof value === 'string' && value.trim() !== '')
+        params[key] = value.trim();
+    }
+    await this.downloadFrom(
+      `/projects/${this.requireId()}/data-export`,
+      params,
+      `daten.${format}`,
+      'exports.data.failed',
+    );
+  }
+
+  /** F10.8: the project package (.lkproj.zip). */
+  async downloadPackage(): Promise<void> {
+    await this.downloadFrom(
+      `/projects/${this.requireId()}/package`,
+      {},
+      'projekt.lkproj.zip',
+      'exports.data.packageFailed',
+    );
+  }
+
+  /** A download is running (data export, package). */
+  readonly downloading = signal(false);
+
+  private async downloadFrom(
+    path: `/${string}`,
+    params: Record<string, string>,
+    fallback: string,
+    errorKey: string,
+  ): Promise<void> {
+    this.downloading.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.http.get(apiUrl(path), {
+          params,
+          observe: 'response',
+          responseType: 'blob',
+        }),
+      );
+      saveBlob(
+        this.document,
+        response.body ?? new Blob(),
+        fileNameFrom(response.headers.get('Content-Disposition'), fallback),
+      );
+    } catch {
+      this.notifications.error(errorKey);
+    } finally {
+      this.downloading.set(false);
+    }
   }
 
   private requireId(): string {

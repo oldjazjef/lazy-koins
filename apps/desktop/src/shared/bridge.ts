@@ -26,8 +26,27 @@ export type StorageChangeResult =
   | { status: 'restarting' }
   | { status: 'failed'; message: string };
 
+/** F11.16: how an MCP client starts the stdio proxy (`mcp-stdio.js`) of this installation. */
+export interface McpStdioInfo {
+  /** The app's executable (it runs the script as Node with `ELECTRON_RUN_AS_NODE=1`). */
+  command: string;
+  args: string[];
+  /** `ELECTRON_RUN_AS_NODE`, `LAZYKOINS_DATA_DIR` — the token is added by the user. */
+  env: Record<string, string>;
+}
+
+/** An OS notification (F11.13) — error and "Handlungsbedarf" only, text without secrets. */
+export interface OsNotification {
+  readonly kind: 'error' | 'action';
+  readonly title: string;
+  readonly body: string;
+}
+
 export interface DesktopBridge {
   readonly platform: string;
+  readonly mcp: {
+    stdio(): Promise<McpStdioInfo>;
+  };
   readonly storage: {
     info(): Promise<StorageInfo>;
     /** Folder picker → copy the data there or open the data already there (asks) → restart. */
@@ -37,6 +56,25 @@ export interface DesktopBridge {
     /** Opens the data folder in Explorer / Finder. */
     reveal(): Promise<void>;
   };
+  /** F11.0p: the PIN lock driven by the OS (lock screen, suspend, system idle). */
+  readonly lock: {
+    /** Called when the shell locked the app; returns an unsubscribe function. */
+    onLocked(listener: (reason: string) => void): () => void;
+    /** The user's auto-lock time, so the shell's system-idle check uses it. */
+    setIdleMinutes(minutes: number): Promise<void>;
+  };
+  /** F11.2: the app's language for the shell's menus and dialogs (stored in the desktop config). */
+  readonly locale: {
+    set(locale: string): Promise<void>;
+  };
+  readonly notifications: {
+    /** Einstellungen › System › "System-Benachrichtigungen" (default on). */
+    enabled(): Promise<boolean>;
+    /** Stores the switch; resolves with the stored value. */
+    setEnabled(on: boolean): Promise<boolean>;
+    /** Shown only while enabled; clicking it brings the window to the front. */
+    show(notification: OsNotification): Promise<void>;
+  };
 }
 
 export const IPC = {
@@ -44,4 +82,12 @@ export const IPC = {
   storageChoose: 'lk:storage:choose',
   storageUseDefault: 'lk:storage:use-default',
   storageReveal: 'lk:storage:reveal',
+  mcpStdio: 'lk:mcp:stdio',
+  /** main → window: the app was locked (reason). */
+  locked: 'lk:lock:locked',
+  lockIdleMinutes: 'lk:lock:idle-minutes',
+  notificationsEnabled: 'lk:notifications:enabled',
+  notificationsSetEnabled: 'lk:notifications:set-enabled',
+  notificationsShow: 'lk:notifications:show',
+  localeSet: 'lk:locale:set',
 } as const;

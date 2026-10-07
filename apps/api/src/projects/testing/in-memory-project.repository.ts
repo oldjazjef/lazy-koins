@@ -1,3 +1,4 @@
+import { defaultTaxCurrency } from '@lazykoins/engine';
 import type {
   CreateProjectInput,
   Project,
@@ -23,6 +24,12 @@ export class InMemoryProjectRepository extends ProjectRepositoryPort {
       );
   }
 
+  async findByTaxYear(taxYear: number): Promise<Project[]> {
+    return [...this.rows.values()]
+      .filter((project) => project.taxYear === taxYear)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
   async findById(id: string): Promise<Project | undefined> {
     return this.rows.get(id);
   }
@@ -35,6 +42,7 @@ export class InMemoryProjectRepository extends ProjectRepositoryPort {
       ownerId,
       status: 'in_progress',
       ...input,
+      taxCurrency: input.taxCurrency ?? defaultTaxCurrency(input.country),
       createdAt: now,
       updatedAt: now,
     };

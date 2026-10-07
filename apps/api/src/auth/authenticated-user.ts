@@ -8,4 +8,6 @@ export interface AuthenticatedUser {
   /** Our own user id — never the Firebase uid. */
   readonly userId: string;
   readonly email: string;
+  /** When the person signed in (ISO), if the token says — see `VerifiedIdentity.authTime`. */
+  readonly authTime?: string | null;
 }

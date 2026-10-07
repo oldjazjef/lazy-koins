@@ -5,15 +5,8 @@ import {
 } from '@lazykoins/engine';
 import ExcelJS from 'exceljs';
 import type { ExportData } from '../export-data';
-import {
-  categoryLabel,
-  oneOffLabel,
-  priceSourceText,
-  QUANTITY_SOURCE_LABELS,
-  STATUS_LABELS,
-  statusNote,
-  swissDate,
-} from '../export-texts';
+import { type ExportKit, kitOf, metaLine } from '../export-texts';
+import { DE_CH_EXPORT_TEXTS } from '../texts/export-texts.de-ch';
 import {
   CHF_FORMAT,
   formula,
@@ -26,25 +19,24 @@ import {
   setWidths,
 } from './workbook-style';
 
-export const SHEETS = {
-  overview: 'Übersicht',
-  parameters: 'Parameter',
-  holdings: 'Bestand 31.12.',
-  income: 'Ertrag Detail',
-  earnGap: 'Earn-Lücke',
-  oneOff: 'Einmalereignisse',
-  method: 'Methodik',
-} as const;
+/** The sheet names of the German workbook (the English one has its own, `ExportTexts.sheets`). */
+export const SHEETS = DE_CH_EXPORT_TEXTS.sheets;
 
-const H = `'${SHEETS.holdings}'`;
-const I = `'${SHEETS.income}'`;
-const G = `'${SHEETS.earnGap}'`;
+/**
+ * The named Parameter cell of one exchange rate in the tax currency T (F4.1a): `USDCHF`,
+ * `EURCHF` for a CHF project, `USDEUR`, `EUREUR` (= 1) for an EUR project. The formulas keep
+ * their structure; only the names follow the currency.
+ */
+export function fxCellName(base: 'USD' | 'EUR', currency: string): string {
+  return `${base}${currency}`;
+}
 
 /** The header of every statement (F10.4). */
 export function headerLines(data: ExportData, variant: string): string[] {
+  const k = kitOf(data);
   return [
-    `Steuerauszug Kryptowährungen ${data.taxYear} (${variant})`,
-    `${data.ownerName} · Steuerjahr ${data.taxYear} · Kanton ${data.canton} · erstellt am ${swissDate(data.createdAt)} · berechnet am ${swissDate(data.calculatedAt)}`,
+    k.t.statementTitle(data.taxYear, variant),
+    metaLine(data, k),
     data.rules.labels.noTaxAdvice,
   ];
 }
@@ -79,87 +71,102 @@ function addFootnotes(
  * priority, totals by SUMIFS), inputs in blue, references to Parameter in green. Overriding a
  * price, the ESTV column or a parameter recalculates everything. It is handed to the tax
  * authority: no open items, checks or instructions — those are in the internal report (F10.2a).
+ * Sheet names, titles and status texts in the user's language (F11.2) — the formulas refer to
+ * them, so they come from the same `ExportTexts`.
  */
 export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   const { result, rules } = data;
+  const k = kitOf(data);
+  const { t } = k;
+  const { col } = t;
+  const sheetNames = t.sheets;
+  const H = `'${sheetNames.holdings}'`;
+  const I = `'${sheetNames.income}'`;
+  const G = `'${sheetNames.earnGap}'`;
+  // F4.1a: every amount is in the project's tax currency T.
+  const T = rules.homeCurrency;
+  const usdName = fxCellName('USD', T);
+  const eurName = fxCellName('EUR', T);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'lazy-koins';
   workbook.created = new Date(data.createdAt);
   workbook.calcProperties.fullCalcOnLoad = true;
 
-  const overview = workbook.addWorksheet(SHEETS.overview);
-  const parameters = workbook.addWorksheet(SHEETS.parameters);
-  const holdings = workbook.addWorksheet(SHEETS.holdings);
-  const income = workbook.addWorksheet(SHEETS.income);
-  const earnGap = workbook.addWorksheet(SHEETS.earnGap);
-  const oneOff = workbook.addWorksheet(SHEETS.oneOff);
-  const method = workbook.addWorksheet(SHEETS.method);
+  const overview = workbook.addWorksheet(sheetNames.overview);
+  const parameters = workbook.addWorksheet(sheetNames.parameters);
+  const holdings = workbook.addWorksheet(sheetNames.holdings);
+  const income = workbook.addWorksheet(sheetNames.income);
+  const earnGap = workbook.addWorksheet(sheetNames.earnGap);
+  const oneOff = workbook.addWorksheet(sheetNames.oneOff);
+  const method = workbook.addWorksheet(sheetNames.method);
 
   // --- Parameter ---
-  parameters.addRow(['Parameter']).font = { bold: true, size: 14 };
+  parameters.addRow([t.parametersTitle]).font = { bold: true, size: 14 };
   parameters.addRow([]);
-  const usdRow = parameters.addRow([`USD/CHF per 31.12.${data.taxYear}`]);
+  const usdRow = parameters.addRow([
+    `${t.fxAtYearEnd('USD', T)}${data.taxYear}`,
+  ]);
   input(usdRow.getCell(2), num(result.parameters.usdChf), PRICE_FORMAT);
   usdRow.getCell(3).value = result.parameters.usdChfSource ?? '–';
-  const eurRow = parameters.addRow([`EUR/CHF per 31.12.${data.taxYear}`]);
+  const eurRow = parameters.addRow([
+    `${t.fxAtYearEnd('EUR', T)}${data.taxYear}`,
+  ]);
   input(eurRow.getCell(2), num(result.parameters.eurChf), PRICE_FORMAT);
   eurRow.getCell(3).value = result.parameters.eurChfSource ?? '–';
   parameters.addRow([]);
-  parameters.addRow([
-    'Die Formeln der übrigen Blätter rechnen mit diesen Werten (benannte Zellen USDCHF, EURCHF).',
-  ]);
+  parameters.addRow([t.parametersNote(usdName, eurName)]);
   workbook.definedNames.add(
-    `'${SHEETS.parameters}'!$B$${usdRow.number}`,
-    'USDCHF',
+    `'${sheetNames.parameters}'!$B$${usdRow.number}`,
+    usdName,
   );
   workbook.definedNames.add(
-    `'${SHEETS.parameters}'!$B$${eurRow.number}`,
-    'EURCHF',
+    `'${sheetNames.parameters}'!$B$${eurRow.number}`,
+    eurName,
   );
   setWidths(parameters, [28, 16, 40]);
 
   // --- Bestand 31.12. ---
   headerRow(holdings, [
-    'Jahr',
-    'Plattform',
-    'Konto',
-    'Asset',
-    'Menge',
-    'Kurs USD',
-    'USD/CHF',
-    'Kurs CHF direkt',
-    'ESTV-Kurs (Override)',
-    'Wert CHF',
-    'Status',
-    'Quelle Menge',
-    'Quelle Kurs',
-    'Menge exakt',
+    col.year,
+    col.platform,
+    col.account,
+    col.asset,
+    col.quantity,
+    col.priceUsd,
+    col.fxPair(T),
+    col.priceDirect(T),
+    col.priceOverride(T),
+    col.value(T),
+    col.status,
+    col.quantitySource,
+    col.priceSource,
+    col.quantityExact,
   ]);
   for (const position of result.positions) {
-    addPositionRow(holdings, data.taxYear, position);
+    addPositionRow(holdings, data.taxYear, position, T, k);
   }
   addFootnotes(
     holdings,
-    result.positions.map((p) => statusNote(rules, p.status)),
+    result.positions.map((p) => k.statusNote(rules, p.status)),
   );
   setWidths(holdings, [6, 14, 16, 10, 18, 14, 10, 14, 14, 16, 12, 26, 40, 30]);
 
   // --- Ertrag Detail ---
   headerRow(income, [
-    'Datum (UTC)',
-    'Plattform',
-    'Art',
-    'Kategorie',
-    'Asset',
-    'Menge netto',
-    'Kurs USD',
-    'Wert USD',
-    'USD/CHF Tag',
-    'Kurs CHF',
-    'Wert CHF',
-    'Brutto CHF (Info)',
-    'Referenz',
-    'Status',
+    col.dateUtc,
+    col.platform,
+    col.kind,
+    col.category,
+    col.asset,
+    col.quantityNet,
+    col.priceUsd,
+    col.valueUsd,
+    col.fxPairDay(T),
+    col.price(T),
+    col.value(T),
+    col.grossInfo(T),
+    col.reference,
+    col.status,
   ]);
   for (const line of result.income) {
     if (line.status === 'spam') continue;
@@ -167,7 +174,7 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
       line.timestamp.slice(0, 19).replace('T', ' '),
       line.platform,
       line.rawType,
-      categoryLabel(rules, line.category),
+      rules.labels.categories[line.category],
       line.asset,
     ]);
     const r = row.number;
@@ -196,32 +203,30 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     row.getCell(13).value = line.group ?? line.bookingId;
     row.getCell(14).value =
       line.status === 'ok'
-        ? priceSourceText(line.priceOrigin, line.priceSource, null)
-        : STATUS_LABELS.missingPrice;
+        ? k.priceSourceText(line.priceOrigin, line.priceSource, null, T)
+        : t.statusLabels.missingPrice;
   }
   addFootnotes(
     income,
     result.income
       .filter((l) => l.status === 'missingPrice')
-      .map(() => statusNote(rules, 'missingPrice')),
+      .map(() => k.statusNote(rules, 'missingPrice')),
   );
   setWidths(income, [20, 12, 26, 24, 9, 18, 14, 14, 11, 14, 14, 14, 24, 34]);
 
   // --- Earn-Lücke ---
-  earnGap.addRow([
-    'Differenzmethode: Lücke = (Bestand Ende − Bestand Anfang) − Σ Historie (ohne interne Umbuchungen); nur positive Lücken sind Ertrag, bewertet zum Jahresmittel.',
-  ]);
+  earnGap.addRow([`${t.earnGapMethodPrefix}${t.earnGapExplanation}`]);
   headerRow(earnGap, [
-    'Plattform',
-    'Konto',
-    'Asset',
-    'Bestand Anfang',
-    'Bestand Ende',
-    'Σ Historie',
-    'Lücke',
-    'Ø Kurs CHF',
-    'Wert CHF',
-    'Status',
+    col.platform,
+    col.account,
+    col.asset,
+    col.startHolding,
+    col.endHolding,
+    col.history,
+    col.gap,
+    col.averagePrice(T),
+    col.value(T),
+    col.status,
   ]);
   for (const gap of result.earnGaps) {
     const row = earnGap.addRow([gap.platform, gap.accountId, gap.asset]);
@@ -244,33 +249,33 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     );
     row.getCell(10).value =
       gap.status === 'income'
-        ? 'Ertrag'
+        ? t.gapIncome
         : gap.status === 'negative'
-          ? 'negativ – kein Ertrag'
-          : STATUS_LABELS.missingPrice;
+          ? t.gapNegative
+          : t.statusLabels.missingPrice;
   }
   addFootnotes(
     earnGap,
     result.earnGaps
       .filter((g) => g.status === 'missingPrice')
-      .map(() => statusNote(rules, 'missingPrice')),
+      .map(() => k.statusNote(rules, 'missingPrice')),
   );
   setWidths(earnGap, [12, 16, 9, 16, 16, 16, 16, 14, 14, 18]);
 
   // --- Einmalereignisse ---
   headerRow(oneOff, [
-    'Datum',
-    'Ereignis',
-    'Plattform',
-    'Asset',
-    'Menge',
-    'Wert CHF',
-    'Hinweis',
+    col.date,
+    col.event,
+    col.platform,
+    col.asset,
+    col.quantity,
+    col.value(T),
+    col.note,
   ]);
   for (const event of result.oneOffEvents) {
     const row = oneOff.addRow([
-      swissDate(event.timestamp),
-      oneOffLabel(event.kind),
+      k.date(event.timestamp),
+      k.oneOffLabel(event.kind),
       event.platform,
       event.asset,
     ]);
@@ -290,24 +295,24 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
   setWidths(method, [140]);
 
   // --- Übersicht (last: it refers to the other sheets) ---
-  addHeader(overview, data, 'ausführlich');
-  overview.addRow([`Vermögen per 31.12.${data.taxYear} je Plattform`]).font = {
+  addHeader(overview, data, t.variantDetailed);
+  overview.addRow([t.wealthByPlatform(data.taxYear)]).font = {
     bold: true,
   };
-  headerRow(overview, ['Plattform', 'Steuerwert CHF']);
+  headerRow(overview, [col.platform, col.taxValue(T)]);
   overview.views = [];
   const firstPlatform = overview.rowCount + 1;
   for (const platform of result.platforms) {
     const row = overview.addRow([platform.platform]);
     formula(
       row.getCell(2),
-      `SUMIFS(${H}!J:J,${H}!B:B,A${row.number},${H}!K:K,"<>${STATUS_LABELS.spam}",${H}!K:K,"<>${STATUS_LABELS.negative}")`,
+      `SUMIFS(${H}!J:J,${H}!B:B,A${row.number},${H}!K:K,"<>${t.statusLabels.spam}",${H}!K:K,"<>${t.statusLabels.negative}")`,
       num(platform.valueChf),
       CHF_FORMAT,
     );
   }
   const lastPlatform = overview.rowCount;
-  const wealthRow = overview.addRow(['Total Vermögen']);
+  const wealthRow = overview.addRow([col.totalWealth]);
   wealthRow.font = { bold: true };
   formula(
     wealthRow.getCell(2),
@@ -318,23 +323,23 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     CHF_FORMAT,
   );
   const missingRow = overview.addRow([
-    `Positionen ${STATUS_LABELS.missingPrice} (nicht im Total)`,
+    t.unpricedCount(t.statusLabels.missingPrice),
   ]);
   formula(
     missingRow.getCell(2),
-    `COUNTIFS(${H}!K:K,"${STATUS_LABELS.missingPrice}")`,
+    `COUNTIFS(${H}!K:K,"${t.statusLabels.missingPrice}")`,
     result.positions.filter((p) => p.status === 'missingPrice').length,
   );
   overview.addRow([]);
-  overview.addRow([`Ertrag ${data.taxYear} je Kategorie`]).font = {
+  overview.addRow([t.incomeByCategory(data.taxYear)]).font = {
     bold: true,
   };
-  const incomeHeader = overview.addRow(['Kategorie', 'Ertrag CHF']);
+  const incomeHeader = overview.addRow([col.category, col.income(T)]);
   incomeHeader.font = { bold: true };
   const firstCategory = overview.rowCount + 1;
   for (const category of INCOME_CATEGORIES) {
     const total = result.categories.find((c) => c.category === category);
-    const row = overview.addRow([categoryLabel(rules, category)]);
+    const row = overview.addRow([rules.labels.categories[category]]);
     formula(
       row.getCell(2),
       category === 'earn_gap'
@@ -344,7 +349,7 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
       CHF_FORMAT,
     );
   }
-  const incomeRow = overview.addRow(['Total Ertrag']);
+  const incomeRow = overview.addRow([col.totalIncome]);
   incomeRow.font = { bold: true };
   formula(
     incomeRow.getCell(2),
@@ -353,11 +358,9 @@ export async function detailedWorkbook(data: ExportData): Promise<Uint8Array> {
     CHF_FORMAT,
   );
   overview.addRow([]);
-  overview.addRow(['Hinweise']).font = { bold: true };
+  overview.addRow([t.hintsTitle]).font = { bold: true };
   overview.addRow([rules.labels.formReference(data.canton)]);
-  const legend = overview.addRow([
-    'Farben: blau = Eingabe, schwarz = Formel, grün = Verweis auf Parameter.',
-  ]);
+  const legend = overview.addRow([t.colourLegend]);
   legend.font = { italic: true };
   setWidths(overview, [44, 18]);
 
@@ -368,6 +371,8 @@ function addPositionRow(
   sheet: ExcelJS.Worksheet,
   taxYear: number,
   position: Position,
+  currency: string,
+  k: ExportKit,
 ): void {
   const row = sheet.addRow([
     taxYear,
@@ -381,7 +386,7 @@ function addPositionRow(
     input(row.getCell(6), num(position.priceUsd), PRICE_FORMAT);
     formula(
       row.getCell(7),
-      'USDCHF',
+      fxCellName('USD', currency),
       num(position.usdChf),
       PRICE_FORMAT,
       PARAMETER_FONT,
@@ -391,7 +396,7 @@ function addPositionRow(
     if (position.priceOrigin === 'fx' && position.asset === 'EUR') {
       formula(
         row.getCell(8),
-        'EURCHF',
+        fxCellName('EUR', currency),
         num(position.chfDirect),
         PRICE_FORMAT,
         PARAMETER_FONT,
@@ -409,37 +414,35 @@ function addPositionRow(
     num(position.valueChf),
     '#,##0.00',
   );
-  row.getCell(11).value = STATUS_LABELS[position.status];
-  row.getCell(12).value = QUANTITY_SOURCE_LABELS[position.quantitySource];
-  row.getCell(13).value = priceSourceText(
+  row.getCell(11).value = k.t.statusLabels[position.status];
+  row.getCell(12).value = k.t.quantitySourceLabels[position.quantitySource];
+  row.getCell(13).value = k.priceSourceText(
     position.priceOrigin,
     position.priceSource,
     position.priceDate,
+    currency,
   );
   row.getCell(14).value = position.quantity;
   if (position.status === 'spam') row.font = { color: { argb: 'FF999999' } };
-  // Values in CHF are rounded only for display; the cell keeps the full product.
+  // Values are rounded only for display; the cell keeps the full product.
   if (position.valueChf !== null && parseDecimal(position.valueChf).isZero())
     row.getCell(10).numFmt = '0.00';
 }
 
-/** The "Methodik" sheet / section (FACHREGELN in short). */
+/** The "Methodik" sheet / section (FACHREGELN in short), in the document's language. */
 export function methodLines(data: ExportData): string[] {
   const { rules } = data;
+  const k = kitOf(data);
   return [
-    'Methodik',
-    '',
-    `Vermögen: Bestand per 31.12.${data.taxYear} je Plattform/Konto und Asset. Hat ein Konto einen Kontoauszug per Stichtag, gilt dieser; sonst der Saldo aus dem Ledger (Σ Menge − Σ Gebühr aller Buchungen bis Jahresende). Positionen mit |Menge| < ${rules.dustThreshold} entfallen.`,
-    'Kurse (erste vorhandene gilt): 1. ESTV-Kurs bzw. Override, 2. Kurs CHF direkt (z. B. aus dem Kontoauszug), 3. Kurs USD × USD/CHF des Stichtags.',
-    `Stablecoins (${rules.usdPegged.join(', ')}) = 1 USD; CHF = 1; EUR über EUR/CHF. USD-Kurse: Tagesschluss (Binance, UTC), höchstens ${rules.priceToleranceDays} Tage alt, sonst erster Kurs danach (≤ ${rules.priceToleranceDays} Tage). Devisen: EZB-Referenzkurse, letztes Fixing.`,
-    'Ertrag: zum Zuflusszeitpunkt (Tag in UTC) bewertet, netto nach Gebühr im gleichen Asset; Brutto als Information. Liefert die Plattform einen USD-Wert (z. B. Kraken amountusd − feeusd), gilt dieser × USD/CHF des Tages.',
-    `Earn-Lücke (Differenzmethode): (Bestand Ende − Bestand Anfang) − Σ Historie ohne interne Umbuchungen, je Konto und Asset; nur positive Lücken sind Ertrag, bewertet zum Jahresmittel. Ausgenommen: ${rules.earnGapExcluded.join(', ')}.`,
-    'Einmalereignisse (Hardforks, Airdrops, Verluste) werden separat ausgewiesen.',
-    'Positionen und Ereignisse ohne verfügbaren Kurswert werden mit ihrer Menge, ohne Wert aufgeführt und sind nicht im Total enthalten.',
-    'Spam-/Scam-Token (z. B. mit „Claim“ im Namen) haben keinen Marktwert und sind nicht im Total enthalten.',
-    'Annahmen (konservativ): Launchpool-/HODLer-Airdrops sind Ertrag; Kraken-Erträge netto nach Gebühr.',
-    'Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar.',
-    `Erstellt mit lazy-koins ${data.appVersion}.`,
+    ...k.t.methodLines({
+      currency: rules.homeCurrency,
+      taxYear: data.taxYear,
+      dustThreshold: rules.dustThreshold,
+      usdPegged: rules.usdPegged.join(', '),
+      priceToleranceDays: rules.priceToleranceDays,
+      earnGapExcluded: rules.earnGapExcluded.join(', '),
+      appVersion: data.appVersion,
+    }),
     '',
     rules.labels.noTaxAdvice,
   ];

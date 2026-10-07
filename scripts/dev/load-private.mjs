@@ -21,6 +21,7 @@
  *   LK_PROJECT_NAME  project name (default: Steuern 2025)
  *   LK_TAX_YEAR      tax year (default: 2025)
  *   LK_SKIP_RATES=1  skip the rate refresh (offline)
+ *   LK_UNLOCK_PIN    the user's PIN, when one is set (F11.0p) — only sent to the API, never printed
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -42,7 +43,9 @@ const user = process.env.LK_USER ?? 'anna@lazykoins.dev';
 const projectName = process.env.LK_PROJECT_NAME ?? 'Steuern 2025';
 const taxYear = Number(process.env.LK_TAX_YEAR ?? '2025');
 const canton = (process.argv[2] ?? process.env.LK_CANTON ?? 'ZH').toUpperCase();
+/** The headers of every request; the unlock token is added when the user has a PIN. */
 const auth = { Authorization: `Bearer dev:${user}` };
+const UNLOCK_HEADER = 'x-lazykoins-unlock';
 
 const UPLOADS = new Set(['.csv', '.xlsx', '.pdf']);
 
@@ -114,12 +117,37 @@ const chf = (value) => {
   return `${negative ? '-' : ''}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, '’')}.${cents}`;
 };
 
+/**
+ * F11.0p: a user with a PIN gets 423 for every data request until unlocked. With `LK_UNLOCK_PIN`
+ * the script unlocks once and sends the token with every request. The PIN is never printed.
+ */
+async function unlockIfNeeded() {
+  const status = await call('GET', '/pin/status');
+  if (!status.ok || !status.data?.hasPin || status.data.unlocked) return;
+  const pin = process.env.LK_UNLOCK_PIN;
+  if (!pin) {
+    fail(
+      `${user} has a PIN — set LK_UNLOCK_PIN to unlock (it is only sent to the API, never printed)`,
+    );
+  }
+  const answer = await call('POST', '/pin/unlock', { json: { pin } });
+  if (!answer.ok || typeof answer.data?.unlock?.token !== 'string') {
+    const code = answer.data?.code ?? `HTTP ${answer.status}`;
+    const wait = answer.data?.retryAfterSeconds;
+    fail(`unlocking failed (${code}${wait ? `, wait ${wait} s` : ''})`);
+  }
+  auth[UNLOCK_HEADER] = answer.data.unlock.token;
+  console.log('private:load: unlocked with LK_UNLOCK_PIN');
+}
+
 async function main() {
   try {
     if (!statSync(dir).isDirectory()) fail(`${dir} is not a folder`);
   } catch {
     fail(`${dir} does not exist`);
   }
+
+  await unlockIfNeeded();
 
   // 1. The project (reused when it exists).
   const projects = await call('GET', '/projects');

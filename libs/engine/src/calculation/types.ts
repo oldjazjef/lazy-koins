@@ -23,6 +23,33 @@ export interface PreviousYear {
   }[];
 }
 
+/**
+ * F6.4 / F8.1 "Wallets auf allen Netzwerken geprüft": the state of one wallet of the project on
+ * one network, as the API knows it (activity check, fetch, manual balance). Only the check reads
+ * it — the wallet's records come in as ordinary (derived) files.
+ */
+export interface WalletNetworkState {
+  readonly network: string;
+  /** Selected for the wallet (its records are part of the project). */
+  readonly selected: boolean;
+  /** F6.4 activity: true = used, false = never used, null = not checked. */
+  readonly used: boolean | null;
+  /** What can be fetched there: `history`, `income` (balance by hand) or `manual`. */
+  readonly coverage: 'history' | 'income' | 'manual';
+  /** The last fetch: ok, failed, or never. */
+  readonly fetch: 'ok' | 'error' | 'none';
+  /** A manual balance with evidence exists for the project's 31.12. (F6.5). */
+  readonly manualBalance: boolean;
+}
+
+export interface WalletState {
+  readonly walletId: string;
+  readonly label: string;
+  /** F6.4 ran for every network the address can live on. */
+  readonly networksChecked: boolean;
+  readonly networks: readonly WalletNetworkState[];
+}
+
 export interface CalculationInput {
   readonly taxYear: number;
   readonly rules: CountryRules;
@@ -34,6 +61,8 @@ export interface CalculationInput {
   /** The project's stored prices and exchange rates (F7.4). */
   readonly rates: readonly RateEntry[];
   readonly previous?: PreviousYear;
+  /** The project's wallets (F6.4); absent or empty = the wallet check is not applicable. */
+  readonly wallets?: readonly WalletState[];
 }
 
 /** Where a figure came from — a record of a file (F7.5) or of a correction. */
@@ -206,7 +235,13 @@ export const OPEN_ITEM_REASONS = [
   'incomeWithoutPrice',
   'oneOffWithoutPrice',
   'unclassifiedBookings',
+  /** The placeholder of engine version 1 — kept so stored snapshots still read. */
   'walletNetworksNotAvailable',
+  'walletNetworksUnchecked',
+  'walletNetworkNotSelected',
+  'walletNetworkNotFetched',
+  'walletManualBalanceMissing',
+  'walletFetchFailed',
 ] as const;
 export type OpenItemReason = (typeof OPEN_ITEM_REASONS)[number];
 
@@ -257,10 +292,17 @@ export interface Comparison {
   }[];
 }
 
+/**
+ * Every amount of the result (`…Chf` fields) is in the project's **tax currency** `currency`
+ * (F4.1a; CHF by default). The field names predate F4.1a and stay for the stored snapshots and
+ * the API types; `usdChf` / `eurChf` are USD/T and EUR/T.
+ */
 export interface CalculationResult {
   readonly engineVersion: number;
   readonly taxYear: number;
   readonly country: string;
+  /** ISO 4217 code of the tax currency (F4.1a). Snapshots of engine version ≤ 3 lack it = CHF. */
+  readonly currency: string;
   readonly yearEnd: string;
   readonly totals: {
     readonly wealthChf: string;
@@ -269,7 +311,7 @@ export interface CalculationResult {
     readonly missingPrices: number;
     readonly openItems: number;
   };
-  /** The USD/CHF and EUR/CHF used at 31.12. (the Excel's parameters). */
+  /** The USD/T and EUR/T used at 31.12. (the Excel's parameters; T = `currency`). */
   readonly parameters: {
     readonly usdChf: string | null;
     readonly eurChf: string | null;
@@ -290,5 +332,8 @@ export interface CalculationResult {
   readonly records: Readonly<Record<string, RecordSummary>>;
 }
 
-/** Bumped when the same input would give a different result (snapshots record it). */
-export const ENGINE_VERSION = 1;
+/**
+ * Bumped when the same input would give a different result (snapshots record it). 4 = the tax
+ * currency per project (F4.1a: `currency`, valuation in T with FX cross rates).
+ */
+export const ENGINE_VERSION = 4;

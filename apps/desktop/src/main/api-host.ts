@@ -24,6 +24,7 @@ interface ApiBundle {
     app: { close(): Promise<void> };
     port: number;
     host: string;
+    lockAll(): void;
   }>;
 }
 
@@ -32,6 +33,8 @@ export interface RunningApi {
   baseUrl: string;
   accessHeader: string;
   accessToken: string;
+  /** F11.0p: ends every unlocked PIN session — data requests get 423 until the PIN is entered. */
+  lockAll(): void;
   close(): Promise<void>;
 }
 
@@ -77,6 +80,7 @@ export async function startApi(options: {
     baseUrl: `http://127.0.0.1:${running.port}`,
     accessHeader: api.DESKTOP_ACCESS_HEADER,
     accessToken,
+    lockAll: () => running.lockAll(),
     close: () => running.app.close(),
   };
 }

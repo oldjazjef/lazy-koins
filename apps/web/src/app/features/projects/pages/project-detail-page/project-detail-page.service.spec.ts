@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -7,6 +7,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import type { Project } from '../../../../core/api/api.types';
+import { DataChanges } from '../../../../core/data/data-changes';
 import { ProjectDetailPageService } from './project-detail-page.service';
 
 const project = (over: Partial<Project> = {}): Project => ({
@@ -15,6 +16,7 @@ const project = (over: Partial<Project> = {}): Project => ({
   taxYear: 2025,
   country: 'CH',
   canton: 'ZH',
+  taxCurrency: 'CHF',
   status: 'in_progress',
   notes: '',
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -33,7 +35,7 @@ async function setup(initial: Project | 'missing') {
   TestBed.configureTestingModule({
     providers: [
       ProjectDetailPageService,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideRouter([]),
       provideTranslateService(),
@@ -52,8 +54,31 @@ async function setup(initial: Project | 'missing') {
   } else {
     request.flush(initial);
   }
+  // F4.7: the sent status loads alongside the project.
+  http.expectOne('/api/projects/p1/sent').flush({ sent: null, changes: [] });
+  http.expectOne('/api/projects/p1/carryovers').flush([]);
+  http
+    .expectOne('/api/projects/p1/result/status')
+    .flush({ calculatedAt: null, stale: false });
   await settle();
   return { service, http };
+}
+
+/** The header's reloads after a change to the project (DataChanges). */
+async function flushReloads(
+  http: HttpTestingController,
+  {
+    current = project(),
+    carryovers = [] as unknown[],
+    status = { calculatedAt: null as string | null, stale: false },
+  } = {},
+) {
+  await settle();
+  http.expectOne('/api/projects/p1').flush(current);
+  http.expectOne('/api/projects/p1/sent').flush({ sent: null, changes: [] });
+  http.expectOne('/api/projects/p1/carryovers').flush(carryovers);
+  http.expectOne('/api/projects/p1/result/status').flush(status);
+  await settle();
 }
 
 describe('ProjectDetailPageService', () => {
@@ -70,6 +95,51 @@ describe('ProjectDetailPageService', () => {
     expect(service.project.value()?.name).toBe('Steuern 2025');
     expect(service.isClosed()).toBe(false);
     expect(service.notFound()).toBe(false);
+  });
+
+  it('ticks off an open item carried over from the previous year (F4.4a)', async () => {
+    const { service, http } = await setup(project());
+    const carried = {
+      id: 'co1',
+      projectId: 'p1',
+      sourceProjectId: 'p0',
+      sourceProjectName: 'Steuern 2024',
+      kind: 'open_item' as const,
+      ref: null,
+      label: 'balanceDiffers',
+      data: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+      done: false,
+      note: '',
+    };
+    const done = service.setCarriedDone(carried, true);
+    await settle();
+    const patch = http.expectOne('/api/projects/p1/open-items');
+    expect(patch.request.body).toEqual({ key: 'carried:co1', done: true });
+    patch.flush({});
+    await done;
+    await flushReloads(http, { carryovers: [{ ...carried, done: true }] });
+    expect(service.carryovers.value()?.[0]?.done).toBe(true);
+  });
+
+  it('says "neu berechnen" when the data changed, and recalculates from the header (F7.6)', async () => {
+    const { service, http } = await setup(project());
+    expect(service.isStale()).toBe(false);
+    // A file removed in the workspace: a change to the project.
+    TestBed.inject(DataChanges).changed({ projectId: 'p1' });
+    await flushReloads(http, {
+      status: { calculatedAt: '2026-01-02T00:00:00.000Z', stale: true },
+    });
+    expect(service.isStale()).toBe(true);
+
+    const done = service.calculate();
+    await settle();
+    http.expectOne('/api/projects/p1/calculate').flush({});
+    await done;
+    await flushReloads(http, {
+      status: { calculatedAt: '2026-01-03T00:00:00.000Z', stale: false },
+    });
+    expect(service.isStale()).toBe(false);
   });
 
   it("shows someone else's (or a missing) project as not found", async () => {
@@ -90,6 +160,9 @@ describe('ProjectDetailPageService', () => {
     request.flush(project({ name: 'Neu', notes: 'x', status: 'reviewed' }));
     await done;
     expect(service.project.value()?.status).toBe('reviewed');
+    await flushReloads(http, {
+      current: project({ name: 'Neu', notes: 'x', status: 'reviewed' }),
+    });
   });
 
   it('reopens a closed project with a status change only (F4.5)', async () => {
@@ -101,6 +174,7 @@ describe('ProjectDetailPageService', () => {
     request.flush(project({ status: 'in_progress' }));
     await done;
     expect(service.isClosed()).toBe(false);
+    await flushReloads(http, { current: project({ status: 'in_progress' }) });
   });
 
   it('deletes and goes back to the list', async () => {
@@ -116,5 +190,8 @@ describe('ProjectDetailPageService', () => {
     expect(navigate).toHaveBeenCalledWith(['/app/projects'], {
       replaceUrl: true,
     });
+    // (In the app the page is gone by now; here the service still answers the change.)
+    await settle();
+    for (const pending of http.match(() => true)) pending.flush(null);
   });
 });

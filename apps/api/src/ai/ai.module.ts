@@ -4,14 +4,21 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { SecretBox } from '../common/crypto/secret-box';
 import { aiPrivateUrlsAllowed, type Env } from '../config/env';
 import { FilesModule } from '../files/files.module';
-import { AiFilesController, AiSettingsController } from './ai.controller';
+import {
+  AiFilesController,
+  AiSampleController,
+  AiSettingsController,
+} from './ai.controller';
 import { AiService } from './ai.service';
 import { AiGate, AiRuntime } from './application/ai-gate';
 import { AiSources } from './application/ai-sources';
 import {
   AcceptAiMappingHandler,
+  AcceptSampleMappingHandler,
   GenerateMappingHandler,
+  GenerateSampleMappingHandler,
   GetMappingPayloadHandler,
+  GetSampleMappingPayloadHandler,
 } from './application/mapping.handlers';
 import {
   GetAiSettingsHandler,
@@ -31,7 +38,7 @@ import {
  */
 @Module({
   imports: [CqrsModule, FilesModule],
-  controllers: [AiSettingsController, AiFilesController],
+  controllers: [AiSettingsController, AiFilesController, AiSampleController],
   providers: [
     AiService,
     AiGate,
@@ -56,9 +63,14 @@ import {
     GetMappingPayloadHandler,
     GenerateMappingHandler,
     AcceptAiMappingHandler,
+    GetSampleMappingPayloadHandler,
+    GenerateSampleMappingHandler,
+    AcceptSampleMappingHandler,
     GetStatementPayloadHandler,
     ExtractStatementHandler,
     AcceptStatementHandler,
   ],
+  // The chat (assistant/) uses the same gate: on/off, configuration, SSRF guard, error details.
+  exports: [AiGate, AiRuntime],
 })
 export class AiModule {}

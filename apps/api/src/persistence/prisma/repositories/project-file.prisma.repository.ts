@@ -202,6 +202,17 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
   ): Promise<{ created: ProjectFile } | { duplicate: ProjectFile }> {
     try {
       const row = await this.prisma.$transaction(async (tx) => {
+        if ('existingId' in input.stored) {
+          // Defence in depth (F11.16 audit): stored files are deduplicated per owner — a
+          // project never links another user's bytes, even if a caller passed a foreign id.
+          const owned = await tx.storedFile.findFirst({
+            where: { id: input.stored.existingId, ownerId: input.ownerId },
+            select: { id: true },
+          });
+          if (!owned) {
+            throw new Error('The stored file belongs to another owner');
+          }
+        }
         const fileId =
           'existingId' in input.stored
             ? input.stored.existingId

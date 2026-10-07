@@ -2,6 +2,23 @@
   [title]="'projects.list.title' | translate"
   [subtitle]="'projects.list.subtitle' | translate"
 >
+  <input
+    #packageInput
+    type="file"
+    class="hidden"
+    accept=".zip,application/zip"
+    (change)="importPackage(packageInput)"
+  />
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    [disabled]="service.isImporting()"
+    (click)="packageInput.click()"
+  >
+    <ng-icon name="lucideUpload" size="16" aria-hidden="true" />
+    {{ 'projects.import.button' | translate }}
+  </button>
   <a hlmBtn routerLink="new">
     <ng-icon name="lucidePlus" size="16" aria-hidden="true" />
     {{ 'projects.list.new' | translate }}
@@ -26,46 +43,71 @@
 </lk-empty-state>
 } @else {
 <div hlmTableContainer class="lk-panel">
-  <table hlmTable>
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-20" />
+      <col class="hidden w-20 md:table-column" />
+      <col class="w-56" />
+      <col class="w-36" />
+      <col class="hidden w-36 md:table-column" />
+    </colgroup>
     <thead hlmTHead>
       <tr hlmTr>
         <th hlmTh>{{ 'projects.fields.name' | translate }}</th>
         <th hlmTh>{{ 'projects.fields.taxYear' | translate }}</th>
-        <th hlmTh>{{ 'projects.fields.canton' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'projects.fields.canton' | translate }}
+        </th>
         <th hlmTh>{{ 'projects.fields.status' | translate }}</th>
         <th hlmTh class="text-right">
           {{ 'projects.fields.wealth' | translate }}
         </th>
-        <th hlmTh class="text-right">
+        <th hlmTh class="hidden text-right md:table-cell">
           {{ 'projects.fields.income' | translate }}
         </th>
       </tr>
     </thead>
     <tbody hlmTBody>
-      @for (project of service.projects.value(); track project.id) {
+      @for (project of pager.visible(); track project.id) {
       <tr hlmTr class="cursor-pointer" (click)="open(project.id)">
-        <td hlmTd>
+        <td hlmTd class="max-w-0">
           <a
             [routerLink]="project.id"
             class="font-medium hover:underline"
+            [lkTruncate]="project.name"
             (click)="$event.stopPropagation()"
             >{{ project.name }}</a
           >
         </td>
         <td hlmTd class="tabular-nums">{{ project.taxYear }}</td>
-        <td hlmTd>{{ project.canton }}</td>
+        <td hlmTd class="hidden md:table-cell">{{ project.canton }}</td>
         <td hlmTd>
-          <lk-project-status-badge [status]="project.status" />
+          <span class="inline-flex flex-wrap items-center gap-1">
+            <lk-project-status-badge [status]="project.status" />
+            <lk-project-sent-badge
+              [sentAt]="project.sent?.sentAt ?? null"
+              [changedSince]="project.sent?.changedSince ?? false"
+            />
+          </span>
         </td>
         <td hlmTd class="text-right tabular-nums">
-          {{ project.wealthChf | lkChf }}
+          {{ project.wealthChf | lkChf: project.taxCurrency }} @if
+          (project.stale) {
+          <span
+            class="lk-warning-text block text-xs"
+            [title]="'projects.list.staleTitle' | translate"
+            >{{ 'projects.list.stale' | translate }}</span
+          >
+          }
         </td>
-        <td hlmTd class="text-right tabular-nums">
-          {{ project.incomeChf | lkChf }}
+        <td hlmTd class="hidden text-right tabular-nums md:table-cell">
+          {{ project.incomeChf | lkChf: project.taxCurrency }}
         </td>
       </tr>
       }
     </tbody>
   </table>
 </div>
+<lk-paginator [pager]="pager" />
 }

@@ -10,6 +10,12 @@ export abstract class ImportMappingRepositoryPort {
 
   abstract findById(id: string): Promise<ImportMapping | undefined>;
 
+  /** The owner's copies of one library entry (F5.16), newest version first. */
+  abstract findByLibrary(
+    ownerId: string,
+    libraryId: string,
+  ): Promise<ImportMapping[]>;
+
   abstract create(
     ownerId: string,
     input: SaveMappingInput,

@@ -1,0 +1,176 @@
+@if (current(); as settings) {
+<form class="flex flex-col gap-5" [formGroup]="form" (ngSubmit)="save()">
+  <label class="flex items-center gap-2 text-sm font-medium">
+    <input type="checkbox" formControlName="enabled" />
+    {{ 'settings.mail.enabled' | translate }}
+  </label>
+
+  <div class="grid gap-5 sm:grid-cols-3">
+    <div class="flex flex-col gap-2 sm:col-span-2">
+      <label hlmLabel for="mail-host"
+        >{{ 'settings.mail.host' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="mail-host"
+        type="text"
+        autocomplete="off"
+        formControlName="host"
+        [placeholder]="'settings.mail.hostPlaceholder' | translate"
+      />
+      @if ( form.controls.host.touched && form.controls.host.errors?.['zod']; as
+      error ) {
+      <p class="text-destructive text-sm">{{ error | translate }}</p>
+      }
+    </div>
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="mail-port"
+        >{{ 'settings.mail.port' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="mail-port"
+        type="number"
+        min="1"
+        max="65535"
+        formControlName="port"
+      />
+      @if (form.controls.port.errors?.['zod']; as error) {
+      <p class="text-destructive text-sm">{{ error | translate }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="mail-security"
+      >{{ 'settings.mail.security' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="mail-security"
+      formControlName="security"
+      (change)="securityChanged()"
+    >
+      @for (security of securities; track security) {
+      <option [value]="security">
+        {{ 'settings.mail.securities.' + security | translate }}
+      </option>
+      }
+    </select>
+    <p class="text-muted-foreground text-xs">
+      {{ 'settings.mail.securityHint' | translate }} @if
+      (!settings.privateHostsAllowed) { {{ 'settings.mail.privateHostsHint' |
+      translate }} }
+    </p>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="mail-username"
+        >{{ 'settings.mail.username' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="mail-username"
+        type="text"
+        autocomplete="off"
+        formControlName="username"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="mail-password"
+        >{{ 'settings.mail.password' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="mail-password"
+        type="password"
+        autocomplete="new-password"
+        formControlName="password"
+        [attr.disabled]="settings.canStorePassword ? null : true"
+        [placeholder]="(settings.hasPassword ? 'settings.mail.passwordKeep' : 'settings.mail.passwordPlaceholder') | translate"
+      />
+      <p class="text-muted-foreground text-xs">
+        @if (!settings.canStorePassword) { {{ 'settings.mail.noEncryption' |
+        translate }} } @else if (settings.hasPassword) { {{
+        'settings.mail.passwordStored' | translate: { hint:
+        settings.passwordHint } }} } @else { {{ 'settings.mail.passwordNone' |
+        translate }} }
+      </p>
+    </div>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="mail-from-name"
+        >{{ 'settings.mail.fromName' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="mail-from-name"
+        type="text"
+        formControlName="fromName"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label hlmLabel for="mail-from-address"
+        >{{ 'settings.mail.fromAddress' | translate }}</label
+      >
+      <input
+        hlmInput
+        id="mail-from-address"
+        type="email"
+        formControlName="fromAddress"
+      />
+      @if ( form.controls.fromAddress.touched &&
+      form.controls.fromAddress.errors?.['zod']; as error ) {
+      <p class="text-destructive text-sm">{{ error | translate }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-wrap justify-end gap-2">
+    @if (settings.hasPassword) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.isSaving()"
+      (click)="removePassword(settings)"
+    >
+      {{ 'settings.mail.passwordRemove' | translate }}
+    </button>
+    }
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.testing()"
+      (click)="test()"
+    >
+      {{ 'settings.mail.test' | translate: { to: settings.testRecipient ||
+      form.controls.fromAddress.value } }}
+    </button>
+    @if (!embedded()) {
+    <button hlmBtn type="submit" [disabled]="service.isSaving()">
+      {{ 'common.save' | translate }}
+    </button>
+    }
+  </div>
+  @if (service.testing()) {
+  <p class="text-muted-foreground text-sm" aria-live="polite">
+    {{ 'settings.mail.testing' | translate }}
+  </p>
+  } @if (service.testResult(); as result) {
+  <p class="text-sm" aria-live="polite">
+    {{ 'settings.mail.testOk' | translate: { to: result.to, millis:
+    result.millis } }}
+    <span class="text-muted-foreground block font-mono text-xs"
+      >{{ result.response }}</span
+    >
+  </p>
+  } @if (service.testError(); as error) {
+  <lk-smtp-error [detail]="error" />
+  }
+</form>
+}

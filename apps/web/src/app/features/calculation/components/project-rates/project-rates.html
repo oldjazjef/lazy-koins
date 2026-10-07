@@ -4,9 +4,15 @@
   <span hlmBadge variant="secondary">{{ 'rates.online' | translate }}</span>
   } @else {
   <span hlmBadge variant="outline">{{ 'rates.offline' | translate }}</span>
+  <a
+    class="text-primary text-sm hover:underline"
+    routerLink="/app/setup"
+    [queryParams]="{ step: 'rates' }"
+    >{{ 'setup.deepLink.rates' | translate }}</a
+  >
   }
   <span class="flex-1"></span>
-  @if (!closed()) {
+  @if (!closed()) { @if (view.estv.applicable) {
   <button
     hlmBtn
     variant="outline"
@@ -24,6 +30,7 @@
     accept=".xml,.csv,.txt,text/csv,application/xml,text/xml"
     (change)="picked($event)"
   />
+  }
   <button
     hlmBtn
     variant="outline"
@@ -45,7 +52,73 @@
 </div>
 <p class="text-muted-foreground mb-4 text-sm">{{ 'rates.hint' | translate }}</p>
 
-@if (service.lastRefresh(); as summary) {
+@if (view.estv.applicable) {
+<section
+  class="lk-panel mb-6 flex flex-wrap items-start gap-3 p-4 text-sm"
+  aria-labelledby="estv-project-title"
+>
+  <div class="flex min-w-64 flex-1 flex-col gap-1">
+    <h3 id="estv-project-title" class="font-medium">
+      {{ 'estv.projectTitle' | translate: { year: view.taxYear } }}
+    </h3>
+    @if (view.estv.applied; as applied) {
+    <span>{{ 'estv.inUse' | translate: { label: applied } }}</span>
+    } @else {
+    <span class="text-muted-foreground"
+      >{{ 'estv.notApplied' | translate }}</span
+    >
+    } @if (view.estv.outdated && view.estv.available; as available) {
+    <span>
+      <span hlmBadge variant="secondary"
+        >{{ 'estv.newer' | translate: { label: available } }}</span
+      >
+    </span>
+    } @if (!view.estv.autoEnabled) {
+    <span class="text-muted-foreground text-xs"
+      >{{ 'estv.projectOffline' | translate }}</span
+    >
+    } @if (service.lastEstv(); as last) { @if (last.label) {
+    <span class="text-muted-foreground text-xs"
+      >{{ 'estv.matched' | translate: { count: last.matched.length, fx:
+      last.fx.length } }}</span
+    >
+    } @for (item of last.ambiguous; track item.asset) {
+    <span class="text-destructive text-xs" role="note"
+      >{{ 'estv.ambiguous' | translate: { asset: item.asset, names:
+      candidateNames(item.candidates) } }}</span
+    >
+    } }
+  </div>
+  @if (!closed()) {
+  <div class="flex flex-wrap gap-2">
+    @if (view.estv.outdated) {
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="service.isBusy() || service.estv.isBusy()"
+      (click)="applyEstv()"
+    >
+      {{ 'estv.apply' | translate }}
+    </button>
+    }
+    <button
+      hlmBtn
+      variant="outline"
+      type="button"
+      [disabled]="!view.estv.autoEnabled || service.isBusy() || service.estv.isBusy()"
+      (click)="updateEstv()"
+    >
+      {{ 'estv.update' | translate }}
+    </button>
+  </div>
+  }
+</section>
+} @else {
+<p class="lk-panel text-muted-foreground mb-6 p-4 text-sm" role="note">
+  {{ 'rates.estvNotApplicable' | translate: { currency: view.currency } }}
+</p>
+} @if (service.lastRefresh(); as summary) {
 <div class="lk-panel mb-6 p-4 text-sm" aria-live="polite">
   <p class="font-medium">
     {{ 'rates.summary' | translate: { fx: summary.fx } }}
@@ -67,16 +140,17 @@
 <section hlmCard class="mb-6">
   <div hlmCardHeader>
     <h3 hlmCardTitle>{{ 'rates.overrideTitle' | translate }}</h3>
-    <p hlmCardDescription>{{ 'rates.overrideHint' | translate }}</p>
+    <p hlmCardDescription>
+      {{ 'rates.overrideHint' | translate: { currency: view.currency } }}
+    </p>
   </div>
   <div hlmCardContent>
-    <form
-      class="grid gap-3 sm:grid-cols-6"
-      [formGroup]="form"
-      (ngSubmit)="submit()"
-    >
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-kind"
+    <form class="lk-form-row" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-kind"
+          [attr.title]="'rates.fields.kind' | translate"
           >{{ 'rates.fields.kind' | translate }}</label
         >
         <select hlmInput id="rate-kind" formControlName="kind">
@@ -84,34 +158,47 @@
           <option value="fx">{{ 'rates.kind.fx' | translate }}</option>
         </select>
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-asset"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-asset"
+          [attr.title]="'rates.fields.asset' | translate"
           >{{ 'rates.fields.asset' | translate }}</label
         >
         <input hlmInput id="rate-asset" type="text" formControlName="asset" />
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-currency"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-currency"
+          [attr.title]="'rates.fields.currency' | translate"
           >{{ 'rates.fields.currency' | translate }}</label
         >
         <select hlmInput id="rate-currency" formControlName="currency">
-          <option value="CHF">{{ 'rates.currency.CHF' | translate }}</option>
-          <option value="USD">{{ 'rates.currency.USD' | translate }}</option>
+          @for (code of currencies(); track code) {
+          <option [value]="code">{{ code }}</option>
+          }
         </select>
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-date"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-date"
+          [attr.title]="'rates.fields.date' | translate"
           >{{ 'rates.fields.date' | translate }}</label
         >
-        <input hlmInput id="rate-date" type="date" formControlName="date" />
+        <lk-date-field inputId="rate-date" formControlName="date" />
       </div>
-      <div class="flex flex-col gap-1">
-        <label hlmLabel for="rate-value"
+      <div class="lk-field">
+        <label
+          hlmLabel
+          for="rate-value"
+          [attr.title]="'rates.fields.value' | translate"
           >{{ 'rates.fields.value' | translate }}</label
         >
         <input hlmInput id="rate-value" type="text" formControlName="value" />
       </div>
-      <div class="flex items-end">
+      <div class="lk-field">
         <button
           hlmBtn
           type="submit"
@@ -122,7 +209,7 @@
         </button>
       </div>
       @if (error(); as key) {
-      <p class="text-destructive text-sm sm:col-span-6" role="alert">
+      <p class="text-destructive col-span-full text-sm" role="alert">
         {{ key | translate }}
       </p>
       }
@@ -133,7 +220,14 @@
 <section class="mb-6 flex flex-col gap-2">
   <h3 class="font-medium">{{ 'rates.manualTitle' | translate }}</h3>
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-28" />
+        <col class="w-48" />
+        <col class="hidden w-32 md:table-column" />
+        <col class="w-14" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'rates.fields.asset' | translate }}</th>
@@ -141,45 +235,44 @@
           <th hlmTh class="text-right">
             {{ 'rates.fields.value' | translate }}
           </th>
-          <th hlmTh>{{ 'rates.fields.source' | translate }}</th>
-          <th hlmTh class="text-right">
-            <span class="sr-only"
-              >{{ 'rates.fields.actions' | translate }}</span
-            >
+          <th hlmTh class="hidden md:table-cell">
+            {{ 'rates.fields.source' | translate }}
+          </th>
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
           </th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (rate of view.manual; track rate.id) {
+        @for (rate of manualPager.visible(); track rate.id) {
         <tr hlmTr>
-          <td hlmTd>
-            {{ rate.asset }} · {{ 'rates.kind.' + rate.kind | translate }}
+          <td hlmTd class="max-w-0">
+            @let label = rate.asset + ' · ' + ('rates.kind.' + rate.kind |
+            translate);
+            <span [lkTruncate]="label">{{ label }}</span>
           </td>
-          <td hlmTd class="tabular-nums">
-            {{ rate.date | date: 'dd.MM.yyyy' }}
+          <td hlmTd class="tabular-nums">{{ rate.date | lkDate }}</td>
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @let value = (rate.value | lkQuantity: 10) + ' ' + rate.currency;
+            <span [lkTruncate]="value">{{ value }}</span>
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            {{ rate.value | lkQuantity: 10 }} {{ rate.currency }}
+          <td hlmTd class="hidden max-w-0 md:table-cell">
+            @let source = rate.note ?? ('rates.source.' + rate.source |
+            translate);
+            <span [lkTruncate]="source">{{ source }}</span>
           </td>
-          <td hlmTd>{{ 'rates.source.' + rate.source | translate }}</td>
-          <td hlmTd class="text-right">
-            @if (!closed()) {
-            <button
-              hlmBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              (click)="service.deleteManualRate(rate)"
-            >
-              {{ 'rates.remove' | translate }}
-            </button>
-            }
+          <td hlmTd class="lk-sticky-actions text-right">
+            <lk-row-actions
+              [actions]="manualActions()"
+              (selected)="service.deleteManualRate(rate)"
+            />
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="manualPager" />
 </section>
 }
 
@@ -199,44 +292,67 @@
   <lk-empty-state [message]="'rates.empty' | translate" />
   } @else {
   <div hlmTableContainer class="lk-panel">
-    <table hlmTable>
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col />
+        <col class="w-28" />
+        <col class="hidden w-20 lg:table-column" />
+        <col class="hidden w-52 md:table-column" />
+        <col class="w-40" />
+        <col class="hidden w-36 lg:table-column" />
+        <col class="w-14" />
+      </colgroup>
       <thead hlmTHead>
         <tr hlmTr>
           <th hlmTh>{{ 'rates.fields.asset' | translate }}</th>
           <th hlmTh>{{ 'rates.fields.source' | translate }}</th>
-          <th hlmTh class="text-right">
+          <th hlmTh class="hidden text-right lg:table-cell">
             {{ 'rates.fields.points' | translate }}
           </th>
-          <th hlmTh>{{ 'rates.fields.range' | translate }}</th>
+          <th hlmTh class="hidden md:table-cell">
+            {{ 'rates.fields.range' | translate }}
+          </th>
           <th hlmTh class="text-right">
             {{ 'rates.fields.yearEnd' | translate: { year: taxYear() } }}
           </th>
-          <th hlmTh>{{ 'rates.fields.fetchedAt' | translate }}</th>
-          <th hlmTh class="text-right">
-            <span class="sr-only"
-              >{{ 'rates.fields.actions' | translate }}</span
-            >
+          <th hlmTh class="hidden lg:table-cell">
+            {{ 'rates.fields.fetchedAt' | translate }}
+          </th>
+          <th hlmTh class="lk-sticky-actions text-right">
+            <span class="sr-only">{{ 'common.actions' | translate }}</span>
           </th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (s of series(); track s.kind + s.asset + s.currency + s.source) {
+        @for (s of seriesPager.visible(); track s.kind + s.asset + s.currency +
+        s.source) {
         <tr hlmTr>
-          <td hlmTd class="font-medium">
-            {{ s.asset }}
-            <span class="text-muted-foreground text-xs"
-              >{{ 'rates.kind.' + s.kind | translate }} · {{ s.currency }}</span
+          <td hlmTd class="max-w-0">
+            <span class="font-medium" [lkTruncate]="s.asset"
+              >{{ s.asset }}</span
+            >
+            @let kind = ('rates.kind.' + s.kind | translate) + ' · ' +
+            s.currency;
+            <span class="text-muted-foreground text-xs" [lkTruncate]="kind"
+              >{{ kind }}</span
             >
           </td>
-          <td hlmTd>{{ 'rates.source.' + s.source | translate }}</td>
-          <td hlmTd class="text-right tabular-nums">{{ s.points }}</td>
-          <td hlmTd class="tabular-nums whitespace-nowrap">
-            {{ s.from | date: 'dd.MM.yyyy' }} – {{ s.to | date: 'dd.MM.yyyy' }}
+          <td hlmTd class="max-w-0">
+            @let source = 'rates.source.' + s.source | translate;
+            <span [lkTruncate]="source">{{ source }}</span>
           </td>
-          <td hlmTd class="text-right tabular-nums">
-            @if (s.yearEnd; as point) { {{ point.value | lkQuantity: 8 }}
+          <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+            {{ s.points }}
+          </td>
+          <td hlmTd class="hidden tabular-nums md:table-cell">
+            {{ s.from | lkDate }} – {{ s.to | lkDate }}
+          </td>
+          <td hlmTd class="max-w-0 text-right tabular-nums">
+            @if (s.yearEnd; as point) { @let value = point.value | lkQuantity:
+            8;
+            <span [lkTruncate]="value">{{ value }}</span>
             <span class="text-muted-foreground block text-xs"
-              >{{ point.date | date: 'dd.MM.yyyy' }}</span
+              >{{ point.date | lkDate }}</span
             >
             } @else {
             <span hlmBadge variant="destructive"
@@ -244,27 +360,21 @@
             >
             }
           </td>
-          <td hlmTd class="text-muted-foreground text-xs">
-            {{ s.fetchedAt | date: 'dd.MM.yyyy HH:mm' }}
+          <td hlmTd class="text-muted-foreground hidden text-xs lg:table-cell">
+            {{ s.fetchedAt | lkDate: 'dateTime' }}
           </td>
-          <td hlmTd class="text-right">
-            @if (!closed()) {
-            <button
-              hlmBtn
-              variant="ghost"
-              size="sm"
-              type="button"
-              (click)="prefill(s)"
-            >
-              {{ 'rates.override' | translate }}
-            </button>
-            }
+          <td hlmTd class="lk-sticky-actions text-right">
+            <lk-row-actions
+              [actions]="seriesActions()"
+              (selected)="prefill(s)"
+            />
           </td>
         </tr>
         }
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="seriesPager" />
   }
 </section>
 } @else if (service.rates.error()) {

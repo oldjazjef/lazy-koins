@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { toast } from '@spartan-ng/brain/sonner';
 import { TranslateService } from '@ngx-translate/core';
+import type { ErrorText } from '../api/api-error';
 
 export interface NotificationAction {
   labelKey: string;
@@ -12,18 +13,29 @@ export interface NotificationAction {
 export class NotificationService {
   private readonly translate = inject(TranslateService);
 
-  success(key: string, action?: NotificationAction): void {
-    toast.success(this.translate.instant(key), this.toastAction(action));
+  success(
+    key: string,
+    action?: NotificationAction,
+    params?: Readonly<Record<string, unknown>>,
+  ): void {
+    toast.success(
+      this.translate.instant(key, params),
+      this.toastAction(action),
+    );
   }
 
   /**
-   * `detail`, when given, is appended to the translated message — the server's own reason for the
-   * failure (e.g. a 409's "The project is closed: reopen it first"), not a translation
-   * key. It is shown as-is rather than resolved through i18n, the same way a stack trace would be.
+   * `detail`, when given, is appended to the translated message: a translatable reason
+   * (`ErrorText`, e.g. the API error's code → "The project is closed – reopen it first") or a
+   * plain value such as the file name concerned — never the API's own (English) message.
    */
-  error(key: string, detail?: string): void {
+  error(key: string, detail?: string | ErrorText): void {
     const message = this.translate.instant(key);
-    toast.error(detail ? `${message}: ${detail}` : message);
+    const extra =
+      typeof detail === 'string' || detail === undefined
+        ? detail
+        : this.translate.instant(detail.key, detail.params);
+    toast.error(extra ? `${message}: ${extra}` : message);
   }
 
   info(key: string, params?: Record<string, unknown>): void {

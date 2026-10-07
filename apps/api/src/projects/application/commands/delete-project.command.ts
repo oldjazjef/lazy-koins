@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { projectClosed } from '../../../common/http/api-errors';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { ProjectRepositoryPort } from '../../ports/project.repository.port';
 import { loadOwnProject } from '../project-access';
@@ -24,7 +24,7 @@ export class DeleteProjectHandler implements ICommandHandler<
   async execute({ userId, projectId }: DeleteProjectCommand): Promise<void> {
     const existing = await loadOwnProject(this.projects, userId, projectId);
     if (existing.status === 'closed') {
-      throw new ConflictException(
+      throw projectClosed(
         'The project is closed: reopen it first, then delete it',
       );
     }

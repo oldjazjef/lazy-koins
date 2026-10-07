@@ -11,7 +11,9 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideSpartanHlm } from '@lazykoins/ui/utils';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { dataChangesInterceptor } from './core/data/data-changes.interceptor';
 import { provideI18n } from './core/i18n/i18n.config';
+import { unlockInterceptor } from './core/pin/unlock.interceptor';
 
 /**
  * Zoneless: Angular 22 schedules change detection from signals and events, so there is no
@@ -21,7 +23,16 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(appRoutes, withComponentInputBinding()),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(
+      withFetch(),
+      // The bearer token first, then the PIN lock's unlock token (F11.0p); innermost, every
+      // successful change is reported to DataChanges (each real attempt, also a re-sent 423).
+      withInterceptors([
+        authInterceptor,
+        unlockInterceptor,
+        dataChangesInterceptor,
+      ]),
+    ),
     provideI18n(),
     provideSpartanHlm(),
   ],

@@ -1,8 +1,5 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { projectClosed } from '../../../common/http/api-errors';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import {
   closedProjectProblem,
@@ -40,7 +37,7 @@ export class UpdateProjectHandler implements ICommandHandler<
     const existing = await loadOwnProject(this.projects, userId, projectId);
 
     const problem = closedProjectProblem(existing, input);
-    if (problem) throw new ConflictException(problem);
+    if (problem) throw projectClosed(problem);
 
     if (
       input.canton !== undefined &&

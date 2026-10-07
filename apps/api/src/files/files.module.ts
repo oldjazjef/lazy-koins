@@ -22,7 +22,13 @@ import { PdfTextExtractor } from './application/pdf-text-extractor';
 import { PreviewMappingHandler } from './application/queries/preview-mapping.query';
 import { SourceFileReader } from './application/source-file-reader';
 import { FilesController } from './files.controller';
+import {
+  ListProjectHintsHandler,
+  UpdateHintStateHandler,
+} from './application/queries/project-hints.query';
+import { FileRowErrorsHandler } from './application/queries/row-errors.query';
 import { FilesService } from './files.service';
+import { HintsController } from './hints.controller';
 import { StandardFormatController } from './standard-format.controller';
 
 /**
@@ -31,7 +37,7 @@ import { StandardFormatController } from './standard-format.controller';
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [FilesController, StandardFormatController],
+  controllers: [FilesController, HintsController, StandardFormatController],
   providers: [
     FilesService,
     FileViews,
@@ -47,6 +53,9 @@ import { StandardFormatController } from './standard-format.controller';
     GetFileContentHandler,
     PreviewFileHandler,
     PreviewMappingHandler,
+    ListProjectHintsHandler,
+    UpdateHintStateHandler,
+    FileRowErrorsHandler,
   ],
   exports: [
     FilesService,

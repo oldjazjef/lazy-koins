@@ -1,0 +1,47 @@
+@let m = message(); @switch (m.role) { @case ('user') {
+<div class="flex justify-end">
+  <p
+    class="bg-primary text-primary-foreground max-w-[85%] rounded-lg px-3 py-2 text-sm break-words whitespace-pre-wrap"
+  >
+    {{ m.content }}
+  </p>
+</div>
+} @case ('event') {
+<p class="text-muted-foreground px-2 text-center text-xs break-words">
+  {{ eventLine() }}
+</p>
+} @default {
+<div class="flex flex-col gap-2">
+  @if (m.content) {
+  <div class="bg-muted max-w-[95%] self-start rounded-lg px-3 py-2 text-sm">
+    <lk-chat-text [text]="m.content" />
+  </div>
+  } @for (attachment of attachments(); track $index) { @if (attachment.kind ===
+  'upload') {
+  <lk-chat-upload
+    [projectId]="attachment.projectId"
+    [message]="attachment.message"
+  />
+  } @else { @if (attachment.link; as link) {
+  <a
+    class="text-primary self-start text-sm underline underline-offset-2"
+    [routerLink]="link.path"
+    [queryParams]="link.queryParams"
+    [fragment]="link.fragment ?? undefined"
+    (click)="chat.navigated()"
+    >{{ attachment.label }}</a
+  >
+  } @else {
+  <span class="text-muted-foreground text-sm">{{ attachment.label }}</span>
+  } } } @for (proposal of m.proposals; track proposal.id) {
+  <lk-proposal-card [proposal]="proposal" />
+  } @if (m.toolsUsed.length > 0) {
+  <details class="text-muted-foreground text-xs">
+    <summary class="cursor-pointer">
+      {{ 'chat.toolsUsed' | translate: { count: m.toolsUsed.length } }}
+    </summary>
+    <p class="mt-1 font-mono break-all">{{ m.toolsUsed.join(', ') }}</p>
+  </details>
+  }
+</div>
+} }

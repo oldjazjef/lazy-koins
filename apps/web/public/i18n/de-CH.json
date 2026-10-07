@@ -12,7 +12,40 @@
     "retry": "Erneut versuchen",
     "save": "Speichern",
     "close": "Schliessen",
-    "chf": "CHF"
+    "actions": "Aktionen",
+    "pagination": {
+      "label": "Seiten",
+      "range": "Zeile {{from}}–{{to}} von {{total}}",
+      "pageSize": "Pro Seite",
+      "page": "Seite {{page}} von {{count}}",
+      "first": "Erste Seite",
+      "previous": "Vorherige Seite",
+      "next": "Nächste Seite",
+      "last": "Letzte Seite"
+    }
+  },
+  "dateRange": {
+    "empty": "Zeitraum wählen",
+    "clear": "Zeitraum aufheben",
+    "previous": "Vorheriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "presets": "Vorschläge",
+    "maxDays": "Ein Zeitraum darf höchstens {{days}} Tage umfassen.",
+    "taxYear": "Steuerjahr {{year}}"
+  },
+  "dateField": {
+    "open": "Kalender öffnen",
+    "clear": "Datum löschen",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "outOfRange": "Das Datum muss zwischen {{min}} und {{max}} liegen.",
+    "notAfter": "Das Datum darf nicht nach dem {{max}} liegen.",
+    "notBefore": "Das Datum darf nicht vor dem {{min}} liegen.",
+    "letter": {
+      "day": "T",
+      "month": "M",
+      "year": "J"
+    }
   },
   "countries": {
     "CH": "Schweiz"
@@ -25,7 +58,12 @@
     "toggleTheme": "Hell/Dunkel umschalten",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "userMenu": "Benutzermenü"
+    "userMenu": "Benutzermenü",
+    "wallets": "Wallets",
+    "dashboard": "Dashboard",
+    "chat": "Assistent",
+    "library": "Bibliothek",
+    "myMappings": "Meine Mappings"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -62,15 +100,18 @@
       "notes": "Notizen",
       "createdAt": "Erstellt",
       "updatedAt": "Zuletzt geändert",
-      "wealth": "Vermögen CHF",
-      "income": "Ertrag CHF"
+      "wealth": "Vermögen",
+      "income": "Ertrag",
+      "taxCurrency": "Steuerwährung"
     },
     "list": {
       "title": "Projekte",
       "subtitle": "Ein Projekt pro Steuerjahr.",
       "new": "Neues Projekt",
       "empty": "Noch kein Projekt. Lege eines für dein Steuerjahr an.",
-      "loadFailed": "Projekte konnten nicht geladen werden."
+      "loadFailed": "Projekte konnten nicht geladen werden.",
+      "stale": "veraltet",
+      "staleTitle": "Daten geändert seit der Berechnung – im Projekt neu berechnen"
     },
     "form": {
       "title": "Neues Projekt",
@@ -83,11 +124,15 @@
       "nameTooLong": "Der Name ist zu lang (höchstens 120 Zeichen).",
       "taxYearInvalid": "Bitte ein Steuerjahr zwischen 2009 und 2100 eingeben.",
       "cantonRequired": "Bitte einen Kanton wählen.",
-      "notesTooLong": "Die Notizen sind zu lang (höchstens 5000 Zeichen)."
+      "notesTooLong": "Die Notizen sind zu lang (höchstens 5000 Zeichen).",
+      "taxCurrencyHint": "In dieser Währung werden Vermögen und Ertrag bewertet und ausgewiesen. Vorgabe aus dem Land (Schweiz: CHF).",
+      "taxCurrencyInvalid": "Wähle eine Währung.",
+      "taxCurrencyOthers": "Weitere Währungen"
     },
     "detail": {
       "title": "Projekt",
       "subtitle": "Steuerjahr {{year}}",
+      "stale": "Daten geändert seit der letzten Berechnung – Ergebnis und Prüfungen zeigen noch den alten Stand.",
       "editTitle": "Angaben",
       "factsTitle": "Übersicht",
       "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",
@@ -104,7 +149,93 @@
       "deleteBody": "Das Projekt wird mit allen Angaben gelöscht. Das lässt sich nicht rückgängig machen.",
       "notFound": "Dieses Projekt gibt es nicht (mehr).",
       "loadFailed": "Projekt konnte nicht geladen werden.",
-      "backToList": "Zu den Projekten"
+      "backToList": "Zu den Projekten",
+      "currencyTitle": "Steuerwährung ändern?",
+      "currencyBody": "Neu wird alles in {{currency}} statt in {{previous}} bewertet und ausgewiesen. Die letzte Berechnung ist danach veraltet: Aktualisiere die Kurse (Kurse › Kurse aktualisieren) und berechne neu. Die ESTV-Kursliste gilt nur für CHF.",
+      "currencyConfirm": "Währung ändern"
+    },
+    "followUp": {
+      "open": "Folgeprojekt erstellen",
+      "title": "Folgeprojekt erstellen",
+      "subtitle": "Aus {{name}} – das Vorjahresprojekt bleibt unverändert.",
+      "factsTitle": "Neues Projekt",
+      "defaultName": "Steuern {{year}}",
+      "existing": "Für dieses Jahr gibt es schon ein Projekt ({{names}}).",
+      "files": "Dateien",
+      "filesHint": "Werden verknüpft, nicht kopiert. Vorausgewählt: Dateien, deren Zeitraum ins neue Jahr reicht.",
+      "noPlatform": "Ohne Plattform",
+      "noFiles": "Dieses Projekt hat keine Dateien.",
+      "wallets": "Wallets",
+      "corrections": "Korrekturen",
+      "correctionsHint": "Nur solche, die über das Jahr hinaus gelten (Umklassierungen von Buchungen, die auch im neuen Jahr vorkommen; manuelle Buchungen). Kurs-Overrides per 31.12. werden nicht angeboten.",
+      "noCorrections": "Keine Korrektur gilt über das Jahr hinaus.",
+      "reclassify": "Umklassierung zu «{{kind}}»",
+      "manualBooking": "Manuelle Buchung {{quantity}} {{asset}} ({{platform}})",
+      "openItems": "Offene Punkte",
+      "openItemsHint": "Noch nicht erledigte Punkte werden im neuen Projekt als offene Punkte geführt.",
+      "noOpenItems": "Keine offenen Punkte.",
+      "notes": "Notizen übernehmen",
+      "all": "Alle",
+      "none": "Keine",
+      "summary": "Übernommen werden {{files}} Datei(en), {{wallets}} Wallet(s), {{corrections}} Korrektur(en) und {{openItems}} offene(r) Punkt(e).",
+      "summaryNotes": "Dazu die Notizen.",
+      "create": "Folgeprojekt erstellen",
+      "created": "Folgeprojekt erstellt",
+      "createFailed": "Folgeprojekt konnte nicht erstellt werden",
+      "walletsHint": "Die Wallets des Projekts werden mit dem neuen Projekt verknüpft (vorausgewählt); ihre abgerufenen Daten erscheinen dort als abgeleitete Dateien. Manuelle Saldi per 31.12. gehören zum Jahr und bleiben hier.",
+      "noWallets": "Dieses Projekt hat keine Wallets."
+    },
+    "import": {
+      "button": "Projekt importieren",
+      "done": "Projekt importiert",
+      "failed": "Das Projekt-Paket konnte nicht importiert werden (beschädigt, verändert oder kein lazy-koins-Paket)"
+    },
+    "carryover": {
+      "title": "Übernommen",
+      "from": "aus {{name}}",
+      "fromPackage": "aus einem Paket ({{name}})",
+      "done": "Erledigt",
+      "kind": {
+        "project": "Folgeprojekt",
+        "file": "Datei",
+        "correction": "Korrektur",
+        "open_item": "Offener Punkt",
+        "notes": "Notizen",
+        "wallet": "Wallet"
+      }
+    },
+    "sent": {
+      "badge": "An Treuhänder gesendet am {{date}}",
+      "changedSince": "seit dem Versand geändert",
+      "notYet": "Noch nicht an den Treuhänder gesendet.",
+      "exports": "{{count}} Auszüge",
+      "reason": {
+        "calculation": "neue Berechnung",
+        "export": "neuer Auszug",
+        "correction": "Korrektur",
+        "file": "neue Datei"
+      },
+      "via": {
+        "mail": "per Mail",
+        "post": "per Post",
+        "personal": "persönlich",
+        "other": "anders"
+      },
+      "mark": "Als gesendet markieren",
+      "markTitle": "Als gesendet markieren",
+      "markHint": "Wenn du die Unterlagen anders zugestellt hast (Post, persönlich, eigenes Mailprogramm).",
+      "date": "Datum",
+      "way": "Weg",
+      "recipient": "Empfänger",
+      "note": "Notiz",
+      "whichExports": "Welche Auszüge",
+      "marked": "Als gesendet markiert",
+      "undo": "Rückgängig",
+      "undoTitle": "Versand-Status zurücksetzen?",
+      "undoBody": "Das Projekt gilt wieder als nicht gesendet. Das Mail-Protokoll bleibt erhalten.",
+      "undone": "Versand-Status zurückgesetzt",
+      "failed": "Versand-Status konnte nicht geändert werden",
+      "dateInvalid": "Datum fehlt oder liegt in der Zukunft"
     }
   },
   "bookings": {
@@ -166,17 +297,13 @@
       "holdingsCsv": "Bestände (CSV)"
     },
     "missing": {
-      "title": "Möglicherweise fehlende Dateien",
-      "summary": "{{count}} Hinweise zu möglicherweise fehlenden Dateien – anzeigen",
-      "kind": {
-        "startsLate": "Die Buchungen beginnen erst am {{date}} – der Anfang von {{year}} fehlt.",
-        "endsEarly": "Die Buchungen enden am {{date}} – bis 31.12.{{year}} fehlt etwas.",
-        "noYearEndBalance": "Kein Bestand per 31.12.{{year}} (Kontoauszug) vorhanden."
-      },
       "howTo": {
+        "noYearData": "Für dieses Konto gibt es im Steuerjahr keine einzige Buchung. Lade die Historie des ganzen Jahres hoch (Verlauf/History → Export). Wurde das Konto vorher aufgelöst, markiere den Hinweis als in Ordnung.",
+        "noYearDataZero": "Die Buchungen enden vor dem Steuerjahr, und danach war das Konto leer (Saldo 0) – es kann nichts fehlen. Nur zur Information.",
         "startsLate": "Lade bei der Plattform einen Export ab spätestens 01.01. herunter – meist unter Verlauf/History → Export – und lade ihn hier hoch. Begann das Konto erst später, ist alles in Ordnung.",
         "endsEarly": "Exportiere die Historie bis mindestens 31.12. (Verlauf/History → Export, Zeitraum anpassen). Gab es danach keine Bewegungen, ist alles in Ordnung.",
-        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements) und erfasse die Bestände im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft."
+        "endsEarlyZero": "Nach der letzten Buchung war der Saldo des Kontos 0 – danach kann nichts fehlen. Nur zur Information; markiere den Hinweis als in Ordnung, wenn das Konto nicht mehr genutzt wurde.",
+        "noYearEndBalance": "Lade den Kontoauszug per 31.12. hoch (meist unter Dokumente/Statements), lies einen PDF-Auszug mit AI aus oder erfasse die Bestände manuell bzw. im Blatt «Bestände» der Vorlage – damit wird der Saldo laut Buchungen geprüft. Ein Auszug für die ganze Plattform gilt für alle ihre Unterkonten."
       }
     },
     "group": {
@@ -202,7 +329,8 @@
       "uploaded": "neu",
       "unknownProject": "unbekannt",
       "derived": "aus «{{name}}» (AI)",
-      "unknownFile": "entfernter Datei"
+      "unknownFile": "entfernter Datei",
+      "wallet": "aus Wallet-Abruf"
     },
     "actions": {
       "preview": "Vorschau",
@@ -238,6 +366,17 @@
       "invalidDate": "Kein gültiges Datum (JJJJ-MM-TT).",
       "negative": "Darf nicht negativ sein.",
       "headerNotFound": "Die Kopfzeile des Mappings wurde in der Datei nicht gefunden."
+    },
+    "takeOver": {
+      "open": "Aus anderem Projekt übernehmen",
+      "title": "Dateien aus anderen Projekten übernehmen",
+      "hint": "Die Dateien werden verknüpft, nicht kopiert, und gleich gelesen wie dort.",
+      "already": "schon im Projekt",
+      "empty": "Deine anderen Projekte haben keine Dateien.",
+      "confirm": "{{count}} übernehmen",
+      "done": "{{count}} Datei(en) übernommen",
+      "failed": "Die Dateien konnten nicht übernommen werden",
+      "loadFailed": "Die anderen Projekte konnten nicht geladen werden"
     }
   },
   "mappings": {
@@ -268,7 +407,8 @@
     "origin": {
       "ai": "AI",
       "manual": "manuell",
-      "copied": "hochgeladen"
+      "copied": "hochgeladen",
+      "library": "aus Bibliothek"
     },
     "actions": {
       "download": "Als JSON herunterladen"
@@ -304,7 +444,7 @@
     "list": {
       "subtitle": "Alle deine Mappings. Sie gelten für alle deine Projekte: Dateien mit denselben Spalten werden beim Hochladen automatisch damit gelesen.",
       "new": "Neues Mapping",
-      "newDescription": "Das Mapping als JSON. «Speichern» prüft es vollständig; die Vorschau mit einer Datei gibt es auf der Seite des Mappings, sobald eine Datei es nutzt.",
+      "newDescription": "Lade eine Beispieldatei (CSV oder XLSX) – dann siehst du ihre Spalten, kannst eine Vorlage daraus erzeugen oder das Mapping mit AI schreiben lassen und siehst live, was das Mapping aus der Datei liest. «Speichern» prüft das Mapping vollständig.",
       "search": "Suchen",
       "searchPlaceholder": "Name oder Plattform",
       "sort": "Sortieren nach",
@@ -328,7 +468,7 @@
       "created": "Erstellt",
       "jsonTitle": "Mapping (JSON)",
       "edit": "Bearbeiten",
-      "editHint": "Ändere das JSON, prüfe es mit einer Datei, die das Mapping nutzt, und speichere. Die Dateien behalten ihr bisheriges Ergebnis, bis du sie neu lesen lässt.",
+      "editHint": "Ändere das JSON und sieh live, was es aus der Beispieldatei liest (eine Datei, die das Mapping nutzt, ist schon geladen). Die Dateien behalten ihr bisheriges Ergebnis, bis du sie neu lesen lässt.",
       "usageTitle": "Wird genutzt in",
       "usageEmpty": "Noch keine Datei wird mit diesem Mapping gelesen. Lade in einem Projekt einen Export mit diesen Spalten hoch – er wird automatisch damit gelesen.",
       "project": "Projekt",
@@ -349,6 +489,52 @@
       "reapplyClosed": "Davon in abgeschlossenen Projekten: {{count}} – sie bleiben unverändert.",
       "reapplied": "{{reapplied}} Datei(en) neu gelesen.",
       "reappliedSkipped": "{{reapplied}} Datei(en) neu gelesen, {{skipped}} in abgeschlossenen Projekten unverändert gelassen."
+    },
+    "sample": {
+      "title": "Beispieldatei",
+      "notStored": "Nur für diese Bearbeitung – die Datei wird nicht gespeichert und keinem Projekt hinzugefügt.",
+      "drop": "Export hierher ziehen (CSV oder XLSX)",
+      "pick": "Datei auswählen",
+      "fromProjectPick": "Datei aus einem Projekt wählen",
+      "limits": "Höchstens 20 MB, wie beim Hochladen.",
+      "loading": "Datei wird gelesen …",
+      "project": "Projekt",
+      "chooseProject": "Projekt wählen …",
+      "file": "Datei",
+      "chooseFile": "Datei wählen …",
+      "noFiles": "Keine CSV- oder XLSX-Datei in diesem Projekt",
+      "use": "Verwenden",
+      "remove": "Andere Datei",
+      "template": "Vorlage aus Datei",
+      "size": "{{kb}} KB",
+      "rows": "{{count}} Zeilen",
+      "sheet": "Blatt «{{name}}»",
+      "fromProject": "aus «{{name}}»",
+      "recognisedStandard": "Diese Datei ist im Standardformat – sie braucht kein Mapping.",
+      "recognisedBy": "Wird heute schon erkannt mit:",
+      "noSample": "Lade oben eine Beispieldatei, dann siehst du hier live, was das Mapping aus ihr liest.",
+      "tabPreview": "Vorschau",
+      "tabRaw": "Datei (roh)",
+      "previewing": "Vorschau wird aktualisiert …",
+      "previewFailed": "Die Vorschau konnte nicht erstellt werden.",
+      "stale": "Das JSON ist gerade ungültig – die Vorschau zeigt den letzten gültigen Stand.",
+      "invalidSpec": "Das Mapping ist noch nicht gültig – die Hinweise stehen beim JSON.",
+      "rawHint": "Die ersten Zeilen, wie sie in der Datei stehen. Kopfzeile vermutlich in Zeile {{row}} (hervorgehoben); Zeilen darüber sind Vorspann.",
+      "moreRows": "{{shown}} von {{total}} Zeilen gezeigt.",
+      "aiProposal": "Vorschlag der AI – prüfe ihn in der Vorschau, bevor du speicherst.",
+      "fingerprint": {
+        "this": "Diese Datei würde beim Hochladen mit diesem Mapping erkannt.",
+        "other": "Beim Hochladen würde stattdessen «{{name}}» gewählt – es passt genauer auf die Spalten.",
+        "standard": "Die Datei ist im Standardformat: Sie wird ohne Mapping gelesen.",
+        "none": "Die Spalten in match.headers passen nicht zu dieser Datei – sie würde nicht erkannt."
+      },
+      "addToProject": "Nach dem Speichern auch hinzufügen zu",
+      "noProject": "keinem Projekt",
+      "addedToProject": "Datei zum Projekt hinzugefügt und mit dem neuen Mapping gelesen",
+      "openFile": "Datei öffnen",
+      "notTable": "Das ist keine lesbare Tabelle (CSV oder XLSX)",
+      "empty": "Die Datei ist leer",
+      "loadFailed": "Die Datei konnte nicht geladen werden"
     }
   },
   "ai": {
@@ -363,7 +549,8 @@
       "disabled": "Das AI-Plugin ist ausgeschaltet. Schalte es in den Einstellungen ein und wähle einen Anbieter.",
       "notConfigured": "Das AI-Plugin ist eingeschaltet, aber noch nicht vollständig eingerichtet: Es fehlt der API-Schlüssel oder die Adresse eines lokalen Modells.",
       "withoutAi": "Ohne AI funktioniert alles weiter: Lade die Vorlage im Standardformat herunter oder schreibe ein Mapping von Hand.",
-      "openSettings": "Zu den Einstellungen"
+      "openSettings": "Zu den Einstellungen",
+      "openSetup": "AI einrichten"
     },
     "consent": {
       "mappingBody": "Für das Mapping wird dieser Ausschnitt der Datei an {{provider}} gesendet (Modell {{model}}, Adresse {{address}}). Die AI schreibt nur das Mapping, nicht die Buchungen; nichts wird ohne deine Bestätigung gespeichert.",
@@ -447,6 +634,36 @@
       "badResponse": "Die Antwort des Anbieters war unbrauchbar.",
       "providerError": "Der Anbieter meldet einen Fehler.",
       "modelNotFound": "Das Modell oder die Adresse gibt es beim Anbieter nicht."
+    },
+    "details": {
+      "show": "Details anzeigen",
+      "summary": "Fehler",
+      "status": "HTTP-Status des Anbieters",
+      "providerMessage": "Meldung des Anbieters",
+      "providerType": "Fehlertyp / -code",
+      "url": "Adresse",
+      "model": "Modell",
+      "code": "Fehlercode",
+      "cause": "Ursache",
+      "detail": "Details",
+      "hint": "Tipp",
+      "copy": "Details kopieren",
+      "copied": "Kopiert"
+    },
+    "hints": {
+      "key": "Prüfe den API-Schlüssel: richtig kopiert, noch gültig und für diesen Anbieter?",
+      "model": "Prüfe den Modellnamen und die Adresse (bei OpenAI-kompatiblen Anbietern bis und mit /v1).",
+      "rateLimit": "Limit erreicht oder kein Guthaben mehr – prüfe dein Konto beim Anbieter oder versuche es später.",
+      "refused": "Niemand antwortet unter dieser Adresse – läuft der lokale Server (Ollama, LM Studio) und stimmt der Port?",
+      "notFound": "Der Rechnername ist unbekannt – prüfe die Adresse auf Tippfehler.",
+      "tls": "Das Zertifikat des Servers ist ungültig – prüfe die Adresse (https vs. http).",
+      "timeout": "Der Anbieter hat nicht rechtzeitig geantwortet – ein lokales Modell lädt beim ersten Mal lange; versuche es nochmals.",
+      "address": "Prüfe die Adresse: eine öffentliche http(s)-Adresse ohne Benutzer, Query oder Fragment.",
+      "unreachable": "Die lazy-koins-API ist nicht erreichbar – läuft der Server?"
+    },
+    "errorDetails": {
+      "show": "Details",
+      "title": "Fehlerdetails des AI-Anbieters"
     }
   },
   "settings": {
@@ -545,7 +762,9 @@
       "wallets": "Wallets",
       "ai": "AI-Plugin",
       "storage": "Speicherort",
-      "system": "System"
+      "system": "System",
+      "mail": "Mail",
+      "mcp": "MCP"
     },
     "system": {
       "title": "System",
@@ -558,27 +777,165 @@
       "runtimeDesktop": "Desktop-App",
       "repository": "Quellcode",
       "support": "Unterstützen",
-      "supportLink": "Buy me a coffee"
+      "supportLink": "Buy me a coffee",
+      "setupTitle": "Einrichtung",
+      "setupHint": "Der Assistent vom ersten Start: Profil, Treuhänder, AI, Kurse, Wallets, Mail und PIN Schritt für Schritt. Alles bleibt auch hier in Profil und Einstellungen einzeln änderbar.",
+      "setupAgain": "Einrichtung erneut durchlaufen",
+      "osNotifications": "System-Benachrichtigungen",
+      "osNotificationsHint": "Fehler und Handlungsbedarf zusätzlich als Benachrichtigung des Betriebssystems anzeigen. Sie enthalten nie Schlüssel, Passwörter oder Buchungen."
     },
     "rates": {
       "title": "Kursabfragen",
       "subtitle": "Kurse aus dem Internet, CoinGecko-Schlüssel, ESTV-Kursliste",
       "hint": "Ausgeschaltet holt lazy-koins keine Kurse aus dem Internet; gespeicherte und manuell erfasste Kurse gelten weiter.",
       "coingeckoHint": "Für Assets ohne Binance-Kurs (CoinGecko Demo-Schlüssel). Wird verschlüsselt gespeichert.",
-      "estvTitle": "ESTV-Kursliste",
-      "estvHint": "Die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
+      "estvTitle": "ESTV-Kursliste manuell importieren",
+      "estvHint": "Ersatz, wenn der automatische Bezug nicht geht: die Kursliste (XML von ictax.admin.ch oder CSV asset;kurs_chf;datum) gilt pro Projekt und hat Vorrang vor allen abgerufenen Kursen.",
       "project": "Projekt"
     },
     "wallets": {
-      "title": "Wallet-Abfragen",
-      "subtitle": "Schlüssel für die Abfrage von Wallets",
-      "hint": "Etherscan API V2 – ein Schlüssel für alle EVM-Netzwerke. Die automatische Wallet-Abfrage folgt; der Schlüssel wird verschlüsselt gespeichert."
+      "title": "Wallets & Netzwerke",
+      "subtitle": "Schlüssel und Adressen für die Wallet-Abfragen",
+      "hint": "Schlüssel werden verschlüsselt gespeichert und nie wieder angezeigt (nur die letzten Zeichen). „Testen“ prüft die Werte im Formular – auch ungespeicherte – mit einer Anfrage ohne deine Daten.",
+      "urlHint": "Leer = öffentliche Standardadresse (Platzhalter). Lokale Adressen sind auf einem Server gesperrt.",
+      "test": "Testen",
+      "testing": "Teste …",
+      "testOk": "Verbindung ok: {{detail}} ({{millis}} ms)",
+      "fields": {
+        "etherscanKey": "Etherscan-API-Schlüssel (V2)",
+        "heliusKey": "Helius-API-Schlüssel",
+        "subscanKey": "Subscan-API-Schlüssel",
+        "solanaRpcUrl": "Eigene Solana-RPC-Adresse (optional)",
+        "esploraUrl": "Esplora-Adresse",
+        "koiosUrl": "Koios-Adresse",
+        "cosmosLcdUrl": "Cosmos-LCD-Adresse"
+      },
+      "services": {
+        "etherscan": {
+          "title": "EVM-Netzwerke (Etherscan)",
+          "hint": "Ein Schlüssel für Ethereum, BNB Chain, Polygon, Arbitrum, Optimism und Base. Der Gratis-Plan deckt nicht alle Chains ab – fehlende erfasst du manuell mit Beleg."
+        },
+        "solana": {
+          "title": "Solana",
+          "hint": "Helius-Schlüssel (empfohlen) oder eine eigene RPC-Adresse; ohne beides der öffentliche, stark begrenzte Endpunkt."
+        },
+        "esplora": {
+          "title": "Bitcoin (Esplora)",
+          "hint": "Adressen und xpub/ypub/zpub über mempool.space oder einen eigenen Esplora-Server. Kein Schlüssel nötig."
+        },
+        "koios": {
+          "title": "Cardano (Koios)",
+          "hint": "Staking-Erträge werden abgerufen; den Saldo per 31.12. erfasst du manuell mit Beleg. Kein Schlüssel nötig."
+        },
+        "subscan": {
+          "title": "Polkadot (Subscan)",
+          "hint": "Staking-Erträge mit einem Subscan-Schlüssel; den Saldo per 31.12. erfasst du manuell mit Beleg."
+        },
+        "cosmos": {
+          "title": "Cosmos (LCD)",
+          "hint": "Nur Netzwerk-Prüfung und aktueller Saldo – Saldo per 31.12. und Erträge erfasst du manuell mit Beleg."
+        }
+      }
+    },
+    "mail": {
+      "title": "Mailer (SMTP)",
+      "subtitle": "Mail an den Treuhänder: Mailer und Text-Vorlage",
+      "intro": "Damit „An Treuhänder senden“ die Auszüge direkt mailen kann. Ohne Mailer bleibt es beim Text zum Kopieren und dem Mailprogramm (ohne Anhänge).",
+      "loadFailed": "Die Mail-Einstellungen konnten nicht geladen werden.",
+      "enabled": "Mailer verwenden",
+      "status": {
+        "off": "aus",
+        "ready": "bereit",
+        "notConfigured": "unvollständig"
+      },
+      "host": "Server (SMTP)",
+      "hostPlaceholder": "z. B. smtp.mein-anbieter.ch",
+      "port": "Port",
+      "security": "Verschlüsselung",
+      "securities": {
+        "starttls": "STARTTLS (meist Port 587)",
+        "tls": "TLS/SSL (meist Port 465)",
+        "none": "Keine (nur lokal/zum Testen)"
+      },
+      "securityHint": "Zertifikate werden immer geprüft. Die Angaben findest du bei deinem Mail-Anbieter.",
+      "privateHostsHint": "Lokale Server (localhost, Heimnetz) sind auf diesem Server nicht erlaubt.",
+      "username": "Benutzer",
+      "password": "Passwort",
+      "passwordPlaceholder": "Passwort eingeben",
+      "passwordKeep": "leer lassen = gespeichertes Passwort behalten",
+      "passwordStored": "Gespeichert (verschlüsselt), endet auf {{hint}}. Es wird nie wieder angezeigt.",
+      "passwordNone": "Kein Passwort gespeichert.",
+      "passwordRemove": "Passwort entfernen",
+      "passwordRemoved": "Passwort entfernt",
+      "noEncryption": "Auf diesem Server kann kein Passwort gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
+      "fromName": "Absendername",
+      "fromAddress": "Absenderadresse",
+      "test": "Test-Mail an mich senden ({{to}})",
+      "testing": "Test-Mail wird gesendet …",
+      "testOk": "Test-Mail an {{to}} gesendet ({{millis}} ms).",
+      "saved": "Mail-Einstellungen gespeichert",
+      "form": {
+        "hostInvalid": "Nur der Servername, z. B. smtp.example.ch (ohne smtp:// und Port)",
+        "portInvalid": "Port zwischen 1 und 65535",
+        "addressInvalid": "Keine gültige E-Mail-Adresse",
+        "tooLong": "Zu lang"
+      },
+      "template": {
+        "title": "Text-Vorlage für den Treuhänder",
+        "intro": "Betreff und Text der Mail an den Treuhänder. Platzhalter werden beim Senden mit den Werten des Projekts gefüllt. Die Vorlage gilt für alle Projekte.",
+        "default": "Standard",
+        "subject": "Betreff",
+        "body": "Text",
+        "placeholders": "Platzhalter",
+        "placeholdersHint": "Klick fügt den Platzhalter an der Cursorposition ein.",
+        "preview": "Vorschau",
+        "previewHint": "Mit Beispielwerten.",
+        "unknown": "Unbekannte Platzhalter: {{names}}",
+        "resetAction": "Auf Standard zurücksetzen",
+        "resetTitle": "Vorlage zurücksetzen?",
+        "resetBody": "Deine eigene Vorlage wird gelöscht; es gilt wieder die Standardvorlage.",
+        "saved": "Vorlage gespeichert",
+        "reset": "Standardvorlage wiederhergestellt",
+        "loadFailed": "Die Vorlage konnte nicht geladen werden.",
+        "subjectRequired": "Betreff fehlt",
+        "subjectTooLong": "Betreff zu lang (max. 300 Zeichen)",
+        "bodyRequired": "Text fehlt",
+        "bodyTooLong": "Text zu lang (max. 20 000 Zeichen)"
+      }
+    },
+    "keyTest": {
+      "button": "Testen",
+      "testing": "Schlüssel wird geprüft …",
+      "ok": "Der Schlüssel funktioniert ({{millis}} ms).",
+      "failed": "Der Test konnte nicht ausgeführt werden.",
+      "noKey": "Gib zuerst einen Schlüssel ein.",
+      "offline": "Kursabfragen aus dem Internet sind auf diesem Server ausgeschaltet – der Schlüssel kann nicht geprüft werden.",
+      "status": "HTTP-Status",
+      "message": "Antwort des Anbieters",
+      "url": "Adresse",
+      "codes": {
+        "invalidKey": "Der Schlüssel wurde abgelehnt.",
+        "rateLimited": "Zu viele Anfragen – das Limit des Anbieters ist erreicht.",
+        "network": "Der Anbieter ist nicht erreichbar.",
+        "timeout": "Der Anbieter hat nicht rechtzeitig geantwortet.",
+        "providerError": "Der Anbieter hat einen Fehler gemeldet."
+      },
+      "hints": {
+        "invalidKey": "Prüfe, ob du den ganzen Schlüssel kopiert hast und ob er zum Tarif passt (CoinGecko: ein «Demo»-Schlüssel).",
+        "rateLimited": "Warte eine Minute und teste dann noch einmal.",
+        "network": "Prüfe die Internetverbindung, eine Firewall oder einen Proxy auf diesem Rechner bzw. Server.",
+        "timeout": "Versuche es später noch einmal.",
+        "providerError": "Die Meldung des Anbieters unten hilft weiter; sonst später erneut versuchen."
+      }
     }
   },
   "workspace": {
     "label": "Bereiche des Projekts",
     "tabs": {
+      "general": "Allgemein",
       "files": "Dateien",
+      "hints": "Hinweise",
+      "wallets": "Wallets",
       "rates": "Kurse",
       "result": "Ergebnis",
       "checks": "Prüfungen",
@@ -627,18 +984,18 @@
     "fields": {
       "platform": "Plattform/Wallet",
       "positions": "Positionen",
-      "valueChf": "Wert CHF",
+      "valueChf": "Wert {{currency}}",
       "asset": "Asset",
       "account": "Konto",
       "quantity": "Menge",
-      "priceChf": "Kurs CHF",
+      "priceChf": "Kurs {{currency}}",
       "source": "Quelle",
       "actions": "Aktionen",
       "category": "Kategorie",
       "bookings": "Buchungen",
       "date": "Datum",
       "netQuantity": "Menge netto",
-      "grossChf": "Brutto CHF",
+      "grossChf": "Brutto {{currency}}",
       "start": "Anfang",
       "end": "Ende",
       "booked": "Gebucht",
@@ -666,15 +1023,15 @@
       "manual": "Manuell"
     },
     "priceOrigin": {
-      "home": "CHF",
+      "home": "{{currency}}",
       "override": "Überschrieben",
       "estv": "ESTV-Kursliste",
-      "recordChf": "Kurs CHF laut Beleg",
+      "recordChf": "Kurs {{currency}} laut Beleg",
       "recordUsd": "Kurs USD laut Beleg",
       "recordValueUsd": "USD-Wert der Plattform",
       "pegged": "Stablecoin = 1 USD",
       "fx": "Devisenkurs",
-      "tableChf": "Tageskurs CHF",
+      "tableChf": "Tageskurs {{currency}}",
       "tableUsd": "Tagesschluss USD"
     },
     "category": {
@@ -684,7 +1041,8 @@
       "launchpool": "Launchpool",
       "hardfork": "Hardfork",
       "earn_gap": "Earn-Lücke"
-    }
+    },
+    "currencyChanged": "Diese Berechnung ist in {{currency}}; das Projekt ist jetzt in {{projectCurrency}}. Aktualisiere die Kurse und berechne neu."
   },
   "checks": {
     "title": "Prüfungen",
@@ -698,7 +1056,7 @@
     "fields": {
       "done": "Erledigt",
       "item": "Punkt",
-      "impact": "Auswirkung CHF (geschätzt)",
+      "impact": "Auswirkung {{currency}} (geschätzt)",
       "note": "Notiz"
     },
     "light": {
@@ -730,7 +1088,12 @@
       "incomeWithoutPrice": "{{count}} Ertragsbuchungen ohne Kurs",
       "oneOffWithoutPrice": "Einmalereignis ohne Kurs – ESTV-Kurs nachtragen",
       "unclassifiedBookings": "{{count}} Buchungen „{{rawType}}“ ohne Zuordnung – Mapping oder Korrektur",
-      "walletNetworksNotAvailable": "Die automatische Prüfung der Wallets auf allen Netzwerken ist noch nicht verfügbar – bitte manuell prüfen."
+      "walletNetworksNotAvailable": "Die automatische Prüfung der Wallets auf allen Netzwerken ist noch nicht verfügbar – bitte manuell prüfen.",
+      "walletNetworksUnchecked": "Netzwerke noch nicht (vollständig) geprüft – im Tab Wallets „Netzwerke prüfen“",
+      "walletNetworkNotSelected": "Auf diesem Netzwerk genutzt, aber für die Wallet nicht ausgewählt",
+      "walletNetworkNotFetched": "Noch nicht abgerufen – im Tab Wallets „Abrufen“",
+      "walletManualBalanceMissing": "Saldo per 31.12. fehlt – manuell mit Beleg erfassen",
+      "walletFetchFailed": "Abruf fehlgeschlagen – Schlüssel/Plan prüfen oder Saldo manuell mit Beleg erfassen"
     },
     "comparison": {
       "title": "Vergleich mit {{year}}",
@@ -739,7 +1102,9 @@
       "new": "Neue Positionen",
       "removed": "Weggefallene Positionen",
       "hint": "Aus dem letzten berechneten Projekt des Vorjahres."
-    }
+    },
+    "hintsNote": "{{count}} offene Hinweise zu den Dateien (fehlende Zeiträume, Auszüge, nicht erkannte Dateien) – sie stehen nicht in dieser Liste.",
+    "platformHints": "{{count}} Hinweise zu {{platform}}"
   },
   "corrections": {
     "newTitle": "Neue Korrektur",
@@ -772,8 +1137,8 @@
       "reason": "Begründung",
       "asset": "Asset",
       "date": "Datum",
-      "priceChf": "Kurs CHF",
-      "priceChfOptional": "Kurs CHF (optional)",
+      "priceChf": "Kurs {{currency}}",
+      "priceChfOptional": "Kurs {{currency}} (optional)",
       "bookingId": "Buchung (Kennung)",
       "kind": "Neue Art",
       "platform": "Plattform/Wallet",
@@ -818,7 +1183,7 @@
     "estvImported": "{{count}} ESTV-Kurse importiert",
     "loadFailed": "Die Kurse konnten nicht geladen werden.",
     "overrideTitle": "Kurs überschreiben",
-    "overrideHint": "Z. B. USD/CHF per 31.12. laut ESTV oder der Kurs eines Assets. Gilt vor allen anderen Quellen.",
+    "overrideHint": "Z. B. USD/{{currency}} per 31.12. oder der Kurs eines Assets in {{currency}}. Gilt vor allen anderen Quellen.",
     "override": "Überschreiben",
     "remove": "Entfernen",
     "manualTitle": "Überschriebene Kurse und ESTV-Werte",
@@ -843,10 +1208,6 @@
       "price": "Kurs",
       "fx": "Devisenkurs"
     },
-    "currency": {
-      "CHF": "CHF",
-      "USD": "USD"
-    },
     "source": {
       "manual": "Überschrieben",
       "estv": "ESTV-Kursliste",
@@ -864,7 +1225,8 @@
       "asset": "Bitte ein Asset-Kürzel eingeben.",
       "date": "Bitte ein Datum wählen.",
       "value": "Bitte einen positiven Wert mit Punkt als Dezimaltrennzeichen eingeben."
-    }
+    },
+    "estvNotApplicable": "Die ESTV-Kursliste gilt nur für Projekte in CHF – dieses Projekt ist in {{currency}}. Kurse kommen von der EZB, Binance und CoinGecko."
   },
   "exports": {
     "createTitle": "Auszug erstellen",
@@ -902,8 +1264,8 @@
     "fields": {
       "createdAt": "Erstellt",
       "kind": "Auszug",
-      "wealth": "Vermögen CHF",
-      "income": "Ertrag CHF",
+      "wealth": "Vermögen {{currency}}",
+      "income": "Ertrag {{currency}}",
       "actions": "Aktionen"
     },
     "mail": {
@@ -917,6 +1279,23 @@
       "copied": "In die Zwischenablage kopiert",
       "copyFailed": "Kopieren fehlgeschlagen",
       "failed": "Mail-Entwurf nicht verfügbar – zuerst berechnen"
+    },
+    "data": {
+      "title": "Daten",
+      "hint": "Buchungen und Bestände im Standardformat – mit angewendeten Korrekturen, verwendetem Kurs und Kursquelle sowie Quelldatei und Zeile. Die Datei lässt sich unverändert wieder importieren.",
+      "platform": "Plattform",
+      "account": "Konto",
+      "asset": "Asset",
+      "kind": "Art",
+      "allKinds": "Alle Arten",
+      "period": "Zeitraum",
+      "csvBookings": "Buchungen (CSV)",
+      "csvHoldings": "Bestände (CSV)",
+      "xlsx": "Buchungen + Bestände (Excel)",
+      "package": "Projekt-Paket herunterladen",
+      "packageHint": "Das Projekt-Paket (.lkproj.zip) enthält Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse, Prüf-Notizen und die erstellten Auszüge – zum Import in die Web- oder Desktop-App.",
+      "failed": "Der Datenexport ist fehlgeschlagen",
+      "packageFailed": "Das Projekt-Paket konnte nicht erstellt werden"
     }
   },
   "profile": {
@@ -924,8 +1303,8 @@
     "subtitle": "Angaben für die Auszüge und den Mail-Entwurf.",
     "personalTitle": "Persönliche Angaben",
     "personalHint": "Erscheinen im Kopf der Auszüge und im Mail-Entwurf an den Treuhänder.",
-    "formatTitle": "Format",
-    "formatHint": "Zahlen und Daten wie in der Schweiz; weitere Sprachen folgen.",
+    "formatTitle": "Sprache und Format",
+    "formatHint": "Gilt sofort für die ganze App, für neue Exporte und die Mail an den Treuhänder.",
     "noCanton": "Kein Kanton",
     "fields": {
       "displayName": "Name",
@@ -933,17 +1312,1399 @@
       "advisorName": "Treuhänder",
       "advisorEmail": "E-Mail Treuhänder",
       "numberFormat": "Zahlenformat",
-      "dateFormat": "Datumsformat"
+      "dateFormat": "Datumsformat",
+      "language": "Sprache"
     },
     "numberFormats": {
-      "deCH": "1’234.56"
+      "deCH": "1’234.56",
+      "en": "1,234.56"
     },
     "dateFormats": {
-      "ddMMyyyy": "31.12.2025"
+      "ddMMyyyy": "31.12.2025",
+      "yyyyMMdd": "2025-12-31",
+      "ddMMyyyySlash": "31/12/2025",
+      "MMddyyyySlash": "12/31/2025"
     },
     "errors": {
       "tooLong": "Der Text ist zu lang.",
       "email": "Bitte eine gültige E-Mail-Adresse eingeben."
+    },
+    "data": {
+      "title": "Daten",
+      "hint": "Alle deine Daten als Konto-Paket: jedes Projekt als Projekt-Paket, alle Mappings, Einstellungen und Profil – ohne API-Schlüssel. Importierbar in dieses oder ein anderes Konto (später auch in die Desktop-App).",
+      "download": "Alle Daten herunterladen",
+      "import": "Konto-Paket importieren",
+      "downloadFailed": "Das Konto-Paket konnte nicht erstellt werden",
+      "imported": "Konto-Paket importiert",
+      "importFailed": "Das Konto-Paket konnte nicht importiert werden",
+      "importSummary": "{{projects}} Projekt(e) importiert, {{created}} Mapping(s) neu, {{reused}} wiederverwendet.",
+      "limits": "Pakete bis 200 MB (über den Web-Server bis 50 MB); Einstellungen werden nur übernommen, wenn dieses Konto noch keine hat."
+    }
+  },
+  "wallets": {
+    "title": "Wallets",
+    "created": "Wallet gespeichert.",
+    "saved": "Änderungen gespeichert.",
+    "deleted": "Wallet gelöscht.",
+    "checked": "Netzwerke geprüft.",
+    "fetched": "Abruf abgeschlossen – die Projekte mit dieser Wallet sind aktualisiert.",
+    "check": "Netzwerke prüfen",
+    "checking": "Prüfe …",
+    "fetch": "Abrufen",
+    "fetching": "Rufe ab …",
+    "notSelected": "nicht ausgewählt",
+    "txCount": "{{count}} Transaktionen",
+    "truncated": "Verlauf gekürzt – ältere Transaktionen fehlen",
+    "addressesScanned": "{{scanned}} Adressen geprüft, {{used}} genutzt",
+    "spamHidden": "{{count}} Spam-Token ausgeblendet",
+    "usedIn": "Genutzt in:",
+    "used": {
+      "yes": "genutzt",
+      "no": "nie genutzt",
+      "unknown": "nicht geprüft"
+    },
+    "fetchStatus": {
+      "ok": "abgerufen {{date}}",
+      "none": "nicht abgerufen"
+    },
+    "coverage": {
+      "history": "automatisch (ganzer Verlauf)",
+      "income": "Erträge automatisch, Saldo manuell",
+      "manual": "manuell mit Beleg"
+    },
+    "network": {
+      "bitcoin": "Bitcoin",
+      "ethereum": "Ethereum",
+      "bsc": "BNB Chain",
+      "polygon": "Polygon",
+      "arbitrum": "Arbitrum",
+      "optimism": "Optimism",
+      "base": "Base",
+      "solana": "Solana",
+      "cardano": "Cardano",
+      "polkadot": "Polkadot",
+      "cosmos": "Cosmos"
+    },
+    "kind": {
+      "evm": "EVM-Adresse (gleiche Adresse auf allen EVM-Netzwerken)",
+      "bitcoinAddress": "Bitcoin-Adresse",
+      "bitcoinXpub": "Bitcoin xpub/ypub/zpub (alle Adressen werden abgeleitet)",
+      "solana": "Solana-Adresse",
+      "cardano": "Cardano-Adresse",
+      "polkadot": "Polkadot-Adresse",
+      "cosmos": "Cosmos-Adresse"
+    },
+    "notes": {
+      "l1FeeNotIncluded": "L1-Datengebühren sind nicht enthalten (kleine Abweichung möglich).",
+      "balanceManual": "Saldo per 31.12. bitte manuell mit Beleg erfassen.",
+      "incomeManual": "Erträge bitte manuell erfassen.",
+      "fake": "Testdaten (LK_CHAINS_FAKE)."
+    },
+    "spamReason": {
+      "namePattern": "Name enthält „Claim“, eine Webadresse o. Ä.",
+      "zeroValue": "nur Transfers mit Wert 0",
+      "addressPoisoning": "Absender ähnelt einer deiner Zieladressen",
+      "unverifiedDust": "unverifiziert, nur erhalten",
+      "fakeSymbol": "kopiert das Kürzel eines bekannten Tokens"
+    },
+    "secret": {
+      "title": "Das sieht nach einer Seed-Phrase oder einem privaten Schlüssel aus.",
+      "text": "Erkannt: {{kind}}. Die Eingabe wurde nicht gespeichert und aus dem Formular entfernt. Gib nie geheime Schlüssel ein – lazy-koins braucht nur die öffentliche Adresse. Wenn du sie irgendwo eingegeben hast, betrachte sie als kompromittiert.",
+      "kind": {
+        "seedPhrase": "Seed-Phrase (BIP-39)",
+        "privateKeyHex": "privater Schlüssel (Hex)",
+        "privateKeyWif": "privater Schlüssel (WIF)",
+        "extendedPrivateKey": "erweiterter privater Schlüssel (xprv/zprv)",
+        "solanaSecretKey": "Solana-Secret-Key"
+      }
+    },
+    "errors": {
+      "failed": "Die Anfrage ist fehlgeschlagen.",
+      "unreachable": "Der Server ist nicht erreichbar.",
+      "closed": "Das Projekt ist abgeschlossen.",
+      "secretRefused": "Seed-Phrasen und private Schlüssel werden nicht angenommen.",
+      "unknownAddress": "Keine unterstützte öffentliche Adresse.",
+      "labelRequired": "Bitte eine Bezeichnung angeben.",
+      "networkNotForAddress": "Diese Adresse passt nicht zum Netzwerk.",
+      "usedByClosedProject": "Ein abgeschlossenes Projekt enthält diese Wallet – sie kann nicht gelöscht werden.",
+      "offline": "Abfragen aus dem Internet sind ausgeschaltet (Einstellungen › Kurse).",
+      "notConfigured": "Der Schlüssel für dieses Netzwerk fehlt (Einstellungen › Wallets & Netzwerke).",
+      "invalidKey": "Der Schlüssel wurde abgelehnt.",
+      "rateLimited": "Zu viele Anfragen – bitte später erneut versuchen.",
+      "chainNotOnPlan": "Nicht im Plan des Schlüssels – Saldo manuell mit Beleg erfassen.",
+      "network": "Der Dienst ist nicht erreichbar.",
+      "timeout": "Der Dienst hat nicht rechtzeitig geantwortet.",
+      "badResponse": "Unerwartete Antwort des Dienstes.",
+      "providerError": "Der Dienst meldet einen Fehler.",
+      "invalidAddress": "Der Dienst lehnt die Adresse ab.",
+      "unsupported": "Dieses Netzwerk wird nicht unterstützt.",
+      "privateUrl": "Lokale Adressen sind auf diesem Server nicht erlaubt.",
+      "invalidUrl": "Keine gültige Adresse (https://…, ohne Parameter).",
+      "evidenceNotPdf": "Der Beleg muss ein PDF des Projekts sein."
+    },
+    "fields": {
+      "label": "Bezeichnung",
+      "address": "Adresse",
+      "networks": "Netzwerke",
+      "notes": "Notizen",
+      "network": "Netzwerk",
+      "used": "Genutzt",
+      "coverage": "Abruf",
+      "fetch": "Letzter Abruf",
+      "movements": "Bewegungen",
+      "today": "Saldo heute",
+      "usedOn": "Genutzt auf",
+      "fetchedAt": "Abgerufen",
+      "projects": "Projekte"
+    },
+    "list": {
+      "subtitle": "Deine Wallet-Adressen – in Projekten auswählbar",
+      "new": "Wallet hinzufügen",
+      "empty": "Noch keine Wallets.",
+      "loadFailed": "Die Wallets konnten nicht geladen werden.",
+      "search": "Suchen",
+      "noMatch": "Keine Wallet passt zur Suche.",
+      "notChecked": "nicht geprüft",
+      "nowhere": "nirgends",
+      "failed": "{{count}} Netzwerke fehlgeschlagen",
+      "privacy": "Nur öffentliche Adressen. Abfragen gehen an öffentliche Dienste (Etherscan, mempool.space, …) und nur, wenn du „Netzwerke prüfen“ oder „Abrufen“ wählst."
+    },
+    "form": {
+      "newTitle": "Wallet hinzufügen",
+      "editTitle": "Wallet",
+      "subtitle": "Öffentliche Adresse, Netzwerke und Notizen",
+      "cardTitle": "Angaben",
+      "hint": "Nie eine Seed-Phrase oder einen privaten Schlüssel eingeben – sie werden erkannt und abgelehnt.",
+      "addressHint": "Öffentliche Adresse (0x…, bc1…, addr1…) oder bei Bitcoin xpub/ypub/zpub.",
+      "addressFixed": "Die Adresse ist fest – für eine andere Adresse eine neue Wallet anlegen.",
+      "networksHint": "Ausgewählte Netzwerke werden abgerufen; „Netzwerke prüfen“ zeigt, wo die Adresse genutzt wurde.",
+      "loadFailed": "Die Wallet konnte nicht geladen werden.",
+      "labelRequired": "Bitte eine Bezeichnung angeben.",
+      "labelTooLong": "Die Bezeichnung ist zu lang.",
+      "addressTooLong": "Die Adresse ist zu lang.",
+      "notesTooLong": "Die Notizen sind zu lang."
+    },
+    "networks": {
+      "title": "Netzwerke",
+      "hint": "„Netzwerke prüfen“ fragt jedes mögliche Netzwerk, ob die Adresse je genutzt wurde. „Abrufen“ holt den Verlauf der ausgewählten Netzwerke und aktualisiert die Projekte mit dieser Wallet."
+    },
+    "tokens": {
+      "title": "Token und Spam",
+      "hint": "Spam-Token (z. B. „Claim“ im Namen, Transfers mit Wert 0, Adress-Vergiftung) werden ausgeblendet. Mit „kein Spam“ zählt ein Token wieder.",
+      "asset": "Token",
+      "contract": "Vertrag / Mint",
+      "verdict": "Einstufung",
+      "action": "Aktion",
+      "spam": "Spam",
+      "notSpam": "kein Spam (manuell)",
+      "ok": "ok",
+      "markNotSpam": "kein Spam",
+      "undo": "zurücksetzen",
+      "none": "Noch keine Token abgerufen.",
+      "markedNotSpam": "Als „kein Spam“ markiert.",
+      "reset": "Einstufung zurückgesetzt."
+    },
+    "delete": {
+      "button": "Löschen",
+      "title": "Wallet löschen?",
+      "text": "Die Wallet und ihre abgerufenen Daten werden gelöscht, und ihre abgeleiteten Dateien verschwinden aus allen offenen Projekten.",
+      "confirm": "Löschen"
+    },
+    "project": {
+      "intro": "Wallets dieses Projekts. Was abgerufen wird, landet als abgeleitete Datei (Standardformat) bei den Dateien und fliesst so in Berechnung, Prüfungen und Exporte.",
+      "loadFailed": "Die Wallets des Projekts konnten nicht geladen werden.",
+      "add": "Wallet hinzufügen",
+      "choose": "Wallet wählen …",
+      "addButton": "Hinzufügen",
+      "remove": "Aus Projekt entfernen",
+      "added": "Wallet hinzugefügt.",
+      "removed": "Wallet aus dem Projekt entfernt.",
+      "empty": "Dieses Projekt enthält noch keine Wallets.",
+      "files": "Abgeleitete Dateien:"
+    },
+    "balances": {
+      "title": "Saldi per {{date}} (manuell)",
+      "hint": "Für Netzwerke, die nicht (oder nur mit Erträgen) abrufbar sind: Saldo mit Beleg (PDF) erfassen. Er gilt als Kontoauszug für Wallet und Netzwerk.",
+      "asset": "Asset",
+      "quantity": "Menge",
+      "date": "Stichtag",
+      "evidence": "Beleg (PDF)",
+      "noEvidence": "Beleg entfernt",
+      "chooseEvidence": "PDF wählen …",
+      "upload": "PDF hochladen",
+      "note": "Notiz",
+      "add": "Saldo erfassen",
+      "remove": "Entfernen",
+      "added": "Saldo erfasst.",
+      "removed": "Saldo entfernt."
+    }
+  },
+  "hints": {
+    "title": "Hinweise",
+    "subtitle": "Was in den Dateien des Projekts fehlen oder nicht stimmen könnte – mit möglichen Lösungen. Als in Ordnung markierte Hinweise bleiben auch nach einer Neuberechnung erledigt.",
+    "summary": "{{count}} offene Hinweise zu den Dateien",
+    "show": "Hinweise anzeigen",
+    "badge": "{{count}} offene Hinweise",
+    "counts": "{{open}} offen · {{dismissed}} erledigt oder ignoriert",
+    "none": "Keine Hinweise – die Dateien decken das Steuerjahr ab.",
+    "noneFiltered": "Keine Hinweise für diesen Filter.",
+    "loadFailed": "Die Hinweise konnten nicht geladen werden.",
+    "saveFailed": "Der Hinweis konnte nicht gespeichert werden",
+    "unreadFiles": "Nicht erkannte Dateien",
+    "groupCount": "{{count}} Hinweise, {{open}} offen",
+    "wholePlatform": "ganze Plattform",
+    "openItems": "{{count}} offene Punkte in den Prüfungen",
+    "more": "Details und Lösungen anzeigen",
+    "less": "Details ausblenden",
+    "accounts": "Betroffene Konten: {{accounts}}",
+    "noteLabel": "Notiz:",
+    "filter": {
+      "kind": "Typ",
+      "status": "Status",
+      "allKinds": "Alle Typen",
+      "allStatuses": "Alle",
+      "platform": "Plattform: {{platform}}"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "severity": "Dringlichkeit",
+      "kind": "Typ",
+      "date": "Datum"
+    },
+    "fields": {
+      "kind": "Typ",
+      "account": "Konto / Datei",
+      "description": "Beschreibung",
+      "date": "Datum",
+      "status": "Status",
+      "actions": "Aktion"
+    },
+    "kind": {
+      "noYearData": "Fehlende Datei",
+      "startsLate": "Lücke am Anfang",
+      "endsEarly": "Lücke am Ende",
+      "noYearEndBalance": "Kein Bestand per 31.12.",
+      "unrecognisedFile": "Nicht erkannte Datei",
+      "rowErrors": "Datei mit Zeilenfehlern"
+    },
+    "severity": {
+      "info": "Info",
+      "warning": "Warnung",
+      "error": "Fehler"
+    },
+    "status": {
+      "open": "offen",
+      "done": "erledigt",
+      "ignored": "ignoriert"
+    },
+    "short": {
+      "noYearData": "Keine Buchungen im Jahr {{year}} – die Historie endet am {{date}}.",
+      "noYearDataZero": "Historie endet am {{date}}, danach Saldo 0 – nichts fehlt.",
+      "startsLate": "Buchungen beginnen erst am {{date}}.",
+      "endsEarly": "Buchungen enden am {{date}}, bis 31.12.{{year}} fehlt etwas.",
+      "endsEarlyZero": "Buchungen enden am {{date}}; danach Saldo 0 – nichts kann fehlen.",
+      "noYearEndBalance": "Kein Kontoauszug per 31.12.{{year}} – der Saldo laut Buchungen wird nicht geprüft.",
+      "unrecognisedFile": "Kein Mapping – die Datei fliesst nicht in die Berechnung ein.",
+      "rowErrors": "{{count}} Zeilen konnten nicht gelesen werden."
+    },
+    "howTo": {
+      "unrecognisedFile": "Für den Aufbau dieser Datei gibt es noch kein Mapping. Lass es von der AI erstellen, ordne ein vorhandenes zu oder markiere die Datei als «nur Beleg».",
+      "rowErrors": "Einige Zeilen haben fehlende oder ungültige Werte (z. B. ein Zeitpunkt ohne Zeitzone). Sieh dir die Zeilen an, korrigiere die Datei oder das Mapping und lade sie neu hoch."
+    },
+    "actions": {
+      "upload": "Datei hochladen",
+      "aiStatement": "Kontoauszug mit AI auslesen",
+      "aiMapping": "Mapping mit AI erstellen",
+      "manualHolding": "Bestand manuell erfassen",
+      "template": "Vorlage herunterladen",
+      "holdingsTemplate": "Vorlage «Bestände» herunterladen",
+      "assign": "Mapping zuordnen",
+      "rowErrors": "Zeilenfehler ansehen",
+      "markOk": "Als in Ordnung markieren",
+      "reopen": "Wieder öffnen"
+    },
+    "dismiss": {
+      "title": "Hinweis als in Ordnung markieren",
+      "note": "Notiz (optional)",
+      "placeholder": "z. B. Konto nach 09.02. nicht mehr genutzt",
+      "ignore": "Ignorieren"
+    },
+    "upload": {
+      "title": "Datei für {{platform}} hochladen",
+      "detected": "Plattform und Konto werden aus der Datei erkannt (Standardformat oder Mapping)."
+    },
+    "rowErrors": {
+      "title": "Zeilenfehler in {{name}}",
+      "count": "{{shown}} von {{total}} Fehlern",
+      "column": "Spalte",
+      "problem": "Problem"
+    }
+  },
+  "notifications": {
+    "heading": "Benachrichtigungen",
+    "bell": "Benachrichtigungen",
+    "bellUnread": "Benachrichtigungen, {{count}} ungelesen",
+    "hideResolved": "Erledigte ausblenden",
+    "empty": "Keine Benachrichtigungen – alles erledigt.",
+    "loadFailed": "Die Benachrichtigungen konnten nicht geladen werden.",
+    "updateFailed": "Die Benachrichtigung konnte nicht aktualisiert werden.",
+    "general": "Allgemein",
+    "markRead": "Als gelesen markieren",
+    "markAllRead": "Alle als gelesen",
+    "dismiss": "Ausblenden",
+    "showAll": "Alle anzeigen",
+    "resolved": "erledigt",
+    "unread": "ungelesen",
+    "read": "gelesen",
+    "osBody": "lazy-koins",
+    "retryDone": "Kurse wurden erneut abgerufen",
+    "retryFailed": "Der erneute Kursabruf ist fehlgeschlagen",
+    "kind": {
+      "error": "Fehler",
+      "action": "Handlungsbedarf",
+      "info": "Info",
+      "success": "Erfolg"
+    },
+    "action": {
+      "show": "Anzeigen",
+      "retry": "Erneut versuchen",
+      "checkKey": "Schlüssel prüfen",
+      "checkSettings": "Einstellungen prüfen",
+      "toFile": "Zur Datei",
+      "toFiles": "Zu den Dateien",
+      "toHint": "Zum Hinweis",
+      "toChecks": "Zu den Prüfungen",
+      "toRates": "Zu den Kursen",
+      "toExports": "Zu den Auszügen",
+      "toStorage": "Speicherort prüfen",
+      "toSetup": "Einrichten"
+    },
+    "title": {
+      "rates": {
+        "fetchFailed": "Kurse konnten nicht abgerufen werden: {{assets}}",
+        "missingPrices": "{{count}} Position(en) oder Erträge ohne Kurs"
+      },
+      "estv": {
+        "fetchFailed": "ESTV-Kursliste {{year}} konnte nicht bezogen werden ({{reason}})",
+        "newVersion": "Neue Fassung verfügbar: {{label}}"
+      },
+      "key": {
+        "invalid": "Schlüssel für {{service}} ungültig oder abgelaufen"
+      },
+      "ai": {
+        "callFailed": "AI-Aufruf fehlgeschlagen: {{code}}"
+      },
+      "mail": {
+        "sendFailed": "Mail an den Treuhänder konnte nicht gesendet werden ({{reason}})",
+        "sent": "Mail an den Treuhänder gesendet ({{count}} Anhänge)"
+      },
+      "export": {
+        "failed": "Auszug konnte nicht erstellt werden: {{kind}}"
+      },
+      "package": {
+        "importFailed": "Paket-Import fehlgeschlagen ({{reason}})"
+      },
+      "wallet": {
+        "fetchFailed": "Wallet-Abruf fehlgeschlagen: {{label}} – {{networks}} ({{reason}})"
+      },
+      "file": {
+        "needsMapping": "Datei ohne Mapping: {{name}}",
+        "rowErrors": "{{count}} Zeilenfehler in {{name}}",
+        "readFailed": "Datei konnte nicht gelesen werden: {{name}}"
+      },
+      "hints": {
+        "open": "{{count}} offene Hinweise zu fehlenden Dateien"
+      },
+      "checks": {
+        "openItems": "{{count}} offene Punkte nach der Berechnung"
+      },
+      "project": {
+        "changedSinceSent": "Seit dem Versand an den Treuhänder geändert: {{reasons}}"
+      },
+      "desktop": {
+        "syncConflict": "Sync-Konflikt: {{count}} Konfliktkopie(n) der Datenbank gefunden"
+      },
+      "task": {
+        "done": "Fertig: {{task}}",
+        "failed": "Fehlgeschlagen: {{task}}"
+      },
+      "setup": {
+        "incomplete": "Einrichtung unvollständig: {{count}} Punkt(e) fehlen noch (z. B. Schlüssel oder Mailer)"
+      }
+    },
+    "reason": {
+      "network": "nicht erreichbar",
+      "timeout": "Zeitüberschreitung",
+      "http": "Fehler des Servers",
+      "badResponse": "unerwartete Antwort",
+      "tooLarge": "zu gross",
+      "badArchive": "ungültiges Archiv",
+      "badXml": "ungültige Daten",
+      "notFound": "noch nicht veröffentlicht",
+      "processing": "Verarbeitung fehlgeschlagen",
+      "auth": "Anmeldung abgelehnt",
+      "tls": "Verschlüsselung fehlgeschlagen",
+      "connection": "keine Verbindung",
+      "dns": "Server unbekannt",
+      "rejected": "abgelehnt",
+      "protocol": "Protokollfehler",
+      "unknown": "unbekannter Fehler",
+      "notZip": "keine ZIP-Datei",
+      "unsafePath": "unsicherer Pfad im Paket",
+      "manifest": "kein lazy-koins-Paket",
+      "tampered": "Paket verändert",
+      "version": "neuere Paketversion",
+      "content": "ungültiger Inhalt",
+      "unexpected": "unerwarteter Fehler",
+      "notConfigured": "Schlüssel fehlt",
+      "invalidKey": "Schlüssel abgelehnt",
+      "rateLimited": "zu viele Anfragen",
+      "chainNotOnPlan": "Netzwerk nicht im Abo",
+      "providerError": "Fehler des Anbieters",
+      "invalidAddress": "ungültige Adresse",
+      "unsupported": "nicht unterstützt"
+    },
+    "page": {
+      "title": "Benachrichtigungen",
+      "subtitle": "Fehler, Handlungsbedarf und erledigte Aufgaben – sie verschwinden von selbst, wenn die Ursache behoben ist.",
+      "kind": "Typ",
+      "allKinds": "Alle Typen",
+      "project": "Projekt",
+      "allProjects": "Alle Projekte",
+      "status": "Status",
+      "message": "Meldung",
+      "when": "Zeit",
+      "statuses": {
+        "all": "Offene",
+        "unread": "Ungelesene",
+        "resolved": "Mit erledigten"
+      }
+    },
+    "service": {
+      "ai": "AI",
+      "coingecko": "CoinGecko",
+      "mail": "Mail (SMTP)",
+      "chain": "Netzwerk-Abfragen"
+    }
+  },
+  "activity": {
+    "running": "{{label}} …",
+    "withProgress": "{{label}} ({{done}}/{{total}}) …",
+    "withPercent": "{{label}} ({{percent}} %) …",
+    "several": "{{count}} Aufgaben laufen",
+    "expand": "Laufende Aufgaben anzeigen",
+    "collapse": "Laufende Aufgaben ausblenden",
+    "show": "Anzeigen",
+    "calculate": "Ergebnis wird berechnet",
+    "rates": "Kurse werden aktualisiert",
+    "estv": "ESTV-Kursliste wird importiert",
+    "estvUpdate": "ESTV-Kursliste {{year}} wird bezogen · {{phase}}",
+    "export": "Auszug wird erstellt ({{kind}})",
+    "upload": "Dateien werden hochgeladen",
+    "reapply": "Mapping wird auf die Dateien angewendet",
+    "ai": {
+      "mapping": "AI erstellt Mapping für {{name}}",
+      "statement": "AI liest den Kontoauszug {{name}} aus",
+      "statementSave": "Bestände aus {{name}} werden geprüft und gespeichert",
+      "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
+      "statementReady": "Kontoauszug {{name}} ist ausgelesen"
+    },
+    "libraryTake": "Mapping aus der Bibliothek übernehmen"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Dein Krypto-Vermögen über alle Projekte – aus denselben Daten und Kursen wie die Steuerberechnung.",
+    "empty": "Noch kein Projekt – lege eines an und lade Dateien hoch, dann erscheint hier die Übersicht.",
+    "loadFailed": "Das Dashboard konnte nicht geladen werden.",
+    "recordsFailed": "Die Buchungen konnten nicht geladen werden.",
+    "total": "Gesamtwert per {{date}}",
+    "sinceStart": "seit {{date}}",
+    "noStartValue": "Zu Beginn des Zeitraums war noch kein bewerteter Bestand vorhanden.",
+    "chartLabel": "Gesamtwert in {{currency}} pro Tag",
+    "allocation": "Verteilung nach Asset",
+    "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden und fehlen in der Übersicht.",
+    "period": {
+      "label": "Zeitraum",
+      "ytd": "Laufendes Jahr",
+      "last12": "Letzte 12 Monate",
+      "taxYear": "Steuerjahr {{year}}"
+    },
+    "kpi": {
+      "label": "Kennzahlen im Zeitraum",
+      "deposits": "Einzahlungen (In)",
+      "withdrawals": "Auszahlungen (Out)",
+      "income": "Ertrag",
+      "costs": "Kosten / Verluste",
+      "tradingFees": "Handelsgebühren",
+      "incomeShare": "{{pct}} % des Vermögens",
+      "missing": "{{count}} Buchung(en) ohne Kurs nicht enthalten",
+      "bookings": "{{count}} Buchung(en) – anklicken für Details"
+    },
+    "missing": {
+      "title": "Fehlende Kurse",
+      "body": "Ohne Kurs (nicht als 0 gezählt): {{assets}}.",
+      "afterRefresh": "Nach der Aktualisierung von {{count}} Asset(s) fehlen diese Kurse weiterhin."
+    },
+    "rates": {
+      "refresh": "Kurse aktualisieren",
+      "progress": "Lade Kurse {{done}}/{{total}}: {{asset}}",
+      "fx": "Wechselkurse",
+      "offlineHint": "Kursabfragen aus dem Internet sind ausgeschaltet (Einstellungen › Kurse).",
+      "done": "Kurse aktualisiert: {{fetched}} geladen, {{missing}} ohne Kurs",
+      "offline": "Kursabfragen aus dem Internet sind ausgeschaltet",
+      "failed": "Kurse konnten nicht aktualisiert werden"
+    },
+    "holdings": {
+      "title": "Bestände",
+      "asOf": "Stichtag {{date}} – aufklappen für Plattformen und Konten",
+      "search": "Asset oder Plattform suchen",
+      "empty": "Keine Bestände am Stichtag.",
+      "asset": "Asset",
+      "quantity": "Menge",
+      "price": "Kurs {{currency}}",
+      "value": "Marktwert {{currency}}",
+      "trend": "Kursverlauf",
+      "trendOf": "Kursverlauf {{asset}} im Zeitraum",
+      "noPrice": "kein Kurs",
+      "status": {
+        "ok": "bewertet",
+        "missingPrice": "kein Kurs",
+        "negative": "negativ"
+      }
+    },
+    "card": {
+      "title": "Übersicht {{year}}"
+    },
+    "currency": {
+      "label": "Währung",
+      "note": "Deine Projekte haben verschiedene Steuerwährungen. Das Dashboard rechnet nicht um: Es zeigt die Projekte in {{currency}}. Wähle eine andere Währung für die übrigen Projekte."
+    }
+  },
+  "charts": {
+    "date": "Datum",
+    "valueChf": "Wert {{currency}}",
+    "missing": "Ohne Kurs",
+    "missingOn": "Ohne Kurs: {{assets}}",
+    "missingLegend": "Tage, an denen für mindestens ein Asset kein Kurs vorliegt (nicht als 0 gezählt)",
+    "asset": "Asset",
+    "share": "Anteil",
+    "others": "Andere ({{count}})"
+  },
+  "estv": {
+    "title": "ESTV-Kursliste automatisch",
+    "hint": "lazy-koins bezieht die offizielle Kursliste (ICTax) einmal je Steuerjahr und Stand für alle und prüft täglich, ob die ESTV einen neueren Stand veröffentlicht hat. Daraus gelten die Jahresendkurse der Kryptowährungen und Devisen (USD, EUR) – vor allen anderen Quellen.",
+    "disabled": "Der automatische Bezug ist auf diesem Server ausgeschaltet. Der manuelle Import bleibt möglich.",
+    "offline": "Kursabfragen aus dem Internet sind ausgeschaltet – die Kursliste wird nicht bezogen.",
+    "none": "Noch keine Kursliste geladen.",
+    "notLoaded": "nicht geladen",
+    "downloadedAt": "geladen {{date}}",
+    "lastCheck": "Zuletzt geprüft: {{date}}",
+    "update": "ESTV-Kursliste aktualisieren",
+    "apply": "Neuen Stand übernehmen",
+    "running": "Kursliste {{year}} wird bezogen",
+    "updated": "Neuer Stand der ESTV-Kursliste geladen",
+    "current": "Die ESTV-Kursliste ist aktuell",
+    "checkFailed": "ESTV-Kursliste konnte nicht bezogen werden",
+    "updateFailed": "ESTV-Kursliste konnte nicht aktualisiert werden",
+    "applyFailed": "ESTV-Kursliste konnte nicht übernommen werden",
+    "applied": "{{count}} Kryptowährungen aus der {{label}} übernommen",
+    "noneForYear": "Für {{year}} ist noch keine ESTV-Kursliste geladen",
+    "loadFailed": "Der Stand der ESTV-Kursliste konnte nicht geladen werden.",
+    "projectTitle": "ESTV-Kursliste {{year}}",
+    "inUse": "Verwendet: {{label}}",
+    "notApplied": "Noch keine ESTV-Werte in diesem Projekt.",
+    "newer": "Verfügbar: {{label}}",
+    "projectOffline": "Automatischer Bezug aus (Einstellungen oder Server) – ein gespeicherter Stand kann trotzdem übernommen werden.",
+    "matched": "{{count}} Kryptowährungen und {{fx}} Devisenkurse aus der Kursliste",
+    "ambiguous": "{{asset}}: mehrere Einträge in der Kursliste ({{names}}) – kein ESTV-Wert übernommen, bitte den Kurs per 31.12. überschreiben.",
+    "fields": {
+      "year": "Steuerjahr",
+      "version": "Stand",
+      "crypto": "Kryptowährungen",
+      "fx": "Devisen",
+      "checked": "Letzte Prüfung"
+    },
+    "outcome": {
+      "updated": "neu geladen",
+      "current": "aktuell",
+      "failed": "Fehler"
+    },
+    "phase": {
+      "metadata": "Stand prüfen",
+      "download": "herunterladen",
+      "parse": "lesen",
+      "store": "speichern"
+    }
+  },
+  "mail": {
+    "placeholders": {
+      "name": "Dein Name (Profil)",
+      "treuhaender": "Name des Treuhänders (Profil)",
+      "steuerjahr": "Steuerjahr des Projekts",
+      "kanton": "Kanton des Projekts",
+      "vermoegen": "Steuerwert per 31.12. mit Währung, z. B. „CHF 12’345.65“ (letzte Berechnung)",
+      "ertrag": "Ertrag mit Währung (letzte Berechnung)",
+      "anhaenge": "Liste der Anhänge (eine Zeile pro Datei)",
+      "offene_punkte": "Offene Punkte der Prüfungen, die nicht abgehakt sind",
+      "datum": "Heutiges Datum",
+      "projekt": "Name des Projekts"
+    },
+    "smtp": {
+      "kind": {
+        "auth": "Anmeldung abgelehnt – Benutzer oder Passwort prüfen.",
+        "tls": "Verschlüsselung fehlgeschlagen – Verschlüsselung/Port oder Zertifikat des Servers prüfen.",
+        "connection": "Keine Verbindung zum Server – Servername und Port prüfen.",
+        "dns": "Der Servername ist unbekannt.",
+        "timeout": "Der Server antwortet nicht (Zeitüberschreitung).",
+        "rejected": "Der Server hat die Mail abgelehnt (Absender, Empfänger oder Grösse).",
+        "protocol": "Unerwartete Antwort – ist das ein SMTP-Server, stimmen Port und Verschlüsselung?",
+        "unknown": "Die Mail konnte nicht gesendet werden."
+      },
+      "server": "Server",
+      "code": "SMTP-Code",
+      "command": "Befehl",
+      "errorCode": "Fehlercode",
+      "response": "Antwort des Servers"
+    },
+    "errors": {
+      "failed": "Mail-Anfrage fehlgeschlagen",
+      "unreachable": "Server nicht erreichbar",
+      "mailDisabled": "Der Mailer ist ausgeschaltet (Einstellungen › Mail)",
+      "mailNotConfigured": "Zuerst Server und Absenderadresse einrichten (Einstellungen › Mail)",
+      "passwordUnreadable": "Das gespeicherte Passwort ist nicht mehr lesbar – bitte neu eingeben",
+      "privateHost": "Lokale Server sind auf diesem Server nicht erlaubt",
+      "invalidHost": "Ungültiger Servername",
+      "invalidAddress": "Keine gültige E-Mail-Adresse",
+      "encryptionUnavailable": "Passwörter können auf diesem Server nicht gespeichert werden",
+      "confirmationRequired": "Bitte das Senden bestätigen",
+      "attachmentsTooLarge": "Anhänge zusammen grösser als 20 MB",
+      "unknownExport": "Ein Anhang gehört nicht zu diesem Projekt",
+      "emptyMail": "Betreff und Text dürfen nicht leer sein",
+      "unknownPlaceholders": "Die Vorlage enthält unbekannte Platzhalter",
+      "smtpFailed": "Der Mail-Server hat die Mail nicht angenommen"
+    },
+    "send": {
+      "cardTitle": "An Treuhänder",
+      "cardHint": "Die Auszüge per Mail an den Treuhänder senden – oder festhalten, dass du sie anders zugestellt hast.",
+      "open": "An Treuhänder senden",
+      "title": "An Treuhänder senden",
+      "hint": "Text aus deiner Vorlage – hier noch änderbar. Gesendet wird erst nach der Bestätigung.",
+      "noMailerHint": "Kein Mailer eingerichtet: Text kopieren oder im Mailprogramm öffnen (Anhänge dort selbst hinzufügen).",
+      "setUpMailer": "Mailer einrichten (Einstellungen › Mail)",
+      "notCalculated": "Noch nicht berechnet – Vermögen und Ertrag fehlen im Text.",
+      "to": "An",
+      "toPlaceholder": "E-Mail des Treuhänders",
+      "toRequired": "Empfänger fehlt",
+      "cc": "CC",
+      "ccMe": "CC an mich ({{address}})",
+      "subject": "Betreff",
+      "body": "Text",
+      "bodyEdited": "Text geändert: die Anhänge-Liste im Text wird nicht mehr automatisch angepasst.",
+      "attachments": "Anhänge",
+      "noAttachments": "Noch keine Auszüge erstellt.",
+      "noneSelected": "keine",
+      "internalWarning": "Interner Bericht – nicht für den Treuhänder gedacht.",
+      "total": "Zusammen {{total}} (max. {{max}})",
+      "tooLarge": "Zusammen {{total}} – mehr als {{max}} erlaubt",
+      "continue": "Weiter zur Kontrolle",
+      "confirmTitle": "Mail kontrollieren und senden",
+      "confirmHint": "So geht die Mail hinaus. Erst „Jetzt senden“ verschickt sie.",
+      "back": "Zurück",
+      "sendNow": "Jetzt senden",
+      "sending": "Wird gesendet …",
+      "sent": "Mail an den Treuhänder gesendet",
+      "mailto": "Im Mailprogramm öffnen"
+    },
+    "log": {
+      "title": "Gesendete Mails",
+      "when": "Wann",
+      "to": "An",
+      "cc": "CC: {{cc}}",
+      "subject": "Betreff",
+      "attachments": "Anhänge",
+      "status": "Status",
+      "sent": "gesendet",
+      "failed": "fehlgeschlagen"
+    }
+  },
+  "setup": {
+    "title": "Einrichtung",
+    "subtitle": "Ein paar Schritte, damit lazy-koins alles hat, was es zum Arbeiten braucht. Optionale Schritte kannst du auf später verschieben.",
+    "loadFailed": "Der Stand der Einrichtung konnte nicht geladen werden.",
+    "stepsLabel": "Schritte der Einrichtung",
+    "stepNumber": "Schritt {{number}}",
+    "stepOf": "Schritt {{number}} von {{total}}",
+    "required": "Pflicht",
+    "optional": "optional",
+    "back": "Zurück",
+    "next": "Weiter",
+    "later": "Später",
+    "withoutAi": "Ohne AI fortfahren",
+    "startApp": "App starten",
+    "firstProject": "Erstes Projekt anlegen",
+    "finishFailed": "Die Einrichtung ist noch nicht vollständig.",
+    "saveFailed": "Der Stand konnte nicht gespeichert werden.",
+    "stepIncomplete": "Dieser Schritt ist noch nicht vollständig eingerichtet.",
+    "whereKey": "Wo bekomme ich den Schlüssel?",
+    "state": {
+      "open": "offen",
+      "done": "erledigt",
+      "skipped": "übersprungen",
+      "error": "Fehler"
+    },
+    "deepLink": {
+      "rates": "Kurse einrichten"
+    },
+    "steps": {
+      "profile": {
+        "title": "Profil",
+        "intro": "Dein Name und dein Wohnkanton erscheinen auf den Auszügen für die Steuerbehörde; der Kanton bestimmt die Formularverweise. Sprache sowie Zahlen- und Datumsformat gelten für die ganze App."
+      },
+      "advisor": {
+        "title": "Treuhänder",
+        "intro": "Wenn dir jemand bei der Steuererklärung hilft: Name und E-Mail-Adresse. «An Treuhänder senden» schickt die Auszüge dann direkt dorthin."
+      },
+      "ai": {
+        "title": "AI-Plugin",
+        "intro": "Eine AI schreibt Mappings für Dateien, die lazy-koins noch nicht kennt, und liest PDF-Auszüge. Sie bekommt nur die Kopfzeile und wenige Beispielzeilen – vor jedem Senden siehst du genau, was hinausgeht. Ohne AI erstellst du Mappings von Hand."
+      },
+      "rates": {
+        "title": "Kurse",
+        "intro": "Für die Bewertung braucht lazy-koins Kurse: Wechselkurse (EZB), Tagesschlusskurse (Binance) und mit einem kostenlosen CoinGecko-Schlüssel auch Coins, die Binance nicht führt. Die ESTV-Kursliste mit den Steuerwerten per 31.12. wird automatisch bezogen."
+      },
+      "wallets": {
+        "title": "Wallets & Netzwerke",
+        "intro": "Mit einem Etherscan-Schlüssel (einer für alle EVM-Chains wie Ethereum, Arbitrum oder Polygon) und einem Helius-Schlüssel (Solana) ruft lazy-koins Bestände und Erträge deiner Wallet-Adressen ab. Bitcoin und Cardano brauchen keinen Schlüssel."
+      },
+      "mail": {
+        "title": "Mail",
+        "intro": "Mit einem Mailer (SMTP) schickt lazy-koins die Auszüge direkt an deinen Treuhänder. Ohne Mailer kopierst du den Text in dein eigenes Mailprogramm."
+      },
+      "storage": {
+        "title": "Speicherort",
+        "intro": "Wo die Datenbank und deine Originaldateien liegen – im Ordner der App oder in einem Ordner deiner Wahl, auch im Sync-Ordner von OneDrive, Google Drive oder Proton Drive."
+      },
+      "pin": {
+        "title": "PIN",
+        "intro": "Ein PIN aus 4 bis 8 Ziffern sperrt die App beim Öffnen und nach einer Pause. Gespeichert wird nur ein langsamer Hash, nie der PIN selbst."
+      },
+      "summary": {
+        "title": "Zusammenfassung",
+        "intro": "Was eingerichtet ist und was fehlt – mit dem, was eine Lücke bedeutet. Alles lässt sich später in Profil und Einstellungen ändern."
+      }
+    },
+    "profile": {
+      "nameRequired": "Gib deinen Namen ein.",
+      "cantonRequired": "Wähle deinen Wohnkanton.",
+      "language": "Sprache",
+      "languageHint": "Gilt sofort; im Profil jederzeit änderbar.",
+      "format": "Zahlen- und Datumsformat",
+      "number": "Zahlenformat",
+      "date": "Datumsformat"
+    },
+    "ai": {
+      "consent": "Ich bin einverstanden, dass Kopfzeile und wenige Beispielzeilen einer Datei an den gewählten Anbieter gesendet werden, wenn ich «Mit AI erstellen» wähle.",
+      "consentGiven": "Deine Zustimmung ist erteilt (in Einstellungen › AI widerrufbar)."
+    },
+    "rates": {
+      "estvAuto": "Die ESTV-Kursliste wird automatisch bezogen, sobald ein Projekt sie braucht.",
+      "estvLoaded": "Die ESTV-Kursliste {{year}} ist geladen."
+    },
+    "wallets": {
+      "note": "Weitere Netzwerke (Polkadot/Subscan) und eigene Adressen von Esplora, Koios oder Cosmos richtest du in Einstellungen › Wallets & Netzwerke ein.",
+      "addresses": "Erste Wallet-Adressen erfassen"
+    },
+    "mail": {
+      "template": "Die Mail an deinen Treuhänder beginnt mit der Standardvorlage (Betreff, Text mit den Zahlen und den offenen Punkten).",
+      "templateLink": "Vorlage anpassen"
+    },
+    "storage": {
+      "syncHint": "Öffne lazy-koins nie gleichzeitig auf zwei Geräten mit diesem Ordner und warte nach dem Beenden, bis die Synchronisation fertig ist.",
+      "restartHint": "Nach dem Wechsel startet die App neu. Wähle «Kopieren», damit deine bisherigen Eingaben mitkommen; die Einrichtung geht danach hier weiter.",
+      "webOnly": "Der Speicherort lässt sich nur in der Desktop-App wählen."
+    },
+    "pin": {
+      "alreadySet": "Ein PIN ist gesetzt. Ändern kannst du ihn im Profil.",
+      "desktopHint": "In der Desktop-App ist der PIN Pflicht: Er schützt deine Daten auf diesem Rechner. Vergessen? Dann lässt er sich zurücksetzen – die gespeicherten Schlüssel musst du danach neu eingeben.",
+      "webHint": "Optional: Zusätzlich zur Anmeldung fragt die App nach dem PIN, wenn du sie neu öffnest oder eine Weile nichts tust."
+    },
+    "summary": {
+      "ok": "eingerichtet",
+      "missing": "fehlt",
+      "setUp": "Einrichten",
+      "items": {
+        "profile": {
+          "title": "Profil",
+          "ok": "Name und Wohnkanton erscheinen auf den Auszügen.",
+          "missing": "Ohne Name und Wohnkanton fehlen die Angaben auf den Auszügen."
+        },
+        "advisor": {
+          "title": "Treuhänder",
+          "ok": "«An Treuhänder senden» kennt die Adresse.",
+          "missing": "Ohne Treuhänder gibst du die Empfänger-Adresse beim Senden selbst ein."
+        },
+        "ai": {
+          "title": "AI-Plugin",
+          "ok": "Unbekannte Dateien und PDF-Auszüge kann die AI einlesen.",
+          "missing": "Ohne AI-Plugin erstellst du Mappings für unbekannte Dateien von Hand."
+        },
+        "onlineRates": {
+          "title": "Kurse aus dem Internet",
+          "ok": "Kurse werden bei «Kurse aktualisieren» abgerufen.",
+          "missing": "Kursabfragen sind aus: Es gelten nur gespeicherte und von Hand erfasste Kurse."
+        },
+        "coingeckoKey": {
+          "title": "CoinGecko-Schlüssel",
+          "ok": "Auch Coins, die Binance nicht führt, bekommen einen Kurs.",
+          "missing": "Ohne CoinGecko-Schlüssel fehlen Kurse für Coins, die Binance nicht führt (z. B. FLR, SGB)."
+        },
+        "etherscanKey": {
+          "title": "Etherscan-Schlüssel",
+          "ok": "EVM-Wallets können abgefragt werden.",
+          "missing": "Ohne Etherscan-Schlüssel erfasst du Bestände von EVM-Wallets von Hand."
+        },
+        "mail": {
+          "title": "Mailer",
+          "ok": "Die Auszüge gehen direkt an deinen Treuhänder.",
+          "missing": "Ohne Mailer schickst du die Auszüge über dein eigenes Mailprogramm."
+        },
+        "pin": {
+          "title": "PIN",
+          "ok": "Die App ist beim Öffnen und nach einer Pause gesperrt.",
+          "missing": "Ohne PIN schützt nur die Anmeldung deine Daten."
+        }
+      }
+    }
+  },
+  "pin": {
+    "lockNow": "Jetzt sperren",
+    "changed": "Der PIN wurde geändert.",
+    "removed": "Der PIN wurde entfernt.",
+    "autoLockSaved": "Die automatische Sperre wurde gespeichert.",
+    "lock": {
+      "title": "lazy-koins ist gesperrt",
+      "hint": "Gib deinen PIN ein, um weiterzuarbeiten.",
+      "label": "PIN",
+      "placeholder": "PIN",
+      "pad": "Ziffernblock",
+      "delete": "Letzte Ziffer löschen",
+      "unlock": "Entsperren",
+      "wait": "Nächster Versuch in {{seconds}} s.",
+      "attemptsLeft": "Noch {{count}} Versuche bis zur neuen Anmeldung.",
+      "forgot": "PIN vergessen?",
+      "relogin": "Abmelden und neu anmelden",
+      "reason": {
+        "idle": "Gesperrt nach einer Pause. Gib deinen PIN ein, um weiterzuarbeiten.",
+        "lock-screen": "Gesperrt, weil der Bildschirm gesperrt wurde.",
+        "suspend": "Gesperrt, weil der Rechner im Ruhezustand war.",
+        "unknown": "Gib deinen PIN ein, um weiterzuarbeiten."
+      }
+    },
+    "forgot": {
+      "title": "PIN vergessen",
+      "desktopBody": "Du kannst den PIN zurücksetzen. Weil er die gespeicherten Schlüssel schützt, werden diese dabei gelöscht und müssen neu eingegeben werden:",
+      "keys": {
+        "ai": "der API-Schlüssel des AI-Plugins",
+        "mail": "das Passwort des Mailers",
+        "coingecko": "der CoinGecko-Schlüssel",
+        "etherscan": "der Etherscan-Schlüssel",
+        "chains": "die Schlüssel für weitere Netzwerke (Helius, Subscan)"
+      },
+      "confirm": "Ich habe verstanden, dass diese Schlüssel gelöscht werden. Projekte, Dateien und Einstellungen bleiben.",
+      "reset": "PIN zurücksetzen",
+      "webBody": "Melde dich mit deinem Konto neu an – danach wird der PIN entfernt und du kannst einen neuen festlegen.",
+      "relogin": "Neu anmelden und PIN zurücksetzen"
+    },
+    "form": {
+      "pin": "PIN (4–8 Ziffern)",
+      "repeat": "PIN wiederholen",
+      "current": "Aktueller PIN",
+      "new": "Neuer PIN",
+      "autoLock": "Automatisch sperren nach",
+      "minutes": "{{count}} Minuten ohne Aktivität",
+      "invalid": "Der PIN besteht aus 4 bis 8 Ziffern.",
+      "mismatch": "Die beiden PINs stimmen nicht überein."
+    },
+    "settings": {
+      "title": "PIN-Sperre",
+      "hintDesktop": "Die App fragt bei jedem Start, nach einer Pause und nach dem Sperren des Bildschirms nach dem PIN.",
+      "hintWeb": "Optional: Zusätzlich zur Anmeldung fragt die App nach dem PIN, wenn du sie neu öffnest oder eine Weile nichts tust.",
+      "none": "Kein PIN gesetzt.",
+      "set": "PIN festlegen",
+      "change": "PIN ändern",
+      "remove": "PIN entfernen"
+    },
+    "errors": {
+      "wrongPin": "Falscher PIN.",
+      "pinThrottled": "Zu viele Versuche – bitte warten.",
+      "reloginRequired": "Zu viele Fehlversuche: Melde dich neu an.",
+      "invalidPin": "Der PIN besteht aus 4 bis 8 Ziffern.",
+      "currentPinRequired": "Gib den aktuellen PIN ein.",
+      "pinRequired": "In der Desktop-App ist ein PIN Pflicht.",
+      "confirmationRequired": "Bestätige zuerst, dass die Schlüssel gelöscht werden.",
+      "noPin": "Es ist kein PIN gesetzt.",
+      "failed": "Das hat nicht geklappt. Versuche es noch einmal."
+    }
+  },
+  "chat": {
+    "title": "Assistent",
+    "new": "Neuer Chat",
+    "newConversation": "Neuer Chat",
+    "conversations": "Unterhaltungen",
+    "close": "Assistent schliessen",
+    "rename": {
+      "action": "Umbenennen",
+      "title": "Unterhaltung umbenennen",
+      "label": "Titel",
+      "required": "Bitte gib einen Titel ein.",
+      "tooLong": "Höchstens 120 Zeichen."
+    },
+    "delete": {
+      "action": "Unterhaltung löschen",
+      "title": "Unterhaltung löschen?",
+      "body": "Alle Nachrichten dieser Unterhaltung werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Löschen"
+    },
+    "renamed": "Unterhaltung umbenannt",
+    "renameFailed": "Umbenennen fehlgeschlagen",
+    "deleted": "Unterhaltung gelöscht",
+    "deleteFailed": "Löschen fehlgeschlagen",
+    "loadFailed": "Die Unterhaltung konnte nicht geladen werden",
+    "askFailed": "Die Frage konnte nicht gesendet werden",
+    "unavailable": "Der Assistent ist gerade nicht verfügbar.",
+    "setupHint": "Der Assistent nutzt das AI-Plugin. Richte es im Einrichtungs-Assistenten ein.",
+    "openSettings": "AI einrichten",
+    "consent": {
+      "title": "Bevor du fragst",
+      "body": "Deine Chat-Nachrichten und was die Werkzeuge dafür lesen (Projekte, Zahlen, Dateizeilen) gehen an {{provider}} ({{model}}). Die Zustimmung kannst du in den Einstellungen widerrufen.",
+      "accept": "Zustimmen",
+      "defaultModel": "Standardmodell"
+    },
+    "empty": "Frag mich etwas zu deinen Projekten, Dateien, Kursen oder Ergebnissen. Ich berücksichtige, was du gerade offen hast.",
+    "thinking": "Der Assistent denkt nach …",
+    "statusFailed": "Der Status des Assistenten konnte nicht geladen werden.",
+    "loading": "Wird geladen …",
+    "input": {
+      "label": "Deine Frage",
+      "placeholder": "Frage stellen … (Enter sendet, Shift+Enter = neue Zeile)"
+    },
+    "send": "Senden",
+    "toolsUsed": "Benutzte Werkzeuge ({{count}})",
+    "proposal": {
+      "arrow": "→",
+      "removed": "(entfernt)",
+      "cancel": "Abbrechen",
+      "confirm": "Ausführen",
+      "openProject": "Projekt öffnen",
+      "alreadyDecided": "Über diesen Vorschlag wurde schon entschieden",
+      "failed": "Die Entscheidung konnte nicht gespeichert werden",
+      "status": {
+        "executed": "Ausgeführt ✓",
+        "failed": "Fehlgeschlagen:",
+        "cancelled": "Abgebrochen"
+      },
+      "errors": {
+        "unknownTool": "unbekanntes Werkzeug",
+        "invalidArguments": "ungültige Angaben",
+        "areaDisabled": "Bereich nicht freigegeben",
+        "writeDisabled": "Ändern nicht erlaubt",
+        "notFound": "nicht gefunden – vielleicht wurde es gelöscht",
+        "conflict": "passt nicht zum aktuellen Stand (z. B. Projekt abgeschlossen)",
+        "refused": "abgelehnt",
+        "failed": "unerwarteter Fehler"
+      }
+    },
+    "upload": {
+      "drop": "Datei hierher ziehen (CSV, XLSX, PDF)",
+      "pick": "Datei wählen",
+      "show": "In Dateien anzeigen"
+    },
+    "preview": {
+      "fallback": "Mit diesen Werten:",
+      "priceOverride": "Kurs von {{asset}} am {{date}} überschreiben",
+      "reclassify": "Buchung {{booking}} umklassieren",
+      "manualBooking": "Manuelle Buchung {{asset}} auf {{platform}}",
+      "manualHolding": "Manueller Bestand {{asset}} auf {{platform}}",
+      "openItem": "Offenen Punkt bearbeiten: {{item}}",
+      "createExport": "Export erstellen: {{kind}}",
+      "sendMail": "Mail an {{to}} senden",
+      "hintStatus": "Hinweis {{hint}} auf «{{status}}» setzen",
+      "removeFile": "Datei «{{file}}» aus dem Projekt entfernen",
+      "createMapping": "Neues Mapping «{{name}}» speichern",
+      "updateMapping": "Mapping «{{name}}» ersetzen (Version {{from}} → {{to}})",
+      "deleteMapping": "Mapping «{{name}}» löschen",
+      "createProject": "Neues Projekt «{{name}}» für {{year}} ({{canton}})",
+      "updateProject": "Projekt «{{name}}» ändern",
+      "deleteProject": "Projekt «{{name}}» ({{year}}) endgültig löschen",
+      "updateSettings": "Profil/Einstellungen ändern",
+      "label": {
+        "reason": "Begründung",
+        "price": "Kurs {{asset}} ({{unit}})",
+        "kind": "Art",
+        "booking": "Buchung",
+        "holdingAt": "Bestand per {{date}}",
+        "done": "Erledigt",
+        "note": "Notiz",
+        "export": "Export",
+        "openItems": "Offene Punkte",
+        "to": "An",
+        "subject": "Betreff",
+        "attachments": "Anhänge",
+        "status": "Status",
+        "file": "Datei",
+        "mapping": "Mapping",
+        "version": "Version",
+        "name": "Name",
+        "taxYear": "Steuerjahr",
+        "canton": "Kanton",
+        "notes": "Notizen",
+        "taxCurrency": "Steuerwährung",
+        "project": "Projekt",
+        "displayName": "Name",
+        "advisorName": "Treuhänder",
+        "advisorEmail": "E-Mail Treuhänder",
+        "onlineRates": "Kursabfragen aus dem Internet",
+        "libraryEntry": "Bibliothek",
+        "stars": "Sterne",
+        "privacyFindings": "Persönlich wirkende Werte",
+        "pseudonym": "Anzeigename"
+      },
+      "value": {
+        "noPrice": "kein Kurs",
+        "override": "{{price}} {{unit}} (Override)",
+        "yes": "ja",
+        "no": "nein",
+        "anonymous": "Anonym",
+        "findingsRemoved": "{{count}} entfernt",
+        "findingsKept": "{{count}} bleiben drin"
+      },
+      "publishMapping": "Mapping «{{name}}» in der Bibliothek veröffentlichen",
+      "publishMappingVersion": "Version {{version}} von «{{name}}» in der Bibliothek veröffentlichen",
+      "takeLibraryMapping": "Mapping «{{name}}» (Version {{version}}) aus der Bibliothek übernehmen",
+      "rateLibraryMapping": "Mapping «{{name}}» bewerten",
+      "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen"
+    },
+    "event": {
+      "executed": "Ausgeführt: {{title}}",
+      "cancelled": "Abgebrochen: {{title}}",
+      "failed": "Fehlgeschlagen: {{title}} – {{reason}}"
+    }
+  },
+  "assistant": {
+    "effect": {
+      "readOnly": "Lesen",
+      "write": "Schreiben",
+      "destructive": "Destruktiv"
+    },
+    "title": "Assistent",
+    "intro": "Wie sich der Assistent im Chat verhält. Deine Anweisung ersetzt die Standardanweisung; die Sicherheitsregeln gelten immer zusätzlich.",
+    "prompt": {
+      "label": "Anweisung (System-Prompt)",
+      "default": "Standard",
+      "hint": "{{count}} / {{max}} Zeichen. Leer = Standardanweisung.",
+      "reset": "Auf Standard zurücksetzen",
+      "tooLong": "Höchstens {{max}} Zeichen."
+    },
+    "safety": {
+      "title": "Sicherheitsregeln",
+      "hint": "Diese Regeln gelten immer – auch mit eigener Anweisung – und lassen sich nicht ändern."
+    },
+    "consent": {
+      "title": "Zustimmung für den Chat",
+      "given": "Zugestimmt am {{date}}.",
+      "none": "Noch keine Zustimmung – der Chat fragt bei deiner ersten Frage danach.",
+      "revoke": "Zustimmung widerrufen",
+      "revoked": "Zustimmung für den Chat widerrufen"
+    },
+    "saved": "Anweisung gespeichert",
+    "reset": "Standardanweisung wiederhergestellt",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "loadFailed": "Die Einstellungen des Assistenten konnten nicht geladen werden."
+  },
+  "mcp": {
+    "subtitle": "MCP-Server für AI-Clients wie Claude Desktop oder Claude Code",
+    "title": "MCP-Server",
+    "status": {
+      "on": "Aktiv",
+      "off": "Aus"
+    },
+    "intro": "Über das Model Context Protocol (MCP) können AI-Clients die Werkzeuge von lazy-koins nutzen – nur in den Bereichen, die du freigibst, und nur mit einem Token.",
+    "enabled": "MCP-Server aktivieren",
+    "areasLabel": "Freigegebene Bereiche",
+    "areas": {
+      "projects": "Projekte",
+      "files": "Dateien",
+      "mappings": "Mappings",
+      "rates": "Kurse",
+      "results": "Ergebnisse",
+      "checks": "Prüfungen",
+      "corrections": "Korrekturen",
+      "exports": "Exporte",
+      "wallets": "Wallets",
+      "settings": "Einstellungen",
+      "mail": "Mail"
+    },
+    "allowWrite": "Schreibende Werkzeuge erlauben",
+    "allowWriteWarning": "Damit kann ein verbundener Client Daten ändern (zum Beispiel Korrekturen erfassen oder Dateien zuordnen). Erlaube das nur für Clients, denen du vertraust.",
+    "saved": "MCP-Einstellungen gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "loadFailed": "Die MCP-Einstellungen konnten nicht geladen werden.",
+    "copy": "Kopieren",
+    "copied": "In die Zwischenablage kopiert",
+    "copyFailed": "Kopieren war nicht möglich",
+    "connect": {
+      "title": "Verbinden",
+      "intro": "Trage den Server in deinem AI-Client ein.",
+      "endpoint": "Endpunkt (Streamable HTTP)",
+      "desktopNote": "Desktop-App: Der HTTP-Endpunkt ist nur auf diesem Computer (127.0.0.1) erreichbar, und sein Port ändert sich bei jedem Start. Nutze deshalb besser die stdio-Konfiguration.",
+      "placeholderHint": "Die Beispiele enthalten den Platzhalter <TOKEN>. Erstellst du unten einen Token, wird er hier eingesetzt – nur solange du auf dieser Seite bleibst.",
+      "stdio": "Claude Desktop (stdio, empfohlen)",
+      "stdioHint": "Startet lazy-koins als lokalen MCP-Server. In claude_desktop_config.json eintragen.",
+      "claudeDesktop": "Claude Desktop (claude_desktop_config.json)",
+      "claudeDesktopHint": "Verbindet über mcp-remote (braucht Node.js).",
+      "claudeCode": "Claude Code",
+      "http": "Andere Clients (Streamable HTTP)"
+    },
+    "tokens": {
+      "title": "Tokens",
+      "intro": "Jeder Client braucht einen Token. Ein Token wird nur beim Erstellen angezeigt; widerrufene oder abgelaufene Tokens funktionieren nicht mehr.",
+      "create": "Token erstellen",
+      "empty": "Noch keine Tokens.",
+      "loadFailed": "Die Tokens konnten nicht geladen werden.",
+      "fields": {
+        "name": "Name",
+        "state": "Status",
+        "expires": "Ablauf",
+        "lastUsed": "Zuletzt benutzt",
+        "created": "Erstellt"
+      },
+      "state": {
+        "active": "Aktiv",
+        "expired": "Abgelaufen",
+        "revoked": "Widerrufen"
+      },
+      "never": "Kein Ablauf",
+      "unused": "Nie",
+      "revoke": "Widerrufen",
+      "revokeTitle": "Token widerrufen?",
+      "revokeBody": "Clients mit dem Token «{{name}}» verlieren sofort den Zugriff.",
+      "revoked": "Token widerrufen",
+      "revokeFailed": "Widerrufen fehlgeschlagen",
+      "createTitle": "Token erstellen",
+      "createBody": "Gib dem Token einen Namen, an dem du den Client wiedererkennst.",
+      "namePlaceholder": "z. B. Claude Desktop Laptop",
+      "nameRequired": "Bitte gib einen Namen ein.",
+      "nameTooLong": "Höchstens 80 Zeichen.",
+      "expiry": {
+        "30": "30 Tage",
+        "90": "90 Tage",
+        "365": "365 Tage",
+        "never": "Kein Ablauf"
+      },
+      "createdTitle": "Token erstellt",
+      "createdBody": "Kopiere den Token jetzt und trage ihn in deinem Client ein.",
+      "onceWarning": "Der Token wird nur jetzt angezeigt – danach nie wieder.",
+      "snippetsHint": "Die Konfigurationsbeispiele auf dieser Seite enthalten ihn jetzt.",
+      "createFailed": "Der Token konnte nicht erstellt werden"
+    },
+    "tools": {
+      "title": "Werkzeuge",
+      "intro": "Was ein verbundener Client nutzen kann, nach Bereich. Schreibende und destruktive Werkzeuge nur mit Erlaubnis.",
+      "areaOff": "(nicht freigegeben)",
+      "empty": "Keine Werkzeuge."
+    },
+    "audit": {
+      "title": "Protokoll",
+      "intro": "Jeder Werkzeugaufruf aus dem Chat und über MCP (die letzten 200).",
+      "sourceFilter": "Quelle",
+      "allSources": "Alle",
+      "source": {
+        "chat": "Chat",
+        "mcp": "MCP"
+      },
+      "empty": "Noch keine Aufrufe.",
+      "loadFailed": "Das Protokoll konnte nicht geladen werden.",
+      "fields": {
+        "time": "Zeit",
+        "source": "Quelle",
+        "tool": "Werkzeug",
+        "args": "Argumente",
+        "status": "Status",
+        "duration": "Dauer"
+      },
+      "status": {
+        "ok": "OK",
+        "error": "Fehler",
+        "refused": "Abgelehnt",
+        "proposed": "Vorgeschlagen"
+      },
+      "millis": "{{ms}} ms"
+    }
+  },
+  "errors": {
+    "api": {
+      "projectClosed": "Das Projekt ist abgeschlossen – öffne es zuerst wieder.",
+      "noCalculation": "Das Projekt ist noch nicht berechnet.",
+      "offline": "Kursabfragen aus dem Internet sind ausgeschaltet.",
+      "estvAutoOff": "Die automatische ESTV-Kursliste ist auf diesem Server ausgeschaltet.",
+      "usedByClosedProject": "Ein abgeschlossenes Projekt verwendet es – öffne dieses zuerst wieder.",
+      "duplicateFile": "Diese Datei ist schon im Projekt.",
+      "alreadyDecided": "Darüber wurde schon entschieden.",
+      "invalidCorrection": "Die Korrektur ist ungültig.",
+      "promptTooLong": "Der Prompt ist zu lang.",
+      "tooManyTokens": "Zu viele aktive Tokens – widerrufe zuerst eines.",
+      "setupIncomplete": "Pflichtschritte der Einrichtung fehlen noch.",
+      "stepIncomplete": "Dieser Schritt ist noch nicht vollständig.",
+      "stepRequired": "Dieser Schritt ist Pflicht.",
+      "evidenceNotPdf": "Der Beleg muss ein PDF des Projekts sein.",
+      "encryptionUnavailable": "Schlüssel können auf diesem Server nicht gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
+      "confirmationRequired": "Bitte zuerst bestätigen.",
+      "consentRequired": "Deine Zustimmung fehlt noch.",
+      "alreadyPublished": "Du hast genau dieses Mapping schon veröffentlicht.",
+      "ownEntry": "Eigene Mappings kannst du nicht bewerten.",
+      "publishLimit": "Heute hast du schon genug Mappings veröffentlicht – versuch es morgen wieder.",
+      "privacyFindings": "Das Mapping enthält Werte, die persönlich aussehen – entferne oder bestätige sie.",
+      "specTooLarge": "Das Mapping ist zu gross für die Bibliothek."
+    },
+    "status": {
+      "unreachable": "Der Server ist nicht erreichbar.",
+      "badRequest": "Die Angaben wurden nicht angenommen.",
+      "unauthorized": "Die Anmeldung ist abgelaufen – bitte melde dich neu an.",
+      "forbidden": "Keine Berechtigung.",
+      "notFound": "Nicht gefunden – vielleicht wurde es gelöscht.",
+      "conflict": "Passt nicht zum aktuellen Stand – lade die Seite neu und versuche es nochmals.",
+      "tooLarge": "Zu gross.",
+      "unprocessable": "Die Daten konnten nicht verarbeitet werden.",
+      "locked": "Die App ist gesperrt.",
+      "rateLimited": "Zu viele Anfragen – warte einen Moment.",
+      "server": "Serverfehler – versuche es später nochmals."
+    }
+  },
+  "library": {
+    "title": "Mapping-Bibliothek",
+    "subtitle": "Mappings aller Benutzer – übernehmen, bewerten, eigene veröffentlichen",
+    "loadFailed": "Die Bibliothek konnte nicht geladen werden.",
+    "empty": "Noch keine Mappings in der Bibliothek. Veröffentliche das erste!",
+    "noMatch": "Kein Mapping passt zur Suche.",
+    "search": "Suchen",
+    "searchPlaceholder": "Name, Plattform oder Beschreibung",
+    "allPlatforms": "Alle Plattformen",
+    "sort": "Sortieren",
+    "sortBy": {
+      "rating": "Beste Bewertung",
+      "usage": "Am meisten übernommen",
+      "newest": "Neueste",
+      "name": "Name"
+    },
+    "mine": "meins",
+    "publishedAt": "veröffentlicht am {{date}}",
+    "anonymous": "Anonym",
+    "ratingCount": "({{count}})",
+    "ratingSummary": "{{average}} von 5 · {{count}} Bewertungen",
+    "versionShort": "v{{version}}",
+    "usage": "{{count}}× übernommen",
+    "fields": {
+      "name": "Name",
+      "platform": "Plattform",
+      "rating": "Bewertung",
+      "usage": "Übernommen",
+      "author": "Von",
+      "version": "Version",
+      "description": "Beschreibung",
+      "published": "Veröffentlicht",
+      "updated": "Zuletzt geändert"
+    },
+    "actions": {
+      "view": "Ansehen",
+      "take": "Übernehmen",
+      "rate": "Bewerten",
+      "newVersion": "Neue Version",
+      "delete": "Aus Bibliothek löschen"
+    },
+    "take": {
+      "failed": "Übernehmen fehlgeschlagen",
+      "done": "Als eigenes Mapping übernommen",
+      "doneAssigned": "Übernommen und der Datei zugeordnet",
+      "existing": "Diese Version hast du schon – dein Mapping bleibt, wie es ist"
+    },
+    "rate": {
+      "failed": "Bewerten fehlgeschlagen",
+      "done": "Danke für deine Bewertung",
+      "removed": "Bewertung entfernt",
+      "title": "«{{name}}» bewerten",
+      "body": "Wie gut liest dieses Mapping deine Dateien? 1 bis 5 Sterne – du kannst es jederzeit ändern.",
+      "remove": "Bewertung entfernen"
+    },
+    "delete": {
+      "done": "Aus der Bibliothek entfernt",
+      "failed": "Entfernen fehlgeschlagen",
+      "title": "Aus der Bibliothek löschen?",
+      "body": "«{{name}}» verschwindet aus der Bibliothek. Wer es übernommen hat, behält seine Kopie – deren Projekte bleiben unverändert."
+    },
+    "rating": {
+      "readable": "{{average}} von 5 Sternen",
+      "yours": "Deine Bewertung",
+      "stars": "{{count}} Sterne",
+      "ownEntry": "Das ist dein eigenes Mapping – bewerten können es die anderen."
+    },
+    "detail": {
+      "jsonTitle": "Mapping (JSON)",
+      "takeHint": "Übernehmen legt eine eigene Kopie in deinen Mappings an. Spätere Versionen oder das Löschen hier ändern deine Kopie nicht.",
+      "factsTitle": "Angaben",
+      "fingerprint": "Erkennt Dateien mit den Spalten",
+      "notFound": "Dieses Mapping gibt es in der Bibliothek nicht (mehr)."
+    },
+    "matches": {
+      "title": "In der Bibliothek gefunden: {{count}} passende Mappings",
+      "body": "Andere haben schon Mappings für diesen Dateiaufbau veröffentlicht. «Übernehmen» legt eine eigene Kopie an und liest die Datei damit – ohne AI."
+    },
+    "origin": {
+      "label": "Bibliothek",
+      "version": "übernommen, Version {{version}}",
+      "newer": "Neue Version verfügbar: Version {{version}}",
+      "takeNewer": "Neue Version übernehmen",
+      "gone": "Version {{version}} – nicht mehr in der Bibliothek, deine Kopie gilt weiter"
+    },
+    "publish": {
+      "button": "Mapping veröffentlichen",
+      "fromMapping": "In Bibliothek veröffentlichen",
+      "title": "In der Bibliothek veröffentlichen",
+      "titleVersion": "Neue Version veröffentlichen",
+      "description": "Prüfe genau, was öffentlich wird: alle Benutzer dieses Servers sehen das JSON unten. Deine E-Mail und dein Name werden nie angezeigt.",
+      "sourceMapping": "Eines deiner Mappings",
+      "choose": "Mapping wählen …",
+      "orFile": "oder eine Datei",
+      "invalid": "Die Datei ist kein gültiges Mapping:",
+      "notFound": "Dieses Mapping oder dieser Bibliothekseintrag gehört nicht dir.",
+      "reviewFailed": "Die Prüfung ist fehlgeschlagen.",
+      "publicNote": "Andere können es ansehen, übernehmen (als eigene Kopie) und bewerten. Nur du kannst es wieder löschen.",
+      "asNewVersion": "Als neue Version {{version}} deines bestehenden Eintrags veröffentlichen",
+      "authorName": "Anzeigename (öffentlich)",
+      "authorHint": "Leer = «Anonym». Nimm keinen echten Namen, wenn du nicht willst.",
+      "json": "Wird so veröffentlicht ({{size}} Bytes):",
+      "tooLarge": "Zu gross – höchstens {{max}} Bytes.",
+      "confirm": "Ich habe das JSON geprüft und will es so veröffentlichen.",
+      "keepFindings": "{{count}} Hinweise bewusst drin lassen (keine persönlichen Daten).",
+      "submit": "Veröffentlichen",
+      "done": "In der Bibliothek veröffentlicht",
+      "doneVersion": "Version {{version}} veröffentlicht",
+      "open": "Anzeigen",
+      "failed": "Veröffentlichen fehlgeschlagen"
+    },
+    "findings": {
+      "title": "Datenschutz-Prüfung",
+      "none": "Nichts gefunden, das nach Konto-Nummern, Adressen, E-Mails, IBANs oder Namen aussieht.",
+      "intro": "Diese Werte sehen persönlich aus. Angehakte werden vor dem Veröffentlichen entfernt:",
+      "removeHint": "Wird entfernt, solange angehakt.",
+      "editHint": "Lässt sich hier nicht entfernen – ändere es im Mapping selbst.",
+      "kind": {
+        "email": "E-Mail",
+        "iban": "IBAN",
+        "walletAddress": "Wallet-Adresse",
+        "accountId": "Konto-/Kundennummer",
+        "personName": "Name",
+        "secret": "Geheimer Schlüssel"
+      }
     }
   }
 }

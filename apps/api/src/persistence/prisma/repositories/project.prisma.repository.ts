@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { defaultTaxCurrency } from '@lazykoins/engine';
 import type { Project as ProjectRow } from '../../../generated/prisma/client';
 import type {
   CreateProjectInput,
@@ -17,6 +18,7 @@ function toProject(row: ProjectRow): Project {
     taxYear: row.taxYear,
     country: row.country,
     canton: row.canton,
+    taxCurrency: row.taxCurrency,
     status: row.status,
     notes: row.notes,
     createdAt: toIsoString(row.createdAt),
@@ -38,6 +40,14 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
     return rows.map(toProject);
   }
 
+  async findByTaxYear(taxYear: number): Promise<Project[]> {
+    const rows = await this.prisma.project.findMany({
+      where: { taxYear },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(toProject);
+  }
+
   async findById(id: string): Promise<Project | undefined> {
     const row = await this.prisma.project.findUnique({ where: { id } });
     return row ? toProject(row) : undefined;
@@ -45,7 +55,11 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
 
   async create(ownerId: string, input: CreateProjectInput): Promise<Project> {
     const row = await this.prisma.project.create({
-      data: { ownerId, ...input },
+      data: {
+        ownerId,
+        ...input,
+        taxCurrency: input.taxCurrency ?? defaultTaxCurrency(input.country),
+      },
     });
     return toProject(row);
   }
@@ -61,6 +75,7 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
         notes: input.notes,
         status: input.status,
         canton: input.canton,
+        taxCurrency: input.taxCurrency,
         // Explicit (as in surf-lend): on SQLite an `updateMany` that changes no column reports 0
         // rows, and an empty PATCH would then read as "no such project".
         updatedAt: new Date(),

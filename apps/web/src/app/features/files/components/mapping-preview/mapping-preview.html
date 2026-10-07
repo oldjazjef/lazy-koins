@@ -4,50 +4,84 @@
     {{ 'mappings.preview.totals' | translate: { bookings: p.totals.bookings,
     holdings: p.totals.holdings, errors: p.totals.errors, notes: p.totals.notes
     } }} @if (p.period) { {{ 'mappings.preview.period' | translate: { from:
-    (p.period.from | date: 'dd.MM.yyyy'), to: (p.period.to | date: 'dd.MM.yyyy')
-    } }} }
+    (p.period.from | lkDate), to: (p.period.to | lkDate) } }} }
   </p>
 
   @if (p.bookings.length > 0) {
-  <div hlmTableContainer class="lk-panel max-h-72 overflow-y-auto">
-    <table hlmTable>
-      <thead hlmTHead>
-        <tr hlmTr>
-          <th hlmTh>{{ 'mappings.preview.row' | translate }}</th>
-          <th hlmTh>{{ 'mappings.preview.timestamp' | translate }}</th>
-          <th hlmTh>{{ 'mappings.preview.account' | translate }}</th>
-          <th hlmTh>{{ 'mappings.preview.kind' | translate }}</th>
-          <th hlmTh>{{ 'mappings.preview.asset' | translate }}</th>
-          <th hlmTh class="text-right">
-            {{ 'mappings.preview.quantity' | translate }}
-          </th>
-          <th hlmTh class="text-right">
-            {{ 'mappings.preview.fee' | translate }}
-          </th>
-          <th hlmTh>{{ 'mappings.preview.rawType' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody hlmTBody>
-        @for (booking of p.bookings; track booking.row) {
-        <tr hlmTr>
-          <td hlmTd class="tabular-nums">{{ booking.row }}</td>
-          <td hlmTd class="tabular-nums">
-            {{ booking.timestamp | date: 'dd.MM.yyyy HH:mm:ss' : 'UTC' }}
-          </td>
-          <td hlmTd>{{ booking.accountId }}</td>
-          <td hlmTd>{{ 'bookings.kind.' + booking.kind | translate }}</td>
-          <td hlmTd>{{ booking.asset }}</td>
-          <td hlmTd class="text-right font-mono tabular-nums">
-            {{ booking.quantity }}
-          </td>
-          <td hlmTd class="text-right font-mono tabular-nums">
-            {{ booking.fee ?? '' }} {{ booking.feeAsset ?? '' }}
-          </td>
-          <td hlmTd class="text-muted-foreground">{{ booking.rawType }}</td>
-        </tr>
-        }
-      </tbody>
-    </table>
+  <div>
+    <div hlmTableContainer class="lk-panel">
+      <table hlmTable class="lk-table-wide table-fixed">
+        <colgroup>
+          <col class="w-14" />
+          <col class="w-40" />
+          <col />
+          <col class="w-32" />
+          <col class="w-20" />
+          <col class="w-36" />
+          <col class="hidden w-32 lg:table-column" />
+          <col class="hidden w-28 lg:table-column" />
+        </colgroup>
+        <thead hlmTHead>
+          <tr hlmTr>
+            <th hlmTh>{{ 'mappings.preview.row' | translate }}</th>
+            <th hlmTh>{{ 'mappings.preview.timestamp' | translate }}</th>
+            <th hlmTh>{{ 'mappings.preview.account' | translate }}</th>
+            <th hlmTh>{{ 'mappings.preview.kind' | translate }}</th>
+            <th hlmTh>{{ 'mappings.preview.asset' | translate }}</th>
+            <th hlmTh class="text-right">
+              {{ 'mappings.preview.quantity' | translate }}
+            </th>
+            <th hlmTh class="hidden text-right lg:table-cell">
+              {{ 'mappings.preview.fee' | translate }}
+            </th>
+            <th hlmTh class="hidden lg:table-cell">
+              {{ 'mappings.preview.rawType' | translate }}
+            </th>
+          </tr>
+        </thead>
+        <tbody hlmTBody>
+          @for (booking of pager.visible(); track booking.row) {
+          <tr hlmTr>
+            <td hlmTd class="tabular-nums">{{ booking.row }}</td>
+            <td hlmTd class="tabular-nums">
+              {{ booking.timestamp | lkDate: 'dateTimeSeconds' : 'UTC' }}
+            </td>
+            <td hlmTd class="max-w-0">
+              <span [lkTruncate]="booking.accountId"
+                >{{ booking.accountId }}</span
+              >
+            </td>
+            <td hlmTd class="max-w-0">
+              @let kind = 'bookings.kind.' + booking.kind | translate;
+              <span [lkTruncate]="kind">{{ kind }}</span>
+            </td>
+            <td hlmTd class="max-w-0">
+              <span [lkTruncate]="booking.asset">{{ booking.asset }}</span>
+            </td>
+            <td hlmTd class="max-w-0 text-right font-mono tabular-nums">
+              <span [lkTruncate]="booking.quantity"
+                >{{ booking.quantity }}</span
+              >
+            </td>
+            <td
+              hlmTd
+              class="hidden max-w-0 text-right font-mono tabular-nums lg:table-cell"
+            >
+              @let fee = (booking.fee ?? '') + ' ' + (booking.feeAsset ?? '');
+              <span [lkTruncate]="fee">{{ fee }}</span>
+            </td>
+            <td
+              hlmTd
+              class="text-muted-foreground hidden max-w-0 lg:table-cell"
+            >
+              <span [lkTruncate]="booking.rawType">{{ booking.rawType }}</span>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <lk-paginator [pager]="pager" />
   </div>
   } @if (p.holdings.length > 0) {
   <div>
@@ -57,8 +91,8 @@
     <ul class="text-muted-foreground flex flex-col gap-1">
       @for (holding of p.holdings; track holding.row + holding.asset) {
       <li class="font-mono tabular-nums">
-        {{ holding.asOf | date: 'dd.MM.yyyy' }} · {{ holding.accountId }} · {{
-        holding.asset }} {{ holding.quantity }}
+        {{ holding.asOf | lkDate }} · {{ holding.accountId }} · {{ holding.asset
+        }} {{ holding.quantity }}
       </li>
       }
     </ul>

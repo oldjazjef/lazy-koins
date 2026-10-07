@@ -1,4 +1,10 @@
 import type { BookingKind, Project } from './api.types';
+import type {
+  DateFormat,
+  NumberFormat,
+} from '../../shared/format/locale-format';
+import type { SupportedLocale } from '../i18n/locales';
+import type { ProjectSentSummary } from './mail.types';
 
 /**
  * Shapes of the calculation, rates, corrections, exports and settings endpoints, hand-mirrored
@@ -11,6 +17,18 @@ export interface ProjectListItem extends Project {
   wealthChf: string | null;
   incomeChf: string | null;
   calculatedAt: string | null;
+  /** F7.6: the data changed since that calculation — the figures are out of date. */
+  stale: boolean;
+  /** F4.7: sent to the Treuhänder (null = not yet). */
+  sent: ProjectSentSummary | null;
+}
+
+/** `GET /api/projects/:id/result/status` — the header's calculation line (F7.6). */
+export interface ResultStatus {
+  /** null = never calculated. */
+  calculatedAt: string | null;
+  /** The data changed since the latest calculation; false without one. */
+  stale: boolean;
 }
 
 export const INCOME_CATEGORIES = [
@@ -169,6 +187,11 @@ export const OPEN_ITEM_REASONS = [
   'oneOffWithoutPrice',
   'unclassifiedBookings',
   'walletNetworksNotAvailable',
+  'walletNetworksUnchecked',
+  'walletNetworkNotSelected',
+  'walletNetworkNotFetched',
+  'walletManualBalanceMissing',
+  'walletFetchFailed',
 ] as const;
 export type OpenItemReason = (typeof OPEN_ITEM_REASONS)[number];
 
@@ -229,10 +252,13 @@ export interface AppliedCorrection {
   after: Record<string, string | null> | null;
 }
 
+/** Every `…Chf` amount is in `currency` — the project's tax currency (F4.1a). */
 export interface CalculationResult {
   engineVersion: number;
   taxYear: number;
   country: string;
+  /** ISO 4217 code (CHF, EUR, …). */
+  currency: string;
   yearEnd: string;
   totals: {
     wealthChf: string;
@@ -332,7 +358,7 @@ export type RateSource = 'manual' | 'estv' | 'binance' | 'coingecko' | 'ecb';
 export interface RateSeries {
   kind: 'price' | 'fx';
   asset: string;
-  currency: 'CHF' | 'USD';
+  currency: string;
   source: RateSource;
   points: number;
   from: string;
@@ -345,19 +371,84 @@ export interface StoredRate {
   id: string;
   kind: 'price' | 'fx';
   asset: string;
-  currency: 'CHF' | 'USD';
+  currency: string;
   date: string;
   value: string;
   source: RateSource;
+  /** The label of an automatic ESTV value: `ESTV-Kursliste 2025, Stand 02.10.2026` (F7.4a). */
+  note: string | null;
   fetchedAt: string;
 }
 
 /** `GET /rates` */
 export interface RatesView {
   taxYear: number;
+  /** F4.1a: the project's tax currency — overrides and exchange rates are in it. */
+  currency: string;
   online: boolean;
   series: RateSeries[];
   manual: StoredRate[];
+  /** F7.4a: the stored Kursliste of the tax year and the version in use. */
+  estv: {
+    autoEnabled: boolean;
+    available: string | null;
+    cryptoCount: number;
+    applied: string | null;
+    outdated: boolean;
+    /** F4.1a: the Kursliste is in CHF — false for a project in another currency. */
+    applicable: boolean;
+  };
+}
+
+/** F7.4a: what applying the stored Kursliste to a project did. */
+export interface EstvApplySummary {
+  year: number;
+  label: string | null;
+  matched: { asset: string; symbol: string; name: string; value: string }[];
+  ambiguous: {
+    asset: string;
+    candidates: { symbol: string; name: string; valorNumber: string | null }[];
+  }[];
+  fx: string[];
+}
+
+export const ESTV_PHASES = ['metadata', 'download', 'parse', 'store'] as const;
+export type EstvPhase = (typeof ESTV_PHASES)[number];
+
+/** `GET /rates/estv` — the deployment's Kursliste (F7.4a). */
+export interface EstvStatus {
+  autoEnabled: boolean;
+  online: boolean;
+  running: {
+    years: number[];
+    year: number;
+    startedAt: string;
+    progress: {
+      phase: EstvPhase;
+      bytes: number;
+      totalBytes: number | null;
+      entries: number;
+    };
+  } | null;
+  lastCheckAt: string | null;
+  years: {
+    year: number;
+    version: {
+      exportType: string;
+      exportDate: string;
+      schemaVersion: string;
+      downloadedAt: string;
+      entryCount: number;
+      cryptoCount: number;
+      fxCount: number;
+      label: string;
+    } | null;
+    check: {
+      checkedAt: string;
+      outcome: 'updated' | 'current' | 'failed';
+      error: string | null;
+    } | null;
+  }[];
 }
 
 export const FETCH_STATUSES = [
@@ -368,8 +459,17 @@ export const FETCH_STATUSES = [
 ] as const;
 export type FetchStatus = (typeof FETCH_STATUSES)[number];
 
+/** `GET …/rates/refresh/status` — polled while "Kurse aktualisieren" runs. */
+export interface RefreshStatus {
+  running: boolean;
+  done: number;
+  total: number;
+  current: string | null;
+}
+
 export interface RefreshSummary {
   fx: number;
+  estv: EstvApplySummary;
   assets: {
     asset: string;
     status: FetchStatus;
@@ -381,7 +481,7 @@ export interface RefreshSummary {
 export interface ManualRateRequest {
   kind: 'price' | 'fx';
   asset: string;
-  currency: 'CHF' | 'USD';
+  currency: string;
   date: string;
   value: string;
 }
@@ -428,8 +528,10 @@ export interface Settings {
   canton: string;
   advisorName: string;
   advisorEmail: string;
-  numberFormat: 'de-CH';
-  dateFormat: 'dd.MM.yyyy';
+  /** F11.2: the language of app and exports; null = not chosen yet (the browser's). */
+  locale: SupportedLocale | null;
+  numberFormat: NumberFormat;
+  dateFormat: DateFormat;
   onlineRates: boolean;
   /** Hints (`…abcd`) or null — never the key. */
   keys: { coingecko: string | null; etherscan: string | null };
@@ -442,6 +544,9 @@ export interface UpdateSettingsRequest {
   canton?: string;
   advisorName?: string;
   advisorEmail?: string;
+  locale?: SupportedLocale;
+  numberFormat?: NumberFormat;
+  dateFormat?: DateFormat;
   onlineRates?: boolean;
   keys?: { coingecko?: string | null; etherscan?: string | null };
   coingeckoIds?: Record<string, string>;

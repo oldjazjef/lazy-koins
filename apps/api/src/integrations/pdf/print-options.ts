@@ -30,6 +30,24 @@ export const PDF_PRINT_OPTIONS: PdfPrintOptions = {
     'Seite <span class="pageNumber"></span> / <span class="totalPages"></span></div>',
 };
 
+/** F11.2: the footer's "Seite x / y" in the document's language (its `<html lang>`). */
+const PAGE_WORD: Readonly<Record<string, string>> = { en: 'Page' };
+
+/** The print options of one document: the page footer follows its `<html lang>`. */
+export function printOptionsFor(html: string): PdfPrintOptions {
+  const lang = /<html[^>]*\slang="([^"]+)"/i.exec(html)?.[1] ?? '';
+  const word = PAGE_WORD[lang];
+  return word
+    ? {
+        ...PDF_PRINT_OPTIONS,
+        footerTemplate: PDF_PRINT_OPTIONS.footerTemplate.replace(
+          'Seite ',
+          `${word} `,
+        ),
+      }
+    : PDF_PRINT_OPTIONS;
+}
+
 /**
  * A printer supplied by the process that hosts the API — the desktop app passes one built on
  * Electron's `webContents.printToPDF` (see `bootstrap({ pdfPrinter })`). Takes our own HTML (no

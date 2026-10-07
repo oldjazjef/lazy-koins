@@ -1,4 +1,21 @@
-@if (view(); as view) { @if (view.snapshot) {
+@if (view(); as view) { @if (files.openHints() > 0) {
+<!-- F5.8 ↔ F8.2: file issues are hints, not open items — linked, never listed twice -->
+<p class="lk-panel mb-4 flex flex-wrap items-center gap-2 px-4 py-3 text-sm">
+  <span class="flex-1"
+    >{{ 'checks.hintsNote' | translate: { count: files.openHints() } }}</span
+  >
+  <button
+    hlmBtn
+    variant="link"
+    size="sm"
+    type="button"
+    class="h-auto p-0"
+    (click)="showHints.emit(null)"
+  >
+    {{ 'hints.show' | translate }}
+  </button>
+</p>
+} @if (view.snapshot) {
 <section class="mb-8 flex flex-col gap-2">
   <h3 class="font-medium">{{ 'checks.title' | translate }}</h3>
   <ul class="lk-panel divide-y">
@@ -14,7 +31,7 @@
         >{{ 'checks.items' | translate: { count: check.items } }}</span
       >
       <span class="w-32 text-right tabular-nums"
-        >{{ 'common.chf' | translate }} {{ check.impactChf | lkChf }}</span
+        >{{ check.impactChf | lkChf: service.currency() }}</span
       >
     </li>
     }
@@ -41,13 +58,14 @@
           <th hlmTh>{{ 'checks.fields.done' | translate }}</th>
           <th hlmTh>{{ 'checks.fields.item' | translate }}</th>
           <th hlmTh class="text-right whitespace-normal">
-            {{ 'checks.fields.impact' | translate }}
+            {{ 'checks.fields.impact' | translate: { currency:
+            service.currency() } }}
           </th>
           <th hlmTh>{{ 'checks.fields.note' | translate }}</th>
         </tr>
       </thead>
       <tbody hlmTBody>
-        @for (item of view.items; track item.key) {
+        @for (item of itemsPager.visible(); track item.key) {
         <tr
           hlmTr
           class="align-top"
@@ -63,11 +81,12 @@
               (change)="toggle(item, $event)"
             />
           </td>
-          <td hlmTd class="whitespace-normal break-words">
-            <span
-              [class]="'lk-light lk-light-' + item.light + ' mr-2 align-middle'"
-            ></span>
-            <span class="font-medium">{{ where(item) }}</span>
+          <td hlmTd class="max-w-0 whitespace-normal break-words">
+            <div class="flex min-w-0 items-center gap-2">
+              <span [class]="'lk-light lk-light-' + item.light"></span>
+              @let place = where(item);
+              <span class="font-medium" [lkTruncate]="place">{{ place }}</span>
+            </div>
             <span class="block"
               >{{ 'checks.reason.' + item.reason | translate: { expected:
               (item.params['expected'] | lkQuantity: 18), actual:
@@ -88,6 +107,19 @@
               (click)="records(item)"
             >
               {{ 'checks.showRecords' | translate }}
+            </button>
+            } @if (item.platform && hintsByPlatform().get(item.platform); as
+            count) {
+            <button
+              hlmBtn
+              variant="link"
+              size="sm"
+              type="button"
+              class="ml-3 h-auto p-0"
+              (click)="showHints.emit(item.platform)"
+            >
+              {{ 'checks.platformHints' | translate: { count, platform:
+              item.platform } }}
             </button>
             }
           </td>
@@ -159,6 +191,7 @@
       </tbody>
     </table>
   </div>
+  <lk-paginator [pager]="itemsPager" />
   }
 </section>
 
@@ -171,13 +204,13 @@
   <dl class="lk-facts lk-panel p-4">
     <dt>{{ 'checks.comparison.wealth' | translate }}</dt>
     <dd class="tabular-nums">
-      {{ comparison.previousWealthChf | lkChf }} → {{ comparison.wealthDeltaChf
-      | lkChf }}
+      {{ comparison.previousWealthChf | lkChf: service.currency() }} → {{
+      comparison.wealthDeltaChf | lkChf: service.currency() }}
     </dd>
     <dt>{{ 'checks.comparison.income' | translate }}</dt>
     <dd class="tabular-nums">
-      {{ comparison.previousIncomeChf | lkChf }} → {{ comparison.incomeDeltaChf
-      | lkChf }}
+      {{ comparison.previousIncomeChf | lkChf: service.currency() }} → {{
+      comparison.incomeDeltaChf | lkChf: service.currency() }}
     </dd>
     <dt>{{ 'checks.comparison.new' | translate }}</dt>
     <dd>

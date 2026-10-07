@@ -56,6 +56,22 @@
   --light-yellow: #d9a514;
   --light-red: #c0392b;
   --light-grey: #a0a9b6;
+
+  /* Hints that need attention but are no error ("seit dem Versand geändert", F4.7). */
+  --warning-text: #8a5a00;
+  /* Gains and losses as text (dashboard change), >= 4.5:1 on the card. */
+  --positive: #1f7a4a;
+  --negative: #b42318;
+  /* Categorical slots of the allocation bar (F11.7), fixed order — a validated palette (CVD-safe
+     on adjacent pairs); "Andere" is neutral. Same hues stepped for the dark surface below. */
+  --alloc-1: #2a78d6;
+  --alloc-2: #eb6834;
+  --alloc-3: #1baf7a;
+  --alloc-4: #eda100;
+  --alloc-5: #e87ba4;
+  --alloc-6: #008300;
+  --alloc-7: #4a3aa7;
+  --alloc-other: #a0a9b6;
 }
 
 :root.dark {
@@ -88,6 +104,17 @@
   --light-yellow: #e8bf4a;
   --light-red: #f07167;
   --light-grey: #6b7686;
+  --warning-text: #e8bf4a;
+  --positive: #4fbf83;
+  --negative: #f97066;
+  --alloc-1: #3987e5;
+  --alloc-2: #d95926;
+  --alloc-3: #199e70;
+  --alloc-4: #c98500;
+  --alloc-5: #d55181;
+  --alloc-6: #008300;
+  --alloc-7: #9085e9;
+  --alloc-other: #6b7686;
 }
 
 @layer base {
@@ -149,6 +176,91 @@
     @apply bg-muted/40 w-full shrink-0 border-t px-6 py-4;
   }
 
+  /*
+   * Form rows (user rule): fields side by side always line up — labels stay on one line
+   * (truncated, full text as title), inputs sit on the same baseline even when a label is long,
+   * and every field keeps a usable minimum width (a date input never shrinks to "dd/m").
+   *   <div class="lk-form-row"> <div class="lk-field"><label …>…</label><input …></div> … </div>
+   */
+  .lk-form-row {
+    @apply grid items-start gap-3;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .lk-field {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .lk-field > label {
+    @apply truncate;
+  }
+
+  /*
+   * The same rule for every existing multi-column form (a grid whose cells are label + input
+   * columns): one-line labels, so the inputs below them start on the same line. Prefer
+   * lk-form-row / lk-field (+ a title on long labels) in new markup.
+   */
+  .grid > .flex.flex-col > label[hlmLabel],
+  .grid > div > label[hlmLabel]:first-child {
+    @apply truncate;
+  }
+
+  .grid:has(> .flex.flex-col > label[hlmLabel]) {
+    @apply items-start;
+  }
+
+  /*
+   * Page header (user rule, 07.10.2026): title, status and page actions never scroll away. It
+   * sticks to the top of the app's scroll area (.lk-scroll-area); the negative margin covers the
+   * main element's top padding so scrolled content never shows above it.
+   */
+  .lk-page-header {
+    @apply bg-background sticky top-0 z-30 -mt-8 mb-6 border-b pt-8 pb-4;
+    /*
+     * Full width (user rule): background and border reach the edges of the scroll area while the
+     * title and actions stay aligned with the content column. 100cqw = the width of the scroll
+     * area's content without its scrollbar (`.lk-scroll-content`, an inline-size container);
+     * 100% = the content column.
+     */
+    margin-inline: calc((100% - 100cqw) / 2);
+    padding-inline: calc((100cqw - 100%) / 2);
+  }
+
+  /* A tab bar in the header (project workspace) sits on its bottom border. */
+  .lk-page-header:has(.lk-page-tabs) {
+    @apply pb-0;
+  }
+
+  .lk-page-tabs {
+    @apply mt-4;
+  }
+
+  .lk-scroll-content {
+    container-type: inline-size;
+  }
+
+  /*
+   * Fixed-layout tables: a header never runs into the next column — it is cut with "…" (the full
+   * text stays readable in the column's cells and via the tooltip pattern in cells).
+   */
+  table.table-fixed th {
+    @apply truncate;
+  }
+
+  /*
+   * A wide data table (many fixed columns) inside a narrow container: keep a minimum width and
+   * scroll inside its own container instead of squeezing the flexible column to nothing.
+   */
+  .lk-table-wide {
+    min-width: 44rem;
+  }
+
+  @media (min-width: 64rem) {
+    .lk-table-wide {
+      min-width: 58rem;
+    }
+  }
+
   /* The user menu at the top right. */
   .lk-menu {
     @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex w-56 flex-col overflow-hidden rounded-md border py-1 shadow-md;
@@ -156,6 +268,18 @@
 
   .lk-menu-item {
     @apply hover:bg-muted flex w-full items-center gap-2 px-3 py-2 text-left text-sm;
+  }
+
+  /*
+   * The assistant's sidebar (F11.14): beside the page from `lg`, an overlay with a backdrop
+   * below it. Only its message list scrolls; header and question box stay put.
+   */
+  .lk-chat-panel {
+    @apply bg-card absolute inset-y-0 right-0 z-40 flex w-full max-w-md min-h-0 flex-col border-l shadow-lg lg:static lg:z-auto lg:w-96 lg:max-w-none lg:shrink-0 lg:shadow-none;
+  }
+
+  .lk-chat-backdrop {
+    @apply bg-foreground/30 absolute inset-0 z-30 lg:hidden;
   }
 
   /* Tabs of the project workspace. */
@@ -188,12 +312,76 @@
     background-color: var(--light-grey);
   }
 
+  /* Notification centre (F11.11): kind colours (ng-icon reads --ng-icon__color, unlayered),
+     the bell's badge and its panel. */
+  .lk-kind-error {
+    color: var(--destructive);
+    --ng-icon__color: var(--destructive);
+  }
+
+  .lk-kind-action {
+    color: var(--warning-text);
+    --ng-icon__color: var(--warning-text);
+  }
+
+  .lk-kind-info {
+    color: var(--primary);
+    --ng-icon__color: var(--primary);
+  }
+
+  .lk-kind-success {
+    color: var(--positive);
+    --ng-icon__color: var(--positive);
+  }
+
+  .lk-count-badge {
+    @apply bg-destructive pointer-events-none absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] leading-none font-semibold text-primary-foreground tabular-nums;
+  }
+
+  /* Like a dialog: header and footer fixed, only the list scrolls (user rule). */
+  .lk-notification-panel {
+    @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex max-h-[min(36rem,calc(100dvh-5rem))] w-[min(26rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-md border shadow-lg outline-none;
+  }
+
+  .lk-notification-panel-header {
+    @apply flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3;
+  }
+
+  .lk-notification-panel-body {
+    @apply min-h-0 flex-1 overflow-y-auto pb-2;
+  }
+
+  .lk-notification-panel-footer {
+    @apply flex shrink-0 items-center justify-between gap-2 border-t px-4 py-3;
+  }
+
+  .lk-notification-item {
+    @apply flex items-start gap-3 px-4 py-2;
+  }
+
+  .lk-notification-unread {
+    @apply bg-accent/40;
+  }
+
+  /* A hint that needs attention without being an error (F4.7 "seit dem Versand geändert"). */
+  .lk-warning-text {
+    color: var(--warning-text);
+  }
+
   /*
    * Tables: the actions column stays visible at the right edge even when a table scrolls
    * sideways; it carries the row's background so scrolled cells pass beneath it.
    */
   .lk-sticky-actions {
     @apply bg-card sticky right-0 z-10;
+  }
+
+  /* …and follows the row's hover tint (hlmTr: bg-muted/50) over its own opaque background. */
+  tr:hover > .lk-sticky-actions {
+    background-image: linear-gradient(
+      color-mix(in oklab, var(--muted) 50%, transparent),
+      color-mix(in oklab, var(--muted) 50%, transparent)
+    );
   }
 
   /* The word mark in the header and on the login card. */
@@ -208,6 +396,81 @@
 
   .lk-nav-active {
     @apply bg-secondary text-secondary-foreground;
+  }
+
+  /*
+   * The activity indicator (bottom right): above dialogs (CDK overlay 1000) and the toaster
+   * (1100), never catching clicks outside its card. Its list scrolls inside a capped height.
+   */
+  .lk-activity {
+    @apply pointer-events-none fixed right-6 bottom-6 z-1200 flex w-80 max-w-[calc(100vw-3rem)] flex-col items-end;
+  }
+
+  /* Sonner sets its offset inline; while the indicator shows, the toasts stack above it. */
+  .lk-toasts-raised [data-sonner-toaster][data-y-position='bottom'] {
+    bottom: 6.5rem !important;
+  }
+
+  .lk-activity-card {
+    @apply bg-popover text-popover-foreground pointer-events-auto flex w-full flex-col gap-2 rounded-lg border px-4 py-3 shadow-lg;
+  }
+
+  .lk-activity-toggle {
+    @apply text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-md;
+  }
+
+  .lk-activity-list {
+    @apply flex max-h-48 flex-col gap-2 overflow-y-auto border-t pt-2 text-sm;
+  }
+
+  .lk-activity-progress {
+    @apply bg-muted h-1.5 w-full appearance-none overflow-hidden rounded-full border-0;
+    color: var(--primary);
+  }
+
+  .lk-activity-progress::-webkit-progress-bar {
+    background-color: var(--muted);
+  }
+
+  .lk-activity-progress::-webkit-progress-value {
+    background-color: var(--primary);
+  }
+
+  .lk-activity-progress::-moz-progress-bar {
+    background-color: var(--primary);
+  }
+
+  .lk-spinner {
+    @apply animate-spin;
+  }
+
+  /* Severity of a hint (F5.8): info / warning / error, readable in both themes. */
+  .lk-severity {
+    @apply inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap;
+  }
+
+  .lk-severity-info {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .lk-severity-warning {
+    background-color: color-mix(in oklab, var(--light-yellow) 18%, transparent);
+    border-color: color-mix(in oklab, var(--light-yellow) 55%, transparent);
+    color: var(--foreground);
+  }
+
+  .lk-severity-error {
+    background-color: color-mix(in oklab, var(--destructive) 12%, transparent);
+    border-color: color-mix(in oklab, var(--destructive) 45%, transparent);
+    color: var(--destructive);
+  }
+
+  /* "Daten geändert – neu berechnen" under the project header (F7.6). */
+  .lk-stale-banner {
+    @apply mb-6 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm;
+    background-color: color-mix(in oklab, var(--light-yellow) 18%, transparent);
+    border-color: color-mix(in oklab, var(--light-yellow) 55%, transparent);
+    color: var(--foreground);
   }
 
   /* A bordered surface for tables and lists. */
@@ -229,8 +492,212 @@
   }
 }
 
+@layer components {
+  /* Charts (F11.5–F11.8): hand-rolled SVG, coloured only through these tokens. */
+  .lk-chart-line {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-chart-area {
+    fill: var(--primary);
+    fill-opacity: 0.08;
+    stroke: none;
+  }
+
+  .lk-chart-grid {
+    stroke: var(--border);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-chart-crosshair {
+    stroke: var(--muted-foreground);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Days with an asset without a price (F11.9): a warning strip under the line. */
+  .lk-chart-missing {
+    fill: var(--light-yellow);
+  }
+
+  .lk-chart-tooltip {
+    @apply bg-popover text-popover-foreground pointer-events-none absolute top-0 z-10 w-56 -translate-x-1/2 rounded-md border px-3 py-2 text-xs shadow-md;
+  }
+
+  .lk-spark-up {
+    stroke: var(--positive);
+  }
+
+  .lk-spark-down {
+    stroke: var(--negative);
+  }
+
+  .lk-spark {
+    fill: none;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-positive {
+    color: var(--positive);
+  }
+
+  .lk-negative {
+    color: var(--negative);
+  }
+
+  /* Allocation slices and their legend swatches. The surface stroke keeps a 2px gap. */
+  .lk-alloc {
+    stroke: var(--card);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .lk-alloc-1 {
+    fill: var(--alloc-1);
+    background-color: var(--alloc-1);
+  }
+
+  .lk-alloc-2 {
+    fill: var(--alloc-2);
+    background-color: var(--alloc-2);
+  }
+
+  .lk-alloc-3 {
+    fill: var(--alloc-3);
+    background-color: var(--alloc-3);
+  }
+
+  .lk-alloc-4 {
+    fill: var(--alloc-4);
+    background-color: var(--alloc-4);
+  }
+
+  .lk-alloc-5 {
+    fill: var(--alloc-5);
+    background-color: var(--alloc-5);
+  }
+
+  .lk-alloc-6 {
+    fill: var(--alloc-6);
+    background-color: var(--alloc-6);
+  }
+
+  .lk-alloc-7 {
+    fill: var(--alloc-7);
+    background-color: var(--alloc-7);
+  }
+
+  .lk-alloc-other {
+    fill: var(--alloc-other);
+    background-color: var(--alloc-other);
+  }
+
+  .lk-swatch-missing {
+    background-color: var(--light-yellow);
+  }
+
+  .lk-swatch {
+    @apply inline-block size-3 shrink-0 rounded-sm;
+  }
+}
+
+@layer components {
+  /* F11.0s: the setup wizard's step bar — number, title and state per step. */
+  .lk-stepper {
+    @apply flex gap-1 overflow-x-auto pb-1;
+  }
+
+  .lk-step {
+    @apply text-muted-foreground flex min-w-0 shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors lg:shrink;
+  }
+
+  .lk-step:enabled {
+    @apply hover:bg-muted hover:text-foreground cursor-pointer;
+  }
+
+  .lk-step:disabled {
+    @apply cursor-default opacity-60;
+  }
+
+  /* Narrow screens: only the current step shows its title, the others their number. */
+  .lk-step-title-collapsed {
+    @apply hidden lg:inline;
+  }
+
+  .lk-step-current {
+    @apply bg-secondary text-secondary-foreground font-medium;
+  }
+
+  .lk-step-number {
+    @apply border-border bg-card flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular-nums;
+  }
+
+  .lk-step-current .lk-step-number {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .lk-step-done .lk-step-number {
+    border-color: var(--light-green);
+    background-color: var(--light-green);
+    color: var(--card);
+  }
+
+  .lk-step-error .lk-step-number {
+    @apply border-destructive bg-destructive text-primary-foreground;
+  }
+
+  .lk-step-skipped .lk-step-number {
+    @apply border-dashed;
+  }
+
+  /* The wizard's footer: stays at the bottom of the scroll area (Zurück / Später / Weiter). */
+  .lk-wizard-footer {
+    @apply bg-background/95 sticky bottom-0 z-20 -mx-6 mt-6 flex flex-wrap items-center gap-2 border-t px-6 py-3 backdrop-blur;
+  }
+
+  /* F11.0p: the lock screen over the whole app (above dialogs, below toasts). */
+  .lk-lock-screen {
+    @apply bg-background fixed inset-0 z-1050 flex items-center justify-center overflow-y-auto p-4;
+  }
+
+  .lk-lock-card {
+    @apply bg-card flex w-full max-w-sm flex-col items-center gap-4 rounded-xl border p-6 shadow-lg;
+  }
+
+  .lk-pin-input {
+    @apply h-12 w-full text-center text-2xl tracking-[0.5em];
+  }
+
+  .lk-pin-pad {
+    @apply grid w-full grid-cols-3 gap-2;
+  }
+
+  .lk-pin-key {
+    @apply bg-secondary text-secondary-foreground hover:bg-accent focus-visible:ring-ring flex h-12 items-center justify-center rounded-md text-lg font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50;
+  }
+
+  .lk-pin-key-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 text-sm;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lk-nav-link {
+  .lk-nav-link,
+  .lk-step,
+  .lk-pin-key {
     transition: none;
+  }
+
+  /* The spinner stands still; the label and progress still say what runs. */
+  .lk-spinner {
+    animation: none;
   }
 }

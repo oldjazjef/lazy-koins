@@ -59,11 +59,25 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  projects    Project[]
-  storedFiles StoredFile[]
-  mappings    ImportMapping[]
-  settings    UserSettings?
-  aiSettings  AiSettings?
+  projects      Project[]
+  storedFiles   StoredFile[]
+  mappings      ImportMapping[]
+  settings      UserSettings?
+  aiSettings    AiSettings?
+  mailSettings  MailSettings?
+  mailTemplates MailTemplate[]
+  rates         UserRate[]
+  wallets       Wallet[]
+  chainSettings ChainSettings?
+  assistant     AssistantSettings?
+  mcpTokens     McpToken[]
+  conversations ChatConversation[]
+  toolAudits    ToolAudit[]
+  setupProgress SetupProgress?
+  pin           UserPin?
+  notifications Notification[]
+  libraryMappings LibraryMapping[]
+  libraryRatings  LibraryRating[]
 
   @@map("user")
 }
@@ -77,6 +91,9 @@ model Project {
   country   Country       @default(CH)
   /// Two-letter canton code; which codes exist is checked by the API against the country.
   canton    String
+  /// F4.1a: ISO 4217 code every amount is valued in (CHF, EUR, …); the default comes from the
+  /// country (CH → CHF). CHECK (3 upper-case letters) in the migration.
+  taxCurrency String      @default("CHF") @map("tax_currency")
   status    ProjectStatus @default(in_progress)
   notes     String        @default("")
   createdAt DateTime      @default(now()) @map("created_at")
@@ -85,12 +102,19 @@ model Project {
   /// Deleting an account deletes its projects (F2.2).
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  files       ProjectFile[]
-  rates       ProjectRate[]
-  snapshots   CalculationSnapshot[]
-  corrections Correction[]
-  itemStates  OpenItemState[]
-  exports     ProjectExport[]
+  files          ProjectFile[]
+  rates          ProjectRate[]
+  snapshots      CalculationSnapshot[]
+  corrections    Correction[]
+  itemStates     OpenItemState[]
+  exports        ProjectExport[]
+  wallets        ProjectWallet[]
+  walletBalances WalletManualBalance[]
+  hintStates     ProjectHintState[]
+  mailLog        MailLog[]
+  sentState      ProjectSentState?
+  carryovers     ProjectCarryover[]
+  notifications  Notification[]
 
   @@index([ownerId, taxYear])
   @@map("project")
@@ -133,8 +157,13 @@ model ImportMapping {
   fingerprint String
   /// Spec format version (`MAPPING_VERSION`).
   version     Int
-  /// ai | manual | copied. CHECK in the migration.
+  /// ai | manual | copied | library. CHECK in the migration.
   origin      String
+  /// F5.16: the library entry this copy was taken from (origin library) — no FK: the copy stays
+  /// when the entry is deleted.
+  libraryId      String? @map("library_id")
+  /// The entry's version at taking.
+  libraryVersion Int?    @map("library_version")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -142,7 +171,59 @@ model ImportMapping {
   files ProjectFile[]
 
   @@index([ownerId])
+  @@index([ownerId, libraryId])
   @@map("import_mapping")
+}
+
+/// F5.15–F5.17: the global mapping library (web only) — a published copy of a mapping spec.
+/// Soft-deleted (deleted_at) for the audit; copies taken from it are independent import_mappings.
+model LibraryMapping {
+  id              String    @id @default(uuid(7))
+  /// Internal only — never leaves the API.
+  authorId        String    @map("author_id")
+  /// The pseudonym chosen when publishing (snapshot); NULL = "Anonym".
+  authorName      String?   @map("author_name")
+  /// The author's own mapping it was published from (no FK; internal).
+  sourceMappingId String?   @map("source_mapping_id")
+  name            String
+  platform        String
+  description     String?
+  /// The validated, privacy-reviewed spec (JSON). CHECKs in the migration.
+  spec            String
+  fingerprint     String
+  /// Bumped by every new version the author publishes.
+  version         Int       @default(1)
+  /// Maintained by triggers on library_rating (same transaction).
+  ratingCount     Int       @default(0) @map("rating_count")
+  ratingSum       Int       @default(0) @map("rating_sum")
+  /// Copies taken.
+  usageCount      Int       @default(0) @map("usage_count")
+  publishedAt     DateTime  @default(now()) @map("published_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  author  User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  ratings LibraryRating[]
+
+  @@index([fingerprint])
+  @@index([authorId, publishedAt])
+  @@map("library_mapping")
+}
+
+/// One user's 1–5 stars for a library entry (changeable, removable).
+model LibraryRating {
+  libraryMappingId String   @map("library_mapping_id")
+  userId           String   @map("user_id")
+  stars            Int
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  mapping LibraryMapping @relation(fields: [libraryMappingId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([libraryMappingId, userId])
+  @@index([userId])
+  @@map("library_rating")
 }
 
 /// A stored file as part of one project (F5.5): how it was read and what it contributed.
@@ -167,13 +248,16 @@ model ProjectFile {
   /// JSON array of coverage entries per platform/account (F5.8).
   coverage     String   @default("[]")
   /// `uploaded`, `from_project:<id>` when the bytes were already in another project (F4.4), or
-  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF.
+  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF, or
+  /// `wallet:<wallet id>` for the standard-format records a wallet fetch derived (F6.3).
   origin       String   @default("uploaded")
   addedAt      DateTime @default(now()) @map("added_at")
 
   project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
   mapping ImportMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  walletEvidence WalletManualBalance[]
 
   @@unique([projectId, fileId])
   @@index([fileId])
@@ -184,24 +268,27 @@ model ProjectFile {
 /// Personal settings (F11.1–F11.3) and the API keys a user stores (F6.7). Keys are sealed with
 /// AES-256-GCM (`SETTINGS_ENCRYPTION_KEY`) and never returned — the API answers with a hint only.
 model UserSettings {
-  userId        String   @id @map("user_id")
+  userId       String   @id @map("user_id")
   /// Name on the exports (F10.4); empty = the account's display name.
-  displayName   String   @default("") @map("display_name")
+  displayName  String   @default("") @map("display_name")
   /// Canton of residence, two letters, or empty.
-  canton        String   @default("")
-  advisorName   String   @default("") @map("advisor_name")
-  advisorEmail  String   @default("") @map("advisor_email")
-  /// F11.2. Only `de-CH` / `dd.MM.yyyy` exist so far. CHECK in the migration.
-  numberFormat  String   @default("de-CH") @map("number_format")
-  dateFormat    String   @default("dd.MM.yyyy") @map("date_format")
+  canton       String   @default("")
+  advisorName  String   @default("") @map("advisor_name")
+  advisorEmail String   @default("") @map("advisor_email")
+  /// F11.2: the language of the app and the exports (`de-CH` | `en`); null = not chosen yet (the
+  /// app takes the browser language, the exports German). CHECK in the migration.
+  locale       String?
+  /// F11.2: `de-CH` (1’234.56) | `en` (1,234.56) and the date pattern. CHECKs in the migration.
+  numberFormat String   @default("de-CH") @map("number_format")
+  dateFormat   String   @default("dd.MM.yyyy") @map("date_format")
   /// F11.3: rate lookups on the internet allowed.
-  onlineRates   Boolean  @default(true) @map("online_rates")
+  onlineRates  Boolean  @default(true) @map("online_rates")
   /// `enc:v1:…` (secret-box.ts), or null.
-  coingeckoKey  String?  @map("coingecko_key")
-  etherscanKey  String?  @map("etherscan_key")
+  coingeckoKey String?  @map("coingecko_key")
+  etherscanKey String?  @map("etherscan_key")
   /// JSON object symbol → CoinGecko id, overriding the built-in table.
-  coingeckoIds  String   @default("{}") @map("coingecko_ids")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  coingeckoIds String   @default("{}") @map("coingecko_ids")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -217,7 +304,7 @@ model ProjectRate {
   /// price | fx. CHECK in the migration.
   kind      String
   asset     String
-  /// CHF | USD. CHECK in the migration.
+  /// USD or a tax currency (CHF, EUR, …; F4.1a): 3 upper-case letters. CHECK in the migration.
   currency  String
   /// ISO date.
   date      String
@@ -225,6 +312,9 @@ model ProjectRate {
   value     String
   /// manual | estv | binance | coingecko | ecb. CHECK in the migration.
   source    String
+  /// Shown with the source, e.g. "ESTV-Kursliste 2025, Stand 02.10.2026" for the automatic ESTV
+  /// values (F7.4a); null for everything else.
+  note      String?
   fetchedAt DateTime @default(now()) @map("fetched_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -331,4 +421,524 @@ model AiSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ai_settings")
+}
+
+/// A wallet of one user (F6.1): a public address — or a Bitcoin xpub/ypub/zpub — with a label, the
+/// networks it is used on and notes. Seed phrases and private keys never get here (F6.2: refused
+/// before anything is stored). Projects include wallets through `project_wallet`.
+model Wallet {
+  id           String   @id @default(uuid(7))
+  ownerId      String   @map("owner_id")
+  label        String
+  /// The public identifier as entered (trimmed).
+  address      String
+  /// evm | bitcoinAddress | bitcoinXpub | solana | cardano | polkadot | cosmos. CHECK in the migration.
+  addressKind  String   @map("address_kind")
+  /// JSON array of network ids (`ethereum`, `bitcoin`, …).
+  networks     String   @default("[]")
+  notes        String   @default("")
+  /// F6.4: JSON `{ checkedAt, results: [{ network, used, txCount, error }] }`; null = never checked.
+  networkCheck String?  @map("network_check")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  owner          User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  projects       ProjectWallet[]
+  data           WalletNetworkData[]
+  tokenOverrides WalletTokenOverride[]
+  balances       WalletManualBalance[]
+
+  @@index([ownerId])
+  @@map("wallet")
+}
+
+/// A wallet included in a project; its fetched records reach the project as a derived file.
+model ProjectWallet {
+  projectId String   @map("project_id")
+  walletId  String   @map("wallet_id")
+  addedAt   DateTime @default(now()) @map("added_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wallet  Wallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, walletId])
+  @@index([walletId])
+  @@map("project_wallet")
+}
+
+/// The last fetch of one wallet on one network (F6.3): the normalised movements as JSON (amounts
+/// as decimal strings), what the network delivers, and the error of a failed fetch (a code and the
+/// provider's message, never a key).
+model WalletNetworkData {
+  walletId    String   @map("wallet_id")
+  network     String
+  /// ok | error. CHECK in the migration.
+  status      String
+  errorCode   String?  @map("error_code")
+  errorDetail String?  @map("error_detail")
+  /// JSON array of ChainMovement (libs/engine wallets/wallet-records.ts).
+  movements   String   @default("[]")
+  /// JSON: current balances (information only), truncation, notes.
+  info        String   @default("{}")
+  fetchedAt   DateTime @map("fetched_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@id([walletId, network])
+  @@map("wallet_network_data")
+}
+
+/// F6.6: a token the user marked "kein Spam" (overrides the heuristics) on one network.
+model WalletTokenOverride {
+  walletId  String   @map("wallet_id")
+  network   String
+  /// Contract / mint, or `native`.
+  tokenKey  String   @map("token_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@id([walletId, network, tokenKey])
+  @@map("wallet_token_override")
+}
+
+/// F6.5: a balance entered by hand for a wallet on a network at a date (the project's 31.12.),
+/// with its evidence — a PDF in the project's files (evidence only). Becomes a holding record.
+model WalletManualBalance {
+  id             String   @id @default(uuid(7))
+  projectId      String   @map("project_id")
+  walletId       String   @map("wallet_id")
+  network        String
+  asset          String
+  /// Decimal string.
+  quantity       String
+  /// ISO date.
+  asOf           String   @map("as_of")
+  evidenceFileId String?  @map("evidence_file_id")
+  note           String   @default("")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  project  Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wallet   Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  evidence ProjectFile? @relation(fields: [evidenceFileId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, walletId])
+  @@index([walletId])
+  @@index([evidenceFileId])
+  @@map("wallet_manual_balance")
+}
+
+/// F6.7: what the wallet lookups need besides the Etherscan key (kept in `user_settings`): the
+/// Helius key and Solana RPC URL, the Subscan key (sealed like every key) and address overrides.
+model ChainSettings {
+  userId       String   @id @map("user_id")
+  /// `enc:v1:…` or null.
+  heliusKey    String?  @map("helius_key")
+  /// Any Solana JSON-RPC URL; empty = Helius with the key, else the public endpoint.
+  solanaRpcUrl String   @default("") @map("solana_rpc_url")
+  subscanKey   String?  @map("subscan_key")
+  /// Esplora-compatible API; empty = https://mempool.space/api.
+  esploraUrl   String   @default("") @map("esplora_url")
+  /// Koios; empty = https://api.koios.rest/api/v1.
+  koiosUrl     String   @default("") @map("koios_url")
+  /// Cosmos LCD (REST); empty = the public endpoint.
+  cosmosLcdUrl String   @default("") @map("cosmos_lcd_url")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chain_settings")
+}
+
+/// The mailer (SMTP) of one user (F11.10) — its own table, one row per user, created on first
+/// save. The password is stored only sealed (AES-256-GCM, `common/crypto/secret-box.ts`) and never
+/// returned; `password_hint` keeps its last four characters.
+model MailSettings {
+  userId         String   @id @map("user_id")
+  enabled        Boolean  @default(false)
+  host           String   @default("")
+  port           Int      @default(587)
+  /// tls (implicit, usually 465) | starttls (usually 587) | none. CHECK in the migration.
+  security       String   @default("starttls")
+  username       String   @default("")
+  /// `enc:v1:<iv>:<tag>:<ciphertext>`; null = no password stored.
+  passwordCipher String?  @map("password_cipher")
+  passwordHint   String?  @map("password_hint")
+  fromName       String   @default("") @map("from_name")
+  fromAddress    String   @default("") @map("from_address")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mail_settings")
+}
+
+/// A user's own text template for the mail to the Treuhänder (F11.10), per language. No row =
+/// the built-in default of that language (`mail/domain/mail-template.ts`).
+model MailTemplate {
+  userId    String   @map("user_id")
+  /// F11.2 language (`de-CH` | `en`). CHECK in the migration.
+  language  String
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, language])
+  @@map("mail_template")
+}
+
+/// One mail sent (or tried) from a project to the Treuhänder (F10.6a): the protocol. Never a
+/// password; the body is not kept.
+model MailLog {
+  id          String   @id @default(uuid(7))
+  projectId   String   @map("project_id")
+  toAddress   String   @map("to_address")
+  ccAddress   String?  @map("cc_address")
+  subject     String
+  /// JSON array of `{ exportId, fileName, size }`. CHECK json_valid in the migration.
+  attachments String   @default("[]")
+  /// sent | failed. CHECK in the migration.
+  status      String
+  /// A short, redacted error summary when `failed`.
+  error       String?
+  messageId   String?  @map("message_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("mail_log")
+}
+
+/// F4.7: the documents went to the Treuhänder — set automatically by a successful send (F10.6a)
+/// or by hand ("als gesendet markieren"); deleting the row is "rückgängig".
+model ProjectSentState {
+  projectId       String   @id @map("project_id")
+  sentToAdvisorAt DateTime @map("sent_to_advisor_at")
+  sentTo          String   @default("") @map("sent_to")
+  /// mail | post | personal | other. CHECK in the migration.
+  sentVia         String   @map("sent_via")
+  sentNote        String   @default("") @map("sent_note")
+  /// JSON array of project_export ids that went out. CHECK json_valid in the migration.
+  sentExports     String   @default("[]") @map("sent_exports")
+  mailLogId       String?  @map("mail_log_id")
+  /// Input hash of the latest calculation when it was sent ("seit dem Versand geändert").
+  snapshotHash    String?  @map("snapshot_hash")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_sent_state")
+}
+
+/// A user's own rate cache (F11.4): daily series fetched for the dashboard over any period, shared
+/// by all projects of the user for the dashboard only — a project's calculation reads only its
+/// own `project_rate` rows (F7.4). No overrides here (`manual` lives in the project).
+model UserRate {
+  id        String   @id @default(uuid(7))
+  userId    String   @map("user_id")
+  /// price | fx. CHECK in the migration.
+  kind      String
+  asset     String
+  /// USD or a tax currency (CHF, EUR, …; F4.1a): 3 upper-case letters. CHECK in the migration.
+  currency  String
+  /// ISO date.
+  date      String
+  /// Decimal string.
+  value     String
+  /// binance | coingecko | ecb. CHECK in the migration.
+  source    String
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, asset, currency, date, source])
+  @@map("user_rate")
+}
+
+/// What a project took over from another one (F4.4, F4.4a) or from a package (F10.8), one row per
+/// item — so the new project shows "aus Projekt X". The source project may be deleted later; its
+/// name is kept. A carried-over open item lives here (`data` = the item and its note) and is
+/// ticked off through `open_item_state` with the key `carried:<id>`.
+model ProjectCarryover {
+  id                String   @id @default(uuid(7))
+  projectId         String   @map("project_id")
+  /// null for a package import.
+  sourceProjectId   String?  @map("source_project_id")
+  sourceProjectName String   @map("source_project_name")
+  /// project | file | correction | open_item | notes. CHECK in the migration.
+  kind              String
+  /// The new project's item (project file id, correction id), when there is one.
+  ref               String?
+  label             String   @default("")
+  /// JSON. CHECK json_valid in the migration.
+  data              String   @default("{}")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_carryover")
+}
+
+/// The ESTV Kursliste (ICTax) of one tax year, **once per deployment** (F7.4a) — not per user: the
+/// newest official export (`THIRD.INIT.<n>`) that was downloaded, with its version metadata. Only
+/// the newest version per year is kept; its year-end values are in `estv_rate`.
+model EstvKursliste {
+  year          Int      @id
+  /// e.g. THIRD.INIT.220 (the suffix is the schema version, 220 = 2.2.0).
+  exportType    String   @map("export_type")
+  exportDate    DateTime @map("export_date")
+  fileHash      String   @map("file_hash")
+  fileName      String   @map("file_name")
+  /// The XML namespace version, e.g. 2.2.0.
+  schemaVersion String   @map("schema_version")
+  downloadedAt  DateTime @map("downloaded_at")
+  entryCount    Int      @map("entry_count")
+  cryptoCount   Int      @map("crypto_count")
+
+  rates EstvRate[]
+
+  @@map("estv_kursliste")
+}
+
+/// One year-end value of the Kursliste: a cryptocurrency or currency (`currencyNote`) or a
+/// year-end exchange rate (`exchangeRateYearEnd`), in CHF per unit. Replaced with its year.
+model EstvRate {
+  id          String  @id @default(uuid(7))
+  year        Int
+  /// crypto | currency | fx. CHECK in the migration.
+  kind        String
+  /// The ICTax entity id (null for exchange rates).
+  ictaxId     String? @map("ictax_id")
+  /// The ticker (securityAppendix) or the ISO currency.
+  symbol      String
+  name        String
+  valorNumber String? @map("valor_number")
+  isin        String?
+  /// Decimal string, CHF per unit.
+  value       String
+
+  kursliste EstvKursliste @relation(fields: [year], references: [year], onDelete: Cascade)
+
+  @@index([year, symbol])
+  @@map("estv_rate")
+}
+
+/// The last check for a newer Kursliste of one tax year (F7.4a), successful or not.
+model EstvCheck {
+  year      Int      @id
+  checkedAt DateTime @map("checked_at")
+  /// updated | current | failed. CHECK in the migration.
+  outcome   String
+  /// What went wrong (no secrets); null on success.
+  error     String?
+
+  @@map("estv_check")
+}
+
+/// F11.0s: where a user is in the setup wizard. One row per user, created on the first step
+/// change. `steps` = JSON object step id → open | done | skipped | error (CHECK json_valid);
+/// `completed_at` is set by "App starten" — until then the app sends the user to /app/setup.
+model SetupProgress {
+  userId      String    @id @map("user_id")
+  steps       String    @default("{}")
+  /// The step shown last, so a resumed wizard opens there.
+  currentStep String    @default("profile") @map("current_step")
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("setup_progress")
+}
+
+/// F11.0p: the PIN of one user — only a slow salted hash (scrypt, `pin/domain/pin-hash.ts`), never
+/// the PIN. Wrong attempts are counted here so the waiting time survives a restart.
+model UserPin {
+  userId            String    @id @map("user_id")
+  /// `scrypt$<logN>$<r>$<p>$<salt b64>$<hash b64>`. CHECK in the migration.
+  pinHash           String    @map("pin_hash")
+  failedAttempts    Int       @default(0) @map("failed_attempts")
+  /// No unlock attempt before this moment (the growing delay); null = right away.
+  nextAttemptAt     DateTime? @map("next_attempt_at")
+  /// Web: too many failures — unlocking needs a sign-in after this moment.
+  reloginRequiredAt DateTime? @map("relogin_required_at")
+  /// Lock after this many minutes without activity (1–240).
+  autoLockMinutes   Int       @default(15) @map("auto_lock_minutes")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_pin")
+}
+
+/// A dismissed F5.8 hint ("Als in Ordnung markieren" / "Ignorieren"), keyed by the hint's stable
+/// key so it survives recalculation and new uploads. No row = open.
+model ProjectHintState {
+  projectId String   @map("project_id")
+  hintKey   String   @map("hint_key")
+  /// done | ignored (CHECK)
+  status    String
+  note      String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, hintKey])
+  @@map("project_hint_state")
+}
+
+/// F11.15 + F11.16: the assistant's own system prompt (null = the built-in default; the safety
+/// rules are appended server-side and cannot be edited), the chat consent (F5.14 for the chat)
+/// and the MCP server switches. One row per user; no row = the defaults (MCP off).
+model AssistantSettings {
+  userId        String    @id @map("user_id")
+  systemPrompt  String?   @map("system_prompt")
+  chatConsentAt DateTime? @map("chat_consent_at")
+  mcpEnabled    Boolean   @default(false) @map("mcp_enabled")
+  /// JSON array of the tool areas the MCP server exposes. CHECK json_valid in the migration.
+  mcpAreas      String    @default("[]") @map("mcp_areas")
+  mcpAllowWrite Boolean   @default(false) @map("mcp_allow_write")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("assistant_settings")
+}
+
+/// F11.16: a personal access token for the MCP endpoint — only its SHA-256 is stored.
+model McpToken {
+  id         String    @id @default(uuid(7))
+  userId     String    @map("user_id")
+  name       String
+  /// SHA-256 (hex) of the token. CHECK in the migration.
+  tokenHash  String    @unique @map("token_hash")
+  /// The last characters, to recognise it in the list.
+  tokenHint  String    @map("token_hint")
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mcp_token")
+}
+
+/// F11.14: one chat of the assistant sidebar. Deleting it deletes its messages and proposals.
+model ChatConversation {
+  id        String   @id @default(uuid(7))
+  userId    String   @map("user_id")
+  title     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  proposals ChatProposal[]
+
+  @@index([userId, updatedAt])
+  @@map("chat_conversation")
+}
+
+/// One message of a chat: what the user wrote, the assistant's answers, the tool calls and their
+/// (shortened) results the model saw, and events such as an executed proposal.
+model ChatMessage {
+  id             String   @id @default(uuid(7))
+  conversationId String   @map("conversation_id")
+  seq            Int
+  /// user | assistant | tool | event. CHECK in the migration.
+  role           String
+  content        String
+  /// JSON object: tool calls, tool call id, links, upload requests, proposal ids, usage.
+  data           String   @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, seq])
+  @@map("chat_message")
+}
+
+/// F11.14: a change the assistant proposed; it runs only when the user confirms it.
+model ChatProposal {
+  id             String    @id @default(uuid(7))
+  conversationId String    @map("conversation_id")
+  tool           String
+  /// JSON object: the validated tool arguments.
+  args           String
+  /// JSON object: summary + before/after lines shown on the card.
+  preview        String
+  /// pending | executed | failed | cancelled. CHECK in the migration.
+  status         String    @default("pending")
+  /// JSON: the shortened result or the error.
+  result         String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  decidedAt      DateTime? @map("decided_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("chat_proposal")
+}
+
+/// Every tool call of the chat or the MCP server (F11.14, F11.16): who, from where, which tool,
+/// the arguments without secrets, the outcome and how long it took.
+model ToolAudit {
+  id         String   @id @default(uuid(7))
+  userId     String   @map("user_id")
+  /// chat | mcp. CHECK in the migration.
+  source     String
+  tool       String
+  /// Redacted, shortened summary of the arguments.
+  args       String
+  /// ok | error | refused | proposed. CHECK in the migration.
+  status     String
+  errorCode  String?  @map("error_code")
+  durationMs Int      @map("duration_ms")
+  /// The MCP token used (no FK: the audit outlives a deleted token).
+  tokenId    String?  @map("token_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("tool_audit")
+}
+
+/// F11.11–F11.13: one message of the notification centre, per user, deduplicated by its stable
+/// topic (`rates.fetchFailed:<projectId>`, `file.needsMapping:<projectFileId>`, …). Raising a
+/// topic again updates the row; resolving it marks the cause as gone. Never holds keys, passwords
+/// or booking details — only an i18n key and short params.
+model Notification {
+  id          String    @id @default(uuid(7))
+  userId      String    @map("user_id")
+  projectId   String?   @map("project_id")
+  /// error | action | info | success (CHECK)
+  kind        String
+  topic       String
+  /// i18n key, translated by the app.
+  titleKey    String    @map("title_key")
+  /// JSON object of i18n params (json_valid CHECK).
+  params      String    @default("{}")
+  /// JSON `{ route, query?, fragment? }` or `{ named }`; null = no action (json_valid CHECK).
+  action      String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  /// The last time the topic was raised — the list is sorted by it.
+  occurredAt  DateTime  @map("occurred_at")
+  readAt      DateTime? @map("read_at")
+  resolvedAt  DateTime? @map("resolved_at")
+  dismissedAt DateTime? @map("dismissed_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topic])
+  @@index([userId, occurredAt])
+  @@map("notification")
 }

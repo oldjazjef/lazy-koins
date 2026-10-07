@@ -1,17 +1,24 @@
 import {
-  ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { conflict } from '../../common/http/api-errors';
 import {
   CommandHandler,
   type ICommandHandler,
   type IQueryHandler,
   QueryHandler,
 } from '@nestjs/cqrs';
-import { countryRules, missingFileHints } from '@lazykoins/engine';
+import {
+  countryRules,
+  missingFileHints,
+  rulesInLanguage,
+  withTaxCurrency,
+} from '@lazykoins/engine';
 import { BUILD_INFO } from '../../app/build-info';
+import { localeOr } from '../../common/i18n/locale';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CalculationService } from '../../calculation/calculation.service';
 import type { Snapshot } from '../../calculation/domain/calculation';
@@ -19,7 +26,11 @@ import {
   CalculationSnapshotRepositoryPort,
   OpenItemStateRepositoryPort,
 } from '../../calculation/ports/calculation.repository.port';
+import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
+import { NotificationService } from '../../notifications/application/notification.service';
+import { ProjectNotifications } from '../../notifications/application/project-notifications.service';
+import { projectRoute, Topics } from '../../notifications/domain/notification';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -61,6 +72,7 @@ export class ExportDataService {
     private readonly files: ProjectFileRepositoryPort,
     private readonly inputs: CalculationInputService,
     private readonly calculation: CalculationService,
+    private readonly hintStates: HintStateRepositoryPort,
   ) {}
 
   /**
@@ -78,7 +90,8 @@ export class ExportDataService {
       snapshot = await this.snapshots.latest(project.id);
     }
     if (!snapshot) {
-      throw new ConflictException(
+      throw conflict(
+        'noCalculation',
         'The project has no calculation yet: reopen it and calculate',
       );
     }
@@ -91,9 +104,17 @@ export class ExportDataService {
     snapshot: Snapshot,
     createdAt: string,
   ): Promise<ExportData> {
-    const rules = countryRules(project.country);
-    if (!rules) throw new Error(`No country rules for ${project.country}`);
+    const countryRule = countryRules(project.country);
+    if (!countryRule)
+      throw new Error(`No country rules for ${project.country}`);
+    // F4.1a: the statement is in the currency the snapshot was calculated in.
     const settings = await this.settings.resolve(userId);
+    // F11.2: the document in the user's language and format; labels from the rules (F10.3).
+    const locale = localeOr(settings.locale);
+    const rules = rulesInLanguage(
+      withTaxCurrency(countryRule, snapshot.result.currency),
+      locale,
+    );
     const user = await this.users.findById(userId);
     const states = new Map(
       (await this.states.listByProject(project.id)).map((s) => [s.itemKey, s]),
@@ -101,6 +122,10 @@ export class ExportDataService {
     const coverage = (await this.files.listByProject(project.id))
       .filter((file) => file.status === 'standard' || file.status === 'mapped')
       .flatMap((file) => file.coverage);
+    // Hints marked "in Ordnung" or ignored (F5.8) are settled: not in the internal report.
+    const dismissed = new Set(
+      (await this.hintStates.listByProject(project.id)).map((s) => s.hintKey),
+    );
     return {
       projectName: project.name,
       taxYear: project.taxYear,
@@ -111,6 +136,11 @@ export class ExportDataService {
       createdAt,
       calculatedAt: snapshot.createdAt,
       appVersion: BUILD_INFO.full,
+      locale,
+      format: {
+        numberFormat: settings.numberFormat,
+        dateFormat: settings.dateFormat,
+      },
       rules,
       result: snapshot.result,
       items: snapshot.result.openItems.map((item) => ({
@@ -118,7 +148,9 @@ export class ExportDataService {
         done: states.get(item.key)?.done ?? false,
         note: states.get(item.key)?.note ?? '',
       })),
-      hints: missingFileHints(project.taxYear, coverage),
+      hints: missingFileHints(project.taxYear, coverage).filter(
+        (hint) => !dismissed.has(hint.key),
+      ),
     };
   }
 }
@@ -155,6 +187,8 @@ export class CreateExportHandler implements ICommandHandler<
     private readonly exports: ProjectExportRepositoryPort,
     private readonly data: ExportDataService,
     private readonly pdf: PdfRendererPort,
+    @Optional() private readonly notifications?: NotificationService,
+    @Optional() private readonly projectNotifications?: ProjectNotifications,
   ) {}
 
   async execute({
@@ -163,6 +197,35 @@ export class CreateExportHandler implements ICommandHandler<
     kind,
   }: CreateExportCommand): Promise<ProjectExportMeta> {
     const project = await loadOwnProject(this.projects, userId, projectId);
+    const topic = Topics.exportFailed(project.id);
+    let created: ProjectExportMeta;
+    try {
+      created = await this.create(userId, project, kind);
+    } catch (error) {
+      // F11.12: "Auszug konnte nicht erstellt werden" — which kind, "Erneut versuchen".
+      await this.notifications?.raise(userId, topic, {
+        kind: 'error',
+        projectId: project.id,
+        params: { kind },
+        action: projectRoute(
+          project.id,
+          'notifications.action.retry',
+          'exports',
+        ),
+      });
+      throw error;
+    }
+    await this.notifications?.resolve(userId, topic);
+    // A statement made after sending is "seit dem Versand geändert" (F4.7).
+    await this.projectNotifications?.sentChanged(userId, project.id);
+    return created;
+  }
+
+  private async create(
+    userId: string,
+    project: Project,
+    kind: ExportKind,
+  ): Promise<ProjectExportMeta> {
     const snapshot = await this.data.currentSnapshot(userId, project);
     const data = await this.data.build(
       userId,

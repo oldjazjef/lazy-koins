@@ -1,0 +1,61 @@
+<div class="lk-activity" role="status" aria-live="polite">
+  @if (activity.count() > 0) {
+  <div class="lk-activity-card">
+    <div class="flex items-center gap-3">
+      <ng-icon
+        name="lucideLoaderCircle"
+        size="18"
+        class="lk-spinner text-primary shrink-0"
+        aria-hidden="true"
+      />
+      @if (single(); as task) {
+      <span class="min-w-0 flex-1 truncate text-sm" [title]="text(task)"
+        >{{ text(task) }}</span
+      >
+      } @else {
+      <span class="min-w-0 flex-1 truncate text-sm font-medium">
+        {{ 'activity.several' | translate: { count: activity.count() } }}
+      </span>
+      <button
+        type="button"
+        class="lk-activity-toggle"
+        [attr.aria-expanded]="expanded()"
+        aria-controls="lk-activity-list"
+        [attr.aria-label]="(expanded() ? 'activity.collapse' : 'activity.expand') | translate"
+        (click)="expanded.set(!expanded())"
+      >
+        <ng-icon
+          [name]="expanded() ? 'lucideChevronDown' : 'lucideChevronUp'"
+          size="16"
+          aria-hidden="true"
+        />
+      </button>
+      }
+    </div>
+    @if (single(); as task) { @if (percent(task) !== null) {
+    <progress
+      class="lk-activity-progress"
+      max="100"
+      [value]="percent(task)"
+      [attr.aria-label]="text(task)"
+    ></progress>
+    } } @else if (expanded()) {
+    <ul id="lk-activity-list" class="lk-activity-list">
+      @for (task of activity.tasks(); track task.id) {
+      <li class="flex flex-col gap-1">
+        <span class="truncate" [title]="text(task)">{{ text(task) }}</span>
+        @if (percent(task) !== null) {
+        <progress
+          class="lk-activity-progress"
+          max="100"
+          [value]="percent(task)"
+          [attr.aria-label]="text(task)"
+        ></progress>
+        }
+      </li>
+      }
+    </ul>
+    }
+  </div>
+  }
+</div>

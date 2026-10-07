@@ -33,6 +33,8 @@ module.exports = {
     'package.json',
     'main.js',
     'preload.js',
+    // F11.16: the stdio MCP proxy, run with ELECTRON_RUN_AS_NODE=1 (Electron's Node reads asar).
+    'mcp-stdio.js',
     'api/**',
     'web/**',
     'migrations/**',

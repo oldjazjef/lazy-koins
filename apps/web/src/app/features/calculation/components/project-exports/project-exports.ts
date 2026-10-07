@@ -1,11 +1,13 @@
-import { DatePipe } from '@angular/common';
+import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
+import { lucideDownload } from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
@@ -15,6 +17,8 @@ import { HlmLabelImports } from '@lazykoins/ui/label';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
 import { HlmTextareaImports } from '@lazykoins/ui/textarea';
+import { BOOKING_KINDS } from '../../../../core/api/api.types';
+import type { DataExportFilter } from '../../../../core/api/dashboard.types';
 import {
   type ExportKind,
   INTERNAL_KINDS,
@@ -26,6 +30,18 @@ import { NotificationService } from '../../../../core/notifications/notification
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ChfPipe } from '../../../../shared/format/number-format';
 import { ProjectWorkspaceService } from '../project-workspace/project-workspace.service';
+import { paginate, Paginator } from '../../../../shared/components/paginator';
+import { Truncate } from '../../../../shared/components/truncate';
+import {
+  type RowAction,
+  RowActions,
+} from '../../../../shared/components/row-actions';
+import { SendToAdvisor } from '../send-to-advisor/send-to-advisor';
+import {
+  type DateRange,
+  DateRangePicker,
+  type DateRangePreset,
+} from '../../../../shared/components/date-range-picker';
 
 /**
  * Exporte (F10): create the simple and the detailed statement as PDF or Excel — asking first while
@@ -37,10 +53,15 @@ import { ProjectWorkspaceService } from '../project-workspace/project-workspace.
 @Component({
   selector: 'lk-project-exports',
   imports: [
-    DatePipe,
+    LkDatePipe,
     TranslatePipe,
+    Paginator,
+    Truncate,
+    RowActions,
     ChfPipe,
     EmptyState,
+    SendToAdvisor,
+    DateRangePicker,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmDialogImports,
@@ -66,17 +87,78 @@ export class ProjectExports {
       : [];
     return [
       {
-        key: 'statements',
+        key: 'statements' as const,
         items: all.filter((item) => !isInternalKind(item.kind)),
       },
       {
-        key: 'internal',
+        key: 'internal' as const,
         items: all.filter((item) => isInternalKind(item.kind)),
       },
     ].filter((group) => group.items.length > 0);
   });
 
   protected readonly draft = signal<MailDraft | null>(null);
+  protected readonly bookingKinds = BOOKING_KINDS;
+  protected readonly filter = signal<DataExportFilter>({});
+
+  /** The project's tax year: offered as the period preset (and its neighbours). */
+  readonly taxYear = input<number | null>(null);
+
+  protected readonly period = computed<DateRange>(() => ({
+    from: this.filter().from ?? '',
+    to: this.filter().to ?? '',
+  }));
+
+  protected readonly periodPresets = computed<DateRangePreset[]>(() => {
+    const year = this.taxYear();
+    if (year === null) return [];
+    return [year, year - 1].map((y) => ({
+      id: `year:${y}`,
+      labelKey: 'dateRange.taxYear',
+      labelParams: { year: y },
+      range: { from: `${y}-01-01`, to: `${y}-12-31` },
+    }));
+  });
+
+  protected setFilter(key: keyof DataExportFilter, value: string): void {
+    this.filter.update((current) => ({ ...current, [key]: value }));
+  }
+
+  /** One period, set at once (`''` both = no date filter). */
+  protected setPeriod(range: DateRange): void {
+    this.filter.update((current) => ({
+      ...current,
+      from: range.from,
+      to: range.to,
+    }));
+  }
+
+  protected data(format: 'csv' | 'xlsx', type: 'bookings' | 'holdings'): void {
+    void this.service.downloadData(format, type, this.filter());
+  }
+
+  protected packageDownload(): void {
+    void this.service.downloadPackage();
+  }
+
+  /** Each group of stored exports (F10), newest first, 10 per page. */
+  protected readonly pagers = {
+    statements: paginate(
+      computed(
+        () => this.groups().find((g) => g.key === 'statements')?.items ?? [],
+      ),
+      { storageKey: 'exports' },
+    ),
+    internal: paginate(
+      computed(
+        () => this.groups().find((g) => g.key === 'internal')?.items ?? [],
+      ),
+      { storageKey: 'exports' },
+    ),
+  };
+  protected readonly actions: readonly RowAction[] = [
+    { id: 'download', labelKey: 'exports.download', icon: lucideDownload },
+  ];
 
   protected create(kind: ExportKind): void {
     void this.service.requestExport(kind).catch(() => undefined);
