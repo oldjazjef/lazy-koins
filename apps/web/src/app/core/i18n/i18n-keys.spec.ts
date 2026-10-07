@@ -21,7 +21,12 @@ import {
   POSITION_STATUSES,
   PRICE_ORIGINS,
   QUANTITY_SOURCES,
+  RATE_SOURCES,
 } from '../api/calculation.types';
+import {
+  PRICE_PROVIDERS,
+  PRICE_SOURCE_ERROR_CODES,
+} from '../api/price-sources.types';
 import {
   ADDRESS_KINDS,
   CHAIN_SERVICES,
@@ -182,9 +187,12 @@ const DYNAMIC_KEYS = [
   ...OPEN_ITEM_REASONS.map((reason) => `checks.reason.${reason}`),
   ...CORRECTION_TYPES.map((type) => `corrections.type.${type}`),
   ...['price', 'fx'].map((kind) => `rates.kind.${kind}`),
-  ...['manual', 'estv', 'binance', 'coingecko', 'ecb'].map(
-    (source) => `rates.source.${source}`,
-  ),
+  ...RATE_SOURCES.map((source) => `rates.source.${source}`),
+  // Price sources: provider errors (refresh summary, notifications, "Testen").
+  ...PRICE_SOURCE_ERROR_CODES.map((code) => `rates.sourceErrors.${code}`),
+  ...PRICE_PROVIDERS.map((id) => `rates.source.${id}`),
+  ...['coingecko', 'coinmarketcap'].map((id) => `rates.attribution.${id}`),
+  ...['noKey', 'offline'].map((code) => `settings.priceSources.test.${code}`),
   ...FETCH_STATUSES.map((status) => `rates.status.${status}`),
   ...ESTV_PHASES.map((phase) => `estv.phase.${phase}`),
   ...['updated', 'current', 'failed'].map(
@@ -323,7 +331,7 @@ const DYNAMIC_KEYS = [
   ...PACKAGE_ERROR_CODES.map((code) => `notifications.reason.${code}`),
   ...TOOL_ERROR_CODES.map((code) => `chat.proposal.errors.${code}`),
   ...CHAT_EVENT_OUTCOMES.map((outcome) => `chat.event.${outcome}`),
-  ...['ai', 'coingecko', 'mail', 'chain'].map(
+  ...['ai', 'coingecko', 'coinmarketcap', 'mail', 'chain'].map(
     (service) => `notifications.service.${service}`,
   ),
   ...['idle', 'lock-screen', 'suspend', 'unknown'].map(

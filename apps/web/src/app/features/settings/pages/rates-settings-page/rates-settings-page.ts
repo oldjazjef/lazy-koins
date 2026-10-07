@@ -19,6 +19,7 @@ import { PageHeader } from '../../../../shared/components/page-header';
 import { Truncate } from '../../../../shared/components/truncate';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { RatesKeyForm } from '../../components/rates-key-form/rates-key-form';
+import { PriceSourcesForm } from '../../components/price-sources-form/price-sources-form';
 import { lucidePencil, lucideTrash2 } from '@ng-icons/lucide';
 import type { CoinChoice } from '../../../../core/api/coin.types';
 import {
@@ -35,7 +36,8 @@ import { RatesSettingsPageService } from './rates-settings-page.service';
 
 /**
  * Einstellungen › Kurse (F11.3, F6.7, F7.4, F7.4a): rate lookups on the internet on/off and the
- * CoinGecko key with "Testen" (`lk-rates-key-form`, shared with the setup wizard), the automatic
+ * CoinGecko key with "Testen" (`lk-rates-key-form`, shared with the setup wizard), the price
+ * providers in their order with "Testen" each (`lk-price-sources-form`, price sources phase 2), the automatic
  * ESTV Kursliste (status per year, "ESTV-Kursliste aktualisieren") and the manual Kursliste import
  * into a project.
  */
@@ -47,6 +49,7 @@ import { RatesSettingsPageService } from './rates-settings-page.service';
     PageHeader,
     Truncate,
     RatesKeyForm,
+    PriceSourcesForm,
     CoinPicker,
     RowActions,
     ...HlmBadgeImports,

@@ -44,6 +44,8 @@ import {
   QuantityPipe,
 } from '../../../../shared/format/number-format';
 import { DateRangePicker } from '../../../../shared/components/date-range-picker';
+import { PriceAttribution } from '../../../../shared/components/price-attribution';
+import { RATE_SOURCES } from '../../../../core/api/calculation.types';
 import {
   DashboardPageService,
   type HoldingSort,
@@ -73,6 +75,7 @@ import {
     DateRangePicker,
     CoinPicker,
     RowActions,
+    PriceAttribution,
     ...HlmButtonImports,
     ...HlmCardImports,
     ...HlmInputImports,
@@ -92,6 +95,11 @@ export class DashboardPage {
   private readonly translate = inject(TranslateService);
   protected readonly kpiKinds = KPI_KINDS;
   protected readonly isNegative = isNegative;
+
+  /** Price sources of the shown holdings (CoinGecko / CoinMarketCap data needs attribution). */
+  protected readonly holdingSources = computed(() =>
+    this.service.holdings().map((h) => h.priceSource),
+  );
 
   protected readonly points = computed(() =>
     this.service.view.hasValue()
@@ -254,10 +262,4 @@ export class DashboardPage {
 }
 
 /** Sources with a `rates.source.*` text; the others have `dashboard.holdings.priceSource.*`. */
-const PRICE_SOURCES = new Set([
-  'manual',
-  'estv',
-  'binance',
-  'coingecko',
-  'ecb',
-]);
+const PRICE_SOURCES = new Set<string>(RATE_SOURCES);

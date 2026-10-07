@@ -102,6 +102,21 @@ export class CoinChoiceService {
     return settings;
   }
 
+  /**
+   * The user's key for the provider's directory: CoinGecko's (optional — the public API without
+   * one), CoinMarketCap's (required → 409 `noKey`).
+   */
+  keyFor(
+    settings: ResolvedSettings,
+    provider: CoinProvider,
+  ): string | undefined {
+    const key = settings.keys[provider];
+    if (provider === 'coinmarketcap' && !key) {
+      throw conflict('noKey', 'No CoinMarketCap key stored');
+    }
+    return key;
+  }
+
   /** A directory call; its failure becomes a coded 502 (status only, never a body). */
   async ask<T>(work: () => Promise<T>): Promise<T> {
     try {
@@ -126,8 +141,9 @@ export class CoinChoiceService {
   ): Promise<CoinCandidate> {
     const id = checkId(provider, rawId);
     const settings = await this.online(userId);
+    const apiKey = this.keyFor(settings, provider);
     const coin = await this.ask(() =>
-      this.directory.find(provider, id, { apiKey: settings.keys.coingecko }),
+      this.directory.find(provider, id, { apiKey }),
     );
     if (!coin) {
       throw new UnprocessableEntityException({

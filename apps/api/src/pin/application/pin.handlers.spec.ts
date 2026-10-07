@@ -270,7 +270,11 @@ describe('PIN lock handlers (F11.0p)', () => {
     await t.set.execute(new SetPinCommand(anna, '1234'));
     await t.settings.save('anna', {
       displayName: 'Anna',
-      sealedKeys: { coingecko: box.seal('CG-1'), etherscan: box.seal('ES-1') },
+      sealedKeys: {
+        coingecko: box.seal('CG-1'),
+        etherscan: box.seal('ES-1'),
+        coinmarketcap: box.seal('CMC-1'),
+      },
     });
     await t.ai.save('anna', {
       enabled: true,
@@ -308,6 +312,7 @@ describe('PIN lock handlers (F11.0p)', () => {
       mail: true,
       coingecko: true,
       etherscan: true,
+      coinmarketcap: true,
       chains: true,
     });
     expect(await t.chains.find('anna')).toMatchObject({
@@ -318,7 +323,7 @@ describe('PIN lock handlers (F11.0p)', () => {
     expect(t.pins.rows.has('anna')).toBe(false);
     expect(t.settings.rows.get('anna')).toMatchObject({
       displayName: 'Anna',
-      sealedKeys: { coingecko: null, etherscan: null },
+      sealedKeys: { coingecko: null, etherscan: null, coinmarketcap: null },
     });
     expect(t.ai.rows.get('anna')).toMatchObject({
       enabled: true,

@@ -191,7 +191,14 @@
       {{ 'dashboard.missing.afterRefresh' | translate: { count: results.length }
       }}
     </p>
-    }
+    @for (asset of results; track asset.asset) { @if (asset.status === 'failed'
+    && asset.error; as error) {
+    <p class="text-destructive text-xs" role="note">
+      {{ asset.asset }} · {{ 'rates.failedVia' | translate: { provider:
+      ('rates.source.' + error.provider | translate), error:
+      ('rates.sourceErrors.' + error.code | translate) } }}
+    </p>
+    } } }
   </section>
   }
 
@@ -370,6 +377,7 @@
           </tbody>
         </table>
       </div>
+      <lk-price-attribution [sources]="holdingSources()" />
       }
     </div>
   </section>

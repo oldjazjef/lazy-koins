@@ -25,6 +25,7 @@ import { selectPdfRenderer } from './pdf/select-pdf-renderer';
 import { BinanceKlinesSource } from './rates/binance-klines.source';
 import { CoinGeckoSource } from './rates/coingecko.source';
 import { CoinGeckoDirectory } from './rates/coingecko-directory';
+import { ProviderCoinDirectory } from './rates/provider-coin-directory';
 import { SerialGate } from './rates/http-rate-client';
 import { CoinDirectoryPort } from '../rates/ports/coin-directory.port';
 
@@ -41,7 +42,7 @@ import { PriceHistorySources } from './rates/price-history/price-history-sources
  * that imports firebase-admin. The AI plugin's `AiCompletionPort` (F5.13) dispatches per call to
  * the OpenAI-compatible or the Anthropic adapter, from the user's settings. Rate sources
  * (Binance, CoinGecko, ECB/Frankfurter; the selectable price-history adapters behind
- * `PriceHistorySourcesPort`, not wired yet) and the PDF renderer (Chromium) live here too, and so does
+ * `PriceHistorySourcesPort`) and the PDF renderer (Chromium) live here too, and so does
  * the mailer (`MailTransportPort` → nodemailer, F11.10). Later: one `ChainDataPort` adapter per
  * wallet network.
  */
@@ -74,12 +75,19 @@ import { PriceHistorySources } from './rates/price-history/price-history-sources
       useFactory: () => new CoinGeckoSource(fetch, COINGECKO_GATE),
     },
     {
+      // "Coin wählen": CoinGecko's directory, CoinMarketCap through its price-history adapter.
       provide: CoinDirectoryPort,
-      useFactory: () => new CoinGeckoDirectory(COINGECKO_GATE),
+      inject: [PriceHistorySourcesPort],
+      useFactory: (sources: PriceHistorySourcesPort) =>
+        new ProviderCoinDirectory(
+          new CoinGeckoDirectory(COINGECKO_GATE),
+          sources,
+        ),
     },
     { provide: FxRateSourcePort, useFactory: () => new FrankfurterFxSource() },
     {
-      // Price sources phase 1: the adapters exist and are injectable; no handler uses them yet.
+      // The selectable price providers (price sources phase 2): the provider chain of "Kurse
+      // aktualisieren", "Testen" per provider, CoinMarketCap's coin directory.
       provide: PriceHistorySourcesPort,
       useFactory: () => PriceHistorySources.real(),
     },

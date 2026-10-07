@@ -17,10 +17,11 @@ import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmLabelImports } from '@lazykoins/ui/label';
 import { extractErrorDetail } from '../../core/actions/extract-error-detail';
 import type { ErrorText } from '../../core/api/api-error';
-import type {
-  CoinCandidate,
-  CoinChoice,
-  CoinProvider,
+import {
+  type CoinCandidate,
+  type CoinChoice,
+  COIN_PROVIDERS,
+  type CoinProvider,
 } from '../../core/api/coin.types';
 import { CoinsService } from './coins.service';
 
@@ -65,6 +66,9 @@ export class CoinPicker {
   readonly picked = output<PickedCoin>();
   readonly closed = output<void>();
 
+  /** Price sources phase 2: the provider to search (CoinGecko, CoinMarketCap with its key). */
+  protected readonly providers = COIN_PROVIDERS;
+  protected readonly provider = signal<CoinProvider>('coingecko');
   protected readonly ticker = signal('');
   protected readonly query = signal('');
   protected readonly results = signal<readonly CoinCandidate[]>([]);
@@ -88,6 +92,7 @@ export class CoinPicker {
       const symbol = this.symbol();
       if (symbol === null) return;
       untracked(() => {
+        this.provider.set(this.current()?.provider ?? 'coingecko');
         this.ticker.set(symbol);
         this.query.set(symbol);
         this.results.set([]);
@@ -103,6 +108,15 @@ export class CoinPicker {
     this.ticker.set((event.target as HTMLInputElement).value.toUpperCase());
   }
 
+  protected setProvider(event: Event): void {
+    this.provider.set(
+      (event.target as HTMLSelectElement).value as CoinProvider,
+    );
+    this.results.set([]);
+    this.selected.set(null);
+    if (this.query().trim()) void this.search();
+  }
+
   protected setQuery(event: Event): void {
     this.query.set((event.target as HTMLInputElement).value);
   }
@@ -113,7 +127,7 @@ export class CoinPicker {
     this.searching.set(true);
     this.error.set(null);
     try {
-      const answer = await this.coins.search(q);
+      const answer = await this.coins.search(q, this.provider());
       this.results.set(answer.coins);
       this.suggested.set(answer.suggested);
       this.ambiguous.set(answer.ambiguous);

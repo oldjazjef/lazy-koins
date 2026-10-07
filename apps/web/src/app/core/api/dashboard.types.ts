@@ -1,8 +1,8 @@
 import type { CoinChoice, Pricing, SharedTicker } from './coin.types';
 import type { BookingKind, Project, ProjectFileStatus } from './api.types';
 import type {
+  AssetFetchResult,
   CorrectionType,
-  FetchStatus,
   FigureRecord,
   OpenItem,
 } from './calculation.types';
@@ -108,12 +108,7 @@ export interface DashboardRecords {
 
 export interface DashboardRefreshSummary {
   readonly fx: number;
-  readonly assets: readonly {
-    readonly asset: string;
-    readonly status: FetchStatus;
-    readonly source: string | null;
-    readonly points: number;
-  }[];
+  readonly assets: readonly AssetFetchResult[];
 }
 
 // --- Carry-over (F4.4, F4.4a) ---

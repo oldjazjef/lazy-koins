@@ -295,6 +295,11 @@ model UserSettings {
   /// `enc:v1:…` (secret-box.ts), or null.
   coingeckoKey String?  @map("coingecko_key")
   etherscanKey String?  @map("etherscan_key")
+  /// Price sources phase 2: the CoinMarketCap key, sealed like the others. CHECK in the migration.
+  coinmarketcapKey String? @map("coinmarketcap_key")
+  /// JSON array of { id, enabled } — the crypto price providers in the user's order; '[]' = the
+  /// default order (rates/domain/price-providers.ts). CHECK json array in the migration.
+  priceSources String   @default("[]") @map("price_sources")
   /// JSON object symbol → the chosen coin { provider, id, name, symbol } (F7.4, coin-choice.ts).
   coinChoices  String   @default("{}") @map("coin_choices")
   /// JSON array of tickers whose shared-code warning the user settled ("Passt so", F7.4).
@@ -321,7 +326,8 @@ model ProjectRate {
   date      String
   /// Decimal string.
   value     String
-  /// manual | estv | binance | coingecko | ecb. CHECK in the migration.
+  /// manual | estv | ecb | binance | coingecko | coinmarketcap | defillama | coinpaprika | kraken |
+  /// bitfinex | coinbase. CHECK in the migration.
   source    String
   /// Shown with the source, e.g. "ESTV-Kursliste 2025, Stand 02.10.2026" for the automatic ESTV
   /// values (F7.4a); null for everything else.
@@ -659,7 +665,8 @@ model UserRate {
   date      String
   /// Decimal string.
   value     String
-  /// binance | coingecko | ecb. CHECK in the migration.
+  /// ecb | binance | coingecko | coinmarketcap | defillama | coinpaprika | kraken | bitfinex |
+  /// coinbase. CHECK in the migration.
   source    String
   fetchedAt DateTime @default(now()) @map("fetched_at")
 

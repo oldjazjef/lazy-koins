@@ -19,7 +19,21 @@ import {
   type RecordSummary,
 } from '@lazykoins/engine';
 import type { Env } from '../../config/env';
-import { fetchPrices, seriesCounts } from '../../rates/application/price-fetch';
+import {
+  CoinRefCache,
+  fetchPrices,
+  seriesCounts,
+} from '../../rates/application/price-fetch';
+import {
+  type AssetFetchResult,
+  type KeyUse,
+  notifyKeys,
+  priceKeys,
+  recordKeys,
+} from '../../rates/application/rates.handlers';
+import { enabledProviders } from '../../rates/domain/price-providers';
+import { PriceHistorySourcesPort } from '../../integrations/rates/price-history/price-history-source.port';
+import { NotificationService } from '../../notifications/application/notification.service';
 import { CoinMarketService } from '../../rates/application/coin-market.service';
 import {
   type CoinChoice,
@@ -28,7 +42,6 @@ import {
   type SharedTicker,
 } from '../../rates/domain/coin-choice';
 import {
-  FiatPriceSourcePort,
   FxRateSourcePort,
   fxBasesFor,
   UsdPriceSourcePort,
@@ -362,12 +375,9 @@ export type DashboardFetchStatus =
 
 export interface DashboardRefreshSummary {
   readonly fx: number;
-  readonly assets: readonly {
-    readonly asset: string;
+  readonly assets: readonly (AssetFetchResult & {
     readonly status: DashboardFetchStatus;
-    readonly source: string | null;
-    readonly points: number;
-  }[];
+  })[];
 }
 
 export class RefreshDashboardRatesCommand {
@@ -386,8 +396,8 @@ export class RefreshDashboardRatesCommand {
 /**
  * "Kurse aktualisieren" on the dashboard (F11.4, F11.9): fetches the daily series missing for
  * the shown period into the user's rate cache — USD and EUR in the shown tax currency T from the
- * ECB (USD/CHF, EUR/CHF for CHF; F4.1a), then Binance USD closes, CoinGecko in T as the fallback
- * with the user's key. A series that already covers the
+ * ECB (USD/CHF, EUR/CHF for CHF; F4.1a), then per asset the user's price providers in order (the
+ * same chain and coin rules as a project, `price-fetch.ts`). A series that already covers the
  * period (project rates or cache, within the 14-day tolerance at both ends) is skipped unless
  * `force`. Refused (409) when rate lookups are off (F11.3); the sources are serialised.
  */
@@ -401,11 +411,14 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
     private readonly userRates: UserRateRepositoryPort,
     private readonly settings: SettingsReader,
     private readonly usd: UsdPriceSourcePort,
-    private readonly fiat: FiatPriceSourcePort,
+    private readonly history: PriceHistorySourcesPort,
     private readonly fx: FxRateSourcePort,
     private readonly config: ConfigService<Env, true>,
     @Optional() private readonly markets?: CoinMarketService,
+    @Optional() private readonly notifications?: NotificationService,
   ) {}
+
+  private readonly coinRefs = new CoinRefCache();
 
   async execute({
     userId,
@@ -453,6 +466,9 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
       fx += await this.userRates.upsertMany(userId, entries);
     }
     const results: DashboardRefreshSummary['assets'][number][] = [];
+    const keyUse: KeyUse = { accepted: new Set(), rejected: new Set() };
+    const leaders =
+      (await this.markets?.leaders(assets)) ?? new Map<string, string>();
     for (const raw of assets) {
       const asset = raw.trim().toUpperCase();
       if (!asset) continue;
@@ -474,33 +490,36 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
         results.push({ asset, status: 'cached', source: null, points: 0 });
         continue;
       }
-      try {
-        const found = await fetchPrices(
-          { usd: this.usd, fiat: this.fiat },
-          {
-            asset,
-            from: window.from,
-            to: window.to,
-            currency: quote,
-            choices,
-            apiKey: settings.keys.coingecko,
-            marketAmbiguous,
-          },
-        );
-        if (plan.kind === 'chosen') {
-          // The chosen coin's series replaces the cached by-ticker one.
-          await this.userRates.deletePrices(userId, asset);
-        }
-        await this.userRates.upsertMany(userId, found.entries);
-        results.push({
+      const found = await fetchPrices(
+        { usd: this.usd, history: this.history, coins: this.coinRefs },
+        {
           asset,
-          status: found.status,
-          source: found.source,
-          points: found.entries.length,
-        });
-      } catch {
-        results.push({ asset, status: 'failed', source: null, points: 0 });
+          from: window.from,
+          to: window.to,
+          currency: quote,
+          choices,
+          keys: priceKeys(settings),
+          providers: enabledProviders(settings.priceSources),
+          marketAmbiguous,
+          marketLeader: leaders.get(asset) ?? null,
+        },
+      );
+      recordKeys(keyUse, found);
+      if (found.status !== 'failed' && plan.kind === 'chosen') {
+        // The chosen coin's series replaces the cached by-ticker one.
+        await this.userRates.deletePrices(userId, asset);
       }
+      await this.userRates.upsertMany(userId, found.entries);
+      results.push({
+        asset,
+        status: found.status,
+        source: found.source,
+        points: found.entries.length,
+        ...(found.error ? { error: found.error } : {}),
+      });
+    }
+    if (this.notifications) {
+      await notifyKeys(this.notifications, userId, keyUse);
     }
     return { fx, assets: results };
   }

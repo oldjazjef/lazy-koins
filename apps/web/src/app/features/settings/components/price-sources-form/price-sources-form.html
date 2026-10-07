@@ -1,0 +1,188 @@
+@if (service.sources.hasValue()) {
+<div class="flex flex-col gap-4">
+  <p class="text-muted-foreground text-sm">
+    {{ (compact() ? 'settings.priceSources.compactHint' :
+    'settings.priceSources.hint') | translate }}
+  </p>
+  <ol class="lk-panel flex flex-col divide-y">
+    @for (provider of order(); track provider.id; let i = $index; let last =
+    $last) { @let name = 'rates.source.' + provider.id | translate;
+    <li class="flex flex-col gap-2 p-3">
+      <div class="flex min-w-0 items-center gap-2">
+        <span class="text-muted-foreground w-6 shrink-0 text-xs tabular-nums"
+          >{{ i + 1 }}.</span
+        >
+        <label
+          class="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium"
+          [for]="'ps-' + provider.id"
+        >
+          <input
+            type="checkbox"
+            [id]="'ps-' + provider.id"
+            [checked]="provider.enabled"
+            [attr.aria-label]="'settings.priceSources.enabled' | translate: { name }"
+            (change)="toggle(provider.id, $any($event.target).checked)"
+          />
+          <span class="truncate">{{ name }}</span>
+        </label>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          [disabled]="i === 0"
+          [attr.aria-label]="'settings.priceSources.moveUp' | translate: { name }"
+          (click)="move(i, -1)"
+        >
+          <ng-icon name="lucideArrowUp" aria-hidden="true" />
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          [disabled]="last"
+          [attr.aria-label]="'settings.priceSources.moveDown' | translate: { name }"
+          (click)="move(i, 1)"
+        >
+          <ng-icon name="lucideArrowDown" aria-hidden="true" />
+        </button>
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          type="button"
+          [disabled]="service.tests()[provider.id]?.state === 'testing'"
+          [attr.aria-label]="'settings.priceSources.test.label' | translate: { name }"
+          (click)="test(provider.id)"
+        >
+          {{ 'settings.priceSources.test.button' | translate }}
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-1 pl-8">
+        @if (provider.key === 'required' || provider.id === 'coingecko') { @if
+        (provider.keyHint) {
+        <span hlmBadge variant="secondary"
+          >{{ 'settings.priceSources.keyStored' | translate: { hint:
+          provider.keyHint } }}</span
+        >
+        } @else {
+        <span hlmBadge variant="outline"
+          >{{ 'settings.priceSources.keyRequired' | translate }}</span
+        >
+        } } @if (provider.freeHistoryDays !== null) {
+        <span hlmBadge variant="outline"
+          >{{ 'settings.priceSources.history' | translate: { days:
+          provider.freeHistoryDays } }}</span
+        >
+        } @else {
+        <span hlmBadge variant="outline"
+          >{{ 'settings.priceSources.historyAll' | translate }}</span
+        >
+        } @if (quotesUsdOnly(provider)) {
+        <span hlmBadge variant="outline"
+          >{{ 'settings.priceSources.usdOnly' | translate }}</span
+        >
+        } @if (!compact() && provider.coinRef === 'ticker') {
+        <span hlmBadge variant="outline"
+          >{{ 'settings.priceSources.byTicker' | translate }}</span
+        >
+        } @if (provider.personalUseOnly) {
+        <span hlmBadge variant="destructive"
+          >{{ 'settings.priceSources.personalUse' | translate }}</span
+        >
+        }
+      </div>
+      @if (!compact() && provider.attribution; as text) {
+      <p class="text-muted-foreground pl-8 text-xs">
+        {{ 'settings.priceSources.attribution' | translate: { text } }}
+      </p>
+      } @if (service.tests()[provider.id]; as test) {
+      <div class="pl-8 text-xs" aria-live="polite">
+        @if (test.state === 'testing') {
+        <span class="text-muted-foreground"
+          >{{ 'settings.priceSources.test.testing' | translate }}</span
+        >
+        } @else { @let result = test.result; @if (result.ok) {
+        <p class="text-primary" role="status">
+          {{ 'settings.priceSources.test.ok' | translate: { millis:
+          result.millis } }}
+        </p>
+        } @else {
+        <p class="text-destructive" role="alert">
+          {{ 'settings.priceSources.test.failed' | translate: { error:
+          ('rates.sourceErrors.' + (result.code ?? 'badResponse') | translate) }
+          }}
+        </p>
+        } @if (result.plan) {
+        <p>
+          {{ 'settings.priceSources.test.plan' | translate: { plan: result.plan
+          } }}
+        </p>
+        } @if (result.historyDays !== null) {
+        <p>
+          {{ 'settings.priceSources.test.historyDays' | translate: { days:
+          result.historyDays } }}
+        </p>
+        } @if (result.status !== null && !result.ok) {
+        <p class="text-muted-foreground font-mono">
+          {{ 'settings.priceSources.test.status' | translate: { status:
+          result.status } }}
+        </p>
+        } @if (result.detail) {
+        <p class="text-muted-foreground font-mono break-all">
+          {{ 'settings.priceSources.test.detail' | translate: { detail:
+          result.detail } }}
+        </p>
+        }
+        <p class="text-muted-foreground font-mono break-all">
+          {{ result.url }}
+        </p>
+        }
+      </div>
+      }
+    </li>
+    }
+  </ol>
+  @if (!compact()) {
+  <p class="text-muted-foreground text-xs">
+    {{ 'settings.priceSources.chosenNote' | translate }}
+  </p>
+  } @if (cmc(); as cmc) {
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="ps-cmc-key"
+      >{{ 'settings.priceSources.cmcKey' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="ps-cmc-key"
+      type="password"
+      autocomplete="off"
+      [disabled]="!keyStorage()"
+      [value]="cmcKey()"
+      [placeholder]="cmc.keyHint ?? ('settings.noKey' | translate)"
+      (input)="typeKey($event)"
+    />
+    <p class="text-muted-foreground text-xs">
+      {{ 'settings.priceSources.cmcHint' | translate }}
+    </p>
+  </div>
+  }
+  <div class="flex flex-wrap justify-end gap-2">
+    @if (cmc()?.keyHint) {
+    <button hlmBtn variant="ghost" type="button" (click)="removeKey()">
+      {{ 'settings.removeKey' | translate }}
+    </button>
+    } @if (!embedded()) {
+    <button
+      hlmBtn
+      type="button"
+      [disabled]="service.isSaving() || (!dirty() && !cmcKey().trim())"
+      (click)="save()"
+    >
+      {{ 'settings.priceSources.save' | translate }}
+    </button>
+    }
+  </div>
+</div>
+}

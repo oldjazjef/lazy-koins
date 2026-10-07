@@ -1,10 +1,8 @@
 /**
  * Historical daily prices from a selectable provider (CoinMarketCap, CoinGecko, DefiLlama,
- * CoinPaprika, Kraken, Bitfinex, Coinbase) behind ONE contract — phase 1 of "price sources":
- * adapters only, bound in `IntegrationsModule` but not used by any handler yet. Phase 2 adds the
- * settings (provider order, sealed keys, per-provider coin mapping), the wiring into the
- * project's "Kurse aktualisieren" and the dashboard refresh, and the UI (CLAUDE.md, "Price
- * sources").
+ * CoinPaprika, Kraken, Bitfinex, Coinbase) behind ONE contract (CLAUDE.md, "Price sources"). Used
+ * by the provider chain of "Kurse aktualisieren" (`rates/application/price-fetch.ts`), the
+ * per-provider "Testen" in Einstellungen › Kurse and CoinMarketCap's coin directory.
  *
  * Rules every adapter keeps:
  * - **No request without an explicit call** — the caller decides online/offline (F11.3); an
@@ -156,6 +154,9 @@ export abstract class PriceHistorySourcePort {
     ref: { readonly symbol?: string; readonly contract?: ContractRef },
     apiKey?: string,
   ): Promise<CoinCandidate[]>;
+
+  /** One coin by the provider's id ("Coin wählen" validation); `undefined` when unknown. */
+  findCoin?(id: string, apiKey?: string): Promise<CoinCandidate | undefined>;
 
   /** Daily prices for `[from, to]`; days the provider has no value for are simply missing. */
   abstract daily(request: DailyPriceRequest): Promise<DailyPrice[]>;
