@@ -26,13 +26,89 @@ interface MessagesResponse {
     input?: unknown;
     text?: string;
   }[];
+  stop_reason?: string;
   usage?: { input_tokens?: number; output_tokens?: number };
 }
 
 /**
- * The Anthropic Messages API (`POST /v1/messages`, `x-api-key`, `anthropic-version`). Structured
- * output through **tool use**: one tool whose `input_schema` is the requested JSON Schema, forced
- * with `tool_choice`, so the answer arrives as the tool call's `input` — already parsed JSON.
+ * Current models think adaptively before answering, and that thinking counts against
+ * `max_tokens`: a tiny budget (the connection test asks for 50) would cut the JSON off.
+ */
+const MIN_STRUCTURED_MAX_TOKENS = 2048;
+
+function maxTokensOf(request: AiCompletionRequest): number {
+  return Math.max(
+    request.maxTokens ?? DEFAULT_MAX_TOKENS,
+    MIN_STRUCTURED_MAX_TOKENS,
+  );
+}
+
+/** Keywords structured outputs do not accept (the caller validates the answer with zod anyway). */
+const UNSUPPORTED_KEYWORDS = new Set([
+  '$schema',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minLength',
+  'maxLength',
+  'pattern',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'minProperties',
+  'maxProperties',
+]);
+const SUPPORTED_FORMATS = new Set([
+  'date-time',
+  'time',
+  'date',
+  'duration',
+  'email',
+  'hostname',
+  'uri',
+  'ipv4',
+  'ipv6',
+  'uuid',
+]);
+
+/**
+ * The JSON Schema as structured outputs accept it: unsupported constraints dropped, every object
+ * closed with `additionalProperties: false`, unknown string formats removed.
+ */
+export function structuredOutputSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(structuredOutputSchema);
+  if (schema === null || typeof schema !== 'object') return schema;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (UNSUPPORTED_KEYWORDS.has(key)) continue;
+    if (key === 'format' && !SUPPORTED_FORMATS.has(String(value))) continue;
+    if (key === 'additionalProperties') continue;
+    out[key] =
+      key === 'enum' || key === 'const' ? value : structuredOutputSchema(value);
+  }
+  if (out['type'] === 'object' || 'properties' in out) {
+    out['additionalProperties'] = false;
+  }
+  return out;
+}
+
+/** A 400 saying the model or gateway does not know `output_config` / its `format`. */
+function structuredOutputsUnsupported(error: unknown): boolean {
+  if (!(error instanceof AiProviderError) || error.status !== 400) return false;
+  const message = (error.details.providerMessage ?? '').toLowerCase();
+  return message.includes('output_config') || message.includes('output_format');
+}
+
+/**
+ * The Anthropic Messages API (`POST /v1/messages`, `x-api-key`, `anthropic-version`).
+ *
+ * Structured output through **structured outputs** (`output_config.format` = `json_schema`): the
+ * answer is a text block holding JSON that matches the schema. Forced tool use
+ * (`tool_choice: {type: "tool"}`) is refused with a 400 by the current models (Claude Sonnet 5.5,
+ * Opus 5.5, Fable 5.1), so it is only the fallback for a model or an Anthropic-compatible gateway
+ * that does not know `output_config.format`.
  */
 export class AnthropicAdapter extends AiCompletionPort {
   constructor(private readonly fetchImpl: FetchLike = fetch) {
@@ -43,21 +119,83 @@ export class AnthropicAdapter extends AiCompletionPort {
     connection: AiConnection,
     request: AiCompletionRequest,
   ): Promise<AiCompletion> {
-    const url = joinUrl(
-      connection.baseUrl || ANTHROPIC_DEFAULT_BASE_URL,
-      '/v1/messages',
-    );
-    const model = connection.model || ANTHROPIC_DEFAULT_MODEL;
+    try {
+      return await this.completeStructured(connection, request);
+    } catch (error) {
+      if (structuredOutputsUnsupported(error)) {
+        return this.completeWithForcedTool(connection, request);
+      }
+      throw error;
+    }
+  }
+
+  private async completeStructured(
+    connection: AiConnection,
+    request: AiCompletionRequest,
+  ): Promise<AiCompletion> {
+    const { url, model, headers } = this.target(connection);
     const { body } = await postJson(
       this.fetchImpl,
       url,
-      {
-        'anthropic-version': ANTHROPIC_VERSION,
-        ...(connection.apiKey ? { 'x-api-key': connection.apiKey } : {}),
-      },
+      headers,
       {
         model,
-        max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
+        max_tokens: maxTokensOf(request),
+        system: request.system,
+        messages: request.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        output_config: {
+          format: {
+            type: 'json_schema',
+            schema: structuredOutputSchema(request.output.schema),
+          },
+        },
+      },
+      request.timeoutMs,
+    );
+    const response = body as MessagesResponse;
+    const text = (response.content ?? [])
+      .filter((block) => block.type === 'text' && block.text)
+      .map((block) => block.text)
+      .join('');
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new AiProviderError('badResponse', {
+        url: safeUrl(url),
+        model: response.model ?? model,
+        cause:
+          response.stop_reason === 'max_tokens'
+            ? 'the answer was cut off (max_tokens)'
+            : response.stop_reason === 'refusal'
+              ? 'the model declined the request'
+              : 'the answer was not the requested JSON',
+      });
+    }
+    return {
+      json,
+      text,
+      model: response.model ?? model,
+      usage: usageOf(response.usage),
+    };
+  }
+
+  /** Fallback for models/gateways without structured outputs: one tool, forced. */
+  private async completeWithForcedTool(
+    connection: AiConnection,
+    request: AiCompletionRequest,
+  ): Promise<AiCompletion> {
+    const { url, model, headers } = this.target(connection);
+    const { body } = await postJson(
+      this.fetchImpl,
+      url,
+      headers,
+      {
+        model,
+        max_tokens: maxTokensOf(request),
         system: request.system,
         messages: request.messages.map((m) => ({
           role: m.role,
@@ -94,6 +232,24 @@ export class AnthropicAdapter extends AiCompletionPort {
       text: JSON.stringify(call.input),
       model: response.model ?? model,
       usage: usageOf(response.usage),
+    };
+  }
+
+  private target(connection: AiConnection): {
+    url: string;
+    model: string;
+    headers: Record<string, string>;
+  } {
+    return {
+      url: joinUrl(
+        connection.baseUrl || ANTHROPIC_DEFAULT_BASE_URL,
+        '/v1/messages',
+      ),
+      model: connection.model || ANTHROPIC_DEFAULT_MODEL,
+      headers: {
+        'anthropic-version': ANTHROPIC_VERSION,
+        ...(connection.apiKey ? { 'x-api-key': connection.apiKey } : {}),
+      },
     };
   }
 
