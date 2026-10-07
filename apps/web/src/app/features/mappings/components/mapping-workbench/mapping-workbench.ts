@@ -1,3 +1,4 @@
+import { AiErrorPanel } from '../../../../shared/ai/ai-error-panel';
 import { NumberPipe } from '../../../../shared/format/number-format';
 import {
   ChangeDetectionStrategy,
@@ -45,6 +46,7 @@ import { MappingWorkbenchService } from './mapping-workbench.service';
     TranslatePipe,
     MappingPreviewView,
     Truncate,
+    AiErrorPanel,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmDialogImports,
