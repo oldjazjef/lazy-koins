@@ -451,13 +451,16 @@ describe('exports (F10)', () => {
     expect(after.hints.map((h) => h.key)).toEqual(rest.map((h) => h.key));
   });
 
-  it('answers 503 for a PDF when no browser is available', async () => {
+  it('answers 503 with code pdfUnavailable for a PDF when no browser is available', async () => {
     const t = await setup(false);
-    await expect(
-      t.create.execute(
-        new CreateExportCommand('anna', t.project.id, 'detailed_pdf'),
-      ),
-    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    const error: unknown = await t.create
+      .execute(new CreateExportCommand('anna', t.project.id, 'detailed_pdf'))
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ServiceUnavailableException);
+    // The app shows `errors.api.pdfUnavailable` instead of a generic server error.
+    expect((error as ServiceUnavailableException).getResponse()).toMatchObject({
+      code: 'pdfUnavailable',
+    });
   });
 
   it('drafts the mail to the Treuhänder with the two figures, attachments and open questions (F10.6)', async () => {

@@ -274,9 +274,13 @@ export class CreateExportHandler implements ICommandHandler<
           );
         } catch (error) {
           if (error instanceof PdfUnavailableError) {
-            throw new ServiceUnavailableException(
-              'PDF exports need Chromium: pnpm exec playwright-core install chromium',
-            );
+            throw new ServiceUnavailableException({
+              statusCode: 503,
+              error: 'Service Unavailable',
+              message:
+                'PDF exports need Chromium: pnpm exec playwright-core install chromium, or PDF_CHROMIUM_PATH',
+              code: 'pdfUnavailable',
+            });
           }
           throw error;
         }

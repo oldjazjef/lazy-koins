@@ -53,6 +53,8 @@ export const API_ERROR_CODES = [
   'coinProviderFailed',
   // Price sources: a provider that needs the user's key (CoinMarketCap) has none stored.
   'noKey',
+  // F10: PDF exports need Chromium on the server (503).
+  'pdfUnavailable',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

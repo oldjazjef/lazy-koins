@@ -2772,7 +2772,8 @@
       "libraryCopy": "A copy taken from the library cannot be published as a new entry.",
       "unknownCoin": "The price provider does not know this coin.",
       "coinProviderFailed": "The price provider cannot be reached right now.",
-      "noKey": "No key is stored for this provider – enter it under Settings › Rates."
+      "noKey": "No key is stored for this provider – enter it under Settings › Rates.",
+      "pdfUnavailable": "PDFs cannot be created on this server right now (no browser for printing). Excel still works."
     },
     "status": {
       "unreachable": "The server cannot be reached.",

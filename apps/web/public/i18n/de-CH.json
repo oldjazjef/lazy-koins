@@ -2772,7 +2772,8 @@
       "libraryCopy": "Eine Kopie aus der Bibliothek kann nicht als neuer Eintrag veröffentlicht werden.",
       "unknownCoin": "Diesen Coin kennt der Kursanbieter nicht.",
       "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar.",
-      "noKey": "Für diesen Anbieter ist kein Schlüssel gespeichert – trage ihn unter Einstellungen › Kurse ein."
+      "noKey": "Für diesen Anbieter ist kein Schlüssel gespeichert – trage ihn unter Einstellungen › Kurse ein.",
+      "pdfUnavailable": "PDFs können auf diesem Server gerade nicht erstellt werden (kein Browser für den Druck). Excel geht weiterhin."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",

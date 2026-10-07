@@ -2310,7 +2310,9 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
 - Tools that write files can turn a BOM escape (U+FEFF) into the real character; in source build it
   with `String.fromCharCode(0xfeff)` (`rates/kursliste.ts`).
 - PDF exports need Chromium for `playwright-core` (`pnpm exec playwright-core install chromium`,
-  or `PDF_CHROMIUM_PATH`); without it the API answers 503 for PDFs, Excel still works.
+  or `PDF_CHROMIUM_PATH`); without it the API answers 503 `pdfUnavailable` for PDFs, Excel still
+  works. The API image installs Alpine's `chromium` (+ Noto/DejaVu fonts) and sets
+  `PDF_CHROMIUM_PATH=/usr/local/bin/lk-chromium` (Playwright's own download is glibc-only).
 - Rate adapters parse JSON with the reviver's **source text** (`parseJsonKeepingNumbers`) so a
   rate never becomes a JS number; Node ≥ 21 provides it.
 - Several agents may share the Browser pane: pass `tabId` explicitly when driving it. A live check
