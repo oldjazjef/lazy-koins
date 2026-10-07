@@ -172,12 +172,21 @@ describe('headerMatchRequest — what leaves the device for a suggestion (F5.18)
 });
 
 describe('validateRemoteSpec (F5.18)', () => {
-  it('accepts every engine fixture unchanged', () => {
+  it('accepts every engine fixture and standard mapping unchanged', () => {
     const files = readdirSync(FIXTURES).filter((f) => f.endsWith('.json'));
     expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
       const result = validateRemoteSpec(json(file));
       expect(result.ok, file).toBe(true);
+    }
+    const standard = resolve(__dirname, '../../../../../mappings/standard');
+    const specs = readdirSync(standard).filter((f) => f.endsWith('.json'));
+    expect(specs.length).toBeGreaterThan(0);
+    for (const file of specs) {
+      const result = validateRemoteSpec(
+        JSON.parse(readFileSync(resolve(standard, file), 'utf8')),
+      );
+      expect(result, file).toMatchObject({ ok: true });
     }
   });
 

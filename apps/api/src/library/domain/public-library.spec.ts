@@ -94,12 +94,14 @@ describe('public library (F5.18)', () => {
 
   it('matches by the header row and the file name only (surest first, ≤ 10)', async () => {
     const { repo, kraken } = await library();
-    const header =
+    const firstLine =
       readFileSync(
         resolve(FIXTURES, 'kraken-ledger-classic.csv'),
         'utf8',
-      ).split(/\r?\n/)[0] ??
-      ''.split(',').map((cell) => cell.replace(/^"|"$/g, ''));
+      ).split(/\r?\n/)[0] ?? '';
+    const header = firstLine
+      .split(',')
+      .map((cell) => cell.replace(/^"|"$/g, ''));
     const found = matchEntries(await repo.listActive(), {
       fileName: 'ledgers.csv',
       headers: header,
