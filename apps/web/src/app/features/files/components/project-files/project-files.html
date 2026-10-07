@@ -35,10 +35,8 @@
       <p class="text-muted-foreground text-xs">
         {{ 'files.upload.limits' | translate }}
       </p>
-      <lk-take-over-files
-        [projectId]="projectId()"
-        (added)="service.reload()"
-      />
+      <!-- The take-over is a change to the project: DataChanges reloads the files. -->
+      <lk-take-over-files [projectId]="projectId()" />
     </div>
     } @else {
     <p class="text-muted-foreground text-sm">

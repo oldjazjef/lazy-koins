@@ -1,3 +1,4 @@
+import type { AiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import {
   HttpClient,
@@ -160,6 +161,8 @@ ull when editing a stored mapping (never replaced without asking).
   // --- "Mit AI erstellen" from the sample ---
 
   readonly aiStep = signal<SampleAiStep>('closed');
+  /** The last AI failure, shown at the top of the AI dialog (with the provider's details). */
+  readonly aiError = signal<AiErrorInfo | null>(null);
   readonly aiNotReadyReason = signal<'disabled' | 'notConfigured'>('disabled');
   readonly aiRequest = signal<AiRequestPreview | null>(null);
   readonly aiPayloadText = computed(() => {
@@ -371,6 +374,7 @@ ull when editing a stored mapping (never replaced without asking).
     const sample = this.sample();
     if (!sample || !this.canSendAi()) return;
     this.aiStep.set('working');
+    this.aiError.set(null);
     const form = this.form(sample);
     form.append('consent', String(this.consentChecked()));
     try {
@@ -384,7 +388,7 @@ ull when editing a stored mapping (never replaced without asking).
       this.tab.set('preview');
       void this.refreshPreview();
     } catch (error) {
-      this.aiErrors.notify(error);
+      this.aiError.set(this.aiErrors.notify(error));
       this.aiStep.set('consent');
     }
   }

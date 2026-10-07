@@ -24,6 +24,29 @@
       "last": "Letzte Seite"
     }
   },
+  "dateRange": {
+    "empty": "Zeitraum wählen",
+    "clear": "Zeitraum aufheben",
+    "previous": "Vorheriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "presets": "Vorschläge",
+    "maxDays": "Ein Zeitraum darf höchstens {{days}} Tage umfassen.",
+    "taxYear": "Steuerjahr {{year}}"
+  },
+  "dateField": {
+    "open": "Kalender öffnen",
+    "clear": "Datum löschen",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "outOfRange": "Das Datum muss zwischen {{min}} und {{max}} liegen.",
+    "notAfter": "Das Datum darf nicht nach dem {{max}} liegen.",
+    "notBefore": "Das Datum darf nicht vor dem {{min}} liegen.",
+    "letter": {
+      "day": "T",
+      "month": "M",
+      "year": "J"
+    }
+  },
   "countries": {
     "CH": "Schweiz"
   },
@@ -85,7 +108,9 @@
       "subtitle": "Ein Projekt pro Steuerjahr.",
       "new": "Neues Projekt",
       "empty": "Noch kein Projekt. Lege eines für dein Steuerjahr an.",
-      "loadFailed": "Projekte konnten nicht geladen werden."
+      "loadFailed": "Projekte konnten nicht geladen werden.",
+      "stale": "veraltet",
+      "staleTitle": "Daten geändert seit der Berechnung – im Projekt neu berechnen"
     },
     "form": {
       "title": "Neues Projekt",
@@ -106,6 +131,7 @@
     "detail": {
       "title": "Projekt",
       "subtitle": "Steuerjahr {{year}}",
+      "stale": "Daten geändert seit der letzten Berechnung – Ergebnis und Prüfungen zeigen noch den alten Stand.",
       "editTitle": "Angaben",
       "factsTitle": "Übersicht",
       "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",
@@ -905,6 +931,7 @@
   "workspace": {
     "label": "Bereiche des Projekts",
     "tabs": {
+      "general": "Allgemein",
       "files": "Dateien",
       "hints": "Hinweise",
       "wallets": "Wallets",
@@ -1260,8 +1287,7 @@
       "asset": "Asset",
       "kind": "Art",
       "allKinds": "Alle Arten",
-      "from": "Von",
-      "to": "Bis",
+      "period": "Zeitraum",
       "csvBookings": "Buchungen (CSV)",
       "csvHoldings": "Bestände (CSV)",
       "xlsx": "Buchungen + Bestände (Excel)",
@@ -1798,12 +1824,9 @@
     "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden und fehlen in der Übersicht.",
     "period": {
       "label": "Zeitraum",
-      "ytd": "Seit 1. Januar",
+      "ytd": "Laufendes Jahr",
       "last12": "Letzte 12 Monate",
-      "taxYear": "Steuerjahr {{year}}",
-      "custom": "Eigener Zeitraum",
-      "from": "Von",
-      "to": "Bis (Stichtag)"
+      "taxYear": "Steuerjahr {{year}}"
     },
     "kpi": {
       "label": "Kennzahlen im Zeitraum",

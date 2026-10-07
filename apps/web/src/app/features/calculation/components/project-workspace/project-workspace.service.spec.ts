@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -65,7 +65,7 @@ async function setup() {
   TestBed.configureTestingModule({
     providers: [
       ProjectWorkspaceService,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
@@ -91,6 +91,8 @@ describe('ProjectWorkspaceService', () => {
 
   it('loads the result, and each tab only when it is shown', async () => {
     const { service, http } = await setup();
+    // User rule (08.10.2026): a project opens on "Allgemein" (data, facts, chart).
+    expect(service.tab()).toBe('general');
     expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
     service.tab.set('rates');
     await settle();
@@ -112,6 +114,12 @@ describe('ProjectWorkspaceService', () => {
     expect(request.request.method).toBe('POST');
     request.flush(view('200'));
     await done;
+    // The calculation is reported (DataChanges): the result reloads — the old one stays on
+    // screen meanwhile.
+    await settle();
+    expect(service.result.value()?.snapshot?.wealthChf).toBe('100.5');
+    http.expectOne('/api/projects/p1/result').flush(view('200'));
+    await settle();
     expect(service.result.value()?.snapshot?.wealthChf).toBe('200');
     expect(notifications.success).toHaveBeenCalledWith(
       'calculation.calculated',
@@ -169,6 +177,7 @@ describe('ProjectWorkspaceService', () => {
     await saved;
     await settle();
     http.expectOne('/api/projects/p1/checks').flush(checks);
+    http.expectOne('/api/projects/p1/result').flush(view());
 
     service.startCorrection({
       type: 'price_override',
@@ -252,6 +261,34 @@ describe('ProjectWorkspaceService', () => {
     await created;
     await settle();
     http.expectOne('/api/projects/p1/result').flush(view());
+  });
+
+  it('sends the data export period as the picked ISO days, and none when cleared (F10.7)', async () => {
+    const { service, http } = await setup();
+    const withPeriod = service.downloadData('csv', 'bookings', {
+      asset: 'BTC',
+      from: '2025-12-29',
+      to: '2026-01-04',
+    });
+    const request = http.expectOne((r) =>
+      r.url.endsWith('/projects/p1/data-export'),
+    );
+    expect(request.request.params.get('from')).toBe('2025-12-29');
+    expect(request.request.params.get('to')).toBe('2026-01-04');
+    request.flush(new Blob(['x']));
+    await withPeriod.catch(() => undefined);
+
+    const cleared = service.downloadData('xlsx', 'bookings', {
+      from: '',
+      to: '',
+    });
+    const second = http.expectOne((r) =>
+      r.url.endsWith('/projects/p1/data-export'),
+    );
+    expect(second.request.params.has('from')).toBe(false);
+    expect(second.request.params.has('to')).toBe(false);
+    second.flush(new Blob(['x']));
+    await cleared.catch(() => undefined);
   });
 
   it('asks before a statement while open items exist, then creates it on confirm (F10.2a)', async () => {

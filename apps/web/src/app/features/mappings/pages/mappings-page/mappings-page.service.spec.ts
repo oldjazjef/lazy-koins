@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -76,7 +76,7 @@ async function setup(list: MappingSummary[] = LIST) {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideRouter([]),
       provideTranslateService(),
@@ -84,6 +84,8 @@ async function setup(list: MappingSummary[] = LIST) {
     ],
   });
   const service = TestBed.inject(MappingsPageService);
+  // As the page does: the list follows every change while it is on screen.
+  TestBed.runInInjectionContext(() => service.follow());
   const http = TestBed.inject(HttpTestingController);
   const navigate = vi
     .spyOn(TestBed.inject(Router), 'navigate')

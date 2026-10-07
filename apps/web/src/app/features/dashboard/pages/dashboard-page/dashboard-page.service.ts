@@ -4,6 +4,7 @@ import Decimal from 'decimal.js';
 import { firstValueFrom } from 'rxjs';
 import { ActivityService } from '../../../../core/activity/activity.service';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type {
   DashboardHolding,
   DashboardRecords,
@@ -13,9 +14,19 @@ import type {
 } from '../../../../core/api/dashboard.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import {
+  type DateRange,
+  type DateRangePreset,
+  sameRange,
+} from '../../../../shared/components/date-range-picker/date-range';
+import {
+  isoDay,
+  lastTwelveMonths,
   type Period,
   type PeriodPreset,
   periodOf,
+  presetFrom,
+  presetValue,
+  taxYearPeriod,
   yearToDate,
 } from '../../dashboard-period';
 
@@ -67,6 +78,19 @@ export class DashboardPageService {
     return { url: apiUrl('/dashboard'), params: this.params(from, to) };
   });
 
+  constructor() {
+    // Regression (07.10.2026): after "Neu berechnen" the chart kept the old values. Every change
+    // reloads it: the project card on a change to its project (a calculation, a file removed,
+    // a correction, the assistant …), the page on a change to any project.
+    const changes = inject(DataChanges);
+    reloadOn(() => {
+      const project = this.projectId();
+      return project
+        ? changes.projectVersion(project)
+        : changes.globalVersion('projects');
+    }, [this.view]);
+  }
+
   readonly isEmpty = computed(
     () => this.view.hasValue() && this.view.value().projects.length === 0,
   );
@@ -79,6 +103,43 @@ export class DashboardPageService {
         )
       : [],
   );
+
+  /** The latest day a period may reach (the Stichtag is never in the future). */
+  readonly maxDay = computed(() => isoDay(this.today()));
+
+  /**
+   * The period picker's presets (F11.4): the running year, the last 12 months and the tax years
+   * of my projects, newest first. Ids are the `PeriodPreset` values (`ytd`, `year:2025`).
+   */
+  readonly presets = computed<DateRangePreset[]>(() => {
+    const today = this.today();
+    return [
+      {
+        id: 'ytd',
+        labelKey: 'dashboard.period.ytd',
+        range: yearToDate(today),
+      },
+      {
+        id: 'last12',
+        labelKey: 'dashboard.period.last12',
+        range: lastTwelveMonths(today),
+      },
+      ...this.taxYears().map((year) => ({
+        id: presetValue({ key: 'year', year }),
+        labelKey: 'dashboard.period.taxYear',
+        labelParams: { year },
+        range: taxYearPeriod(year, today),
+      })),
+    ];
+  });
+
+  /** A period from the picker: the preset it matches (first wins), else a custom one. */
+  choosePeriod(range: DateRange): void {
+    if (!range.from || !range.to) return;
+    const preset = this.presets().find((p) => sameRange(p.range, range));
+    if (preset) this.setPreset(presetFrom(preset.id));
+    else this.setCustom({ from: range.from, to: range.to });
+  }
 
   setPreset(preset: PeriodPreset): void {
     this.preset.set(preset);

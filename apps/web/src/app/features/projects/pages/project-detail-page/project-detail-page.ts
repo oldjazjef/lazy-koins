@@ -7,7 +7,6 @@ import {
   inject,
   input,
   signal,
-  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -27,10 +26,14 @@ import {
 } from '../../../../core/api/api.types';
 import { taxCurrencyOptions } from '../project-form-page/tax-currency-options';
 import type { Carryover } from '../../../../core/api/dashboard.types';
-import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { EmptyState } from '../../../../shared/components/empty-state';
 import { ProjectDashboardCard } from '../../../dashboard/components/project-dashboard-card';
-import { ProjectWorkspace } from '../../../calculation/components/project-workspace/project-workspace';
+import {
+  ProjectWorkspace,
+  provideProjectWorkspace,
+} from '../../../calculation/components/project-workspace/project-workspace';
+import { ProjectWorkspaceTabs } from '../../../calculation/components/project-workspace/project-workspace-tabs';
+import { ProjectWorkspaceService } from '../../../calculation/components/project-workspace/project-workspace.service';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { ProjectSentBadge } from '../../components/project-sent-badge';
@@ -52,8 +55,9 @@ type ProjectEdit = z.infer<typeof ProjectEditSchema>;
 type Confirm = 'reopen' | 'delete' | 'currency';
 
 /**
- * The project's data (name, notes, status) and its workspace: files and mappings (F5), rates,
- * result, checks, corrections and exports (F7–F10).
+ * The project's workspace as tabs under the sticky header: "Allgemein" (data, facts, chart,
+ * carry-overs — this page's own), files and mappings (F5), rates, result, checks, corrections and
+ * exports (F7–F10).
  */
 @Component({
   selector: 'lk-project-detail-page',
@@ -67,6 +71,7 @@ type Confirm = 'reopen' | 'delete' | 'currency';
     ProjectStatusBadge,
     ProjectSentBadge,
     ProjectWorkspace,
+    ProjectWorkspaceTabs,
     ProjectDashboardCard,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -76,12 +81,13 @@ type Confirm = 'reopen' | 'delete' | 'currency';
     ...HlmSkeletonImports,
     ...HlmTextareaImports,
   ],
-  providers: [ProjectDetailPageService],
+  providers: [ProjectDetailPageService, ...provideProjectWorkspace()],
   templateUrl: './project-detail-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectDetailPage {
   protected readonly service = inject(ProjectDetailPageService);
+  protected readonly workspace = inject(ProjectWorkspaceService);
   protected readonly statuses = PROJECT_STATUSES;
 
   /** Route param `:id` — no default, absent params bind as `undefined` (see CLAUDE.md). */
@@ -117,30 +123,31 @@ export class ProjectDetailPage {
 
   constructor() {
     effect(() => this.service.projectId.set(this.id()));
-    // A change the assistant made to this project (F11.14): its facts may have changed too.
-    const assistant = inject(AssistantEvents);
-    const since = assistant.change()?.seq ?? 0;
-    effect(() => {
-      const change = assistant.change();
-      untracked(() => {
-        if (AssistantEvents.concerns(change, since, this.id())) {
-          this.service.reload();
-        }
-      });
-    });
-    // Fill the form from the loaded project; a closed project is read-only (F4.5).
+    // Fill the form from the loaded project; a closed project is read-only (F4.5). The project
+    // is reloaded after every change to it (DataChanges): only when its editable facts really
+    // changed (saved here, or by the assistant) is the form reset — never under the user's typing
+    // because a file was removed.
+    let applied: string | null = null;
     effect(() => {
       if (!this.service.project.hasValue()) return;
       const project = this.service.project.value();
-      this.form.reset({
+      const facts = {
         name: project.name,
         notes: project.notes,
         status: project.status,
         taxCurrency: project.taxCurrency,
-      });
+      };
+      const key = JSON.stringify(facts);
+      if (key === applied) return;
+      applied = key;
+      this.form.reset(facts);
       if (project.status === 'closed') this.form.disable();
       else this.form.enable();
     });
+  }
+
+  protected calculate(): void {
+    void this.service.calculate().catch(() => undefined);
   }
 
   protected save(): void {

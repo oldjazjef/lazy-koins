@@ -323,10 +323,12 @@ export class ProjectFiles implements OnDestroy {
     void this.service.assign(file, assignment).catch(() => undefined);
   }
 
-  /** F5.16: a library mapping was copied and assigned to a file ("Aus Bibliothek übernehmen"). */
+  /**
+   * F5.16: a library mapping was copied and assigned to a file ("Aus Bibliothek übernehmen").
+   * The files reload by themselves (`dataChangesInterceptor` reports the take).
+   */
   protected libraryTaken(): void {
     this.dialog.set(null);
-    this.service.reload();
   }
 
   protected async newMappingFor(file: ProjectFile): Promise<void> {

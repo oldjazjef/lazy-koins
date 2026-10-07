@@ -1,0 +1,131 @@
+<!--
+  Label + panel + two arrows (etx WTA-307). The arrows sit outside the popover: stepping is the
+  frequent move. The calendar is `hlm-calendar-range`, not `hlm-date-range-picker` — that one is a
+  trigger plus its own popover around the same calendar, and nesting it here would put two
+  overlays on one control.
+-->
+<div class="flex items-center gap-1">
+  @if (stepper()) {
+  <button
+    hlmBtn
+    variant="outline"
+    size="icon"
+    type="button"
+    class="shrink-0"
+    [disabled]="!canStepBack()"
+    [attr.aria-label]="'dateRange.previous' | translate"
+    (click)="step(-1)"
+  >
+    <ng-icon name="lucideChevronLeft" size="16px" aria-hidden="true" />
+  </button>
+  }
+
+  <hlm-popover
+    align="start"
+    sideOffset="5"
+    class="flex min-w-0 flex-1"
+    #rangePopover="brnPopover"
+  >
+    <button
+      hlmPopoverTrigger
+      hlmBtn
+      variant="outline"
+      type="button"
+      class="min-w-0 flex-1 shrink justify-start gap-2 overflow-hidden font-normal"
+      [id]="inputId()"
+      [attr.aria-describedby]="inputId() + '-value'"
+      [attr.title]="label()"
+    >
+      <ng-icon
+        name="lucideCalendar"
+        size="16px"
+        class="text-muted-foreground shrink-0"
+        aria-hidden="true"
+      />
+      @if (days()) { @if (activePreset(); as preset) {
+      <span class="shrink-0"
+        >{{ preset.labelKey | translate: preset.labelParams ?? {} }}</span
+      >
+      <span class="text-muted-foreground truncate">{{ days() }}</span>
+      } @else {
+      <span class="truncate">{{ days() }}</span>
+      } } @else {
+      <span class="text-muted-foreground truncate"
+        >{{ 'dateRange.empty' | translate }}</span
+      >
+      }
+    </button>
+    <span class="sr-only" [id]="inputId() + '-value'">{{ label() }}</span>
+
+    <div *hlmPopoverPortal hlmPopoverContent class="w-auto p-0">
+      <div class="flex flex-col sm:flex-row">
+        @if (availablePresets().length > 0 || clearable()) {
+        <!-- Presets first: they are the answer in most cases, and on a narrow screen the part
+             visible without scrolling. -->
+        <div
+          class="flex flex-col gap-1 border-b p-2 sm:min-w-44 sm:border-e sm:border-b-0"
+          role="group"
+          [attr.aria-label]="'dateRange.presets' | translate"
+        >
+          @for (preset of availablePresets(); track preset.id) {
+          <button
+            hlmBtn
+            type="button"
+            size="sm"
+            class="justify-start"
+            [variant]="activePreset()?.id === preset.id ? 'secondary' : 'ghost'"
+            [attr.aria-pressed]="activePreset()?.id === preset.id"
+            (click)="applyPreset(preset); rangePopover.close()"
+          >
+            {{ preset.labelKey | translate: preset.labelParams ?? {} }}
+          </button>
+          } @if (clearable()) {
+          <button
+            hlmBtn
+            variant="ghost"
+            size="sm"
+            type="button"
+            class="text-muted-foreground justify-start"
+            (click)="clear() && rangePopover.close()"
+          >
+            {{ 'dateRange.clear' | translate }}
+          </button>
+          }
+        </div>
+        }
+
+        <div class="flex flex-col p-2">
+          <hlm-calendar-range
+            [startDate]="pickedStart()"
+            [endDate]="pickedEnd()"
+            [min]="minPicked()"
+            [max]="maxPicked()"
+            [captionLayout]="'dropdown'"
+            (startDateChange)="onStartPicked($event)"
+            (endDateChange)="onEndPicked($event) && rangePopover.close()"
+          />
+          @if (limitExceeded()) {
+          <p class="text-destructive px-1 pt-2 text-xs" role="alert">
+            {{ 'dateRange.maxDays' | translate: { days: maxDays() } }}
+          </p>
+          }
+        </div>
+      </div>
+    </div>
+  </hlm-popover>
+
+  @if (stepper()) {
+  <button
+    hlmBtn
+    variant="outline"
+    size="icon"
+    type="button"
+    class="shrink-0"
+    [disabled]="!canStepForward()"
+    [attr.aria-label]="'dateRange.next' | translate"
+    (click)="step(1)"
+  >
+    <ng-icon name="lucideChevronRight" size="16px" aria-hidden="true" />
+  </button>
+  }
+</div>

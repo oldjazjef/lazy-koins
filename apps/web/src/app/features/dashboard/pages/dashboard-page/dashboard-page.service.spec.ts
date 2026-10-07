@@ -158,6 +158,45 @@ describe('DashboardPageService', () => {
     await settle();
   });
 
+  it('offers the period picker its presets and maps a picked period back to one', async () => {
+    const { service, http } = await setup();
+    service.today = () => new Date(2026, 9, 6);
+    http.expectOne((r) => r.url === '/api/dashboard').flush(view());
+    await settle();
+    expect(service.maxDay()).toBe('2026-10-06');
+    expect(service.presets().map((p) => p.id)).toEqual([
+      'ytd',
+      'last12',
+      'year:2025',
+      'year:2024',
+    ]);
+
+    // A range equal to a preset selects that preset (one request, ISO strings unchanged) …
+    service.choosePeriod({ from: '2024-01-01', to: '2024-12-31' });
+    expect(service.preset()).toEqual({ key: 'year', year: 2024 });
+    await settle();
+    http
+      .expectOne(
+        (r) =>
+          r.params.get('from') === '2024-01-01' &&
+          r.params.get('to') === '2024-12-31',
+      )
+      .flush(view());
+    await settle();
+
+    // … any other range is custom, across the year boundary as picked …
+    service.choosePeriod({ from: '2024-12-30', to: '2025-01-02' });
+    expect(service.preset()).toEqual({ key: 'custom' });
+    expect(service.period()).toEqual({ from: '2024-12-30', to: '2025-01-02' });
+    await settle();
+    http.expectOne((r) => r.params.get('from') === '2024-12-30').flush(view());
+    await settle();
+
+    // … and an empty one (a cleared picker) changes nothing.
+    service.choosePeriod({ from: '', to: '' });
+    expect(service.period()).toEqual({ from: '2024-12-30', to: '2025-01-02' });
+  });
+
   it('sorts and searches the holdings without turning amounts into numbers', async () => {
     const { service, http } = await setup();
     http.expectOne((r) => r.url === '/api/dashboard').flush(view());

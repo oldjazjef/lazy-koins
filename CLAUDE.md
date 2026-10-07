@@ -19,8 +19,8 @@ two as a package (F1.3).
 > **packages** = F10.8/F10.9, data export F10.7, **tools / assistant / mcp** = F11.14–F11.16: one
 > tool layer for the chat sidebar and the MCP server), the Angular web app (`apps/web`: login, the
 > **Dashboard** (start page, first in the main navigation), project
-> list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
-> Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
+> list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
+> Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
 > the **Bibliothek** (mapping library, web only) next to it;
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
@@ -419,6 +419,9 @@ projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
   (+ "Hinweise bewusst beibehalten"). `LibraryClient` (root) = take/rate/delete through the
   ActionRunner. `lk-library-matches` in the files card and in the assignment dialog (before the
   AI buttons): "In der Bibliothek gefunden: N passende Mappings" + Übernehmen (copy + assign).
+  `dataChangesInterceptor`: `POST /library/:id/take` = scope `mappings` + every project (the
+  file it was assigned to is in the body, not the URL); `/library/review` is read-only; publish,
+  rate and delete touch no own data.
 - **Tools** (`tools/definitions/library.tools.ts`, area `mappings`): `search_library`,
   `get_library_mapping` (public reads, pseudonym only), `take_library_mapping` (write; optional
   `projectId` + `fileId`), `rate_library_mapping` (write), `publish_mapping` (write; my mapping,
@@ -622,9 +625,9 @@ in localStorage; beside the page from `lg`, an overlay with backdrop below; only
 scrolls; without a usable AI plugin a hint links to the wizard's AI step `/app/setup?step=ai`), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
 `textContent`, only relative `/app/…` links become router links), `proposal-card`
 (before → after, "Ausführen" / "Abbrechen", outcome), `chat-upload` (drop zone → the normal
-upload endpoint), `ChatContextService` (the workspace publishes project + tab) and
-`AssistantEvents` (after a confirmed proposal or a chat upload the workspace reloads everything,
-`ProjectWorkspaceService.reloadAll()`). The project workspace reads `?tab=` and `&figure=` (opens
+upload endpoint), `ChatContextService` (the workspace publishes project + tab); a confirmed
+proposal is reported to `DataChanges` with its `projectId` (every scope), a chat upload by the
+interceptor like any upload — see "Data refresh". The project workspace reads `?tab=` and `&figure=` (opens
 the drill-down) — the links the tools return. Einstellungen › AI has the "Assistent" section
 (prompt, reset, fixed rules read-only, consent revoke); Einstellungen › MCP
 (`features/settings/pages/mcp-settings-page`): switches, areas, endpoint, config snippets (Claude
@@ -681,8 +684,8 @@ response, command, code }`, **redacted** (`redact.ts`: password, its base64, the
   (`changesSinceSent`, pure): a newer snapshot with a **different input hash** than at sending,
   a statement created afterwards that was not sent, a correction made/undone or a file added
   afterwards. The list carries `sent: { sentAt, via, changedSince }`; badge
-  `lk-project-sent-badge` in list and detail header; `ProjectSentEvents` (web) refreshes the
-  detail page's status after sends, marks, exports and calculations.
+  `lk-project-sent-badge` in list and detail header; both follow every change to the project
+  through `DataChanges` (see "Data refresh").
 - Live: `node scripts/dev/smtp-sink.mjs [port]` (127.0.0.1:2525, security "Keine", any user;
   user `reject` → auth error, recipient `bounce@…` → 550) writes each mail to `tmp/smtp-sink/`.
   Tests: fake transport (`mail/testing/mail-doubles.ts`) for handlers, the real nodemailer adapter
@@ -1365,6 +1368,13 @@ are provided by the component (`providers: [...]`), list/form services are root.
   (`login-page.spec.ts` guards it).
 - Mutations go through `defineAction` + `ActionRunner` in the page service; messages are i18n keys.
 - Dialogs for decisions (reopen a closed project, delete), pages for forms.
+- **Page header** (user rule, 08.10.2026): `lk-page-header` is sticky and spans the full width of
+  the scroll area (`.lk-scroll-content` is the inline-size container, so `100cqw` excludes the
+  scrollbar). An element marked `lkPageHeaderBelow` goes under the title inside the sticky part —
+  the project detail puts its tab bar there (`lk-project-workspace-tabs`). The workspace services
+  are provided by the detail page (`provideProjectWorkspace()`) so header and tabs share them;
+  the first tab "Allgemein" (data, facts, chart, carry-overs) is the page's own content, and
+  `#file-<id>` without `?tab=` opens "Dateien".
 - **Form rows** (user rule, 08.10.2026): fields side by side always line up — one-line labels
   (truncated, full text as `title`), inputs on the same line even when a label is long or a field
   shows an error, a usable minimum width per field. Use `lk-form-row` + `lk-field` (styles.css);
@@ -1386,13 +1396,77 @@ are provided by the component (`providers: [...]`), list/form services are root.
   Server work that outlives a quick answer reports progress through a status endpoint polled
   only while the request runs (rate refresh: 1 s); everything else tracks the request itself.
 
+### Data refresh (user rule, 08.10.2026: „Änderungen sollen alles updaten“)
+
+**Every change refreshes every view that shows affected data — through ONE mechanism**,
+`core/data/data-changes.ts`:
+
+- `DataChanges` (root): `changed({ projectId?, scope? })` — `projectId` a string = that project,
+  `null` = every project (a mapping or wallet feeds every project that uses it), absent = none;
+  `scope` ∈ `projects | mappings | wallets | rates | settings | notifications` (a project change
+  always bumps `projects` too). Readers: `projectVersion(id)`, `globalVersion(scope)`.
+- **Emitted automatically** by `dataChangesInterceptor` (`core/data/data-changes.interceptor.ts`,
+  innermost in `app.config.ts`): a **successful** POST/PUT/PATCH/DELETE to `/api/**` is mapped by
+  `changeOf(method, url)` — an explicit table (`RULES`) plus a deny list of POSTs that only read
+  (`READ_ONLY`: mapping/sample previews, inspections, AI proposals and payloads, settings/key
+  tests, mail compose/preview, the chat, PIN, the dashboard's per-asset rate refresh). A GET never
+  emits, so a refetch can never trigger another one. **A new mutating route needs its line in
+  the table** (and in `data-changes.interceptor.spec.ts`). Explicit calls only where the URL cannot
+  tell: `ChatService` after a confirmed proposal.
+- **Consumed** with `reloadOn(version, [resources])` in the page services: `reload()` keeps the
+  value on screen (no skeleton flash — a version read inside the request function would reset
+  it), is a no-op for a resource without a request (a tab not shown) or one already loading, and
+  ends with the injection context. Several changes in one tick = one refetch. Root list services
+  (projects, mappings, wallets, notifications) have `follow()`, called in their page's constructor:
+  reload on arrival + watch while on screen — nothing refetches in the background.
+- Wired: workspace tabs (result, checks, corrections, rates, exports), files area + hints + project
+  mappings (my mappings on `mappings`), wallets tab, send-to-advisor (log, F4.7), project page
+  header (project, F4.7, carry-overs, `result/status`), dashboard page + project card, project
+  list, mappings list + usage, wallets list + tokens, notifications page and the bell
+  (`notifications` + `projects`). Forms are not reloaded under the user's typing (the project
+  form resets only when its facts really changed; the mapping editor and wallet form are set from
+  their own answers).
+- **Stale**: `CalculationInputService.isStale` is the one rule (engine version or input hash —
+  files, mapping versions, corrections, rates, wallets, currency, previous year); `GET
+/projects/:id/result` (`stale`), `GET /projects/:id/result/status` (`{ calculatedAt, stale }`,
+  cheap) and the list (`stale`) use it. The project page shows "Daten geändert – neu berechnen"
+  with a button under its header; the list marks the figures "veraltet". No silent
+  auto-recalculation (a correction still recalculates, as designed). The dashboard computes from
+  the live input and is never stale. `calculation/application/staleness.spec.ts` covers every change.
+
 ## UI, styling, i18n
 
 - spartan components are generated, never hand-written: `npx nx g @spartan-ng/cli:ui
 --name=<c> --no-interactive` (skill `add-ui-component`). `libs/ui/**` is vendored — don't edit
-  or format it. `ls libs/ui/` for what exists (badge, button, card, dialog, dropdown-menu,
-  input, label, separator, skeleton, sonner, table, textarea, tooltip, utils). Selects are
-  native `<select hlmInput>`, as in surf-lend.
+  or format it. `ls libs/ui/` for what exists (badge, button, calendar, card, date-picker,
+  dialog, dropdown-menu, input, input-group, label, popover, select, separator, skeleton, sonner,
+  table, textarea, tooltip, utils). Selects are native `<select hlmInput>`, as in surf-lend
+  (`select` came with the calendar's month/year dropdowns).
+- **Date inputs** (user rule, 07.10.2026: "den gleichen Date Selector wie im
+  etx-work-time-manager") — every date looks and behaves the same, ported from etx:
+  - a **single day** = `<lk-date-field inputId="…" formControlName="date" />`
+    (`shared/components/date-field`; or `[value]` + `(changed)`; `[min]`/`[max]`, `clearable`,
+    `readonly`): the spartan date picker with a typed input in the user's date format (any
+    profile format, ISO always understood), calendar button, ↓ opens; a day outside min/max is not
+    committed and says so.
+  - a **period** = `<lk-date-range-picker inputId="…" [range]="{ from, to }" [presets]="…"
+(rangeChange)="…" />` (`shared/components/date-range-picker`, etx's WTA-307 shape): button
+    with the active preset + the days, a panel with the caller's presets (`DateRangePreset`:
+    id, `labelKey` + params, range) beside a range calendar, arrows that move the period by its
+    own size (year / month / day count), `min`/`max` (presets outside are hidden, arrows stop),
+    `maxDays`, `clearable` (filters). Emits once, when both ends are in. Dashboard: running year,
+    last 12 months, the tax years of my projects (`DashboardPageService.presets`, max = today);
+    data export: the project's tax year and the one before, clearable.
+  - **Values stay `yyyy-MM-dd` strings** in forms, services and the API; the `Date` exists only
+    between the wrapper and the calendar (`shared/format/date-only.ts`: local midnight, never
+    `toISOString()` — `date-only.spec.ts` round-trips every day in Zurich and Santiago in a
+    child process). Month/weekday names and the week start (Monday; Sunday only with
+    `MM/dd/yyyy`) are set app-wide on spartan's `BrnCalendarI18nService` by the
+    `LanguageService` (`core/i18n/calendar-i18n.ts`) and follow a language switch.
+  - The popover lives in the CDK overlay container, so it opens above dialogs; inside
+    `lk-form-row`/`lk-field` the field fills its column. **No native `type="date"`** —
+    `native-date-inputs.spec.ts` fails on one (allow-list: the manual booking's
+    `datetime-local`, which needs a time).
 - **Tables** (user rule, 07.10.2026: "cutte zu lange Texte, fixiere den Interaktionsbereich",
   Pagination überall, wo es gross werden kann). Every `hlmTable` follows one pattern — copy
   `project-files.html` or `project-rates.html`:

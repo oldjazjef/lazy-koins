@@ -1,4 +1,6 @@
+import { Optional } from '@nestjs/common';
 import { type IQueryHandler, QueryHandler } from '@nestjs/cqrs';
+import { CalculationInputService } from '../../../calculation/application/calculation-input.service';
 import type { ProjectFigures } from '../../../calculation/domain/calculation';
 import { CalculationSnapshotRepositoryPort } from '../../../calculation/ports/calculation.repository.port';
 import type { Project } from '../../domain/project';
@@ -24,6 +26,8 @@ export interface ProjectSentSummary {
 /** A project in the list, with the figures of its latest calculation (F4.2). */
 export interface ProjectListEntry extends Project {
   readonly figures: ProjectFigures | null;
+  /** The data changed since `figures` were calculated (F7.6); false without a calculation. */
+  readonly stale: boolean;
   readonly sent: ProjectSentSummary | null;
 }
 
@@ -37,6 +41,8 @@ export class ListMyProjectsHandler implements IQueryHandler<
     private readonly projects: ProjectRepositoryPort,
     private readonly snapshots: CalculationSnapshotRepositoryPort,
     private readonly sentStates: ProjectSentRepositoryPort,
+    /** Tells stale figures (absent in specs that do not care: never stale). */
+    @Optional() private readonly inputs?: CalculationInputService,
   ) {}
 
   async execute({ userId }: ListMyProjectsQuery): Promise<ProjectListEntry[]> {
@@ -49,11 +55,20 @@ export class ListMyProjectsHandler implements IQueryHandler<
       sentIds.length > 0
         ? await this.sentStates.changeFacts(sentIds)
         : new Map<string, never>();
+    // One input hash per calculated project (no file is read) — "veraltet" in the list.
+    const stale = new Set<string>();
+    for (const project of projects) {
+      const latest = figures.get(project.id);
+      if (latest && (await this.inputs?.isStale(project, latest))) {
+        stale.add(project.id);
+      }
+    }
     return projects.map((project) => {
       const state = states.get(project.id);
       return {
         ...project,
         figures: figures.get(project.id) ?? null,
+        stale: stale.has(project.id),
         sent: state
           ? {
               sentAt: state.sentAt,

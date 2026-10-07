@@ -3,6 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type {
   AddressInspection,
   NetworkId,
@@ -33,6 +34,13 @@ export class WalletPageService {
     const id = this.walletId();
     return id ? apiUrl(`/wallets/${id}/tokens`) : undefined;
   });
+
+  constructor() {
+    // A check or fetch (here, or "Abrufen" in a project) changes the tokens. The wallet itself
+    // is set from the answers — not reloaded under the open form.
+    const changes = inject(DataChanges);
+    reloadOn(() => changes.globalVersion('wallets'), [this.tokens]);
+  }
 
   readonly busy = signal<'save' | 'check' | 'fetch' | 'delete' | null>(null);
   /** F6.2: the kind of secret the API (or the inspection) refused. */
@@ -113,7 +121,6 @@ export class WalletPageService {
         this.http.post<Wallet>(apiUrl(`/wallets/${id}/${path}`), {}),
       );
       this.wallet.set(updated);
-      this.tokens.reload();
       this.notifications.success(success);
     } catch (error) {
       const { key, detail } = walletError(error);

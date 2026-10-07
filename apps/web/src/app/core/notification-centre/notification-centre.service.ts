@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import {
   computed,
   DestroyRef,
+  type EffectRef,
   inject,
   Injectable,
   Injector,
@@ -17,6 +18,7 @@ import {
   ActivityService,
 } from '../activity/activity.service';
 import { apiUrl } from '../api/api-url';
+import { DataChanges, reloadOn } from '../data/data-changes';
 import type {
   AppNotification,
   NotificationCount,
@@ -117,6 +119,7 @@ export class NotificationCentreService {
   private readonly failed = signal(false);
   private timer: ReturnType<typeof setInterval> | null = null;
   private finishedSub: Subscription | null = null;
+  private changesWatch: EffectRef | null = null;
   /** `id|occurredAt` of what was already there — never shown as an OS notification again. */
   private readonly seen = new Set<string>();
   private primed = false;
@@ -167,6 +170,16 @@ export class NotificationCentreService {
     this.finishedSub = this.activity.finished.subscribe(
       (finished) => void this.onFinished(finished),
     );
+    // The API raises and resolves notifications as projects change (a file mapped, items
+    // ticked off, a calculation …) and on the centre's own actions: the bell follows at once.
+    const changes = this.injector.get(DataChanges);
+    this.changesWatch = reloadOn(
+      () =>
+        changes.globalVersion('notifications') +
+        changes.globalVersion('projects'),
+      [{ reload: () => void this.refresh() }],
+      { injector: this.injector },
+    );
   }
 
   stop(): void {
@@ -174,6 +187,8 @@ export class NotificationCentreService {
     this.timer = null;
     this.finishedSub?.unsubscribe();
     this.finishedSub = null;
+    this.changesWatch?.destroy();
+    this.changesWatch = null;
   }
 
   setHideResolved(hide: boolean): void {

@@ -11,6 +11,7 @@ import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import { LibraryClient } from '../../../library/library-client';
 import type {
   LibraryEntry,
@@ -93,6 +94,17 @@ export class MappingDetailPageService {
     if (!source) return;
     const taken = await this.library.take(source.id);
     if (taken) await this.router.navigate(['/app/mappings', taken.mapping.id]);
+  }
+
+  constructor() {
+    // "Wird genutzt in" follows re-applies and files added/removed in any project. The mapping
+    // itself is not reloaded under the open editor — this page is where it is changed.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () =>
+        changes.globalVersion('mappings') + changes.globalVersion('projects'),
+      [this.usage],
+    );
   }
 
   readonly notFound = computed(() => {
@@ -215,7 +227,6 @@ export class MappingDetailPageService {
           : 'mappings.detail.reapplied',
         { reapplied: result.reapplied, skipped: result.skippedClosed },
       );
-      this.usage.reload();
     } catch {
       // The runner has shown the failure.
     }

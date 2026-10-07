@@ -119,6 +119,7 @@ export class NotificationsPage {
   });
 
   constructor() {
+    this.service.follow();
     // Reload whenever the bell's count moves (polling, panel actions, finished tasks).
     effect(() => {
       this.centre.unread();

@@ -1,29 +1,4 @@
-<nav
-  class="mb-4 flex flex-wrap gap-1 border-b"
-  role="tablist"
-  [attr.aria-label]="'workspace.label' | translate"
->
-  @for (tab of tabs; track tab) {
-  <button
-    type="button"
-    role="tab"
-    class="lk-tab"
-    [class.lk-tab-active]="service.tab() === tab"
-    [attr.aria-selected]="service.tab() === tab"
-    (click)="select(tab)"
-  >
-    {{ 'workspace.tabs.' + tab | translate }} @if (tab === 'hints' &&
-    files.openHints() > 0) {
-    <span
-      class="bg-primary text-primary-foreground ml-1 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums"
-      [attr.aria-label]="'hints.badge' | translate: { count: files.openHints() }"
-      >{{ files.openHints() }}</span
-    >
-    }
-  </button>
-  }
-</nav>
-
+<!-- The tab bar is in the page header (lk-project-workspace-tabs); "Allgemein" is the page's own. -->
 <div role="tabpanel">
   @switch (service.tab()) { @case ('files') {
   <lk-project-files
@@ -51,7 +26,7 @@
   } @case ('corrections') {
   <lk-project-corrections [closed]="closed()" [taxYear]="taxYear()" />
   } @case ('exports') {
-  <lk-project-exports />
+  <lk-project-exports [taxYear]="taxYear()" />
   } }
 </div>
 

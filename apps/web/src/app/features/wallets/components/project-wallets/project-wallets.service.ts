@@ -2,6 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type { ProjectFile, ProjectFiles } from '../../../../core/api/api.types';
 import type {
   ManualBalanceRequest,
@@ -31,6 +32,17 @@ export class ProjectWalletsService {
     const id = this.projectId();
     return id ? apiUrl(`/projects/${id}/files`) : undefined;
   });
+
+  constructor() {
+    // Include/remove, fetch, check, balances, a wallet edited on its own page: DataChanges.
+    const changes = inject(DataChanges);
+    reloadOn(
+      () =>
+        changes.projectVersion(this.projectId()) +
+        changes.globalVersion('wallets'),
+      [this.overview, this.files],
+    );
+  }
 
   /** PDFs of the project — the possible receipts (F6.5). */
   readonly receipts = computed<ProjectFile[]>(() =>
@@ -64,7 +76,6 @@ export class ProjectWalletsService {
     try {
       await work();
       this.notifications.success(success);
-      this.overview.reload();
       return true;
     } catch (error) {
       this.fail(error);
@@ -139,7 +150,6 @@ export class ProjectWalletsService {
           },
         ),
       );
-      this.files.reload();
       return stored;
     } catch (error) {
       this.fail(error);

@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -100,7 +100,7 @@ async function setup(
     providers: [
       MappingDetailPageService,
       MappingWorkbenchService,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideRouter([]),
       provideTranslateService(),
