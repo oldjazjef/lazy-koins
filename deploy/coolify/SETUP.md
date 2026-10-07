@@ -4,10 +4,10 @@ lazy-koins runs on the same Hostinger VPS and Coolify as surf-lend and hello-eme
 record `*.hello-eme.ch` already points every subdomain there, and Coolify issues the HTTPS
 certificates.
 
-| Address                       | What                | Updated on                         |
-| ----------------------------- | ------------------- | ---------------------------------- |
-| `lazykoins.hello-eme.ch`      | web app, production | GitHub release `vX.Y.Z` + approval |
-| `lazykoins-test.hello-eme.ch` | web app, test       | every merge to `main` (after CI)   |
+| Address                        | What                | Updated on                         |
+| ------------------------------ | ------------------- | ---------------------------------- |
+| `lazy-koins.hello-eme.ch`      | web app, production | GitHub release `vX.Y.Z` + approval |
+| `lazy-koins-test.hello-eme.ch` | web app, test       | every merge to `main` (after CI)   |
 
 Each serves the app **and** the API: `/api` goes through the web container's nginx, so there is only
 one domain per environment. Other domains work too — replace them everywhere below. No platform
@@ -43,7 +43,7 @@ apply to the whole server and don't need repeating: **1** (DNS `@` + `*`), **2�
    note `apiKey`, `authDomain`, `projectId`, `appId`. They are public by design (they identify the
    project, they grant nothing) and go into the `LK_FIREBASE_*` variables (step 4b).
 3. **Authentication** → tab **Settings** → **Authorized domains** → **Add domain**: add
-   `lazykoins-test.hello-eme.ch` and `lazykoins.hello-eme.ch`. Without them sign-in fails with
+   `lazy-koins-test.hello-eme.ch` and `lazy-koins.hello-eme.ch`. Without them sign-in fails with
    `auth/unauthorized-domain`.
 
 The API only needs the project id (`FIREBASE_PROJECT_ID`) to verify sign-ins — no service account.
@@ -62,14 +62,14 @@ the branch.
 
 **📍 Where:** left sidebar → **Projects** → **+ Add**
 
-1. Name `lazykoins` → **Continue**. Coolify creates the environment **production** by itself.
+1. Name `lazy-koins` → **Continue**. Coolify creates the environment **production** by itself.
 2. In the project → **+ New Environment** → name `test` → save.
 
 ## 4. Environment "test"
 
 **a) Resource**
 
-**📍 Where:** Projects → `lazykoins` → environment **test** → **+ New** → section **Docker Based** →
+**📍 Where:** Projects → `lazy-koins` → environment **test** → **+ New** → section **Docker Based** →
 **Docker Compose Empty**
 
 1. Server/destination if asked: your server (localhost) → default destination.
@@ -98,7 +98,7 @@ them**.
 
 **📍 Where:** in the resource → left submenu **General** → field **Domains for web**
 
-`https://lazykoins-test.hello-eme.ch` → **Save**. The field for **api** stays **empty**: the API is
+`https://lazy-koins-test.hello-eme.ch` → **Save**. The field for **api** stays **empty**: the API is
 only reachable through `/api` of the web domain.
 
 **d) Start**
@@ -106,7 +106,7 @@ only reachable through `/api` of the web domain.
 **📍 Where:** in the resource, top right → **Deploy**
 
 After 1–2 minutes both services are green ("Running (healthy)"): `api` first (it applies the database
-migrations on start), then `web`. Check `https://lazykoins-test.hello-eme.ch/api/health`.
+migrations on start), then `web`. Check `https://lazy-koins-test.hello-eme.ch/api/health`.
 
 **e) Daily backup**
 
@@ -125,14 +125,14 @@ the database, so this one copy is everything.
 
 ## 5. Environment "production"
 
-**📍 Where:** Projects → `lazykoins` → environment **production** → **+ New** → **Docker Compose Empty**
+**📍 Where:** Projects → `lazy-koins` → environment **production** → **+ New** → **Docker Compose Empty**
 
 Exactly like step 4, with these values:
 
 - **4a**: paste the same file; **write down the UUID of the production resource**.
 - **4b**: `IMAGE_TAG` = `production`; the same Firebase values (or those of a separate production
   project — then add its authorized domains too); its **own** `SETTINGS_ENCRYPTION_KEY`.
-- **4c**: **Domains for web** = `https://lazykoins.hello-eme.ch`.
+- **4c**: **Domains for web** = `https://lazy-koins.hello-eme.ch`.
 - **4d Deploy**: fails for now, because the `:production` images only exist after the first release
   (step 9). That is expected.
 - **4e**: same backup task.
@@ -166,21 +166,21 @@ In each environment: **Environment secrets → Add environment secret**, and
 
 **`test`**
 
-| Kind     | Name                     | Value                                 |
-| -------- | ------------------------ | ------------------------------------- |
-| Secret   | `COOLIFY_TOKEN`          | token from step 7                     |
-| Variable | `COOLIFY_URL`            | `https://coolify.hello-eme.ch`        |
-| Variable | `COOLIFY_RESOURCE_UUIDS` | UUID of the test resource             |
-| Variable | `LAZYKOINS_SITE_URL`     | `https://lazykoins-test.hello-eme.ch` |
+| Kind     | Name                     | Value                                  |
+| -------- | ------------------------ | -------------------------------------- |
+| Secret   | `COOLIFY_TOKEN`          | token from step 7                      |
+| Variable | `COOLIFY_URL`            | `https://coolify.hello-eme.ch`         |
+| Variable | `COOLIFY_RESOURCE_UUIDS` | UUID of the test resource              |
+| Variable | `LAZYKOINS_SITE_URL`     | `https://lazy-koins-test.hello-eme.ch` |
 
 **`production`**
 
-| Kind     | Name                     | Value                            |
-| -------- | ------------------------ | -------------------------------- |
-| Secret   | `COOLIFY_TOKEN`          | token from step 7                |
-| Variable | `COOLIFY_URL`            | `https://coolify.hello-eme.ch`   |
-| Variable | `COOLIFY_RESOURCE_UUIDS` | UUID of the production resource  |
-| Variable | `LAZYKOINS_SITE_URL`     | `https://lazykoins.hello-eme.ch` |
+| Kind     | Name                     | Value                             |
+| -------- | ------------------------ | --------------------------------- |
+| Secret   | `COOLIFY_TOKEN`          | token from step 7                 |
+| Variable | `COOLIFY_URL`            | `https://coolify.hello-eme.ch`    |
+| Variable | `COOLIFY_RESOURCE_UUIDS` | UUID of the production resource   |
+| Variable | `LAZYKOINS_SITE_URL`     | `https://lazy-koins.hello-eme.ch` |
 
 Also in `production`:
 
@@ -207,7 +207,7 @@ The desktop signing secrets (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_
   **Review deployments → Approve and deploy**. Production re-tags the images that ran on test; it never
   rebuilds. The desktop installers are built in the same run without waiting for the approval and
   attached to the release (see [`../README.md`](../README.md#desktop-builds)).
-- **Logs / restart**: Coolify → Projects → `lazykoins` → environment → resource → **Logs** on a service,
+- **Logs / restart**: Coolify → Projects → `lazy-koins` → environment → resource → **Logs** on a service,
   or **Restart** at the top.
 
 ## When something goes wrong
