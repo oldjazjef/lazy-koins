@@ -84,7 +84,10 @@ describe('ActivityService', () => {
     const { activity, notifications } = setup();
     const failure = new HttpErrorResponse({
       status: 409,
-      error: { message: 'The project is closed: reopen it first' },
+      error: {
+        message: 'The project is closed: reopen it first',
+        code: 'projectClosed',
+      },
     });
     await expect(
       activity.track('activity.rates', Promise.reject(failure), {
@@ -92,10 +95,9 @@ describe('ActivityService', () => {
       }),
     ).rejects.toBe(failure);
     expect(activity.count()).toBe(0);
-    expect(notifications.error).toHaveBeenCalledWith(
-      'rates.refreshFailed',
-      'The project is closed: reopen it first',
-    );
+    expect(notifications.error).toHaveBeenCalledWith('rates.refreshFailed', {
+      key: 'errors.api.projectClosed',
+    });
     // Without an error key it stays silent — the caller reports it.
     await expect(
       activity.track('activity.rates', Promise.reject(new Error('x'))),

@@ -1,4 +1,4 @@
-@let p = proposal();
+@let p = proposal(); @let s = shown();
 <div
   class="lk-panel flex flex-col gap-2 p-3 text-sm"
   [class.border-destructive]="p.effect === 'destructive' && p.status === 'pending'"
@@ -12,11 +12,11 @@
       >{{ 'assistant.effect.' + p.effect | translate }}</span
     >
   </div>
-  @if (p.summary) {
-  <p class="text-muted-foreground break-words">{{ p.summary }}</p>
-  } @if (p.changes.length > 0) {
+  @if (s.summary) {
+  <p class="text-muted-foreground break-words">{{ s.summary }}</p>
+  } @if (s.changes.length > 0) {
   <ul class="flex flex-col gap-1.5 border-t pt-2 text-xs">
-    @for (change of p.changes; track $index) {
+    @for (change of s.changes; track $index) {
     <li class="flex min-w-0 flex-col">
       <span class="text-muted-foreground">{{ change.label }}</span>
       <span class="flex min-w-0 flex-wrap items-baseline gap-1 break-all">
@@ -81,8 +81,8 @@
       aria-hidden="true"
     />
     <span class="break-words"
-      >{{ 'chat.proposal.status.failed' | translate }} @if (p.outcome?.error; as
-      error) { {{ error.message }} }</span
+      >{{ 'chat.proposal.status.failed' | translate }} @if (s.error; as error) {
+      {{ error }} }</span
     >
   </p>
   } @case ('cancelled') {

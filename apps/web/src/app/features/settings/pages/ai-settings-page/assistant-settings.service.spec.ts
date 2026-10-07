@@ -105,12 +105,14 @@ describe('AssistantSettingsService', () => {
     const saved = service.savePrompt('x');
     http
       .expectOne('/api/assistant/settings')
-      .flush({ message: 'too long' }, { status: 400, statusText: 'Bad' });
+      .flush(
+        { message: 'too long', code: 'promptTooLong' },
+        { status: 400, statusText: 'Bad' },
+      );
     expect(await saved).toBe(false);
-    expect(notifications.error).toHaveBeenCalledWith(
-      'assistant.saveFailed',
-      'too long',
-    );
+    expect(notifications.error).toHaveBeenCalledWith('assistant.saveFailed', {
+      key: 'errors.api.promptTooLong',
+    });
   });
 });
 

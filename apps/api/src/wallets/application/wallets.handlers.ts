@@ -418,7 +418,7 @@ export class FetchWalletHandler implements ICommandHandler<
     if (failures.some((f) => f.code === 'invalidKey')) {
       await this.notifications.raise(userId, Topics.keyInvalid('chain'), {
         kind: 'action',
-        params: { service: 'Netzwerk-Abfragen' },
+        params: { service: 'chain' },
         action: {
           labelKey: 'notifications.action.checkKey',
           route: '/app/settings/wallets',

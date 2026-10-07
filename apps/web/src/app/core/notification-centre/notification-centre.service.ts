@@ -37,6 +37,8 @@ const PARAM_TRANSLATIONS: readonly (readonly [string, string])[] = [
   ['reason', 'notifications.reason.'],
   ['code', 'ai.errors.'],
   ['kind', 'exports.kind.'],
+  // F11.2: `ai | coingecko | mail | chain` (older rows carry a name — shown as it is).
+  ['service', 'notifications.service.'],
 ];
 
 /** A notification ready to show: its text translated, its time relative. */

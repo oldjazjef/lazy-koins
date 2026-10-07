@@ -95,6 +95,7 @@ export class FilesController {
           statusCode: 409,
           error: 'Conflict',
           message: 'This file is already in the project',
+          code: 'duplicateFile',
           existing: ProjectFileResponseDto.from(
             await this.files.view(user.userId, error.existing),
           ),

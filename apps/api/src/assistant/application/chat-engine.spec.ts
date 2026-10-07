@@ -6,6 +6,8 @@ import {
 import { AiGate, AiRuntime } from '../../ai/application/ai-gate';
 import { InMemoryAiSettingsRepository } from '../../ai/testing/in-memory-ai-settings.repository';
 import { SecretBox } from '../../common/crypto/secret-box';
+import type { Locale } from '../../common/i18n/locale';
+import type { SettingsReader } from '../../settings/application/settings.handlers';
 import {
   type AiCompletion,
   AiCompletionPort,
@@ -23,7 +25,12 @@ import {
   InMemoryAssistantSettingsRepository,
   InMemoryChatRepository,
 } from '../testing/in-memory-assistant.repositories';
-import { ChatEngine, MAX_TOOL_STEPS, toAiHistory } from './chat-engine';
+import {
+  APP_ANSWERS,
+  ChatEngine,
+  MAX_TOOL_STEPS,
+  toAiHistory,
+} from './chat-engine';
 
 type Step =
   AiConverseTurn | Error | ((request: AiConverseRequest) => AiConverseTurn);
@@ -74,8 +81,12 @@ const say = (text: string): AiConverseTurn => ({
   usage: { inputTokens: 10, outputTokens: 5 },
 });
 
-async function chatSetup() {
+async function chatSetup(locale: Locale = 'de-CH') {
   const t = await toolSetup();
+  // F11.2: the user's language, as the settings reader would resolve it.
+  const userSettings = {
+    resolve: () => Promise.resolve({ locale }),
+  } as unknown as SettingsReader;
   const aiSettings = new InMemoryAiSettingsRepository();
   await aiSettings.save('anna', {
     enabled: true,
@@ -102,6 +113,7 @@ async function chatSetup() {
     chats,
     assistant,
     t.services.projects,
+    userSettings,
   );
   const ask = (text: string, conversationId: string | null = null) =>
     engine.ask('anna', conversationId, {
@@ -263,10 +275,26 @@ describe('ChatEngine (F11.14)', () => {
         projectId: project.id,
       }),
     );
+    // F11.2: keys + values — the web renders them in the user's language.
+    expect(card?.summary).toEqual({
+      key: 'chat.preview.priceOverride',
+      params: { asset: 'DOT', date: '2025-12-31' },
+    });
     expect(card?.changes[0]).toEqual({
-      label: 'Kurs DOT (CHF)',
+      label: {
+        key: 'chat.preview.label.price',
+        params: { asset: 'DOT', unit: 'CHF' },
+      },
       before: null,
-      after: '4.50 CHF (Override)',
+      after: {
+        key: 'chat.preview.value.override',
+        params: { price: '4.50', unit: 'CHF' },
+      },
+    });
+    expect(card?.changes[1]).toEqual({
+      label: { key: 'chat.preview.label.reason' },
+      before: null,
+      after: 'Kurs laut ESTV-Kursliste',
     });
     expect(audit.rows.at(-1)).toEqual(
       expect.objectContaining({
@@ -287,9 +315,14 @@ describe('ChatEngine (F11.14)', () => {
     expect(after.messages.at(-1)).toEqual(
       expect.objectContaining({ role: 'event' }),
     );
-    expect(after.messages.at(-1)?.content).toMatch(
-      /^Ausgeführt: Kurs überschreiben/,
+    // For the model: an English line; for the app: the outcome it renders in the user's language.
+    expect(after.messages.at(-1)?.content).toBe(
+      'Executed: Kurs überschreiben (set_price_override)',
     );
+    expect(after.messages.at(-1)?.event).toEqual({
+      outcome: 'executed',
+      title: 'Kurs überschreiben',
+    });
     expect(after.messages[1]?.proposals[0]?.status).toBe('executed');
     expect(audit.rows.at(-1)).toEqual(
       expect.objectContaining({
@@ -313,7 +346,7 @@ describe('ChatEngine (F11.14)', () => {
       history.some(
         (m) =>
           m.role === 'user' &&
-          m.content.startsWith('[App] Ausgeführt: Kurs überschreiben'),
+          m.content.startsWith('[App] Executed: Kurs überschreiben'),
       ),
     ).toBe(true);
     expect((await chats.messages(view.id)).some((m) => m.role === 'tool')).toBe(
@@ -349,7 +382,10 @@ describe('ChatEngine (F11.14)', () => {
       'cancel',
     );
     expect(cancelled.messages[1]?.proposals[0]?.status).toBe('cancelled');
-    expect(cancelled.messages.at(-1)?.content).toMatch(/^Abgebrochen/);
+    expect(cancelled.messages.at(-1)?.content).toMatch(
+      /^Cancelled by the user/,
+    );
+    expect(cancelled.messages.at(-1)?.event?.outcome).toBe('cancelled');
 
     // A closed project stays read-only: the confirmed tool fails with the service's 409.
     const second = await ask('Nochmals', first.id);
@@ -361,7 +397,38 @@ describe('ChatEngine (F11.14)', () => {
       .find((p) => p.id === card.id);
     expect(shown?.status).toBe('failed');
     expect(shown?.outcome?.error?.code).toBe('conflict');
+    expect(failed.messages.at(-1)?.event).toEqual({
+      outcome: 'failed',
+      title: 'Kurs überschreiben',
+      errorCode: 'conflict',
+    });
     expect(await corrections.listByProject(project.id)).toEqual([]);
+  });
+
+  it('gives an English user the card title and its own answers in English (F11.2)', async () => {
+    const { ask, ai, project } = await chatSetup('en');
+    ai.then(
+      calls({
+        id: 'c1',
+        name: 'set_price_override',
+        input: {
+          projectId: project.id,
+          asset: 'DOT',
+          date: '2025-12-31',
+          priceChf: '4.50',
+          reason: 'ESTV list',
+        },
+      }),
+      say(''),
+    );
+    const view = await ask('Set the DOT price to 4.50 CHF');
+    const answer = view.messages.at(-1);
+    expect(answer?.content).toBe(APP_ANSWERS.en.prepared);
+    expect(answer?.proposals[0]?.title).toBe('Override price');
+    // No German sentence on the card: the summary is a key for the web.
+    expect(answer?.proposals[0]?.summary).toEqual(
+      expect.objectContaining({ key: 'chat.preview.priceOverride' }),
+    );
   });
 
   it('stops after the loop limit', async () => {

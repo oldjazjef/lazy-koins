@@ -1,25 +1,13 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { apiErrorText, type ErrorText } from '../api/api-error';
 
 /**
- * Pulls a human-readable detail out of a failed HTTP call, when there is one worth showing.
+ * The reason of a failed HTTP call as a translatable text, appended to a failure toast.
  *
- * Nest's default exception filter answers with `{ statusCode, message, error }` — `message` is a
- * plain string for most exceptions and an array of strings for a `ValidationPipe` failure. Handler
- * messages are deliberately specific ("The project is closed: reopen it first") precisely so a
- * caller can surface them; without this, every failure collapses into the same generic toast
- * regardless of why.
+ * F11.2: the API's `message` is English and meant for logs — the app tells the reason in the
+ * user's language from the error **code** (`errors.api.<code>`, e.g. "The project is closed –
+ * reopen it first") or, without a known code, from the HTTP status (`errors.status.<name>`).
+ * `undefined` for a failure that was no HTTP call: the toast then shows only its own message.
  */
-export function extractErrorDetail(error: unknown): string | undefined {
-  if (!(error instanceof HttpErrorResponse)) {
-    return undefined;
-  }
-
-  const message: unknown = error.error?.message;
-  if (Array.isArray(message)) {
-    return message.join('; ');
-  }
-  if (typeof message === 'string' && message.length > 0) {
-    return message;
-  }
-  return undefined;
+export function extractErrorDetail(error: unknown): ErrorText | undefined {
+  return apiErrorText(error);
 }

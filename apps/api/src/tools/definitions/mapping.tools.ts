@@ -3,6 +3,7 @@ import { mappingJsonSchema } from '@lazykoins/engine';
 import type { ImportMapping } from '../../mappings/domain/import-mapping';
 import { MAPPING_ORIGINS } from '../../mappings/domain/import-mapping';
 import { type AnyTool, defineTool } from '../domain/tool';
+import { previewText } from '../domain/preview-texts';
 import { id, link, type ToolServices } from './common';
 
 const mappingOut = z.object({
@@ -108,8 +109,14 @@ export function mappingTools(s: ToolServices): AnyTool[] {
         const name =
           typeof input.spec['name'] === 'string' ? input.spec['name'] : '–';
         return {
-          summary: `Neues Mapping «${name}» speichern`,
-          changes: [{ label: 'Mapping', before: null, after: name }],
+          summary: previewText('chat.preview.createMapping', { name }),
+          changes: [
+            {
+              label: previewText('chat.preview.label.mapping'),
+              before: null,
+              after: name,
+            },
+          ],
         };
       },
     }),
@@ -136,10 +143,14 @@ export function mappingTools(s: ToolServices): AnyTool[] {
       async preview(ctx, input) {
         const mapping = await s.mappings.get(ctx.userId, input.mappingId);
         return {
-          summary: `Mapping «${mapping.name}» ersetzen (Version ${mapping.version} → ${mapping.version + 1})`,
+          summary: previewText('chat.preview.updateMapping', {
+            name: mapping.name,
+            from: mapping.version,
+            to: mapping.version + 1,
+          }),
           changes: [
             {
-              label: 'Version',
+              label: previewText('chat.preview.label.version'),
               before: String(mapping.version),
               after: String(mapping.version + 1),
             },
@@ -177,8 +188,16 @@ export function mappingTools(s: ToolServices): AnyTool[] {
       async preview(ctx, input) {
         const mapping = await s.mappings.get(ctx.userId, input.mappingId);
         return {
-          summary: `Mapping «${mapping.name}» löschen`,
-          changes: [{ label: 'Mapping', before: mapping.name, after: null }],
+          summary: previewText('chat.preview.deleteMapping', {
+            name: mapping.name,
+          }),
+          changes: [
+            {
+              label: previewText('chat.preview.label.mapping'),
+              before: mapping.name,
+              after: null,
+            },
+          ],
         };
       },
     }),

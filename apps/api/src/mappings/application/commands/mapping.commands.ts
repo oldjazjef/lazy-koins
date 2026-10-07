@@ -1,4 +1,5 @@
-import { ConflictException, NotFoundException, Optional } from '@nestjs/common';
+import { NotFoundException, Optional } from '@nestjs/common';
+import { conflict } from '../../../common/http/api-errors';
 import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { ProjectFileRepositoryPort } from '../../../files/ports/project-file.repository.port';
 import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
@@ -108,7 +109,8 @@ export class DeleteMappingHandler implements ICommandHandler<
     );
     for (const projectId of projectIds) {
       if ((await this.projects.findById(projectId))?.status === 'closed') {
-        throw new ConflictException(
+        throw conflict(
+          'usedByClosedProject',
           'A closed project uses this mapping: reopen it first, then delete the mapping',
         );
       }

@@ -1,9 +1,9 @@
 import {
   BadRequestException,
-  ConflictException,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { projectClosed } from '../../common/http/api-errors';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -40,11 +40,7 @@ import { CalculationInputService } from './calculation-input.service';
 
 /** F4.5: a closed project accepts no change — no recalculation, correction or tick either. */
 export function assertProjectOpen(project: Project): void {
-  if (project.status === 'closed') {
-    throw new ConflictException(
-      'The project is closed: reopen it first, then change it',
-    );
-  }
+  if (project.status === 'closed') throw projectClosed();
 }
 
 export interface ResultView {
@@ -407,6 +403,7 @@ export class CreateCorrectionHandler implements ICommandHandler<
         statusCode: 400,
         error: 'Bad Request',
         message: 'The correction is invalid',
+        code: 'invalidCorrection',
         issues: validation.issues,
       });
     }

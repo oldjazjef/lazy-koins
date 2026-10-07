@@ -139,14 +139,17 @@ describe('ProjectWorkspaceService', () => {
     const request = http.expectOne('/api/projects/p1/rates/refresh');
     expect(request.request.body).toEqual({ force: false });
     request.flush(
-      { message: 'Rate lookups on the internet are switched off (settings)' },
+      {
+        message: 'Rate lookups on the internet are switched off (settings)',
+        code: 'offline',
+      },
       { status: 409, statusText: 'Conflict' },
     );
     await expect(refused).rejects.toBeDefined();
-    expect(notifications.error).toHaveBeenCalledWith(
-      'rates.refreshFailed',
-      'Rate lookups on the internet are switched off (settings)',
-    );
+    // F11.2: the reason by its code, in the user's language.
+    expect(notifications.error).toHaveBeenCalledWith('rates.refreshFailed', {
+      key: 'errors.api.offline',
+    });
   });
 
   it('ticks off an open item and starts a correction from a figure (F8.2, F9)', async () => {

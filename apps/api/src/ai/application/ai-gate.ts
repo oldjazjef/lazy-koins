@@ -310,7 +310,7 @@ export class AiGate {
     if (code === 'invalidKey') {
       await this.notifications?.raise(userId, Topics.keyInvalid('ai'), {
         kind: 'action',
-        params: { service: 'AI' },
+        params: { service: 'ai' },
         action: { ...settings, labelKey: 'notifications.action.checkKey' },
       });
     }

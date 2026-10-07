@@ -301,10 +301,9 @@ describe('AiAssistState', () => {
       { status: 502, statusText: 'Bad Gateway' },
     );
     await sent;
-    expect(notifications.error).toHaveBeenCalledWith(
-      'ai.errors.modelNotFound',
-      'modelNotFound: HTTP 404 · …',
-    );
+    // F11.2: the toast is translated; the API's English one-liner stays in the error panel.
+    expect(notifications.error).toHaveBeenCalledWith('ai.errors.modelNotFound');
+    expect(state.error()?.detail).toBe('modelNotFound: HTTP 404 · …');
     expect(state.error()).toMatchObject({
       status: 404,
       providerMessage: 'The model gpt-x does not exist',

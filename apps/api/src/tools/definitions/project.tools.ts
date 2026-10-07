@@ -5,8 +5,10 @@ import {
   MAX_TAX_YEAR,
   MIN_TAX_YEAR,
   PROJECT_STATUSES,
+  type ProjectStatus,
 } from '../../projects/domain/project';
-import { type AnyTool, defineTool } from '../domain/tool';
+import { type AnyTool, defineTool, type ToolChange } from '../domain/tool';
+import { enumText, previewText } from '../domain/preview-texts';
 import { link, projectId, projectLink, type ToolServices } from './common';
 
 const projectOut = z.object({
@@ -117,11 +119,27 @@ export function projectTools(s: ToolServices): AnyTool[] {
       },
       async preview(_ctx, input) {
         return {
-          summary: `Neues Projekt «${input.name}» für ${input.taxYear} (${input.canton})`,
+          summary: previewText('chat.preview.createProject', {
+            name: input.name,
+            year: input.taxYear,
+            canton: input.canton,
+          }),
           changes: [
-            { label: 'Name', before: null, after: input.name },
-            { label: 'Steuerjahr', before: null, after: String(input.taxYear) },
-            { label: 'Kanton', before: null, after: input.canton },
+            {
+              label: previewText('chat.preview.label.name'),
+              before: null,
+              after: input.name,
+            },
+            {
+              label: previewText('chat.preview.label.taxYear'),
+              before: null,
+              after: String(input.taxYear),
+            },
+            {
+              label: previewText('chat.preview.label.canton'),
+              before: null,
+              after: input.canton,
+            },
           ],
         };
       },
@@ -150,23 +168,35 @@ export function projectTools(s: ToolServices): AnyTool[] {
       },
       async preview(ctx, { projectId: id, ...changes }) {
         const before = await s.projects.get(ctx.userId, id);
-        const lines = (
+        const status = (value: ProjectStatus | undefined) =>
+          value === undefined ? undefined : enumText('projectStatus', value);
+        const lines: ToolChange[] = (
           [
-            ['Name', before.name, changes.name],
-            ['Notizen', before.notes, changes.notes],
-            ['Kanton', before.canton, changes.canton],
-            ['Status', before.status, changes.status],
-            ['Steuerwährung', before.taxCurrency, changes.taxCurrency],
+            ['chat.preview.label.name', before.name, changes.name],
+            ['chat.preview.label.notes', before.notes, changes.notes],
+            ['chat.preview.label.canton', before.canton, changes.canton],
+            [
+              'chat.preview.label.status',
+              status(before.status),
+              status(changes.status),
+            ],
+            [
+              'chat.preview.label.taxCurrency',
+              before.taxCurrency,
+              changes.taxCurrency,
+            ],
           ] as const
         )
           .filter(([, , after]) => after !== undefined)
           .map(([label, old, after]) => ({
-            label,
-            before: old,
+            label: previewText(label),
+            before: old ?? null,
             after: after ?? null,
           }));
         return {
-          summary: `Projekt «${before.name}» ändern`,
+          summary: previewText('chat.preview.updateProject', {
+            name: before.name,
+          }),
           changes: lines,
           projectId: id,
         };
@@ -188,10 +218,13 @@ export function projectTools(s: ToolServices): AnyTool[] {
       async preview(ctx, input) {
         const project = await s.projects.get(ctx.userId, input.projectId);
         return {
-          summary: `Projekt «${project.name}» (${project.taxYear}) endgültig löschen`,
+          summary: previewText('chat.preview.deleteProject', {
+            name: project.name,
+            year: project.taxYear,
+          }),
           changes: [
             {
-              label: 'Projekt',
+              label: previewText('chat.preview.label.project'),
               before: `${project.name} (${project.taxYear})`,
               after: null,
             },

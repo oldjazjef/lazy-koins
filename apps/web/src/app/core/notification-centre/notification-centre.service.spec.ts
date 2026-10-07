@@ -58,8 +58,10 @@ function setup() {
         file: { needsMapping: 'Datei ohne Mapping: {{name}}' },
         task: { failed: 'Fehlgeschlagen: {{task}}' },
         export: { failed: 'Auszug: {{kind}}' },
+        key: { invalid: 'Schlüssel für {{service}} ungültig' },
       },
       reason: { auth: 'Anmeldung abgelehnt' },
+      service: { chain: 'Netzwerk-Abfragen' },
       osBody: 'lazy-koins',
     },
     activity: { export: 'Auszug wird erstellt ({{kind}})' },
@@ -205,6 +207,20 @@ describe('NotificationCentreService (F11.11)', () => {
         }),
       ),
     ).toBe('Auszug: Einfach (PDF)');
+    // F11.2: the service is a code; an older row's name stays as it was.
+    for (const [service, shown] of [
+      ['chain', 'Netzwerk-Abfragen'],
+      ['CoinGecko', 'CoinGecko'],
+    ]) {
+      expect(
+        centre.text(
+          notification({
+            titleKey: 'notifications.title.key.invalid',
+            params: { service },
+          }),
+        ),
+      ).toBe(`Schlüssel für ${shown} ungültig`);
+    }
   });
 });
 

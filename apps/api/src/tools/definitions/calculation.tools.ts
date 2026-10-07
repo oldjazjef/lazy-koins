@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { BOOKING_KINDS, CorrectionDataSchema } from '@lazykoins/engine';
 import type { ResultView } from '../../calculation/application/calculation.handlers';
-import { type AnyTool, defineTool, type ToolPreview } from '../domain/tool';
+import {
+  type AnyTool,
+  defineTool,
+  type ToolChange,
+  type ToolPreview,
+  type ToolValue,
+} from '../domain/tool';
+import { enumText, previewText, yesNo } from '../domain/preview-texts';
 import {
   capped,
   decimalText,
@@ -100,7 +107,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
     project: string,
     asset: string,
     unit: string,
-  ): Promise<string | null> {
+  ): Promise<ToolValue | null> {
     const view = await s.calculation.result(userId, project);
     const position = view.result?.positions.find(
       (p) => p.asset.toUpperCase() === asset.toUpperCase(),
@@ -108,7 +115,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
     if (!position) return null;
     return position.priceChf
       ? `${position.priceChf} ${unit} (${position.priceSource ?? position.priceOrigin ?? '–'})`
-      : 'kein Kurs';
+      : previewText('chat.preview.value.noPrice');
   }
 
   async function correctionPreview(
@@ -117,19 +124,32 @@ export function calculationTools(s: ToolServices): AnyTool[] {
     data: z.output<typeof CorrectionDataSchema>,
     why: string,
   ): Promise<ToolPreview> {
-    const reasonLine = { label: 'Begründung', before: null, after: why };
+    const reasonLine: ToolChange = {
+      label: previewText('chat.preview.label.reason'),
+      before: null,
+      after: why,
+    };
     switch (data.type) {
       case 'price_override': {
         // F4.1a: an override is a price in the project's tax currency.
         const unit =
           (await s.projects.get(userId, project)).taxCurrency ?? 'CHF';
         return {
-          summary: `Kurs von ${data.asset} am ${data.date} überschreiben`,
+          summary: previewText('chat.preview.priceOverride', {
+            asset: data.asset,
+            date: data.date,
+          }),
           changes: [
             {
-              label: `Kurs ${data.asset} (${unit})`,
+              label: previewText('chat.preview.label.price', {
+                asset: data.asset,
+                unit,
+              }),
               before: await priceBefore(userId, project, data.asset, unit),
-              after: `${data.priceChf} ${unit} (Override)`,
+              after: previewText('chat.preview.value.override', {
+                price: data.priceChf,
+                unit,
+              }),
             },
             reasonLine,
           ],
@@ -138,19 +158,28 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       }
       case 'reclassify':
         return {
-          summary: `Buchung ${data.bookingId} umklassieren`,
+          summary: previewText('chat.preview.reclassify', {
+            booking: data.bookingId,
+          }),
           changes: [
-            { label: 'Art', before: null, after: data.kind },
+            {
+              label: previewText('chat.preview.label.kind'),
+              before: null,
+              after: enumText('bookingKind', data.kind),
+            },
             reasonLine,
           ],
           projectId: project,
         };
       case 'manual_booking':
         return {
-          summary: `Manuelle Buchung ${data.booking.asset} auf ${data.booking.platform}`,
+          summary: previewText('chat.preview.manualBooking', {
+            asset: data.booking.asset,
+            platform: data.booking.platform,
+          }),
           changes: [
             {
-              label: 'Buchung',
+              label: previewText('chat.preview.label.booking'),
               before: null,
               after: `${data.booking.timestamp} ${data.booking.kind} ${data.booking.quantity} ${data.booking.asset}`,
             },
@@ -160,10 +189,15 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         };
       case 'manual_holding':
         return {
-          summary: `Manueller Bestand ${data.holding.asset} auf ${data.holding.platform}`,
+          summary: previewText('chat.preview.manualHolding', {
+            asset: data.holding.asset,
+            platform: data.holding.platform,
+          }),
           changes: [
             {
-              label: `Bestand per ${data.holding.asOf}`,
+              label: previewText('chat.preview.label.holdingAt', {
+                date: data.holding.asOf,
+              }),
               before: null,
               after: `${data.holding.quantity} ${data.holding.asset}`,
             },
@@ -545,21 +579,25 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         const view = await s.calculation.checks(ctx.userId, input.projectId);
         const item = view.items.find((i) => i.key === input.key);
         return {
-          summary: `Offenen Punkt ${item?.reason ?? input.key} bearbeiten`,
+          summary: previewText('chat.preview.openItem', {
+            item: item
+              ? enumText('openItemReason', item.reason, item.params)
+              : input.key,
+          }),
           changes: [
             ...(input.done !== undefined
               ? [
                   {
-                    label: 'Erledigt',
-                    before: item ? String(item.done) : null,
-                    after: String(input.done),
+                    label: previewText('chat.preview.label.done'),
+                    before: item ? yesNo(item.done) : null,
+                    after: yesNo(input.done),
                   },
                 ]
               : []),
             ...(input.note !== undefined
               ? [
                   {
-                    label: 'Notiz',
+                    label: previewText('chat.preview.label.note'),
                     before: item?.note || null,
                     after: input.note,
                   },

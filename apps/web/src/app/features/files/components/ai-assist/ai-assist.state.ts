@@ -321,15 +321,14 @@ export class AiAssistState {
     }
   }
 
-  /** The toast says what failed (with the API's one-line detail); the dialog keeps the details. */
+  /**
+   * The toast says what failed in the user's language; the dialog's error panel keeps the
+   * technical details (the API's English one-line detail, the provider's own words — F11.2).
+   */
   private fail(error: unknown): void {
     const info = aiErrorInfo(error);
     this.error.set(info);
-    if (info.detail) {
-      this.notifications.error(info.key, info.detail);
-    } else {
-      this.notifications.error(info.key);
-    }
+    this.notifications.error(info.key);
   }
 
   private reset(): void {

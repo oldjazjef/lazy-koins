@@ -155,30 +155,42 @@ describe('ActionRunner', () => {
     expect(notifications.error).toHaveBeenCalledWith('thing.failed');
   });
 
-  it('extracts the server message from a failed HTTP call and appends it to the toast', async () => {
-    // A ForbiddenException naming the missing permission (see PermissionsGuard) is exactly the kind
-    // of detail a bare "failed" toast used to swallow.
+  it('appends the reason of a failed HTTP call as a translatable text — by code, never the English message (F11.2)', async () => {
     const { runner, notifications } = createRunner();
-    const httpError = new HttpErrorResponse({
-      status: 403,
+    const closed = new HttpErrorResponse({
+      status: 409,
       error: {
-        statusCode: 403,
-        message: 'Missing permission(s): group:manage',
+        statusCode: 409,
+        message: 'The project is closed: reopen it first, then change it',
+        code: 'projectClosed',
       },
     });
-    const fails = defineAction<void, void>({
-      run: () => Promise.reject(httpError),
-      messages: { error: 'groups.adminsFailed' },
+    const forbidden = new HttpErrorResponse({
+      status: 403,
+      error: { statusCode: 403, message: 'Missing permission(s): x' },
     });
+    for (const [key, error] of [
+      ['closed', closed],
+      ['forbidden', forbidden],
+    ] as const) {
+      await runner
+        .run(
+          defineAction<void, void>({
+            run: () => Promise.reject(error),
+            messages: { error: 'groups.adminsFailed' },
+          }),
+          undefined,
+          { key },
+        )
+        .catch(() => undefined);
+    }
 
-    await runner
-      .run(fails, undefined, { key: 'http-fail' })
-      .catch(() => undefined);
-
-    expect(notifications.error).toHaveBeenCalledWith(
-      'groups.adminsFailed',
-      'Missing permission(s): group:manage',
-    );
+    expect(notifications.error).toHaveBeenCalledWith('groups.adminsFailed', {
+      key: 'errors.api.projectClosed',
+    });
+    expect(notifications.error).toHaveBeenCalledWith('groups.adminsFailed', {
+      key: 'errors.status.forbidden',
+    });
   });
 
   it('suppresses the notification when silent is set', async () => {

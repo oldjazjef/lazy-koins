@@ -364,7 +364,7 @@ export class SendMailHandler implements ICommandHandler<
     if (kind === 'auth') {
       await this.notifications.raise(userId, Topics.keyInvalid('mail'), {
         kind: 'action',
-        params: { service: 'Mail' },
+        params: { service: 'mail' },
         action: {
           labelKey: 'notifications.action.checkKey',
           route: '/app/settings/mail',

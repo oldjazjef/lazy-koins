@@ -4,6 +4,7 @@ import {
   type ProjectExportMeta,
 } from '../../exports/domain/project-export';
 import { type AnyTool, defineTool } from '../domain/tool';
+import { enumText, previewText } from '../domain/preview-texts';
 import { id, link, projectId, projectLink, type ToolServices } from './common';
 
 const exportOut = z.object({
@@ -72,13 +73,19 @@ export function exportTools(s: ToolServices): AnyTool[] {
         const checks = await s.calculation.checks(ctx.userId, input.projectId);
         const open = checks.items.filter((item) => !item.done).length;
         return {
-          summary: `Export ${input.kind} erstellen`,
+          summary: previewText('chat.preview.createExport', {
+            kind: enumText('exportKind', input.kind),
+          }),
           changes: [
-            { label: 'Export', before: null, after: input.kind },
+            {
+              label: previewText('chat.preview.label.export'),
+              before: null,
+              after: enumText('exportKind', input.kind),
+            },
             ...(open > 0
               ? [
                   {
-                    label: 'Offene Punkte',
+                    label: previewText('chat.preview.label.openItems'),
                     before: String(open),
                     after: String(open),
                   },
@@ -172,12 +179,20 @@ export function exportTools(s: ToolServices): AnyTool[] {
           .filter((e) => input.exportIds.includes(e.id))
           .map((e) => e.fileName);
         return {
-          summary: `Mail an ${input.to} senden`,
+          summary: previewText('chat.preview.sendMail', { to: input.to }),
           changes: [
-            { label: 'An', before: null, after: input.to },
-            { label: 'Betreff', before: null, after: input.subject },
             {
-              label: 'Anhänge',
+              label: previewText('chat.preview.label.to'),
+              before: null,
+              after: input.to,
+            },
+            {
+              label: previewText('chat.preview.label.subject'),
+              before: null,
+              after: input.subject,
+            },
+            {
+              label: previewText('chat.preview.label.attachments'),
               before: null,
               after: names.length > 0 ? names.join(', ') : '–',
             },

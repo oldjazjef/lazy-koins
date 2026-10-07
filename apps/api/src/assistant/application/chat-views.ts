@@ -1,6 +1,11 @@
-import type { ToolChange, ToolEffect } from '../../tools/domain/tool';
+import type {
+  ToolChange,
+  ToolEffect,
+  ToolValue,
+} from '../../tools/domain/tool';
 import type {
   ChatAttachment,
+  ChatEventOutcome,
   ChatMessage,
   ChatProposal,
   Conversation,
@@ -13,7 +18,8 @@ export interface ProposalView {
   readonly tool: string;
   readonly title: string;
   readonly effect: ToolEffect;
-  readonly summary: string;
+  /** F11.2: keys + values the web translates (a proposal stored before: a German sentence). */
+  readonly summary: ToolValue;
   readonly changes: readonly ToolChange[];
   readonly projectId: string | null;
   readonly status: ProposalStatus;
@@ -34,6 +40,16 @@ export interface ChatMessageView {
   readonly attachments: readonly ChatAttachment[];
   readonly proposals: readonly ProposalView[];
   readonly toolsUsed: readonly string[];
+  /** event: what became of which proposal — rendered by the app in the user's language. */
+  readonly event?: ChatEventView;
+}
+
+export interface ChatEventView {
+  readonly outcome: ChatEventOutcome;
+  /** The proposal card's title. */
+  readonly title: string;
+  /** failed: the tool's error code (`conflict`, `notFound`, …). */
+  readonly errorCode?: string;
 }
 
 export interface ConversationSummary {
@@ -118,7 +134,27 @@ export function conversationView(
       attachments,
       proposals: cards,
       toolsUsed: message.data.toolsUsed ?? [],
+      ...eventOf(message, byId),
     });
   }
   return { ...summaryOf(conversation), messages: shown };
+}
+
+/** An event row with its outcome (rows stored before F11.2 have none and show their text). */
+function eventOf(
+  message: ChatMessage,
+  proposals: ReadonlyMap<string, ProposalView>,
+): { event?: ChatEventView } {
+  const { outcome, proposalId } = message.data;
+  if (message.role !== 'event' || !outcome || !proposalId) return {};
+  const proposal = proposals.get(proposalId);
+  if (!proposal) return {};
+  const errorCode = proposal.outcome?.error?.code;
+  return {
+    event: {
+      outcome,
+      title: proposal.title,
+      ...(outcome === 'failed' && errorCode ? { errorCode } : {}),
+    },
+  };
 }

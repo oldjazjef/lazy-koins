@@ -1,10 +1,10 @@
 import {
-  ConflictException,
   Injectable,
   NotFoundException,
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { conflict } from '../../common/http/api-errors';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -90,7 +90,8 @@ export class ExportDataService {
       snapshot = await this.snapshots.latest(project.id);
     }
     if (!snapshot) {
-      throw new ConflictException(
+      throw conflict(
+        'noCalculation',
         'The project has no calculation yet: reopen it and calculate',
       );
     }
