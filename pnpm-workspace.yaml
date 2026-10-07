@@ -51,6 +51,29 @@ allowBuilds:
 # Nx is pinned to one exact version (see CLAUDE.md), but @spartan-ng/cli depends on `@nx/devkit`
 # with a caret range and would otherwise pull the newest one — whose generators refuse to run
 # against an older `nx` ("does not export the ignore checkers"). Keep these in step with `nx`.
+#
+# The rest are security floors for transitive dependencies (Dependabot alerts), raised within
+# the same major the parent asks for. Each is scoped to the vulnerable range so older majors
+# that other packages still need stay untouched. Drop an entry once its parent ships the fix.
+#   axios, smol-toml, brace-expansion@5  pinned exactly by nx
+#   piscina                              @angular/build
+#   @modelcontextprotocol/sdk            @angular/cli (its own MCP server)
+#   @grpc/grpc-js                        firebase (@firebase/firestore pins ~1.9)
+#   js-yaml@5                            @nestjs/swagger, webpack-cli
+#   source-map-js                        postcss, tailwind, css-tree, …
+#   mysql2, deepmerge-ts                 prisma CLI (@prisma/config); deepmerge-ts 8 keeps the API
+#   uuid                                 exceljs (uuid 8), gaxios via firebase-admin (uuid 9)
 overrides:
-  '@nx/devkit': 23.1.1
-  nx: 23.1.1
+  '@nx/devkit': 23.2.1
+  nx: 23.2.1
+  axios: ^1.20.0
+  smol-toml: ^1.9.0
+  'brace-expansion@>=4.0.0 <5.0.12': ^5.0.12
+  'piscina@>=5.0.0 <5.3.2': ^5.3.2
+  '@modelcontextprotocol/sdk@<1.31.0': ^1.32.1
+  '@grpc/grpc-js@<1.13.6': ^1.14.5
+  'js-yaml@>=5.0.0 <5.4.1': ^5.4.3
+  source-map-js: ^1.2.2
+  mysql2: ^3.23.1
+  deepmerge-ts: ^8.0.2
+  'uuid@<11.1.1': ^11.1.1

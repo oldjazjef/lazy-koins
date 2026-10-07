@@ -43,7 +43,7 @@ Electron for the desktop app (**Electron 42** + electron-builder, see Desktop).
 | --------------- | ------------------------------------------------------------------------ |
 | Node            | **22.23.2**, pinned via Volta in `package.json`                          |
 | Package manager | **pnpm 11.21.0**, pinned via `packageManager` — do not use npm           |
-| Nx              | 23.1.1 (exact; `@nx/devkit` is pinned to match in `pnpm-workspace.yaml`) |
+| Nx              | 23.2.1 (exact; `@nx/devkit` is pinned to match in `pnpm-workspace.yaml`) |
 | TypeScript      | 6.0.3                                                                    |
 | Tests           | **Vitest** everywhere — one runner for every project                     |
 | Numbers         | **decimal.js** for every quantity, price and CHF amount — see Numbers    |
@@ -52,7 +52,7 @@ Electron for the desktop app (**Electron 42** + electron-builder, see Desktop).
 
 |         |                                                                                       |
 | ------- | ------------------------------------------------------------------------------------- |
-| Angular | 22.1, **standalone + zoneless**, esbuild (`@angular/build`)                           |
+| Angular | 22.2, **standalone + zoneless**, esbuild (`@angular/build`)                           |
 | UI      | **spartan.ng** — `@spartan-ng/brain` + generated "helm" components in `libs/ui`       |
 | Styling | **Tailwind CSS v4** (CSS-first, `.postcssrc.json`) + token values in `src/styles.css` |
 | Forms   | Typed reactive forms, validated with **Zod** (messages are i18n keys)                 |
