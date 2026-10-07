@@ -83,6 +83,9 @@
       </p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">
+      @if (state.error(); as error) {
+      <lk-ai-error-panel [error]="error" />
+      }
       <div class="flex flex-col gap-2">
         <p class="text-sm font-medium">
           {{ 'ai.consent.payload' | translate }}
@@ -115,8 +118,6 @@
           {{ 'ai.working' | translate }}
         </p>
       </div>
-      } @if (state.error(); as error) {
-      <lk-ai-error-panel [error]="error" [collapsible]="true" />
       }
     </div>
     <hlm-dialog-footer>
@@ -259,6 +260,9 @@
       <p hlmDialogDescription>{{ 'ai.statement.reviewBody' | translate }}</p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">
+      @if (state.error(); as error) {
+      <lk-ai-error-panel [error]="error" />
+      }
       <p class="text-muted-foreground text-xs">
         {{ 'ai.meta' | translate: { model: statement.model, rounds:
         statement.rounds } }} @if (state.usage(); as usage) { {{ 'ai.usage' |
@@ -377,8 +381,6 @@
         </div>
         <lk-paginator [pager]="holdingsPager" />
       </div>
-      } @if (state.error(); as error) {
-      <lk-ai-error-panel [error]="error" [collapsible]="true" />
       }
     </div>
     <hlm-dialog-footer>

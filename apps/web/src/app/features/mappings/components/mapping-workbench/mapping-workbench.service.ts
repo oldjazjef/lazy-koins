@@ -1,3 +1,5 @@
+import type { AiErrorInfo } from '../../../../shared/ai/ai-error-details';
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import {
   HttpClient,
   HttpErrorResponse,
@@ -27,7 +29,6 @@ import {
   type SpecIssue,
 } from '../../../../core/api/api.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
-import { aiErrorKey } from '../../../../shared/ai/ai-error-key';
 import { readablePayload } from '../../../files/components/ai-assist/ai-assist.state';
 import { parseSpecText } from '../../../files/components/mapping-editor';
 import {
@@ -70,6 +71,7 @@ export class MappingWorkbenchService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
+  private readonly aiErrors = inject(AiErrorNotifier);
 
   /** Debounce of the live preview while typing (ms). */
   previewDelay = 600;
@@ -159,6 +161,8 @@ ull when editing a stored mapping (never replaced without asking).
   // --- "Mit AI erstellen" from the sample ---
 
   readonly aiStep = signal<SampleAiStep>('closed');
+  /** The last AI failure, shown at the top of the AI dialog (with the provider's details). */
+  readonly aiError = signal<AiErrorInfo | null>(null);
   readonly aiNotReadyReason = signal<'disabled' | 'notConfigured'>('disabled');
   readonly aiRequest = signal<AiRequestPreview | null>(null);
   readonly aiPayloadText = computed(() => {
@@ -360,7 +364,7 @@ ull when editing a stored mapping (never replaced without asking).
       this.aiRequest.set(request);
       this.aiStep.set('consent');
     } catch (error) {
-      this.notifications.error(aiErrorKey(error));
+      this.aiErrors.notify(error);
       this.aiStep.set('closed');
     }
   }
@@ -370,6 +374,7 @@ ull when editing a stored mapping (never replaced without asking).
     const sample = this.sample();
     if (!sample || !this.canSendAi()) return;
     this.aiStep.set('working');
+    this.aiError.set(null);
     const form = this.form(sample);
     form.append('consent', String(this.consentChecked()));
     try {
@@ -383,7 +388,7 @@ ull when editing a stored mapping (never replaced without asking).
       this.tab.set('preview');
       void this.refreshPreview();
     } catch (error) {
-      this.notifications.error(aiErrorKey(error));
+      this.aiError.set(this.aiErrors.notify(error));
       this.aiStep.set('consent');
     }
   }

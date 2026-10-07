@@ -13,13 +13,14 @@ import { HlmButtonImports } from '@lazykoins/ui/button';
 /**
  * The page's single `<h1>`, with a back button on detail pages and an optional subtitle. Actions
  * (a "Neues Projekt" button) are projected into the right-hand slot. Pass translated text.
+ * It stays at the top while the page content scrolls (user rule, `lk-page-header` in styles.css).
  */
 @Component({
   selector: 'lk-page-header',
   imports: [NgIcon, TranslatePipe, ...HlmButtonImports],
   providers: [provideIcons({ lucideChevronLeft })],
   template: `
-    <header class="flex flex-wrap items-center gap-3 pb-6">
+    <header class="lk-page-header flex flex-wrap items-center gap-3">
       @if (back()) {
         <button
           hlmBtn

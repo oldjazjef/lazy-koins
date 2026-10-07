@@ -1,3 +1,4 @@
+import { AiErrorDialog } from './shared/ai/ai-error-dialog';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,7 +16,13 @@ import { ThemeService } from './core/theme/theme.service';
 
 @Component({
   selector: 'lk-root',
-  imports: [RouterOutlet, ActivityIndicator, LockScreen, ...HlmToasterImports],
+  imports: [
+    RouterOutlet,
+    ActivityIndicator,
+    LockScreen,
+    AiErrorDialog,
+    ...HlmToasterImports,
+  ],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -447,6 +447,9 @@
       </p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">
+      @if (state.aiError(); as error) {
+      <lk-ai-error-panel [error]="error" />
+      }
       <div class="flex flex-col gap-2">
         <p class="text-sm font-medium">
           {{ 'ai.consent.payload' | translate }}

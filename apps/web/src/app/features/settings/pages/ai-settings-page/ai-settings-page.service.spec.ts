@@ -1,3 +1,5 @@
+import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
+import { aiErrorInfo } from '../../../../shared/ai/ai-error-details';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -32,12 +34,18 @@ const settle = async () => {
 
 async function setup() {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
+  const aiErrors = {
+    notify: vi.fn((error: unknown) => aiErrorInfo(error)),
+    open: vi.fn(),
+    close: vi.fn(),
+  };
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
+      { provide: AiErrorNotifier, useValue: aiErrors },
     ],
   });
   const service = TestBed.inject(AiSettingsPageService);
@@ -45,7 +53,7 @@ async function setup() {
   await settle();
   http.expectOne('/api/ai/settings').flush(settings());
   await settle();
-  return { service, http, notifications };
+  return { service, http, notifications, aiErrors };
 }
 
 describe('AiSettingsPageService', () => {
@@ -83,7 +91,7 @@ describe('AiSettingsPageService', () => {
   });
 
   it('translates a refused address', async () => {
-    const { service, http, notifications } = await setup();
+    const { service, http, notifications, aiErrors } = await setup();
     const saved = service.save({
       enabled: true,
       provider: 'openai_compatible',
@@ -97,7 +105,9 @@ describe('AiSettingsPageService', () => {
         { status: 422, statusText: 'Unprocessable Entity' },
       );
     expect(await saved).toBe(false);
+    // Saving is no provider call: a plain toast, no provider details to show.
     expect(notifications.error).toHaveBeenCalledWith('ai.errors.privateUrl');
+    expect(aiErrors.notify).not.toHaveBeenCalled();
   });
 
   it('removes the key and withdraws the consent through the same save', async () => {
@@ -123,7 +133,7 @@ describe('AiSettingsPageService', () => {
   });
 
   it('tests the saved connection and reports a provider failure', async () => {
-    const { service, http, notifications } = await setup();
+    const { service, http, notifications, aiErrors } = await setup();
     const ok = service.test();
     http.expectOne('/api/ai/settings/test').flush({
       ok: true,
@@ -147,7 +157,11 @@ describe('AiSettingsPageService', () => {
     );
     await failed;
     expect(service.testResult()).toBeNull();
-    expect(notifications.error).toHaveBeenCalledWith('ai.errors.network');
+    expect(aiErrors.notify).toHaveBeenCalledTimes(1);
+    expect(aiErrors.notify.mock.results[0]?.value).toMatchObject({
+      key: 'ai.errors.network',
+    });
+    expect(notifications.error).not.toHaveBeenCalled();
     // The details stay on the page (user rule: "genaue Fehlerinfos").
     expect(service.testError()).toMatchObject({
       key: 'ai.errors.network',

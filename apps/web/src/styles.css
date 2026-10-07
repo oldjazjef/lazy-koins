@@ -209,6 +209,37 @@
     @apply items-start;
   }
 
+  /*
+   * Page header (user rule, 07.10.2026): title, status and page actions never scroll away. It
+   * sticks to the top of the app's scroll area (.lk-scroll-area); the negative margin covers the
+   * main element's top padding so scrolled content never shows above it.
+   */
+  .lk-page-header {
+    @apply bg-background sticky top-0 z-30 -mt-8 mb-6 border-b pt-8 pb-4;
+  }
+
+  /*
+   * Fixed-layout tables: a header never runs into the next column — it is cut with "…" (the full
+   * text stays readable in the column's cells and via the tooltip pattern in cells).
+   */
+  table.table-fixed th {
+    @apply truncate;
+  }
+
+  /*
+   * A wide data table (many fixed columns) inside a narrow container: keep a minimum width and
+   * scroll inside its own container instead of squeezing the flexible column to nothing.
+   */
+  .lk-table-wide {
+    min-width: 44rem;
+  }
+
+  @media (min-width: 64rem) {
+    .lk-table-wide {
+      min-width: 58rem;
+    }
+  }
+
   /* The user menu at the top right. */
   .lk-menu {
     @apply bg-popover text-popover-foreground absolute right-0 z-50 mt-1 flex w-56 flex-col overflow-hidden rounded-md border py-1 shadow-md;
