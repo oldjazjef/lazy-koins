@@ -191,7 +191,10 @@
       <lk-ai-error-panel [error]="error" [collapsible]="true" />
     </div>
     }
-    <form class="flex items-end gap-2" (ngSubmit)="send()">
+    <form
+      class="flex items-end gap-2"
+      (submit)="$event.preventDefault(); send()"
+    >
       <label hlmLabel class="sr-only" for="lk-chat-input"
         >{{ 'chat.input.label' | translate }}</label
       >
@@ -234,7 +237,10 @@
     </hlm-dialog-header>
     <div class="lk-dialog-body">
       @if (confirm() === 'rename') {
-      <form class="flex flex-col gap-2" (ngSubmit)="confirmed()">
+      <form
+        class="flex flex-col gap-2"
+        (submit)="$event.preventDefault(); confirmed()"
+      >
         <label hlmLabel for="lk-chat-title-input"
           >{{ 'chat.rename.label' | translate }}</label
         >
