@@ -74,6 +74,8 @@ interface Seeded {
   readonly projectId: string;
   readonly projectName: string;
   readonly mappingId: string;
+  /** The user's own entry in the public mapping library (F5.15). */
+  readonly libraryId: string;
   readonly fileIds: readonly string[];
   readonly krakenFileId: string;
   readonly walletId: string;
@@ -201,6 +203,13 @@ async function seed(tag: string, address: string): Promise<Seeded> {
   );
   // Same bytes + same fingerprint for both users: B's file is read with B's mapping.
   expect(kraken.mappingId).toBe(mapping.id);
+  // F5.15: published to the public library under a pseudonym (never the profile name).
+  const libraryEntry = await must<{ id: string; authorName: string | null }>(
+    userId,
+    'publish_mapping',
+    { mappingId: mapping.id, pseudonym: `${tag} Pseudonym` },
+  );
+  expect(libraryEntry.authorName).toBe(`${tag} Pseudonym`);
   const bookings = await must<{ id: string }>(userId, 'upload_file', {
     projectId: project.id,
     name: 'buchungen.csv',
@@ -289,6 +298,7 @@ async function seed(tag: string, address: string): Promise<Seeded> {
     projectId: project.id,
     projectName,
     mappingId: mapping.id,
+    libraryId: libraryEntry.id,
     fileIds: [kraken.id, bookings.id],
     krakenFileId: kraken.id,
     walletId: wallet.id,
@@ -329,6 +339,19 @@ async function snapshotOfA(): Promise<unknown> {
     hints: await read('list_hints', p),
     mappings: await read('list_mappings', {}),
     mapping: await read('get_mapping', { mappingId: A.mappingId }),
+    // B may rate A's entry (public) — its content and version must not change.
+    library: await (async () => {
+      const entry = (await read('get_library_mapping', {
+        libraryId: A.libraryId,
+      })) as Record<string, unknown>;
+      return {
+        name: entry['name'],
+        version: entry['version'],
+        authorName: entry['authorName'],
+        spec: entry['spec'],
+        error: entry['error'],
+      };
+    })(),
     wallets: await read('list_wallets', {}),
     projectWallets: await read('list_project_wallets', p),
     rates: await read('list_rates', p),
@@ -468,6 +491,40 @@ const CASES: Record<string, (a: Seeded, b: Seeded) => Attack[]> = {
   ],
   reapply_mapping: (a) => [{ args: { mappingId: a.mappingId } }],
   delete_mapping: (a) => [{ args: { mappingId: a.mappingId } }],
+  // mapping library (F5.15–F5.17): reads are public, writes only for the caller
+  search_library: () => [{ args: {}, expect: 'own' }],
+  // A's entry is public: B reads it — without A's identity (no id, e-mail or profile name).
+  get_library_mapping: (a) => [
+    { args: { libraryId: a.libraryId }, expect: 'own' },
+  ],
+  // Taking = a private copy in B's own mappings; never into A's project or file.
+  take_library_mapping: (a, b) => [
+    { args: { libraryId: a.libraryId }, expect: 'own' },
+    {
+      args: {
+        libraryId: a.libraryId,
+        projectId: a.projectId,
+        fileId: a.krakenFileId,
+      },
+    },
+    {
+      args: {
+        libraryId: a.libraryId,
+        projectId: b.projectId,
+        fileId: a.krakenFileId,
+      },
+    },
+  ],
+  // B's own stars on A's public entry.
+  rate_library_mapping: (a) => [
+    { args: { libraryId: a.libraryId, stars: 4 }, expect: 'own' },
+  ],
+  // B can neither publish A's mapping nor a new version of A's entry.
+  publish_mapping: (a, b) => [
+    { args: { mappingId: a.mappingId } },
+    { args: { mappingId: b.mappingId, libraryId: a.libraryId } },
+  ],
+  delete_library_mapping: (a) => [{ args: { libraryId: a.libraryId } }],
   // rates
   list_rates: (a) => [
     { args: { projectId: a.projectId } },
@@ -992,5 +1049,87 @@ describe('MCP end to end with B’s personal access token', () => {
     });
     expect(refused.status).toBe(403);
     expect((await settings.find(A.userId))?.mcpEnabled).toBe(true);
+  });
+});
+
+describe('HTTP: the mapping library (F5.15–F5.17, web only)', () => {
+  const aIdentity = () => [A.userId, A.email, 'Alice Isolation'];
+
+  it("shows A's entry to B by pseudonym only; B can neither delete nor republish it", async () => {
+    const list = await http('GET', '/library', dev(B));
+    expect(list.status).toBe(200);
+    expect(JSON.stringify(list.body)).toContain(A.libraryId);
+    expect(containsAny(list.body, aIdentity())).toEqual([]);
+    const one = await http('GET', `/library/${A.libraryId}`, dev(B));
+    expect(one.status).toBe(200);
+    expect(one.body).toMatchObject({
+      mine: false,
+      authorName: 'Alice Pseudonym',
+    });
+    expect(containsAny(one.body, aIdentity())).toEqual([]);
+
+    expect(
+      (await http('DELETE', `/library/${A.libraryId}`, dev(B))).status,
+    ).toBe(404);
+    expect(
+      (
+        await http('POST', '/library', dev(B), {
+          spec: KRAKEN_SPEC,
+          libraryId: A.libraryId,
+          confirmed: true,
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await http('POST', '/library/review', dev(B), {
+          mappingId: A.mappingId,
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (await http('GET', `/projects/${A.projectId}/library-matches`, dev(B)))
+        .status,
+    ).toBe(404);
+    // Authors cannot rate their own entry; others can.
+    const own = await http('PUT', `/library/${A.libraryId}/rating`, dev(A), {
+      stars: 5,
+    });
+    expect(own.status).toBe(409);
+    expect(own.body).toMatchObject({ code: 'ownEntry' });
+    expect(
+      (
+        await http('PUT', `/library/${B.libraryId}/rating`, dev(A), {
+          stars: 5,
+        })
+      ).status,
+    ).toBe(200);
+    const still = await http('GET', `/library/${A.libraryId}`, dev(A));
+    expect(still.body).toMatchObject({ mine: true, version: 1 });
+  });
+
+  it("A deleting the entry leaves B's private copy working", async () => {
+    const taken = await http(
+      'POST',
+      `/library/${A.libraryId}/take`,
+      dev(B),
+      {},
+    );
+    expect(taken.status).toBe(201);
+    const copyId = (taken.body as { mapping: { id: string } }).mapping.id;
+    expect(
+      (await http('DELETE', `/library/${A.libraryId}`, dev(A))).status,
+    ).toBe(204);
+    expect((await http('GET', `/library/${A.libraryId}`, dev(B))).status).toBe(
+      404,
+    );
+    const copy = await http('GET', `/mappings/${copyId}`, dev(B));
+    expect(copy.status).toBe(200);
+    expect(copy.body).toMatchObject({
+      origin: 'library',
+      library: { id: A.libraryId },
+    });
+    // The copy is B's: A cannot see it.
+    expect((await http('GET', `/mappings/${copyId}`, dev(A))).status).toBe(404);
   });
 });

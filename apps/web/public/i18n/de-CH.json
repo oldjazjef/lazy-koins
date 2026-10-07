@@ -38,7 +38,8 @@
     "userMenu": "Benutzermenü",
     "wallets": "Wallets",
     "dashboard": "Dashboard",
-    "chat": "Assistent"
+    "chat": "Assistent",
+    "library": "Bibliothek"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -379,7 +380,8 @@
     "origin": {
       "ai": "AI",
       "manual": "manuell",
-      "copied": "hochgeladen"
+      "copied": "hochgeladen",
+      "library": "aus Bibliothek"
     },
     "actions": {
       "download": "Als JSON herunterladen"
@@ -1779,7 +1781,8 @@
       "statementSave": "Bestände aus {{name}} werden geprüft und gespeichert",
       "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
       "statementReady": "Kontoauszug {{name}} ist ausgelesen"
-    }
+    },
+    "libraryTake": "Mapping aus der Bibliothek übernehmen"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2336,14 +2339,26 @@
         "displayName": "Name",
         "advisorName": "Treuhänder",
         "advisorEmail": "E-Mail Treuhänder",
-        "onlineRates": "Kursabfragen aus dem Internet"
+        "onlineRates": "Kursabfragen aus dem Internet",
+        "libraryEntry": "Bibliothek",
+        "stars": "Sterne",
+        "privacyFindings": "Persönlich wirkende Werte",
+        "pseudonym": "Anzeigename"
       },
       "value": {
         "noPrice": "kein Kurs",
         "override": "{{price}} {{unit}} (Override)",
         "yes": "ja",
-        "no": "nein"
-      }
+        "no": "nein",
+        "anonymous": "Anonym",
+        "findingsRemoved": "{{count}} entfernt",
+        "findingsKept": "{{count}} bleiben drin"
+      },
+      "publishMapping": "Mapping «{{name}}» in der Bibliothek veröffentlichen",
+      "publishMappingVersion": "Version {{version}} von «{{name}}» in der Bibliothek veröffentlichen",
+      "takeLibraryMapping": "Mapping «{{name}}» (Version {{version}}) aus der Bibliothek übernehmen",
+      "rateLibraryMapping": "Mapping «{{name}}» bewerten",
+      "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen"
     },
     "event": {
       "executed": "Ausgeführt: {{title}}",
@@ -2520,7 +2535,12 @@
       "evidenceNotPdf": "Der Beleg muss ein PDF des Projekts sein.",
       "encryptionUnavailable": "Schlüssel können auf diesem Server nicht gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
       "confirmationRequired": "Bitte zuerst bestätigen.",
-      "consentRequired": "Deine Zustimmung fehlt noch."
+      "consentRequired": "Deine Zustimmung fehlt noch.",
+      "alreadyPublished": "Du hast genau dieses Mapping schon veröffentlicht.",
+      "ownEntry": "Eigene Mappings kannst du nicht bewerten.",
+      "publishLimit": "Heute hast du schon genug Mappings veröffentlicht – versuch es morgen wieder.",
+      "privacyFindings": "Das Mapping enthält Werte, die persönlich aussehen – entferne oder bestätige sie.",
+      "specTooLarge": "Das Mapping ist zu gross für die Bibliothek."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -2534,6 +2554,133 @@
       "locked": "Die App ist gesperrt.",
       "rateLimited": "Zu viele Anfragen – warte einen Moment.",
       "server": "Serverfehler – versuche es später nochmals."
+    }
+  },
+  "library": {
+    "title": "Mapping-Bibliothek",
+    "subtitle": "Mappings aller Benutzer – übernehmen, bewerten, eigene veröffentlichen",
+    "loadFailed": "Die Bibliothek konnte nicht geladen werden.",
+    "empty": "Noch keine Mappings in der Bibliothek. Veröffentliche das erste!",
+    "noMatch": "Kein Mapping passt zur Suche.",
+    "search": "Suchen",
+    "searchPlaceholder": "Name, Plattform oder Beschreibung",
+    "allPlatforms": "Alle Plattformen",
+    "sort": "Sortieren",
+    "sortBy": {
+      "rating": "Beste Bewertung",
+      "usage": "Am meisten übernommen",
+      "newest": "Neueste",
+      "name": "Name"
+    },
+    "mine": "meins",
+    "publishedAt": "veröffentlicht am {{date}}",
+    "anonymous": "Anonym",
+    "ratingCount": "({{count}})",
+    "ratingSummary": "{{average}} von 5 · {{count}} Bewertungen",
+    "versionShort": "v{{version}}",
+    "usage": "{{count}}× übernommen",
+    "fields": {
+      "name": "Name",
+      "platform": "Plattform",
+      "rating": "Bewertung",
+      "usage": "Übernommen",
+      "author": "Von",
+      "version": "Version",
+      "description": "Beschreibung",
+      "published": "Veröffentlicht",
+      "updated": "Zuletzt geändert"
+    },
+    "actions": {
+      "view": "Ansehen",
+      "take": "Übernehmen",
+      "rate": "Bewerten",
+      "newVersion": "Neue Version",
+      "delete": "Aus Bibliothek löschen"
+    },
+    "take": {
+      "failed": "Übernehmen fehlgeschlagen",
+      "done": "Als eigenes Mapping übernommen",
+      "doneAssigned": "Übernommen und der Datei zugeordnet",
+      "existing": "Diese Version hast du schon – dein Mapping bleibt, wie es ist"
+    },
+    "rate": {
+      "failed": "Bewerten fehlgeschlagen",
+      "done": "Danke für deine Bewertung",
+      "removed": "Bewertung entfernt",
+      "title": "«{{name}}» bewerten",
+      "body": "Wie gut liest dieses Mapping deine Dateien? 1 bis 5 Sterne – du kannst es jederzeit ändern.",
+      "remove": "Bewertung entfernen"
+    },
+    "delete": {
+      "done": "Aus der Bibliothek entfernt",
+      "failed": "Entfernen fehlgeschlagen",
+      "title": "Aus der Bibliothek löschen?",
+      "body": "«{{name}}» verschwindet aus der Bibliothek. Wer es übernommen hat, behält seine Kopie – deren Projekte bleiben unverändert."
+    },
+    "rating": {
+      "readable": "{{average}} von 5 Sternen",
+      "yours": "Deine Bewertung",
+      "stars": "{{count}} Sterne",
+      "ownEntry": "Das ist dein eigenes Mapping – bewerten können es die anderen."
+    },
+    "detail": {
+      "jsonTitle": "Mapping (JSON)",
+      "takeHint": "Übernehmen legt eine eigene Kopie in deinen Mappings an. Spätere Versionen oder das Löschen hier ändern deine Kopie nicht.",
+      "factsTitle": "Angaben",
+      "fingerprint": "Erkennt Dateien mit den Spalten",
+      "notFound": "Dieses Mapping gibt es in der Bibliothek nicht (mehr)."
+    },
+    "matches": {
+      "title": "In der Bibliothek gefunden: {{count}} passende Mappings",
+      "body": "Andere haben schon Mappings für diesen Dateiaufbau veröffentlicht. «Übernehmen» legt eine eigene Kopie an und liest die Datei damit – ohne AI."
+    },
+    "origin": {
+      "label": "Bibliothek",
+      "version": "übernommen, Version {{version}}",
+      "newer": "Neue Version verfügbar: Version {{version}}",
+      "takeNewer": "Neue Version übernehmen",
+      "gone": "Version {{version}} – nicht mehr in der Bibliothek, deine Kopie gilt weiter"
+    },
+    "publish": {
+      "button": "Mapping veröffentlichen",
+      "fromMapping": "In Bibliothek veröffentlichen",
+      "title": "In der Bibliothek veröffentlichen",
+      "titleVersion": "Neue Version veröffentlichen",
+      "description": "Prüfe genau, was öffentlich wird: alle Benutzer dieses Servers sehen das JSON unten. Deine E-Mail und dein Name werden nie angezeigt.",
+      "sourceMapping": "Eines deiner Mappings",
+      "choose": "Mapping wählen …",
+      "orFile": "oder eine Datei",
+      "invalid": "Die Datei ist kein gültiges Mapping:",
+      "notFound": "Dieses Mapping oder dieser Bibliothekseintrag gehört nicht dir.",
+      "reviewFailed": "Die Prüfung ist fehlgeschlagen.",
+      "publicNote": "Andere können es ansehen, übernehmen (als eigene Kopie) und bewerten. Nur du kannst es wieder löschen.",
+      "asNewVersion": "Als neue Version {{version}} deines bestehenden Eintrags veröffentlichen",
+      "authorName": "Anzeigename (öffentlich)",
+      "authorHint": "Leer = «Anonym». Nimm keinen echten Namen, wenn du nicht willst.",
+      "json": "Wird so veröffentlicht ({{size}} Bytes):",
+      "tooLarge": "Zu gross – höchstens {{max}} Bytes.",
+      "confirm": "Ich habe das JSON geprüft und will es so veröffentlichen.",
+      "keepFindings": "{{count}} Hinweise bewusst drin lassen (keine persönlichen Daten).",
+      "submit": "Veröffentlichen",
+      "done": "In der Bibliothek veröffentlicht",
+      "doneVersion": "Version {{version}} veröffentlicht",
+      "open": "Anzeigen",
+      "failed": "Veröffentlichen fehlgeschlagen"
+    },
+    "findings": {
+      "title": "Datenschutz-Prüfung",
+      "none": "Nichts gefunden, das nach Konto-Nummern, Adressen, E-Mails, IBANs oder Namen aussieht.",
+      "intro": "Diese Werte sehen persönlich aus. Angehakte werden vor dem Veröffentlichen entfernt:",
+      "removeHint": "Wird entfernt, solange angehakt.",
+      "editHint": "Lässt sich hier nicht entfernen – ändere es im Mapping selbst.",
+      "kind": {
+        "email": "E-Mail",
+        "iban": "IBAN",
+        "walletAddress": "Wallet-Adresse",
+        "accountId": "Konto-/Kundennummer",
+        "personName": "Name",
+        "secret": "Geheimer Schlüssel"
+      }
     }
   }
 }

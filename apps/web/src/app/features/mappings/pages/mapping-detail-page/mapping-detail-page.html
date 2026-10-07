@@ -7,6 +7,17 @@
   <span hlmBadge variant="outline"
     >{{ 'mappings.origin.' + mapping.origin | translate }}</span
   >
+  @if (service.webApp) {
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="publish.start({ mappingId: mapping.id })"
+  >
+    <ng-icon name="lucideBookUp" size="16" aria-hidden="true" />
+    {{ 'library.publish.fromMapping' | translate }}
+  </button>
+  }
   <button hlmBtn variant="outline" type="button" (click)="service.download()">
     <ng-icon name="lucideDownload" size="16" aria-hidden="true" />
     {{ 'mappings.actions.download' | translate }}
@@ -86,6 +97,36 @@
         <dd>{{ mapping.platform }}</dd>
         <dt>{{ 'mappings.fields.origin' | translate }}</dt>
         <dd>{{ 'mappings.origin.' + mapping.origin | translate }}</dd>
+        @if (mapping.library; as source) {
+        <dt>{{ 'library.origin.label' | translate }}</dt>
+        <dd class="flex flex-col gap-1">
+          @if (service.libraryEntry.hasValue()) {
+          <a class="hover:underline" [routerLink]="['/app/library', source.id]"
+            >{{ 'library.origin.version' | translate: { version: source.version
+            } }}</a
+          >
+          @if (service.newerVersion(); as newer) {
+          <span class="text-sm"
+            >{{ 'library.origin.newer' | translate: { version: newer } }}</span
+          >
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            class="self-start"
+            (click)="service.takeNewerVersion()"
+          >
+            {{ 'library.origin.takeNewer' | translate }}
+          </button>
+          } } @else if (service.libraryEntry.error()) {
+          <span class="text-muted-foreground"
+            >{{ 'library.origin.gone' | translate: { version: source.version }
+            }}</span
+          >
+          }
+        </dd>
+        }
         <dt>{{ 'mappings.list.version' | translate }}</dt>
         <dd class="tabular-nums">{{ mapping.version }}</dd>
         <dt>{{ 'mappings.detail.fingerprint' | translate }}</dt>
@@ -174,6 +215,8 @@
 </section>
 
 <!-- Delete -->
+<lk-library-publish-dialog />
+
 <hlm-dialog [state]="deleteState()" (stateChanged)="deleteChanged($event)">
   <hlm-dialog-content *hlmDialogPortal>
     <hlm-dialog-header>

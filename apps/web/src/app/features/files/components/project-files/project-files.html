@@ -101,6 +101,13 @@
       </button>
     </div>
 
+    <!-- F5.16: matching mappings from the library, before the AI option (web only) -->
+    <lk-library-matches
+      [projectId]="projectId()"
+      [refresh]="service.overview.value()"
+      [closed]="closed()"
+      (taken)="libraryTaken()"
+    />
     @if (service.openHints() > 0) {
     <!-- F5.8: the details live in the Hinweise tab -->
     <button
@@ -347,7 +354,16 @@
       <p hlmDialogDescription>{{ 'files.assign.body' | translate }}</p>
     </hlm-dialog-header>
     <div class="lk-dialog-body">
-      @if (current.file.kind !== 'pdf') {
+      @if (current.file.kind !== 'pdf') { @if (current.file.status ===
+      'needs_mapping') {
+      <lk-library-matches
+        [projectId]="projectId()"
+        [fileId]="current.file.id"
+        [refresh]="service.overview.value()"
+        [closed]="closed()"
+        (taken)="libraryTaken()"
+      />
+      }
       <div class="flex flex-wrap items-end gap-2">
         <div class="flex min-w-64 flex-1 flex-col gap-2">
           <label class="text-sm font-medium" for="assign-mapping"

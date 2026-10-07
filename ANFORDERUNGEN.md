@@ -134,6 +134,43 @@ Exporte werden über das Standardformat oder über ein **Mapping (JSON)** eingel
   Zustimmung; es wird angezeigt, was gesendet wird (Kopfzeile + wenige Beispielzeilen).
   AI-Nutzung ist ein-/ausschaltbar; ohne AI funktioniert alles mit Vorlage und Mappings.
 
+### Mapping-Bibliothek (nur Web-App)
+
+Wunsch 08.10.2026: „Ich möchte, dass es eine globale Datenbank gibt (nur Web-Version), die
+Mappings hält. Mappings können geratet werden. Man kann seine eigenen Mappings dort raufladen. Man
+kann nur sein eigenes Mapping von dort löschen. Wenn jemand dieses Mapping in sein Projekt
+verwendet, wird eine Kopie davon erstellt, damit beim globalen Löschen die User dieses Mapping
+weiter verwenden können.“ Die Bibliothek gibt es nur in der Web-App (alle Benutzer eines Servers
+teilen sie); in der Desktop-App fehlt sie ganz (kein Menüeintrag, die Schnittstelle antwortet 404).
+
+- **F5.15 Veröffentlichen und Löschen**: Ein eigenes Mapping (Mapping-Seite „In Bibliothek
+  veröffentlichen“) oder eine hochgeladene `.json` lässt sich in der Bibliothek veröffentlichen –
+  erst nach einem **Prüfschritt**: angezeigt wird genau das JSON, das öffentlich wird; eine
+  Datenschutz-Prüfung warnt vor Werten, die nach Konto-/Kundennummern, Wallet-Adressen, E-Mails,
+  IBANs oder Namen aussehen (Filterwerte, Asset-Aliase, Konstanten, Dateinamen-Muster,
+  Beschreibung) und bietet an, sie zu entfernen; veröffentlicht wird nur mit ausdrücklicher
+  Bestätigung (verbleibende Hinweise müssen bewusst beibehalten werden). Der Autor erscheint nur
+  unter einem selbst gewählten **Anzeigenamen** oder als „Anonym“ – nie mit E-Mail oder Namen
+  aus dem Profil. Eine neue Version des eigenen Eintrags erhöht dessen Versionsnummer; wer eine
+  ältere übernommen hat, behält seine Kopie (mit Hinweis „Neue Version verfügbar“). **Nur der
+  Autor** kann seinen Eintrag löschen (für alle anderen gibt es ihn dann nicht – 404); gelöscht
+  wird weich (für die Nachvollziehbarkeit), die Kopien bleiben unberührt. Schutz vor Missbrauch:
+  Grössenlimit des JSON, Ratenlimits fürs Veröffentlichen und Bewerten, höchstens 10 neue
+  Einträge pro Benutzer und Tag.
+- **F5.16 Übernehmen = Kopie**: „Übernehmen“ legt immer eine **eigene Kopie** in den Mappings des
+  Benutzers an (Herkunft `library:<Eintrag>@<Version>`); Projekte verwenden nur diese Kopie.
+  Spätere Versionen oder das Löschen des Eintrags ändern sie nicht; die Kopie lässt sich wie jedes
+  eigene Mapping bearbeiten und löschen. Braucht eine hochgeladene Datei ein Mapping und passen
+  Bibliothekseinträge zu ihrem Fingerabdruck, zeigt der Dateibereich „In der Bibliothek gefunden:
+  N passende Mappings“ mit „Übernehmen“ (Kopie + der Datei zuordnen) – vor dem AI-Angebot.
+- **F5.17 Bibliothek und Bewertung**: Seite „Bibliothek“ im Hauptmenü (nur Web): suchen (Name,
+  Plattform, Beschreibung), nach Plattform filtern, sortieren (Bewertung, Übernahmen, neueste,
+  Name), Detailseite mit JSON, Version, Angaben und „Übernehmen“. Jeder Benutzer kann einen
+  fremden Eintrag mit 1–5 Sternen bewerten (eine Bewertung pro Benutzer, änderbar, entfernbar;
+  eigene Einträge nicht); angezeigt werden Durchschnitt und Anzahl. Chat und MCP haben dieselben
+  Funktionen als Werkzeuge (suchen, ansehen, übernehmen, bewerten, eigenes veröffentlichen,
+  eigenes löschen) – strikt auf den angemeldeten Benutzer beschränkt (F11.16).
+
 ## 6. Wallets
 
 - **F6.1** Wallet-Adressen erfassen mit Bezeichnung und Netzwerken.
@@ -273,7 +310,8 @@ Alles Projektübergreifende lebt an drei Orten: **Mappings** im Hauptmenü, **Pr
   zuletzt geändert), suchen, ansehen (JSON), bearbeiten mit Vorschau, löschen (mit Bestätigung
   und Hinweis auf betroffene Dateien), herunter- und hochladen. Je Mapping sichtbar, **welche
   Projekte und Dateien es nutzen** (mit Link dorthin). Kein Benutzer sieht die Mappings eines
-  anderen.
+  anderen – ausser was jemand selbst in der Mapping-Bibliothek veröffentlicht (F5.15, nur Web);
+  eine dort übernommene Kopie ist ein eigenes Mapping (Herkunft „aus Bibliothek“).
 - **F11.0a Profil** – die Person und das Konto: persönliche Angaben (F11.1), Sprache (F11.2),
   Zahlen- und Datumsformat; in der Web-App zusätzlich E-Mail/Passwort ändern, Abmelden, alle
   Daten herunterladen (F10.9 / F2.3) und Konto löschen (F2.2). Desktop: ohne Konto-Teil.

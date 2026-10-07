@@ -329,7 +329,7 @@ export interface MappingPreview {
 
 // --- Mappings — mirrors apps/api `mappings/dto/mapping.dto.ts` ---
 
-export const MAPPING_ORIGINS = ['ai', 'manual', 'copied'] as const;
+export const MAPPING_ORIGINS = ['ai', 'manual', 'copied', 'library'] as const;
 export type MappingOrigin = (typeof MAPPING_ORIGINS)[number];
 
 export interface Mapping {
@@ -339,9 +339,84 @@ export interface Mapping {
   fingerprint: string;
   version: number;
   origin: MappingOrigin;
+  /** Origin `library` (F5.16): the entry and version this private copy was taken from. */
+  library?: { id: string; version: number } | null;
   spec: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+}
+
+// --- Mapping library (F5.15–F5.17, web only) — mirrors apps/api `library/dto/library.dto.ts` ---
+
+export const LIBRARY_SORTS = ['rating', 'usage', 'newest', 'name'] as const;
+export type LibrarySort = (typeof LIBRARY_SORTS)[number];
+
+/** A published mapping; the author only as a pseudonym (`null` = anonymous) and `mine`. */
+export interface LibraryEntry {
+  id: string;
+  name: string;
+  platform: string;
+  description: string | null;
+  fingerprint: string;
+  version: number;
+  authorName: string | null;
+  ratingAverage: number | null;
+  ratingCount: number;
+  usageCount: number;
+  publishedAt: string;
+  updatedAt: string;
+  mine: boolean;
+  myRating: number | null;
+}
+
+export interface LibraryEntryDetail extends LibraryEntry {
+  spec: Record<string, unknown>;
+}
+
+export const PRIVACY_FINDING_KINDS = [
+  'email',
+  'iban',
+  'walletAddress',
+  'accountId',
+  'personName',
+  'secret',
+] as const;
+export type PrivacyFindingKind = (typeof PRIVACY_FINDING_KINDS)[number];
+
+export interface PrivacyFinding {
+  path: string;
+  kind: PrivacyFindingKind;
+  value: string;
+  removable: boolean;
+}
+
+/** `POST /api/library/review` — exactly what would become public. */
+export interface PublishReview {
+  spec: Record<string, unknown>;
+  name: string;
+  platform: string;
+  fingerprint: string;
+  size: number;
+  maxSize: number;
+  findings: PrivacyFinding[];
+  target: { id: string; nextVersion: number } | null;
+  existing: { id: string; version: number } | null;
+  lastAuthorName: string | null;
+}
+
+/** `POST /api/library/:id/take` — my private copy (and the file it now reads). */
+export interface TakenLibraryMapping {
+  mapping: Mapping;
+  created: boolean;
+  projectFileId: string | null;
+  fileStatus: ProjectFileStatus | null;
+}
+
+/** `GET /api/projects/:id/library-matches` — per file that needs a mapping. */
+export interface LibraryFileMatches {
+  projectFileId: string;
+  displayName: string;
+  matches: LibraryEntry[];
 }
 
 /** `GET /api/mappings` — every mapping of mine, with how many files use it (F11.0). */

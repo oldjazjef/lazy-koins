@@ -47,6 +47,11 @@ export class UpdateMappingDto {
   spec!: Record<string, unknown>;
 }
 
+export class LibraryRefDto {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty() version!: number;
+}
+
 export class MappingResponseDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
   @ApiProperty() name!: string;
@@ -55,6 +60,13 @@ export class MappingResponseDto {
   fingerprint!: string;
   @ApiProperty() version!: number;
   @ApiProperty({ enum: MAPPING_ORIGINS }) origin!: MappingOrigin;
+  @ApiProperty({
+    type: LibraryRefDto,
+    nullable: true,
+    description:
+      'Origin library: the entry and version this copy was taken from (library:<id>@<version>)',
+  })
+  library!: LibraryRefDto | null;
   @ApiProperty({ type: 'object', additionalProperties: true })
   spec!: Record<string, unknown>;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
@@ -68,6 +80,7 @@ export class MappingResponseDto {
       fingerprint: mapping.fingerprint,
       version: mapping.version,
       origin: mapping.origin,
+      library: mapping.library ? { ...mapping.library } : null,
       spec: mapping.spec as unknown as Record<string, unknown>,
       createdAt: mapping.createdAt,
       updatedAt: mapping.updatedAt,

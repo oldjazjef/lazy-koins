@@ -52,6 +52,7 @@ import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
 import { TakeOverFiles } from '../take-over-files';
+import { LibraryMatches } from '../../../library/components/library-matches';
 import { ProjectFilesService } from './project-files.service';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import { Truncate } from '../../../../shared/components/truncate';
@@ -76,6 +77,7 @@ type Dialog =
   selector: 'lk-project-files',
   imports: [
     TakeOverFiles,
+    LibraryMatches,
     LkDatePipe,
     NumberPipe,
     UpperCasePipe,
@@ -319,6 +321,12 @@ export class ProjectFiles implements OnDestroy {
     this.dialog.set(null);
     const assignment = mode === 'mapping' ? { mode, mappingId } : { mode };
     void this.service.assign(file, assignment).catch(() => undefined);
+  }
+
+  /** F5.16: a library mapping was copied and assigned to a file ("Aus Bibliothek übernehmen"). */
+  protected libraryTaken(): void {
+    this.dialog.set(null);
+    this.service.reload();
   }
 
   protected async newMappingFor(file: ProjectFile): Promise<void> {

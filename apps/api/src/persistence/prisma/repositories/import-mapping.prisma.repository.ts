@@ -30,6 +30,9 @@ function toMapping(row: ImportMappingRow): ImportMapping {
     fingerprint: row.fingerprint,
     version: row.version,
     origin: row.origin as MappingOrigin,
+    ...(row.libraryId !== null && row.libraryVersion !== null
+      ? { library: { id: row.libraryId, version: row.libraryVersion } }
+      : {}),
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt),
   };
@@ -43,6 +46,10 @@ function columns(input: SaveMappingInput) {
     fingerprint: mappingFingerprint(input.spec),
     version: MAPPING_VERSION,
     origin: input.origin,
+    // An update without a reference keeps the stored one (an edited copy still names its source).
+    ...(input.library !== undefined
+      ? { libraryId: input.library.id, libraryVersion: input.library.version }
+      : {}),
   };
 }
 
@@ -63,6 +70,17 @@ export class ImportMappingPrismaRepository extends ImportMappingRepositoryPort {
   async findById(id: string): Promise<ImportMapping | undefined> {
     const row = await this.prisma.importMapping.findUnique({ where: { id } });
     return row ? toMapping(row) : undefined;
+  }
+
+  async findByLibrary(
+    ownerId: string,
+    libraryId: string,
+  ): Promise<ImportMapping[]> {
+    const rows = await this.prisma.importMapping.findMany({
+      where: { ownerId, libraryId },
+      orderBy: [{ libraryVersion: 'desc' }, { id: 'asc' }],
+    });
+    return rows.map(toMapping);
   }
 
   async create(

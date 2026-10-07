@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { summarizeArgs } from '../domain/args-summary';
 import { TOOL_AREAS, TOOL_EFFECTS } from '../domain/tool';
+import type { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { LibraryRuntime } from '../../library/application/library-runtime';
+import { LibraryService } from '../../library/library.service';
 import { PLANTED_SECRETS, toolSetup } from '../testing/tool-fixture';
+import { ToolRegistry } from './tool-registry';
 
 const ALL_OPEN = { areas: [...TOOL_AREAS], allowWrite: true };
 const READ_ONLY = { areas: [...TOOL_AREAS], allowWrite: false };
@@ -24,6 +28,29 @@ describe('tool registry (F11.14, F11.16)', () => {
       expect(output['type']).toBe('object');
       expect(input['$schema']).toBeUndefined();
     }
+  });
+
+  it('registers the mapping-library tools only where the library exists (web, F5.15)', async () => {
+    const { registry, services, bus } = await toolSetup();
+    const LIBRARY = [
+      'search_library',
+      'get_library_mapping',
+      'take_library_mapping',
+      'rate_library_mapping',
+      'publish_mapping',
+      'delete_library_mapping',
+    ];
+    for (const name of LIBRARY) expect(registry.get(name)).toBeDefined();
+    expect(registry.get('delete_library_mapping')?.effect).toBe('destructive');
+    const desktop = ToolRegistry.over({
+      ...services,
+      library: new LibraryService(
+        bus as unknown as CommandBus,
+        bus as unknown as QueryBus,
+        new LibraryRuntime(false),
+      ),
+    });
+    for (const name of LIBRARY) expect(desktop.get(name)).toBeUndefined();
   });
 
   it('marks reading tools readOnly and changing tools write/destructive', async () => {

@@ -37,7 +37,7 @@ import { NotificationBell } from '../notification-centre/notification-bell';
 import { NotificationCentreService } from '../notification-centre/notification-centre.service';
 import { ThemeService } from '../theme/theme.service';
 import { AppVersionService } from '../version/app-version.service';
-import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
+import { NAV_ICONS, navItemsFor, USER_MENU_ITEMS } from './nav-config';
 
 /**
  * The signed-in frame, desktop first: a header with the app name, the main navigation, the theme
@@ -72,7 +72,8 @@ import { NAV_ICONS, NAV_ITEMS, USER_MENU_ITEMS } from './nav-config';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppShell {
-  protected readonly items = NAV_ITEMS;
+  /** F5.15: the mapping library is web only (`hasAccount` = not the desktop). */
+  protected readonly items = navItemsFor(inject(AuthService).hasAccount);
   protected readonly userItems = USER_MENU_ITEMS;
   protected readonly menuOpen = signal(false);
   private readonly host = inject(ElementRef<HTMLElement>);

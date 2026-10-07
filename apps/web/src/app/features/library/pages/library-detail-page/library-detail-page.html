@@ -1,0 +1,156 @@
+@if (service.entry.hasValue()) { @let entry = service.entry.value();
+<lk-page-header [title]="entry.name" [subtitle]="entry.platform" [back]="true">
+  <span hlmBadge variant="outline"
+    >{{ 'library.versionShort' | translate: { version: entry.version } }}</span
+  >
+  @if (entry.mine) {
+  <button hlmBtn variant="outline" type="button" (click)="newVersion()">
+    <ng-icon name="lucideUpload" size="16" aria-hidden="true" />
+    {{ 'library.actions.newVersion' | translate }}
+  </button>
+  <button
+    hlmBtn
+    variant="destructive"
+    type="button"
+    (click)="confirmDelete.set(true)"
+  >
+    <ng-icon name="lucideTrash2" size="16" aria-hidden="true" />
+    {{ 'library.actions.delete' | translate }}
+  </button>
+  }
+  <button
+    hlmBtn
+    type="button"
+    [disabled]="service.busy()"
+    (click)="service.take()"
+  >
+    <ng-icon name="lucideCopyPlus" size="16" aria-hidden="true" />
+    {{ 'library.actions.take' | translate }}
+  </button>
+</lk-page-header>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section hlmCard class="min-w-0 lg:col-span-2">
+    <div hlmCardHeader>
+      <h2 hlmCardTitle>{{ 'library.detail.jsonTitle' | translate }}</h2>
+      <p hlmCardDescription>{{ 'library.detail.takeHint' | translate }}</p>
+    </div>
+    <div hlmCardContent>
+      <pre
+        class="bg-muted max-h-[60vh] overflow-auto rounded p-4 font-mono text-xs"
+      >
+{{ service.json() }}</pre>
+    </div>
+  </section>
+
+  <div class="flex min-w-0 flex-col gap-6">
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle>{{ 'library.detail.factsTitle' | translate }}</h2>
+      </div>
+      <div hlmCardContent>
+        <dl class="lk-facts">
+          <dt>{{ 'library.fields.author' | translate }}</dt>
+          <dd>{{ entry.authorName ?? ('library.anonymous' | translate) }}</dd>
+          <dt>{{ 'library.fields.version' | translate }}</dt>
+          <dd class="tabular-nums">{{ entry.version }}</dd>
+          <dt>{{ 'library.fields.published' | translate }}</dt>
+          <dd>{{ entry.publishedAt | lkDate: 'dateTime' }}</dd>
+          <dt>{{ 'library.fields.updated' | translate }}</dt>
+          <dd>{{ entry.updatedAt | lkDate: 'dateTime' }}</dd>
+          <dt>{{ 'library.fields.rating' | translate }}</dt>
+          <dd class="flex items-center gap-2">
+            <lk-star-rating [readonly]="true" [value]="entry.ratingAverage" />
+            <span class="text-muted-foreground text-xs tabular-nums"
+              >{{ 'library.ratingSummary' | translate: { average:
+              entry.ratingAverage ?? 0, count: entry.ratingCount } }}</span
+            >
+          </dd>
+          <dt>{{ 'library.fields.usage' | translate }}</dt>
+          <dd class="tabular-nums">{{ entry.usageCount }}</dd>
+          <dt>{{ 'library.detail.fingerprint' | translate }}</dt>
+          <dd class="break-words">{{ service.columns() }}</dd>
+          @if (entry.description) {
+          <dt>{{ 'library.fields.description' | translate }}</dt>
+          <dd class="break-words whitespace-pre-line">
+            {{ entry.description }}
+          </dd>
+          }
+        </dl>
+      </div>
+    </section>
+
+    <section hlmCard>
+      <div hlmCardHeader>
+        <h2 hlmCardTitle>{{ 'library.rating.yours' | translate }}</h2>
+      </div>
+      <div hlmCardContent class="flex flex-col gap-3">
+        @if (entry.mine) {
+        <p class="text-muted-foreground text-sm">
+          {{ 'library.rating.ownEntry' | translate }}
+        </p>
+        } @else {
+        <lk-star-rating
+          [value]="entry.myRating"
+          (rated)="service.rate($event)"
+        />
+        @if (entry.myRating !== null) {
+        <div>
+          <button
+            hlmBtn
+            variant="outline"
+            size="sm"
+            type="button"
+            (click)="service.rate(null)"
+          >
+            {{ 'library.rate.remove' | translate }}
+          </button>
+        </div>
+        } }
+      </div>
+    </section>
+  </div>
+</div>
+
+<lk-library-publish-dialog />
+
+<hlm-dialog [state]="deleteState()" (stateChanged)="deleteChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'library.delete.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'library.delete.body' | translate: { name: entry.name } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body"></div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        (click)="deleteConfirmed()"
+      >
+        {{ 'library.actions.delete' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+} @else if (service.notFound()) {
+<lk-empty-state [message]="'library.detail.notFound' | translate" />
+} @else if (service.entry.error()) {
+<lk-empty-state [message]="'library.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.entry.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else {
+<hlm-skeleton class="h-64 w-full" />
+}

@@ -24,6 +24,7 @@ import { ExportsModule } from '../exports/exports.module';
 import { FilesModule } from '../files/files.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { MailModule } from '../mail/mail.module';
+import { LibraryModule } from '../library/library.module';
 import { MappingsModule } from '../mappings/mappings.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PersistenceModule } from '../persistence/persistence.module';
@@ -59,6 +60,7 @@ import { AppController } from './app.controller';
     ProjectsModule,
     FilesModule,
     MappingsModule,
+    LibraryModule,
     SettingsModule,
     CalculationModule,
     RatesModule,

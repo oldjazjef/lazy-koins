@@ -12,7 +12,8 @@ two as a package (F1.3).
 > **Status (08.10.2026): files + mappings + AI plugin + calculation + dashboard / carry-over /
 > packages.** Nx monorepo with the NestJS API
 > (`apps/api`: auth, users, **projects** = F4.1/F4.2/F4.5 basics, **files** = F5.1–F5.8
-> storage/upload/preview, **mappings** = declarative mapping specs, **ai** = F5.13/F5.14: AI-written
+> storage/upload/preview, **mappings** = declarative mapping specs, **library** = F5.15–F5.17 the
+> global mapping library (web only), **ai** = F5.13/F5.14: AI-written
 > mappings and PDF statements read into balances, **calculation / rates / settings / exports** =
 > F7–F11 on top of the engine, **dashboard** = F11.4–F11.9, **carryover** = F4.4/F4.4a,
 > **packages** = F10.8/F10.9, data export F10.7, **tools / assistant / mcp** = F11.14–F11.16: one
@@ -20,6 +21,7 @@ two as a package (F1.3).
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Dateien · Hinweise · Kurse ·
 > Ergebnis · Prüfungen · Korrekturen · Exporte; the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
+> the **Bibliothek** (mapping library, web only) next to it;
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
 > money helpers, `Booking`/`Holding`, the **standard format "lazy-koins Buchungen v1"**, the
@@ -148,6 +150,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
       application/          #     handlers, FileAnalysisService (engine runs), SourceFileReader (exceljs)
     mappings/               #   mapping specs: CRUD, JSON download, schema, project listing, usage (F11.0),
                             #   stateless sample-file inspect/preview for the editor
+    library/                #   F5.15–F5.17: the global mapping library (web only; 404 + no tools on the desktop)
     ai/                     #   F5.13/F5.14: settings, payload preview, AI mappings (project file or editor sample), PDF statements
       domain/               #     pure: prompts, repair logic, statement checks, SSRF guard
     calculation/            #   F7–F9: input assembly + hash, calculate/result/drill-down, checks + open
@@ -180,7 +183,8 @@ apps/web/                   # Angular app
                             #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
                             #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
     features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
-                            #   mappings (F11.0: list + detail), profile (+ account package), settings
+                            #   mappings (F11.0: list + detail), library (F5.15–F5.17: list + entry, publish
+                            #   dialog, files-area matches; web only), profile (+ account package), settings
                             #   (shell + rates/wallets/ai/mail; components/ = the forms shared with
                             #   the wizard), setup (F11.0s wizard), files and calculation (components only:
                             #   embedded in the project detail; project-workspace hosts the tabs, its
@@ -208,6 +212,7 @@ libs/engine/                # PURE TypeScript (@lazykoins/engine), no Nest/Angul
     text/                   #     pure decoding: bytes→text (UTF-8/16, cp1252), CSV, numbers, timestamps
   src/standard/             #   standard format v1: German columns, zod row validation, template content
   src/mapping/              #   mapping spec (zod, JSON Schema export) + applyMapping + fingerprints,
+                            #   privacy-scan.ts (library review: personal-looking values + removal),
                             #   sample.ts (the AI/editor sample, kindSummary), spec-skeleton.ts (Vorlage aus Datei)
     fixtures/               #     SYNTHETIC exports + example mapping JSON (test data, not product code)
   src/coverage/             #   coverage per platform/account + F5.8 missing-file hints
@@ -348,6 +353,80 @@ sample. Nothing about the sample is stored unless the user adds it to a project.
 To support a new platform: write (or let the AI write — "Mit AI erstellen") a mapping JSON, check it with the
 preview (`POST …/files/:id/mapping-preview` with `spec`), save it. For a test, add a synthetic
 fixture + mapping JSON under `libs/engine/src/mapping/fixtures/` (skill `add-importer`).
+
+## Mapping library (F5.15–F5.17, web only)
+
+User requirement (08.10.2026): a global database of mappings — rated, uploaded by their authors,
+deleted only by them, and **taken as a copy** so that a deleted entry never breaks anyone's
+projects. Slice `apps/api/src/library/` (API) + `features/library` (web).
+
+- **Web only**: `LibraryRuntime.enabled = AUTH_MODE !== 'local'` (`library.module.ts`). On the
+  desktop every route answers **404** (`LibraryEnabledGuard`, and each handler checks again),
+  `buildTools` registers **no** library tools, the web hides the nav entry (`navItemsFor`,
+  `NavItem.webOnly`), the route (`canMatch` on `AuthService.hasAccount`), the files-area matches
+  and the mapping page's publish button. The tables exist in every database (one migration
+  history), they stay empty on the desktop.
+- **Model** (migration `20261008200000_mapping_library`): `library_mapping` (author FK cascade —
+  internal only, never in a DTO/tool output; `author_name` = the pseudonym snapshot, NULL =
+  "Anonym"; `source_mapping_id` = the author's mapping, no FK; name/platform/description, spec
+  JSON ≤ 64 KB, fingerprint, `version` (library version, bumped per new version),
+  `rating_count`/`rating_sum`, `usage_count`, `published_at`, `updated_at`, `deleted_at` = soft
+  delete) and `library_rating` (PK `(library_mapping_id, user_id)`, stars 1–5; cascade with entry
+  and user). The aggregate is kept by **three SQLite triggers** on `library_rating` (insert /
+  update / delete recompute count + sum) — same transaction, also when a rater's account cascades;
+  Prisma does not model triggers, `migrate diff` stays empty. `import_mapping` was **redefined**
+  to widen the origin CHECK to `library` and add `library_id` + `library_version` (no FK: a copy
+  outlives its entry; CHECK: set iff origin `library`) — every other CHECK/index copied.
+  `library.persistence.integration.spec.ts` (CHECKs, unique rating, triggers incl. cascade, soft
+  delete, copy outliving entry and author).
+- **Publish** (`POST /api/library/review` → `POST /api/library`): source = one of my mappings
+  (`mappingId`, `loadOwnMapping`) or a spec (uploaded `.json`), exactly one. The review returns the
+  **exact public JSON** after `remove` (JSON Pointers), the engine's `scanMappingPrivacy` findings
+  (`libs/engine/src/mapping/privacy-scan.ts`: e-mail, IBAN with mod-97, EVM/bech32/base58
+  addresses, account-like ids, person names only in constants and filters on name-like columns,
+  secrets via `detectSecret`; never column names/enums), `target` (new version), `existing` (my
+  active entry from the same mapping) and my last pseudonym. Publishing needs `confirmed: true`
+  (400 `confirmationRequired`), remaining findings need `acknowledgeFindings` (422
+  `privacyFindings` with paths + kinds, never the values), ≤ 64 KB (422 `specTooLarge`), the same
+  canonical spec twice = 409 `alreadyPublished`, ≤ 10 **new** entries per author per 24 h (429
+  `publishLimit`, deleted ones count), HTTP budgets 10 publishes / 60 ratings per 10 min.
+  `libraryId` = a new version of **my** entry (someone else's = 404). `removePrivacyFindings`
+  drops a filter value (the filter when nothing is left), an alias/rewrite/kind rule whole, a
+  constant (its source when it had no column), the description, the file-name pattern.
+- **Delete** (`DELETE /api/library/:id`): author only, others 404 (never 403 — no leak of who
+  wrote what); soft delete; copies untouched.
+- **Take** (`POST /api/library/:id/take {projectId?, projectFileId?}`): always a **private copy**
+  (`import_mapping` origin `library`, `library: {id, version}` = `library:<id>@<version>`;
+  same version already copied → reused, else `usage_count + 1`). With a target the file's
+  ownership, open project and table kind are checked **before** copying, then
+  `ChangeProjectFileCommand` assigns it. An edited copy keeps its reference (update without
+  `library` keeps it); the mapping page shows "übernommen, Version N", "Neue Version verfügbar"
+  (+ take it as another copy) or "nicht mehr in der Bibliothek".
+- **Rate** (`PUT|DELETE /api/library/:id/rating`): 1–5, one per user, changeable/removable;
+  the author's own = 409 `ownEntry`. Views carry `ratingAverage` (2 decimals), `ratingCount`,
+  `myRating`, `mine`.
+- **Discovery**: `GET /api/library` (all active entries; the web filters/sorts: rating, usage,
+  newest, name) and `GET /api/library/:id` (with spec; deleted = 404 for everyone).
+  `GET /api/projects/:id/library-matches` = per `needs_mapping` file of my project the entries
+  whose spec would read it (cheap header pre-filter on the bytes, then
+  `FileAnalysisService.matchingSpecs` = `mappingConfidence` as on upload; ≤ 10 per file).
+- **Web**: `/app/library` (`LibraryPage`, table pattern: name + description line, platform,
+  stars, taken, author pseudonym, version; row actions Ansehen · Übernehmen · Bewerten ·
+  (own) Neue Version · Löschen; paginator), `/app/library/:id` (JSON, facts, my rating, take,
+  own: new version/delete). `LibraryPublishService` + `lk-library-publish-dialog` (provided by the
+  host: library pages and the mapping page): source → findings with checkboxes (every change
+  reviews again, stale answers dropped) → pseudonym + description → exact JSON → confirmation
+  (+ "Hinweise bewusst beibehalten"). `LibraryClient` (root) = take/rate/delete through the
+  ActionRunner. `lk-library-matches` in the files card and in the assignment dialog (before the
+  AI buttons): "In der Bibliothek gefunden: N passende Mappings" + Übernehmen (copy + assign).
+- **Tools** (`tools/definitions/library.tools.ts`, area `mappings`): `search_library`,
+  `get_library_mapping` (public reads, pseudonym only), `take_library_mapping` (write; optional
+  `projectId` + `fileId`), `rate_library_mapping` (write), `publish_mapping` (write; my mapping,
+  `pseudonym` — not an identity field, `removeFindings` default true, `acknowledgeFindings`),
+  `delete_library_mapping` (destructive). The isolation suite has a case for each: B reads A's
+  public entry without A's id/e-mail/profile name, copies it only into B's own mappings, cannot
+  take it into A's project/file, cannot publish A's mapping, republish or delete A's entry; over
+  HTTP: A's own rating = 409, A deleting the entry leaves B's copy working.
 
 ## AI plugin (F5.13, F5.14)
 
@@ -1126,6 +1205,8 @@ COLUMN` — no redefinition), `estv_kursliste` (year 2000–2100, `THIRD.INIT.%`
   `user_id`; `steps` must be a JSON object, `current_step` CHECK) and `user_pin` (PK `user_id`;
   `pin_hash LIKE 'scrypt$%'`, counters ≥ 0, auto-lock 1–240) — both cascade with the user;
   `setup.persistence.integration.spec.ts`.
+- **Mapping library** (migration `20261008200000_mapping_library`): see "Mapping library" —
+  two new tables with triggers, `import_mapping` redefined (origin `library` + reference).
 - **Notifications** (migration `20261008160000_notifications`, new table only): `notification`
   (unique `(user_id, topic)`, index `(user_id, occurred_at)`; CHECKs: kind, topic 1–300,
   `title_key LIKE 'notifications.%'`, params a JSON object ≤ 4000, action null or a JSON object;
