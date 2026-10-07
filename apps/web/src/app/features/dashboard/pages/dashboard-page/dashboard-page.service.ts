@@ -4,6 +4,7 @@ import Decimal from 'decimal.js';
 import { firstValueFrom } from 'rxjs';
 import { ActivityService } from '../../../../core/activity/activity.service';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type {
   DashboardHolding,
   DashboardRecords,
@@ -66,6 +67,19 @@ export class DashboardPageService {
     if (!from || !to || from > to) return undefined;
     return { url: apiUrl('/dashboard'), params: this.params(from, to) };
   });
+
+  constructor() {
+    // Regression (07.10.2026): after "Neu berechnen" the chart kept the old values. Every change
+    // reloads it: the project card on a change to its project (a calculation, a file removed,
+    // a correction, the assistant …), the page on a change to any project.
+    const changes = inject(DataChanges);
+    reloadOn(() => {
+      const project = this.projectId();
+      return project
+        ? changes.projectVersion(project)
+        : changes.globalVersion('projects');
+    }, [this.view]);
+  }
 
   readonly isEmpty = computed(
     () => this.view.hasValue() && this.view.value().projects.length === 0,

@@ -27,7 +27,7 @@ import type { DataExportFilter } from '../../../../core/api/dashboard.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
-import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 
 /** How often a running rate refresh is asked for its progress. */
 const REFRESH_POLL_MS = 1000;
@@ -78,8 +78,7 @@ export class ProjectWorkspaceService {
   private readonly notifications = inject(NotificationService);
   private readonly document = inject(DOCUMENT);
   private readonly translate = inject(TranslateService);
-  /** F4.7: calculations and exports can make a project "seit dem Versand geändert". */
-  private readonly sentEvents = inject(ProjectSentEvents);
+  private readonly changes = inject(DataChanges);
   readonly estv = inject(EstvService);
 
   readonly projectId = signal<string | undefined>(undefined);
@@ -108,6 +107,16 @@ export class ProjectWorkspaceService {
   readonly exports = httpResource<ProjectExport[]>(() =>
     this.tab() === 'exports' ? this.url('/exports') : undefined,
   );
+
+  constructor() {
+    // Every change to this project (a file, a mapping, a correction, rates, a calculation, the
+    // assistant …) refetches what the tabs show — only the tabs on screen (the others have no
+    // request) — so the result says "Daten geändert – neu berechnen" right away (user rule).
+    reloadOn(
+      () => this.changes.projectVersion(this.projectId()),
+      [this.result, this.checks, this.corrections, this.rates, this.exports],
+    );
+  }
 
   /**
    * The currency of the figures on screen (F4.1a): the latest calculation's — it may still be in
@@ -284,16 +293,12 @@ export class ProjectWorkspaceService {
     messages: { error: 'exports.createFailed' },
   });
 
-  /** F7.6: recalculate, then every view shows the new snapshot. */
+  /** F7.6: recalculate; every view then shows the new snapshot (DataChanges). */
   async calculate(): Promise<void> {
-    const view = await this.actions.run(
-      this.calculateAction,
-      this.requireId(),
-      { key: 'project-workspace', activity: { label: 'activity.calculate' } },
-    );
-    this.result.set(view);
-    this.reloadDerived();
-    this.sentEvents.changed();
+    await this.actions.run(this.calculateAction, this.requireId(), {
+      key: 'project-workspace',
+      activity: { label: 'activity.calculate' },
+    });
   }
 
   /** "Kurse aktualisieren (12/40)": the API reports its progress while the request runs. */
@@ -316,8 +321,6 @@ export class ProjectWorkspaceService {
     } finally {
       stop();
     }
-    this.rates.reload();
-    this.result.reload();
   }
 
   /** Polls `…/rates/refresh/status` only while the refresh runs; one request at a time. */
@@ -367,8 +370,6 @@ export class ProjectWorkspaceService {
     } else {
       this.notifications.info('estv.noneForYear', { year: summary.year });
     }
-    this.rates.reload();
-    this.result.reload();
   }
 
   /**
@@ -386,8 +387,6 @@ export class ProjectWorkspaceService {
       { id: this.requireId(), rate },
       { key: 'project-workspace' },
     );
-    this.rates.reload();
-    this.result.reload();
   }
 
   async deleteManualRate(rate: StoredRate): Promise<void> {
@@ -396,8 +395,6 @@ export class ProjectWorkspaceService {
       { id: this.requireId(), rate },
       { key: 'project-workspace' },
     );
-    this.rates.reload();
-    this.result.reload();
   }
 
   async importKursliste(file: File): Promise<void> {
@@ -409,8 +406,6 @@ export class ProjectWorkspaceService {
     this.notifications.info('rates.estvImported', {
       count: result.imported,
     });
-    this.rates.reload();
-    this.result.reload();
   }
 
   /** F9: creates the correction and recalculates, so its before/after shows at once. */
@@ -441,7 +436,6 @@ export class ProjectWorkspaceService {
       { id: this.requireId(), key: item.key, ...changes },
       { key: `open-item:${item.key}` },
     );
-    this.checks.reload();
   }
 
   /** F10: the toast offers the download right away (the user may have left the tab meanwhile). */
@@ -461,9 +455,6 @@ export class ProjectWorkspaceService {
       labelKey: 'exports.download',
       onClick: () => void this.download(created),
     });
-    this.exports.reload();
-    this.result.reload();
-    this.sentEvents.changed();
   }
 
   /**
@@ -532,16 +523,6 @@ export class ProjectWorkspaceService {
       this.recordsOf.set(null);
       this.notifications.error('result.recordsFailed');
     }
-  }
-
-  /** Everything the tabs show, again (after a change the assistant made, F11.14). */
-  reloadAll(): void {
-    this.result.reload();
-    this.checks.reload();
-    this.corrections.reload();
-    this.rates.reload();
-    this.exports.reload();
-    this.sentEvents.changed();
   }
 
   closeRecords(): void {
@@ -641,11 +622,6 @@ export class ProjectWorkspaceService {
     } finally {
       this.downloading.set(false);
     }
-  }
-
-  private reloadDerived(): void {
-    this.checks.reload();
-    this.corrections.reload();
   }
 
   private requireId(): string {

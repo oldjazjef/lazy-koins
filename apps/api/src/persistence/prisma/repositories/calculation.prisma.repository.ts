@@ -124,6 +124,8 @@ export class CalculationSnapshotPrismaRepository extends CalculationSnapshotRepo
         wealthChf: true,
         incomeChf: true,
         createdAt: true,
+        inputHash: true,
+        engineVersion: true,
       },
     });
     for (const row of rows) {
@@ -132,6 +134,8 @@ export class CalculationSnapshotPrismaRepository extends CalculationSnapshotRepo
         wealthChf: row.wealthChf,
         incomeChf: row.incomeChf,
         calculatedAt: toIsoString(row.createdAt),
+        inputHash: row.inputHash,
+        engineVersion: row.engineVersion,
       });
     }
     return out;

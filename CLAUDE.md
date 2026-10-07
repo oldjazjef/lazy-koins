@@ -543,9 +543,9 @@ in localStorage; beside the page from `lg`, an overlay with backdrop below; only
 scrolls; without a usable AI plugin a hint links to the wizard's AI step `/app/setup?step=ai`), `chat-message` (safe minimal markdown via `chat-markdown.ts`: text through
 `textContent`, only relative `/app/…` links become router links), `proposal-card`
 (before → after, "Ausführen" / "Abbrechen", outcome), `chat-upload` (drop zone → the normal
-upload endpoint), `ChatContextService` (the workspace publishes project + tab) and
-`AssistantEvents` (after a confirmed proposal or a chat upload the workspace reloads everything,
-`ProjectWorkspaceService.reloadAll()`). The project workspace reads `?tab=` and `&figure=` (opens
+upload endpoint), `ChatContextService` (the workspace publishes project + tab); a confirmed
+proposal is reported to `DataChanges` with its `projectId` (every scope), a chat upload by the
+interceptor like any upload — see "Data refresh". The project workspace reads `?tab=` and `&figure=` (opens
 the drill-down) — the links the tools return. Einstellungen › AI has the "Assistent" section
 (prompt, reset, fixed rules read-only, consent revoke); Einstellungen › MCP
 (`features/settings/pages/mcp-settings-page`): switches, areas, endpoint, config snippets (Claude
@@ -602,8 +602,8 @@ response, command, code }`, **redacted** (`redact.ts`: password, its base64, the
   (`changesSinceSent`, pure): a newer snapshot with a **different input hash** than at sending,
   a statement created afterwards that was not sent, a correction made/undone or a file added
   afterwards. The list carries `sent: { sentAt, via, changedSince }`; badge
-  `lk-project-sent-badge` in list and detail header; `ProjectSentEvents` (web) refreshes the
-  detail page's status after sends, marks, exports and calculations.
+  `lk-project-sent-badge` in list and detail header; both follow every change to the project
+  through `DataChanges` (see "Data refresh").
 - Live: `node scripts/dev/smtp-sink.mjs [port]` (127.0.0.1:2525, security "Keine", any user;
   user `reject` → auth error, recipient `bounce@…` → 550) writes each mail to `tmp/smtp-sink/`.
   Tests: fake transport (`mail/testing/mail-doubles.ts`) for handlers, the real nodemailer adapter
@@ -1311,6 +1311,44 @@ are provided by the component (`providers: [...]`), list/form services are root.
   an action ("Herunterladen", "Anzeigen") or `null`. Labels are i18n keys under `activity.*`.
   Server work that outlives a quick answer reports progress through a status endpoint polled
   only while the request runs (rate refresh: 1 s); everything else tracks the request itself.
+
+### Data refresh (user rule, 08.10.2026: „Änderungen sollen alles updaten“)
+
+**Every change refreshes every view that shows affected data — through ONE mechanism**,
+`core/data/data-changes.ts`:
+
+- `DataChanges` (root): `changed({ projectId?, scope? })` — `projectId` a string = that project,
+  `null` = every project (a mapping or wallet feeds every project that uses it), absent = none;
+  `scope` ∈ `projects | mappings | wallets | rates | settings | notifications` (a project change
+  always bumps `projects` too). Readers: `projectVersion(id)`, `globalVersion(scope)`.
+- **Emitted automatically** by `dataChangesInterceptor` (`core/data/data-changes.interceptor.ts`,
+  innermost in `app.config.ts`): a **successful** POST/PUT/PATCH/DELETE to `/api/**` is mapped by
+  `changeOf(method, url)` — an explicit table (`RULES`) plus a deny list of POSTs that only read
+  (`READ_ONLY`: mapping/sample previews, inspections, AI proposals and payloads, settings/key
+  tests, mail compose/preview, the chat, PIN, the dashboard's per-asset rate refresh). A GET never
+  emits, so a refetch can never trigger another one. **A new mutating route needs its line in
+  the table** (and in `data-changes.interceptor.spec.ts`). Explicit calls only where the URL cannot
+  tell: `ChatService` after a confirmed proposal.
+- **Consumed** with `reloadOn(version, [resources])` in the page services: `reload()` keeps the
+  value on screen (no skeleton flash — a version read inside the request function would reset
+  it), is a no-op for a resource without a request (a tab not shown) or one already loading, and
+  ends with the injection context. Several changes in one tick = one refetch. Root list services
+  (projects, mappings, wallets, notifications) have `follow()`, called in their page's constructor:
+  reload on arrival + watch while on screen — nothing refetches in the background.
+- Wired: workspace tabs (result, checks, corrections, rates, exports), files area + hints + project
+  mappings (my mappings on `mappings`), wallets tab, send-to-advisor (log, F4.7), project page
+  header (project, F4.7, carry-overs, `result/status`), dashboard page + project card, project
+  list, mappings list + usage, wallets list + tokens, notifications page and the bell
+  (`notifications` + `projects`). Forms are not reloaded under the user's typing (the project
+  form resets only when its facts really changed; the mapping editor and wallet form are set from
+  their own answers).
+- **Stale**: `CalculationInputService.isStale` is the one rule (engine version or input hash —
+  files, mapping versions, corrections, rates, wallets, currency, previous year); `GET
+/projects/:id/result` (`stale`), `GET /projects/:id/result/status` (`{ calculatedAt, stale }`,
+  cheap) and the list (`stale`) use it. The project page shows "Daten geändert – neu berechnen"
+  with a button under its header; the list marks the figures "veraltet". No silent
+  auto-recalculation (a correction still recalculates, as designed). The dashboard computes from
+  the live input and is never stale. `calculation/application/staleness.spec.ts` covers every change.
 
 ## UI, styling, i18n
 

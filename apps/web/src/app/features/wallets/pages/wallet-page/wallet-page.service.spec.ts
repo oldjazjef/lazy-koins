@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -47,7 +47,7 @@ function setup() {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       provideRouter([]),
@@ -148,6 +148,10 @@ describe('WalletPageService', () => {
     await marking;
     await settle();
     http.expectOne(`/api/wallets/${ID}`).flush(wallet());
+    // A wallet change (DataChanges): the tokens follow, too.
+    http
+      .expectOne(`/api/wallets/${ID}/tokens`)
+      .flush([{ network: 'ethereum', tokens: [] }]);
   });
 });
 

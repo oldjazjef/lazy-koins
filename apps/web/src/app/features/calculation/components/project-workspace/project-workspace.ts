@@ -11,7 +11,6 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { AssistantEvents } from '../../../../core/assistant/assistant-events';
 import { ChatContextService } from '../../../../core/assistant/chat-context.service';
 import { RecordsDialog } from '../../../../shared/components/records-dialog';
 import { AiAssist, AiAssistState } from '../../../files/components/ai-assist';
@@ -63,7 +62,6 @@ export class ProjectWorkspace {
   protected readonly files = inject(ProjectFilesService);
   protected readonly tabs = WORKSPACE_TABS;
   private readonly chatContext = inject(ChatContextService);
-  private readonly assistant = inject(AssistantEvents);
   /** `?tab=<tab>&figure=<figure id>` — links from the assistant (F11.14). */
   private readonly queryParams = toSignal(inject(ActivatedRoute).queryParamMap);
   private readonly fragment = toSignal(inject(ActivatedRoute).fragment);
@@ -121,24 +119,9 @@ export class ProjectWorkspace {
         if (figure) void this.service.showRecords(figure, figure);
       });
     });
-    // A change the assistant made to this project: reload what the tabs show.
-    const since = this.assistant.change()?.seq ?? 0;
-    effect(() => {
-      const change = this.assistant.change();
-      untracked(() => {
-        if (!AssistantEvents.concerns(change, since, this.projectId())) return;
-        this.service.reloadAll();
-        this.files.reload();
-        this.files.projectMappings.reload();
-      });
-    });
-    // A changed tax currency makes the result stale (F4.1a): show it.
-    effect(() => {
-      const currency = this.taxCurrency();
-      if (untracked(() => this.service.projectCurrency()) === currency) return;
-      this.service.projectCurrency.set(currency);
-      untracked(() => this.service.result.reload());
-    });
+    // F4.1a: the project's currency (the change itself makes the result stale — the PATCH is a
+    // project change, so DataChanges refetches the result).
+    effect(() => this.service.projectCurrency.set(this.taxCurrency()));
     effect(() => {
       const tab = this.initialTab();
       if (tab && (WORKSPACE_TABS as readonly string[]).includes(tab)) {

@@ -45,6 +45,22 @@ export class ResultResponseDto {
   files!: Record<string, unknown>[];
 }
 
+/** The project header's calculation line (F7.6). */
+export class ResultStatusResponseDto {
+  @ApiProperty({
+    nullable: true,
+    format: 'date-time',
+    description: 'The latest calculation; null = never calculated',
+  })
+  calculatedAt!: string | null;
+
+  @ApiProperty({
+    description:
+      'Files, mappings, corrections, rates, wallets or the currency changed since then (false without a calculation)',
+  })
+  stale!: boolean;
+}
+
 export class FigureQueryDto {
   @ApiProperty({
     description:

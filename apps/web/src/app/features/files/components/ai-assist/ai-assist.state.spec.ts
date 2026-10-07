@@ -1,6 +1,6 @@
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import { AiErrorNotifier } from '../../../../shared/ai/ai-error-notifier';
 import { aiErrorInfo } from '../../../../shared/ai/ai-error-details';
-import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -112,7 +112,7 @@ async function setup(files: ProjectFile[] = [file()]) {
     providers: [
       ProjectFilesService,
       AiAssistState,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
@@ -136,7 +136,11 @@ async function setup(files: ProjectFile[] = [file()]) {
   return { state, http, notifications, aiErrors };
 }
 
-async function flushReloads(http: HttpTestingController) {
+/** The reloads after a change (DataChanges); my mappings only when a mapping was saved. */
+async function flushReloads(
+  http: HttpTestingController,
+  { mappings = false } = {},
+) {
   await settle();
   http.expectOne('/api/projects/p1/files').flush({
     taxYear: 2025,
@@ -144,7 +148,8 @@ async function flushReloads(http: HttpTestingController) {
     missing: [],
   });
   http.expectOne('/api/projects/p1/mappings').flush([]);
-  http.expectOne('/api/mappings').flush([]);
+  if (mappings) http.expectOne('/api/mappings').flush([]);
+  else http.expectNone('/api/mappings');
 }
 
 describe('AiAssistState', () => {
@@ -220,7 +225,7 @@ describe('AiAssistState', () => {
     });
     accept.flush({ mapping: { id: 'm7' }, file: file({ status: 'mapped' }) });
     await saved;
-    await flushReloads(http);
+    await flushReloads(http, { mappings: true });
     // The toast links to the new mapping's page (F11.0).
     expect(notifications.success).toHaveBeenCalledWith('ai.mapping.saved', {
       labelKey: 'mappings.openPage',

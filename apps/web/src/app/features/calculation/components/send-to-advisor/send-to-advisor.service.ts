@@ -13,7 +13,7 @@ import type {
 } from '../../../../core/api/mail.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { mailErrorKey, smtpErrorOf } from '../../../../shared/mail/mail-error';
-import { ProjectSentEvents } from '../../../../shared/mail/project-sent-events';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 
 /** `mailto:` link of a composed mail — without attachments, which `mailto:` cannot carry. */
 export function mailtoLink(to: string, subject: string, body: string): string {
@@ -41,7 +41,6 @@ export function selectedBytes(composition: MailComposition): number {
 export class SendToAdvisorService {
   private readonly http = inject(HttpClient);
   private readonly notifications = inject(NotificationService);
-  private readonly events = inject(ProjectSentEvents);
 
   readonly projectId = signal<string | undefined>(undefined);
 
@@ -51,10 +50,16 @@ export class SendToAdvisorService {
   }
 
   readonly log = httpResource<MailLogEntry[]>(() => this.url('/mail/log'));
-  readonly sent = httpResource<ProjectSentStatus>(() => {
-    this.events.version();
-    return this.url('/sent');
-  });
+  /** F4.7; follows sends, marks, exports, calculations, files, corrections (DataChanges). */
+  readonly sent = httpResource<ProjectSentStatus>(() => this.url('/sent'));
+
+  constructor() {
+    const changes = inject(DataChanges);
+    reloadOn(
+      () => changes.projectVersion(this.projectId()),
+      [this.log, this.sent],
+    );
+  }
 
   /** The mail in the dialog (null = dialog closed). */
   readonly composition = signal<MailComposition | null>(null);
@@ -105,7 +110,6 @@ export class SendToAdvisorService {
         ),
       );
       this.sent.set(result.sent);
-      this.afterChange();
       this.notifications.success('mail.send.sent');
       this.close();
       return true;
@@ -113,6 +117,7 @@ export class SendToAdvisorService {
       const smtp = smtpErrorOf(error);
       if (smtp) this.sendError.set(smtp);
       this.notifications.error(mailErrorKey(error));
+      // A failed send is logged, too — and a failed request reports no change.
       this.log.reload();
       return false;
     } finally {
@@ -154,7 +159,6 @@ export class SendToAdvisorService {
     this.busy.set(true);
     try {
       this.sent.set(await work());
-      this.afterChange();
       this.notifications.success(message);
       return true;
     } catch {
@@ -163,11 +167,6 @@ export class SendToAdvisorService {
     } finally {
       this.busy.set(false);
     }
-  }
-
-  private afterChange(): void {
-    this.log.reload();
-    this.events.changed();
   }
 
   private requireId(): string {

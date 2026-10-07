@@ -2,6 +2,7 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type { Wallet } from '../../../../core/api/wallets.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { walletError } from '../../wallet-errors';
@@ -15,6 +16,7 @@ import { walletError } from '../../wallet-errors';
 export class WalletsPageService {
   private readonly http = inject(HttpClient);
   private readonly notifications = inject(NotificationService);
+  private readonly changes = inject(DataChanges);
 
   readonly wallets = httpResource<Wallet[]>(() => apiUrl('/wallets'));
   readonly search = signal('');
@@ -38,6 +40,15 @@ export class WalletsPageService {
 
   refresh(): void {
     this.wallets.reload();
+  }
+
+  /**
+   * Called in the page's constructor: reloads now (the root service keeps the last list) and
+   * after every wallet change while the page is on screen.
+   */
+  follow(): void {
+    this.refresh();
+    reloadOn(() => this.changes.globalVersion('wallets'), [this.wallets]);
   }
 
   checkNetworks(wallet: Wallet): Promise<void> {

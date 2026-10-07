@@ -18,6 +18,7 @@ import {
   GetChecksHandler,
   GetFigureRecordsHandler,
   GetResultHandler,
+  GetResultStatusHandler,
   ListCorrectionsHandler,
   SetCorrectionUndoneHandler,
   UpdateOpenItemHandler,
@@ -156,6 +157,8 @@ export async function calculationSetup() {
       projects,
       snapshots,
       new InMemoryProjectSentRepository(),
+      inputs,
     ),
+    status: new GetResultStatusHandler(projects, inputs, snapshots),
   };
 }

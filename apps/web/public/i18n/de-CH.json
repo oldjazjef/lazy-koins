@@ -84,7 +84,9 @@
       "subtitle": "Ein Projekt pro Steuerjahr.",
       "new": "Neues Projekt",
       "empty": "Noch kein Projekt. Lege eines für dein Steuerjahr an.",
-      "loadFailed": "Projekte konnten nicht geladen werden."
+      "loadFailed": "Projekte konnten nicht geladen werden.",
+      "stale": "veraltet",
+      "staleTitle": "Daten geändert seit der Berechnung – im Projekt neu berechnen"
     },
     "form": {
       "title": "Neues Projekt",
@@ -105,6 +107,7 @@
     "detail": {
       "title": "Projekt",
       "subtitle": "Steuerjahr {{year}}",
+      "stale": "Daten geändert seit der letzten Berechnung – Ergebnis und Prüfungen zeigen noch den alten Stand.",
       "editTitle": "Angaben",
       "factsTitle": "Übersicht",
       "closedHint": "Dieses Projekt ist abgeschlossen und schreibgeschützt. Öffne es wieder, um etwas zu ändern.",

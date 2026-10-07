@@ -7,6 +7,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { apiUrl } from '../../../../core/api/api-url';
+import { DataChanges, reloadOn } from '../../../../core/data/data-changes';
 import type {
   Mapping,
   MappingSummary,
@@ -33,6 +34,7 @@ export class MappingsPageService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly notifications = inject(NotificationService);
+  private readonly changes = inject(DataChanges);
 
   readonly mappings = httpResource<MappingSummary[]>(() => apiUrl('/mappings'));
 
@@ -62,6 +64,21 @@ export class MappingsPageService {
   }
 
   /**
+   * Called in the page's constructor: reloads now (the root service keeps the last list) and
+   * after every change to a mapping or to a project's files (the "used by" counts) while the
+   * page is on screen.
+   */
+  follow(): void {
+    this.refresh();
+    reloadOn(
+      () =>
+        this.changes.globalVersion('mappings') +
+        this.changes.globalVersion('projects'),
+      [this.mappings],
+    );
+  }
+
+  /**
    * A new mapping from the editor (origin `manual`, or `ai` when the AI wrote it from a sample
    * file); opens its page once stored. `afterSave` runs before that (e.g. "Datei auch zu Projekt
    * hinzufügen") — its failure does not undo the save.
@@ -76,7 +93,6 @@ export class MappingsPageService {
     const outcome = await this.post(parsed.value, origin);
     if (outcome.ok) {
       this.notifications.success('mappings.saved');
-      this.refresh();
       if (afterSave) await afterSave(outcome.mapping);
       await this.router.navigate(['/app/mappings', outcome.mapping.id]);
     }
@@ -106,7 +122,6 @@ export class MappingsPageService {
         onClick: () =>
           void this.router.navigate(['/app/mappings', outcome.mapping.id]),
       });
-      this.refresh();
       return outcome.mapping;
     } catch {
       return undefined;

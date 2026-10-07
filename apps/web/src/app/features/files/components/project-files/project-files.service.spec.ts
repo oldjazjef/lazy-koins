@@ -1,4 +1,5 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -77,7 +78,7 @@ async function setup(files: ProjectFile[] = [file()]) {
     providers: [
       ProjectFilesService,
       MappingEditorState,
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       { provide: NotificationService, useValue: notifications },
@@ -104,15 +105,20 @@ async function pending(http: HttpTestingController, url: string) {
   throw new Error(`no request for ${url}`);
 }
 
-/** Answers the reloads that follow a change. */
+/**
+ * Answers the reloads that follow a change (DataChanges): the project's files and mappings
+ * always; my mappings only after a change to a mapping (`mappings: true`).
+ */
 async function flushReloads(
   http: HttpTestingController,
   files: ProjectFile[] = [],
+  { mappings = false } = {},
 ) {
   await settle();
   http.expectOne('/api/projects/p1/files').flush(overview(files));
   http.expectOne('/api/projects/p1/mappings').flush([]);
-  http.expectOne('/api/mappings').flush([mapping()]);
+  if (mappings) http.expectOne('/api/mappings').flush([mapping()]);
+  else http.expectNone('/api/mappings');
   await settle();
 }
 
@@ -441,7 +447,9 @@ describe('MappingEditorState', () => {
     const saving = editor.save();
     http.expectOne('/api/mappings').flush(mapping({ id: 'm9' }));
     await settle();
-    // saveMapping reloads the mapping lists, then the file is assigned.
+    // The new mapping is reported (DataChanges): the files area and both mapping lists reload;
+    // then the file is assigned.
+    http.expectOne('/api/projects/p1/files').flush(overview([file()]));
     http.expectOne('/api/projects/p1/mappings').flush([]);
     http.expectOne('/api/mappings').flush([mapping()]);
     const patch = http.expectOne('/api/projects/p1/files/f1');

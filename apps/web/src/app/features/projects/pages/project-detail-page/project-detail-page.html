@@ -17,6 +17,21 @@
   <lk-project-workspace-tabs lkPageHeaderBelow />
 </lk-page-header>
 
+@if (service.isStale() && !service.isClosed()) {
+<div class="lk-stale-banner" role="status">
+  <span class="min-w-0 flex-1">{{ 'projects.detail.stale' | translate }}</span>
+  <button
+    hlmBtn
+    size="sm"
+    type="button"
+    [disabled]="service.isCalculating()"
+    (click)="calculate()"
+  >
+    {{ 'result.calculate' | translate }}
+  </button>
+</div>
+}
+
 @if (workspace.tab() === 'general') {
 <div class="grid gap-6 lg:grid-cols-3" role="tabpanel">
   <section hlmCard class="lg:col-span-2">

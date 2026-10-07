@@ -13,7 +13,7 @@ import type {
   ProposalView,
 } from '../api/assistant.types';
 import { NotificationService } from '../notifications/notification.service';
-import { AssistantEvents } from './assistant-events';
+import { DataChanges } from '../data/data-changes';
 import { ChatContextService } from './chat-context.service';
 import { ChatService } from './chat.service';
 
@@ -212,7 +212,7 @@ describe('ChatService', () => {
 
   it('runs a proposal and tells the app what changed', async () => {
     const { service, http } = await setup();
-    const events = TestBed.inject(AssistantEvents);
+    const changes = TestBed.inject(DataChanges);
     service.conversation.set(view());
     const confirmed = service.confirm(proposal());
     const request = http.expectOne(
@@ -240,19 +240,21 @@ describe('ChatService', () => {
     expect(service.conversation()?.messages[1]?.proposals[0]?.status).toBe(
       'executed',
     );
-    expect(events.change()).toMatchObject({ projectId: 'p1' });
+    expect(changes.projectVersion('p1')).toBe(1);
+    expect(changes.projectVersion('p2')).toBe(0);
+    expect(changes.globalVersion('mappings')).toBe(1);
   });
 
   it('cancels a proposal without touching the app', async () => {
     const { service, http } = await setup();
-    const events = TestBed.inject(AssistantEvents);
+    const changes = TestBed.inject(DataChanges);
     service.conversation.set(view());
     const cancelled = service.cancel(proposal());
     http
       .expectOne('/api/chat/conversations/c1/proposals/pr1/cancel')
       .flush(view());
     await cancelled;
-    expect(events.change()).toBeNull();
+    expect(changes.projectVersion('p1')).toBe(0);
   });
 
   it('reloads the conversation when the proposal was already decided', async () => {

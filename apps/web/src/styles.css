@@ -465,6 +465,14 @@
     color: var(--destructive);
   }
 
+  /* "Daten geändert – neu berechnen" under the project header (F7.6). */
+  .lk-stale-banner {
+    @apply mb-6 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm;
+    background-color: color-mix(in oklab, var(--light-yellow) 18%, transparent);
+    border-color: color-mix(in oklab, var(--light-yellow) 55%, transparent);
+    color: var(--foreground);
+  }
+
   /* A bordered surface for tables and lists. */
   .lk-panel {
     @apply bg-card rounded-lg border;

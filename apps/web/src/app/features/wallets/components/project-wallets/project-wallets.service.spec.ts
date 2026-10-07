@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideAppHttpClient } from '../../../../core/data/testing';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -28,7 +28,7 @@ async function setup() {
   const notifications = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
-      provideHttpClient(),
+      provideAppHttpClient(),
       provideHttpClientTesting(),
       provideTranslateService(),
       ProjectWalletsService,
@@ -80,7 +80,11 @@ describe('ProjectWalletsService', () => {
     expect(await adding).toBe(true);
     expect(notifications.success).toHaveBeenCalledWith('wallets.project.added');
     await settle();
+    // A change to the project (DataChanges): the overview and the files (derived CSVs) reload.
     http.expectOne(`/api/projects/${P}/wallets`).flush(overview());
+    http
+      .expectOne(`/api/projects/${P}/files`)
+      .flush({ taxYear: 2025, missing: [], groups: [] });
   });
 
   it('records a manual balance with its receipt (F6.5)', async () => {
@@ -97,6 +101,9 @@ describe('ProjectWalletsService', () => {
     expect(await saving).toBe(true);
     await settle();
     http.expectOne(`/api/projects/${P}/wallets`).flush(overview());
+    http
+      .expectOne(`/api/projects/${P}/files`)
+      .flush({ taxYear: 2025, missing: [], groups: [] });
   });
 
   it('shows the code of a failed fetch', async () => {
