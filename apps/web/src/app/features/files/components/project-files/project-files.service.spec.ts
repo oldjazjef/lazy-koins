@@ -8,6 +8,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import type {
   Mapping,
+  MappingSuggestion,
   ProjectFile,
   ProjectFiles,
 } from '../../../../core/api/api.types';
@@ -16,7 +17,10 @@ import { LanguageService } from '../../../../core/i18n/language.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom } from '../../../../shared/files/save-blob';
 import { skeleton } from '../mapping-editor';
-import { MappingEditorState } from '../project-mappings/mapping-editor.state';
+import {
+  adaptedSpec,
+  MappingEditorState,
+} from '../project-mappings/mapping-editor.state';
 import {
   MAX_FILE_BYTES,
   ProjectFilesService,
@@ -95,16 +99,6 @@ async function setup(files: ProjectFile[] = [file()]) {
   return { service, http, notifications };
 }
 
-/** Waits (a few tasks) until a request matching `url` is pending — File.text() is async. */
-async function pending(http: HttpTestingController, url: string) {
-  for (let i = 0; i < 50; i += 1) {
-    const [found] = http.match(url);
-    if (found) return found;
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  }
-  throw new Error(`no request for ${url}`);
-}
-
 /**
  * Answers the reloads that follow a change (DataChanges): the project's files and mappings
  * always; my mappings only after a change to a mapping (`mappings: true`).
@@ -121,10 +115,6 @@ async function flushReloads(
   else http.expectNone('/api/mappings');
   await settle();
 }
-
-/** A picked .json file (jsdom's File has no text()). */
-const jsonFile = (text: string, name: string) =>
-  ({ name, text: () => Promise.resolve(text) }) as unknown as File;
 
 const csv = (name: string, size = 10) =>
   new File(['x'.repeat(size)], name, { type: 'text/csv' });
@@ -258,38 +248,6 @@ describe('ProjectFilesService', () => {
     };
     http.expectOne('/api/projects/p1/files/f1/mapping-preview').flush(preview);
     expect(await good).toEqual({ ok: true, preview });
-  });
-
-  it('imports a mapping .json: not JSON is refused locally, invalid specs show the issues', async () => {
-    const { service, http, notifications } = await setup();
-    expect(
-      await service.importMappingFile(jsonFile('{nope', 'x.json')),
-    ).toBeUndefined();
-    expect(notifications.error).toHaveBeenCalledWith(
-      'mappings.upload.notJson',
-      'x.json',
-    );
-
-    const invalid = service.importMappingFile(
-      jsonFile('{"format":"x"}', 'y.json'),
-    );
-    const post = await pending(http, '/api/mappings');
-    expect(post.request.body).toEqual({
-      spec: { format: 'x' },
-      origin: 'copied',
-    });
-    post.flush(
-      {
-        message: 'The mapping spec is invalid',
-        issues: [{ path: 'version', message: 'Invalid input' }],
-      },
-      { status: 400, statusText: 'Bad Request' },
-    );
-    expect(await invalid).toBeUndefined();
-    expect(notifications.error).toHaveBeenCalledWith(
-      'mappings.upload.invalid',
-      'version: Invalid input',
-    );
   });
 });
 
@@ -468,5 +426,179 @@ function verifyIgnoringHints(http: HttpTestingController): void {
       request.flush({ taxYear: 2025, hints: [], open: 0 });
     }
   }
+  for (const request of http.match('/api/projects/p1/mapping-suggestions')) {
+    if (!request.cancelled) request.flush({ files: [], library: 'off' });
+  }
   http.verify();
 }
+
+describe('mapping suggestions (F5.19)', () => {
+  afterEach(() => {
+    try {
+      verifyIgnoringHints(TestBed.inject(HttpTestingController));
+    } finally {
+      TestBed.resetTestingModule();
+    }
+  });
+
+  const suggestion = (
+    over: Partial<MappingSuggestion> = {},
+  ): MappingSuggestion => ({
+    source: 'standard',
+    id: 'kraken-ledger',
+    name: 'Kraken Ledger (CSV)',
+    platform: 'kraken',
+    description: null,
+    reads: true,
+    coverage: 1,
+    matched: 10,
+    required: 10,
+    missing: [],
+    fileNameMatches: true,
+    platformInName: true,
+    score: 1,
+    revision: 1,
+    copyId: null,
+    library: null,
+    ...over,
+  });
+
+  it('loads the suggestions per file; an upload remembers which file needs a mapping', async () => {
+    const { service, http } = await setup();
+    http.expectOne('/api/projects/p1/mapping-suggestions').flush({
+      files: [
+        {
+          projectFileId: 'f1',
+          displayName: 'ledger.csv',
+          suggestions: [suggestion()],
+        },
+      ],
+      library: 'used',
+    });
+    await settle();
+    expect(service.suggestionsByFile().get('f1')?.suggestions[0]?.id).toBe(
+      'kraken-ledger',
+    );
+    const done = service.upload([csv('kraken.csv')]);
+    await settle();
+    http
+      .expectOne((r) => r.method === 'POST')
+      .flush(file({ id: 'f9', status: 'needs_mapping' }));
+    await flushReloads(http);
+    await done;
+    expect(service.uploads()[0]).toMatchObject({
+      fileId: 'f9',
+      status: 'needs_mapping',
+      state: 'done',
+    });
+  });
+
+  it('takes a standard mapping: copy + assign in one request, nothing before the click', async () => {
+    const { service, http } = await setup();
+    const taking = service.takeSuggestion({ id: 'f1' }, suggestion());
+    const post = http.expectOne('/api/standard-mappings/kraken-ledger/take');
+    expect(post.request.body).toEqual({
+      projectId: 'p1',
+      projectFileId: 'f1',
+    });
+    post.flush({
+      mapping: mapping({ id: 'm7' }),
+      created: true,
+      revision: 1,
+      projectFileId: 'f1',
+      fileStatus: 'mapped',
+    });
+    await flushReloads(http, [], { mappings: true });
+    expect(await taking).toBe(true);
+  });
+
+  it('assigns my own mapping, copies a library entry (F5.16)', async () => {
+    const { service, http } = await setup();
+    const own = service.takeSuggestion(
+      { id: 'f1' },
+      suggestion({ source: 'own', id: 'm1' }),
+    );
+    const patch = http.expectOne('/api/projects/p1/files/f1');
+    expect(patch.request.body).toEqual({ mode: 'mapping', mappingId: 'm1' });
+    patch.flush(file({ status: 'mapped' }));
+    await flushReloads(http);
+    expect(await own).toBe(true);
+
+    const library = service.takeSuggestion(
+      { id: 'f1' },
+      suggestion({ source: 'library', id: 'lib-1' }),
+    );
+    const take = http.expectOne('/api/library/lib-1/take');
+    expect(take.request.body).toEqual({ projectId: 'p1', projectFileId: 'f1' });
+    take.flush({
+      mapping: mapping({ id: 'm8' }),
+      created: true,
+      projectFileId: 'f1',
+      fileStatus: 'mapped',
+    });
+    await flushReloads(http, [], { mappings: true });
+    expect(await library).toBe(true);
+  });
+
+  it('a failed take says so and resolves false', async () => {
+    const { service, http, notifications } = await setup();
+    const taking = service.takeSuggestion({ id: 'f1' }, suggestion());
+    http
+      .expectOne('/api/standard-mappings/kraken-ledger/take')
+      .flush(
+        { code: 'projectClosed' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    expect(await taking).toBe(false);
+    expect(notifications.error).toHaveBeenCalled();
+  });
+
+  it('previews a suggestion and fetches its spec for "Als Vorlage anpassen"', async () => {
+    const { service, http } = await setup();
+    const preview = service.suggestionPreview({ id: 'f1' }, suggestion());
+    const get = http.expectOne(
+      (r) => r.url === '/api/projects/p1/files/f1/suggestion-preview',
+    );
+    expect(get.request.params.get('source')).toBe('standard');
+    expect(get.request.params.get('id')).toBe('kraken-ledger');
+    get.flush({ preview: {}, kindCounts: { trade: 2 }, unknownValues: [] });
+    expect((await preview).kindCounts).toEqual({ trade: 2 });
+
+    // My own mapping comes from the list already loaded.
+    expect(
+      await service.suggestionSpec(suggestion({ source: 'own', id: 'm1' })),
+    ).toEqual({ format: 'lazy-koins-mapping' });
+    const standard = service.suggestionSpec(suggestion());
+    http
+      .expectOne('/api/standard-mappings/kraken-ledger')
+      .flush({ id: 'kraken-ledger', spec: { name: 'Kraken' } });
+    expect(await standard).toEqual({ name: 'Kraken' });
+  });
+
+  it('adaptedSpec drops the headers the file lacks, never all of them', async () => {
+    await setup();
+    const spec = { match: { headers: ['a', 'b', 'fee'] }, name: 'x' };
+    expect(adaptedSpec(spec, ['fee'])).toEqual({
+      match: { headers: ['a', 'b'] },
+      name: 'x',
+    });
+    expect(adaptedSpec(spec, ['a', 'b', 'fee'])).toEqual(spec);
+    expect(adaptedSpec({ name: 'y' }, ['a'])).toEqual({ name: 'y' });
+  });
+
+  it('opens the editor of a new mapping from a near match, assigned to the file', async () => {
+    await setup();
+    const editor = TestBed.inject(MappingEditorState);
+    editor.openFrom(
+      file(),
+      { match: { headers: ['a', 'fee'] }, name: 'Near' },
+      ['fee'],
+    );
+    expect(editor.open()).toBe(true);
+    expect(editor.targetFile()?.id).toBe('f1');
+    expect(JSON.parse(editor.text())).toEqual({
+      match: { headers: ['a'] },
+      name: 'Near',
+    });
+  });
+});

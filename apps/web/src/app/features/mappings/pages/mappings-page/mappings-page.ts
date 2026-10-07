@@ -2,13 +2,21 @@ import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucidePlus, lucideSearch, lucideUpload } from '@ng-icons/lucide';
+import {
+  lucideLibraryBig,
+  lucidePlus,
+  lucideSearch,
+  lucideUpload,
+} from '@ng-icons/lucide';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
@@ -26,6 +34,14 @@ import {
   MappingWorkbench,
   MappingWorkbenchService,
 } from '../../components/mapping-workbench';
+import type { MappingSummary } from '../../../../core/api/api.types';
+import { LibraryAvailability } from '../../../../core/library/library-availability.service';
+import {
+  BulkPublishDialog,
+  BulkPublishService,
+} from '../../../library/components/bulk-publish-dialog';
+import { MappingImportResults } from '../../components/mapping-import-results';
+import { MappingImportService } from '../../mapping-import.service';
 import {
   MAPPING_SORTS,
   type MappingSort,
@@ -48,6 +64,8 @@ import {
     PageHeader,
     EmptyState,
     MappingWorkbench,
+    MappingImportResults,
+    BulkPublishDialog,
     Paginator,
     Truncate,
     ...HlmBadgeImports,
@@ -60,7 +78,8 @@ import {
   ],
   providers: [
     MappingWorkbenchService,
-    provideIcons({ lucidePlus, lucideSearch, lucideUpload }),
+    BulkPublishService,
+    provideIcons({ lucideLibraryBig, lucidePlus, lucideSearch, lucideUpload }),
   ],
   templateUrl: './mappings-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -82,8 +101,87 @@ export class MappingsPage {
   /** "Datei auch zu Projekt … hinzufügen" after saving; '' = no. */
   protected readonly addToProjectId = signal('');
 
+  /** F11.0u: several `.json` at once (picker or drop zone). */
+  protected readonly imports = inject(MappingImportService);
+  protected readonly dragging = signal(false);
+
+  /** F5.20: row selection for "In Bibliothek veröffentlichen" — only with a writable library (web). */
+  private readonly library = inject(LibraryAvailability);
+  protected readonly bulk = inject(BulkPublishService);
+  protected readonly canPublish = computed(
+    () => this.library.status()?.mode === 'web' && !this.library.readOnly(),
+  );
+  protected readonly selected = signal<ReadonlySet<string>>(new Set());
+  protected readonly selectedCount = computed(() => this.selected().size);
+  /** Every row on this page is ticked. */
+  protected readonly pageSelected = computed(() => {
+    const rows = this.pager.visible();
+    return rows.length > 0 && rows.every((row) => this.selected().has(row.id));
+  });
+  protected readonly pagePartly = computed(
+    () =>
+      !this.pageSelected() &&
+      this.pager.visible().some((row) => this.selected().has(row.id)),
+  );
+
   constructor() {
     this.service.follow();
+    // A new search or sort shows other rows: the selection starts over.
+    effect(() => {
+      this.service.search();
+      this.service.sort();
+      untracked(() => this.selected.set(new Set()));
+    });
+    this.bulk.onPublished = () => this.selected.set(new Set());
+  }
+
+  protected isSelected(mapping: MappingSummary): boolean {
+    return this.selected().has(mapping.id);
+  }
+
+  protected toggleRow(mapping: MappingSummary): void {
+    const next = new Set(this.selected());
+    if (next.has(mapping.id)) next.delete(mapping.id);
+    else next.add(mapping.id);
+    this.selected.set(next);
+  }
+
+  protected togglePage(): void {
+    const next = new Set(this.selected());
+    const rows = this.pager.visible();
+    if (this.pageSelected()) rows.forEach((row) => next.delete(row.id));
+    else rows.forEach((row) => next.add(row.id));
+    this.selected.set(next);
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected publishSelected(): void {
+    const chosen = this.selected();
+    const mappings = (
+      this.service.mappings.hasValue() ? this.service.mappings.value() : []
+    ).filter((mapping) => chosen.has(mapping.id));
+    if (mappings.length > 0) void this.bulk.start(mappings);
+  }
+
+  protected dragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(true);
+  }
+
+  protected dragLeave(): void {
+    this.dragging.set(false);
+  }
+
+  protected drop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragging.set(false);
+    const files = [...(event.dataTransfer?.files ?? [])].filter((file) =>
+      file.name.toLowerCase().endsWith('.json'),
+    );
+    if (files.length > 0) void this.imports.importFiles(files);
   }
 
   protected setSort(value: string): void {
@@ -98,9 +196,9 @@ export class MappingsPage {
 
   protected picked(event: Event): void {
     const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
+    const files = [...(target.files ?? [])];
     target.value = '';
-    if (file) void this.service.upload(file);
+    if (files.length > 0) void this.imports.importFiles(files);
   }
 
   protected startNew(): void {

@@ -405,6 +405,89 @@ export interface PublishReview {
   target: { id: string; nextVersion: number } | null;
   existing: { id: string; version: number } | null;
   lastAuthorName: string | null;
+  /** A copy taken from the library: only a new version of my own entry (else 409 `libraryCopy`). */
+  libraryCopy: boolean;
+}
+
+/** `GET /api/library/quota` (F5.20) — new entries left today; versions do not count. */
+export interface PublishQuota {
+  newPerDay: number;
+  usedToday: number;
+  remainingToday: number;
+  publishesPer10Min: number;
+}
+
+// --- Mapping suggestions + standard mappings (F5.19) — mirrors apps/api `suggestions/dto` ---
+
+export const SUGGESTION_SOURCES = ['own', 'standard', 'library'] as const;
+export type SuggestionSource = (typeof SUGGESTION_SOURCES)[number];
+
+export interface MappingSuggestion {
+  source: SuggestionSource;
+  /** Mapping id (own), catalogue id (standard) or entry id (library). */
+  id: string;
+  name: string;
+  platform: string;
+  description: string | null;
+  /** Reads the file as it is — "Übernehmen" in one click; else a near match to adapt. */
+  reads: boolean;
+  /** 0 … 1 */
+  coverage: number;
+  matched: number;
+  required: number;
+  missing: string[];
+  fileNameMatches: boolean;
+  platformInName: boolean;
+  score: number;
+  revision: number | null;
+  copyId: string | null;
+  library: {
+    version: number;
+    authorName: string | null;
+    ratingAverage: number | null;
+    ratingCount: number;
+    usageCount: number;
+  } | null;
+}
+
+export interface FileSuggestions {
+  projectFileId: string;
+  displayName: string;
+  suggestions: MappingSuggestion[];
+}
+
+/** `GET /api/projects/:id/mapping-suggestions` */
+export interface ProjectSuggestions {
+  files: FileSuggestions[];
+  library: 'used' | 'off' | 'unavailable';
+}
+
+/** `GET …/files/:fileId/suggestion-preview?source&id` */
+export interface SuggestionPreview {
+  preview: MappingPreview;
+  kindCounts: Partial<Record<BookingKind, number>>;
+  unknownValues: { value: string; count: number }[];
+}
+
+/** `GET /api/standard-mappings[/:id]` — the bundled, read-only templates. */
+export interface StandardMapping {
+  id: string;
+  revision: number;
+  name: string;
+  platform: string;
+  description: string | null;
+  fingerprint: string;
+  copyId: string | null;
+  spec?: Record<string, unknown>;
+}
+
+/** `POST /api/standard-mappings/:id/take` */
+export interface TakenStandardMapping {
+  mapping: Mapping;
+  created: boolean;
+  revision: number;
+  projectFileId: string | null;
+  fileStatus: ProjectFileStatus | null;
 }
 
 /** `POST /api/library/:id/take` — my private copy (and the file it now reads). */

@@ -25,11 +25,19 @@ import type {
   ProjectHints,
   Mapping,
   MappingPreview,
+  MappingSuggestion,
   ProjectFile,
   ProjectFiles,
+  ProjectFileStatus,
   ProjectMapping,
+  ProjectSuggestions,
   SpecIssue,
+  StandardMapping,
+  SuggestionPreview,
+  TakenStandardMapping,
+  LibraryEntryDetail,
 } from '../../../../core/api/api.types';
+import { LibraryClient } from '../../../library/library-client';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
 
@@ -42,6 +50,9 @@ export interface UploadItem {
   readonly id: number;
   readonly name: string;
   readonly state: UploadState;
+  /** Once stored: the project file and how it was read (F5.19: `needs_mapping` → a suggestion). */
+  readonly fileId?: string;
+  readonly status?: ProjectFileStatus;
 }
 
 export type TemplateKind = 'bookings' | 'holdings' | 'xlsx';
@@ -65,6 +76,7 @@ export class ProjectFilesService {
   private readonly router = inject(Router);
   private readonly activity = inject(ActivityService);
   private readonly language = inject(LanguageService);
+  private readonly library = inject(LibraryClient);
 
   readonly projectId = signal<string | undefined>(undefined);
 
@@ -97,15 +109,36 @@ export class ProjectFilesService {
     this.projectId() ? apiUrl('/mappings') : undefined,
   );
 
+  /**
+   * F5.19: for every file that needs a mapping, the ranked suggestions (my mappings incl. near
+   * matches, the standard mappings, the library where available). Shared by the files card,
+   * the upload list and the assignment dialog; follows every change to the project.
+   */
+  readonly suggestions = httpResource<ProjectSuggestions>(() => {
+    const id = this.projectId();
+    return id ? apiUrl(`/projects/${id}/mapping-suggestions`) : undefined;
+  });
+  readonly suggestionsByFile = computed(
+    () =>
+      new Map(
+        (this.suggestions.hasValue() ? this.suggestions.value().files : []).map(
+          (file) => [file.projectFileId, file] as const,
+        ),
+      ),
+  );
+
   constructor() {
     // A file added/removed/reassigned, a mapping edited or re-applied (here or on the mappings
     // page), a wallet fetched, a hint settled, the assistant: the files area and the hints follow.
     const changes = inject(DataChanges);
     reloadOn(
       () => changes.projectVersion(this.projectId()),
-      [this.overview, this.hints, this.projectMappings],
+      [this.overview, this.hints, this.projectMappings, this.suggestions],
     );
-    reloadOn(() => changes.globalVersion('mappings'), [this.myMappings]);
+    reloadOn(
+      () => changes.globalVersion('mappings'),
+      [this.myMappings, this.suggestions],
+    );
   }
 
   readonly files = computed<ProjectFile[]>(() =>
@@ -213,7 +246,7 @@ export class ProjectFilesService {
       }
       this.setState(item.id, 'uploading');
       try {
-        await firstValueFrom(
+        const stored = await firstValueFrom(
           this.http.post<ProjectFile>(
             apiUrl(`/projects/${projectId}/files`),
             file,
@@ -224,7 +257,7 @@ export class ProjectFilesService {
           ),
         );
         added += 1;
-        this.setState(item.id, 'done');
+        this.setState(item.id, 'done', stored);
       } catch (error) {
         this.setState(item.id, 'failed');
         this.notifications.error(uploadErrorKey(error), file.name);
@@ -342,28 +375,6 @@ export class ProjectFilesService {
     }
   }
 
-  /** An uploaded `.json` mapping: parsed here, validated and stored by the API. */
-  async importMappingFile(file: File): Promise<Mapping | undefined> {
-    let spec: unknown;
-    try {
-      spec = JSON.parse(await file.text());
-    } catch {
-      this.notifications.error('mappings.upload.notJson', file.name);
-      return undefined;
-    }
-    const saved = await this.saveMapping(spec, 'copied');
-    if (!saved.ok) {
-      this.notifications.error(
-        'mappings.upload.invalid',
-        saved.issues
-          .map((issue) => `${issue.path || '/'}: ${issue.message}`)
-          .join('; '),
-      );
-      return undefined;
-    }
-    return saved.mapping;
-  }
-
   async downloadMapping(mapping: Mapping): Promise<void> {
     try {
       const response = await this.fetchBlob(`/mappings/${mapping.id}/download`);
@@ -402,6 +413,124 @@ export class ProjectFilesService {
       );
     } catch {
       this.notifications.error('files.downloadFailed');
+    }
+  }
+
+  // --- Mapping suggestions (F5.19) ---
+
+  private readonly takeStandardAction = defineAction<
+    { id: string; file: { id: string } },
+    TakenStandardMapping
+  >({
+    run: ({ id, file }) =>
+      firstValueFrom(
+        this.http.post<TakenStandardMapping>(
+          apiUrl(`/standard-mappings/${id}/take`),
+          { projectId: this.requireId(), projectFileId: file.id },
+        ),
+      ),
+    messages: { error: 'files.suggestions.takeFailed' },
+  });
+
+  /**
+   * "Übernehmen": my own mapping is assigned; a standard mapping is copied into my mappings
+   * (an identical copy is reused) and assigned; a library entry is copied (F5.16) and assigned.
+   * Nothing happens without this click. Resolves false when it failed (already told).
+   */
+  async takeSuggestion(
+    file: { id: string },
+    suggestion: MappingSuggestion,
+  ): Promise<boolean> {
+    try {
+      switch (suggestion.source) {
+        case 'own':
+          await this.actions.run(
+            this.assignAction,
+            {
+              file: file as ProjectFile,
+              assignment: { mode: 'mapping', mappingId: suggestion.id },
+            },
+            { key: `suggestion:${file.id}` },
+          );
+          return true;
+        case 'standard': {
+          const taken = await this.actions.run(
+            this.takeStandardAction,
+            { id: suggestion.id, file },
+            {
+              key: `suggestion:${file.id}`,
+              activity: { label: 'activity.suggestionTake' },
+            },
+          );
+          this.notifications.success('files.suggestions.takenStandard', {
+            labelKey: 'mappings.openPage',
+            onClick: () =>
+              void this.router.navigate(['/app/mappings', taken.mapping.id]),
+          });
+          return true;
+        }
+        case 'library':
+          return (
+            (await this.library.take(suggestion.id, {
+              projectId: this.requireId(),
+              projectFileId: file.id,
+            })) !== undefined
+          );
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  /** What a suggestion would read from the file (kind counts, unknown values, first rows). */
+  suggestionPreview(
+    file: { id: string },
+    suggestion: MappingSuggestion,
+  ): Promise<SuggestionPreview> {
+    return firstValueFrom(
+      this.http.get<SuggestionPreview>(
+        apiUrl(
+          `/projects/${this.requireId()}/files/${file.id}/suggestion-preview`,
+        ),
+        { params: { source: suggestion.source, id: suggestion.id, limit: 20 } },
+      ),
+    );
+  }
+
+  /** The spec of a suggestion — the start of "Als Vorlage anpassen" (a near match). */
+  async suggestionSpec(
+    suggestion: MappingSuggestion,
+  ): Promise<Record<string, unknown>> {
+    switch (suggestion.source) {
+      case 'own': {
+        const mine = this.myMappings
+          .value()
+          ?.find((mapping) => mapping.id === suggestion.id);
+        if (mine) return mine.spec;
+        return (
+          await firstValueFrom(
+            this.http.get<Mapping>(apiUrl(`/mappings/${suggestion.id}`)),
+          )
+        ).spec;
+      }
+      case 'standard':
+        return (
+          (
+            await firstValueFrom(
+              this.http.get<StandardMapping>(
+                apiUrl(`/standard-mappings/${suggestion.id}`),
+              ),
+            )
+          ).spec ?? {}
+        );
+      case 'library':
+        return (
+          await firstValueFrom(
+            this.http.get<LibraryEntryDetail>(
+              apiUrl(`/library/${suggestion.id}`),
+            ),
+          )
+        ).spec;
     }
   }
 
@@ -444,9 +573,17 @@ export class ProjectFilesService {
     );
   }
 
-  private setState(id: number, state: UploadState): void {
+  private setState(id: number, state: UploadState, stored?: ProjectFile): void {
     this.uploadQueue.update((items) =>
-      items.map((item) => (item.id === id ? { ...item, state } : item)),
+      items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              state,
+              ...(stored ? { fileId: stored.id, status: stored.status } : {}),
+            }
+          : item,
+      ),
     );
   }
 

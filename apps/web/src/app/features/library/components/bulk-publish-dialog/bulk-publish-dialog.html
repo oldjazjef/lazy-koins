@@ -1,0 +1,261 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="w-full sm:max-w-4xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'library.bulk.title' | translate: { count: bulk.items().length } }}
+      </h3>
+      <p hlmDialogDescription>{{ 'library.bulk.description' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-5">
+        @if (bulk.phase() === 'done') {
+        <p class="text-sm font-medium" role="status">
+          {{ 'library.bulk.doneSummary' | translate: bulk.counts() }}
+        </p>
+        } @if (bulk.quota(); as quota) { @if (bulk.phase() === 'review') {
+        <p class="text-muted-foreground text-sm">
+          {{ 'library.bulk.quota' | translate: { remaining:
+          quota.remainingToday, perDay: quota.newPerDay, count: bulk.newCount()
+          } }}
+        </p>
+        } @if (bulk.exceedsToday() && bulk.phase() === 'review') {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'library.bulk.exceedsToday' | translate: { remaining:
+          quota.remainingToday, count: bulk.newCount() } }}
+        </p>
+        } @if (bulk.exceedsBudget() && bulk.phase() === 'review') {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'library.bulk.exceedsBudget' | translate: { max:
+          quota.publishesPer10Min } }}
+        </p>
+        } }
+
+        <ul class="flex flex-col gap-3">
+          @for (item of bulk.items(); track item.mapping.id) { @let block =
+          blockOf(item);
+          <li class="lk-panel flex min-w-0 flex-col gap-2 p-3 text-sm">
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="min-w-0 font-medium" [lkTruncate]="item.mapping.name"
+                >{{ item.mapping.name }}</span
+              >
+              <span class="text-muted-foreground shrink-0 text-xs"
+                >{{ item.mapping.platform }}</span
+              >
+              @if (item.result; as result) { @switch (result.state) { @case
+              ('published') {
+              <span hlmBadge variant="secondary" class="ml-auto shrink-0"
+                >{{ (result.entry.version > 1 ? 'library.bulk.state.version' :
+                'library.bulk.state.published') | translate: { version:
+                result.entry.version } }}</span
+              >
+              } @case ('already') {
+              <span hlmBadge variant="outline" class="ml-auto shrink-0"
+                >{{ 'library.bulk.state.already' | translate }}</span
+              >
+              } @case ('refused') {
+              <span hlmBadge variant="destructive" class="ml-auto shrink-0"
+                >{{ 'library.bulk.state.refused' | translate }}</span
+              >
+              } } } @else if (block) {
+              <span hlmBadge variant="destructive" class="ml-auto shrink-0"
+                >{{ 'library.bulk.state.blocked' | translate }}</span
+              >
+              }
+            </div>
+
+            @if (item.result; as result) { @switch (result.state) { @case
+            ('published') {
+            <a
+              class="text-primary text-xs hover:underline"
+              [routerLink]="['/app/mappings/library', result.entry.id]"
+              >{{ 'library.publish.open' | translate }}</a
+            >
+            } @case ('already') {
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="text-muted-foreground"
+                >{{ 'library.bulk.alreadyHint' | translate }}</span
+              >
+              @if (result.libraryId) {
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                type="button"
+                (click)="bulk.publishVersion(item.mapping.id)"
+              >
+                {{ 'library.bulk.newVersion' | translate }}
+              </button>
+              }
+            </div>
+            } @case ('refused') {
+            <p class="text-muted-foreground text-xs">
+              {{ refusalKey(result.code, result.error?.key ?? null) | translate:
+              result.error?.params ?? {} }}
+            </p>
+            } } } @else if (block) {
+            <p class="text-muted-foreground text-xs">
+              {{ 'library.bulk.block.' + block | translate }}
+            </p>
+            } @else if (item.review; as review) {
+            <!-- New entry, new version of my entry, or leave it out -->
+            <div class="flex flex-wrap items-center gap-2">
+              <label class="text-xs" [for]="'bulk-mode-' + item.mapping.id"
+                >{{ 'library.bulk.mode' | translate }}</label
+              >
+              <select
+                hlmInput
+                class="h-8 max-w-72 text-xs"
+                [id]="'bulk-mode-' + item.mapping.id"
+                [disabled]="bulk.phase() !== 'review'"
+                [ngModel]="item.mode"
+                (ngModelChange)="setMode(item, $event)"
+              >
+                <option value="new">
+                  {{ 'library.bulk.modeNew' | translate }}
+                </option>
+                @if (review.existing) {
+                <option value="version">
+                  {{ 'library.bulk.modeVersion' | translate: { version:
+                  review.existing.version + 1 } }}
+                </option>
+                }
+                <option value="skip">
+                  {{ 'library.bulk.modeSkip' | translate }}
+                </option>
+              </select>
+            </div>
+            @if (item.findings.length === 0) {
+            <p class="text-muted-foreground text-xs">
+              {{ 'library.findings.none' | translate }}
+            </p>
+            } @else {
+            <p class="flex items-center gap-2 text-xs font-medium">
+              <ng-icon name="lucideShieldAlert" size="14" aria-hidden="true" />
+              {{ 'library.findings.title' | translate }}
+            </p>
+            <ul class="flex flex-col gap-1">
+              @for (finding of item.findings; track finding.path) {
+              <li class="flex items-start gap-2 text-xs">
+                @if (finding.removable) {
+                <input
+                  type="checkbox"
+                  class="mt-0.5"
+                  [id]="'bulk-finding-' + item.mapping.id + '-' + $index"
+                  [checked]="item.selected.has(finding.path)"
+                  [disabled]="bulk.phase() !== 'review'"
+                  (change)="bulk.toggle(item.mapping.id, finding.path)"
+                />
+                }
+                <label
+                  class="flex min-w-0 flex-1 flex-col"
+                  [for]="'bulk-finding-' + item.mapping.id + '-' + $index"
+                >
+                  <span class="flex flex-wrap items-center gap-2">
+                    <span hlmBadge variant="outline"
+                      >{{ 'library.findings.kind.' + finding.kind | translate
+                      }}</span
+                    >
+                    <code class="text-muted-foreground"
+                      >{{ finding.path }}</code
+                    >
+                  </span>
+                  <span class="font-mono break-all">{{ finding.value }}</span>
+                  <span class="text-muted-foreground">
+                    {{ (finding.removable ? 'library.findings.removeHint' :
+                    'library.findings.editHint') | translate }}
+                  </span>
+                </label>
+              </li>
+              }
+            </ul>
+            }
+            <details class="text-xs">
+              <summary class="cursor-pointer">
+                {{ 'library.publish.json' | translate: { size: review.size } }}
+              </summary>
+              <pre
+                class="bg-muted mt-2 max-h-64 overflow-auto rounded p-3 font-mono break-all whitespace-pre-wrap"
+              >
+{{ json(item) }}</pre>
+            </details>
+            } @else {
+            <hlm-skeleton class="h-6 w-1/2" />
+            }
+          </li>
+          }
+        </ul>
+
+        @if (bulk.phase() === 'review') {
+        <div class="lk-form-row">
+          <div class="lk-field">
+            <label
+              hlmLabel
+              for="bulk-author"
+              [title]="'library.publish.authorName' | translate"
+              >{{ 'library.publish.authorName' | translate }}</label
+            >
+            <input
+              hlmInput
+              id="bulk-author"
+              maxlength="40"
+              [placeholder]="'library.anonymous' | translate"
+              [ngModel]="bulk.authorName()"
+              (ngModelChange)="bulk.authorName.set($event)"
+            />
+            <span class="text-muted-foreground text-xs"
+              >{{ 'library.bulk.authorHint' | translate }}</span
+            >
+          </div>
+        </div>
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            class="mt-1"
+            [checked]="bulk.confirmed()"
+            (change)="bulk.confirmed.set(!bulk.confirmed())"
+          />
+          {{ 'library.bulk.confirm' | translate: { count:
+          bulk.toPublish().length } }}
+        </label>
+        @if (bulk.remainingFindings() > 0) {
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            class="mt-1"
+            [checked]="bulk.acknowledged()"
+            (change)="bulk.acknowledged.set(!bulk.acknowledged())"
+          />
+          {{ 'library.publish.keepFindings' | translate: { count:
+          bulk.remainingFindings() } }}
+        </label>
+        } }
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      @if (bulk.phase() === 'done') {
+      <button hlmBtn type="button" hlmDialogClose>
+        {{ 'common.close' | translate }}
+      </button>
+      } @else {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        hlmDialogClose
+        [disabled]="bulk.phase() === 'running'"
+      >
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!bulk.canPublish()"
+        (click)="bulk.publishAll()"
+      >
+        {{ 'library.bulk.submit' | translate: { count: bulk.toPublish().length }
+        }}
+      </button>
+      }
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

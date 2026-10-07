@@ -72,6 +72,10 @@
         <p class="text-destructive text-sm" role="alert">
           {{ failure | translate }}
         </p>
+        } @if (publish.libraryCopy()) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'library.bulk.block.libraryCopy' | translate }}
+        </p>
         } @if (publish.review(); as review) {
         <!-- 2. What becomes public -->
         <div class="lk-panel flex flex-col gap-1 p-4 text-sm">

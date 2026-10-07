@@ -37,6 +37,7 @@ import {
   LibraryFileMatchesDto,
   LibrarySearchQueryDto,
   PublishLibraryMappingDto,
+  PublishQuotaResponseDto,
   PublishReviewResponseDto,
   PublishSourceDto,
   RateLibraryMappingDto,
@@ -50,10 +51,13 @@ import {
   SaveRemoteLibrarySettingsDto,
   TestRemoteLibraryDto,
 } from './dto/remote-library.dto';
+import { PUBLISHES_PER_10_MIN } from './domain/library-mapping';
 import { LibraryService } from './library.service';
 
 /** Per account: publishing (new entries and versions) and rating have tight budgets. */
-const PUBLISH_BUDGET = { writes: { limit: 10, ttl: 10 * 60_000 } };
+const PUBLISH_BUDGET = {
+  writes: { limit: PUBLISHES_PER_10_MIN, ttl: 10 * 60_000 },
+};
 const RATE_BUDGET = { writes: { limit: 60, ttl: 10 * 60_000 } };
 
 /**
@@ -89,6 +93,19 @@ export class LibraryController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<LibraryStatusDto> {
     return LibraryStatusDto.from(await this.library.status(user.userId));
+  }
+
+  @UseGuards(LibraryEnabledGuard)
+  @Get('quota')
+  @ApiOperation({
+    summary:
+      'F5.20: how many new entries I may still publish today, and the 10-minute budget (before a bulk publish)',
+  })
+  @ApiOkResponse({ type: PublishQuotaResponseDto })
+  async quota(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<PublishQuotaResponseDto> {
+    return { ...(await this.library.quota(user.userId)) };
   }
 
   @Get()

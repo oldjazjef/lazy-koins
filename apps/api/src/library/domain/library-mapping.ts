@@ -128,7 +128,26 @@ export interface PublishReview {
   readonly existing: { readonly id: string; readonly version: number } | null;
   /** The pseudonym used last time (prefill), `null` = none / Anonym. */
   readonly lastAuthorName: string | null;
+  /**
+   * The source is a copy taken from the library (origin `library`): it cannot become a new
+   * entry (409 `libraryCopy`) — only a new version of an entry of mine.
+   */
+  readonly libraryCopy: boolean;
 }
+
+/**
+ * F5.20 (several at once): how many **new** entries I may still publish today — new versions do
+ * not count. The HTTP budget (`publishesPer10Min`) counts every publish, versions included.
+ */
+export interface PublishQuota {
+  readonly newPerDay: number;
+  readonly usedToday: number;
+  readonly remainingToday: number;
+  readonly publishesPer10Min: number;
+}
+
+/** Per account: publishing (new entries and versions) within 10 minutes (HTTP budget). */
+export const PUBLISHES_PER_10_MIN = 10;
 
 /** A trimmed pseudonym, or `null` for "Anonym". */
 export function cleanAuthorName(

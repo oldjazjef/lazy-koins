@@ -14,6 +14,7 @@ import {
   type LibraryFileMatches,
   type LibrarySearch,
   ProjectLibraryMatchesQuery,
+  PublishQuotaQuery,
   ReviewPublicationQuery,
   SearchLibraryQuery,
 } from './application/library.queries';
@@ -32,6 +33,7 @@ import {
 import type {
   LibraryEntryDetail,
   LibraryEntryView,
+  PublishQuota,
   PublishReview,
 } from './domain/library-mapping';
 import type {
@@ -82,6 +84,10 @@ export class LibraryService {
 
   review(userId: string, request: PublishRequest): Promise<PublishReview> {
     return this.queries.execute(new ReviewPublicationQuery(userId, request));
+  }
+
+  quota(userId: string): Promise<PublishQuota> {
+    return this.queries.execute(new PublishQuotaQuery(userId));
   }
 
   publish(userId: string, input: PublishInput): Promise<LibraryEntryView> {

@@ -74,6 +74,12 @@ describe('changeOf — URL/method → scope and project', () => {
     // F5.16: a library entry taken = a new mapping, maybe assigned to a file of any project.
     ['POST', '/api/library/l1/take', { projectId: null, scope: 'mappings' }],
     ['POST', '/api/library/review', null],
+    // F5.19: a standard mapping taken = a copy, maybe assigned to a file of any project.
+    [
+      'POST',
+      '/api/standard-mappings/kraken-ledger/take',
+      { projectId: null, scope: 'mappings' },
+    ],
     // F5.18 (desktop): the link to a web library; its test stores nothing.
     ['PUT', '/api/settings/library', { scope: 'settings' }],
     ['POST', '/api/settings/library/test', null],

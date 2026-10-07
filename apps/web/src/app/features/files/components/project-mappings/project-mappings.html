@@ -15,6 +15,7 @@
         variant="outline"
         size="sm"
         type="button"
+        [disabled]="imports.running()"
         (click)="mappingPicker.click()"
       >
         <ng-icon name="lucideUpload" size="14" aria-hidden="true" />
@@ -25,6 +26,7 @@
         id="mapping-picker"
         class="sr-only"
         type="file"
+        multiple
         accept=".json,application/json"
         (change)="picked($event)"
       />
@@ -168,3 +170,5 @@
     </hlm-dialog-footer>
   </hlm-dialog-content>
 </hlm-dialog>
+
+<lk-mapping-import-results />

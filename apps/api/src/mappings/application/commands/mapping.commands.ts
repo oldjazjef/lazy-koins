@@ -6,13 +6,15 @@ import { ProjectNotifications } from '../../../notifications/application/project
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import type { ImportMapping, MappingOrigin } from '../../domain/import-mapping';
 import { ImportMappingRepositoryPort } from '../../ports/import-mapping.repository.port';
-import { loadOwnMapping, specOr400 } from '../mapping-access';
+import { findSameSpec, loadOwnMapping, specOr400 } from '../mapping-access';
 
 export class CreateMappingCommand {
   constructor(
     readonly userId: string,
     readonly spec: unknown,
     readonly origin: MappingOrigin,
+    /** F11.0u (several `.json` at once): refuse a spec I already have — 409 `duplicateMapping`. */
+    readonly rejectDuplicate = false,
   ) {}
 }
 
@@ -28,8 +30,20 @@ export class CreateMappingHandler implements ICommandHandler<
     userId,
     spec,
     origin,
+    rejectDuplicate,
   }: CreateMappingCommand): Promise<ImportMapping> {
-    return this.mappings.create(userId, { spec: specOr400(spec), origin });
+    const valid = specOr400(spec);
+    if (rejectDuplicate) {
+      const same = await findSameSpec(this.mappings, userId, valid);
+      if (same) {
+        throw conflict(
+          'duplicateMapping',
+          'You already have a mapping with exactly this spec',
+          { existingId: same.id, existingName: same.name },
+        );
+      }
+    }
+    return this.mappings.create(userId, { spec: valid, origin });
   }
 }
 

@@ -12,6 +12,9 @@ import {
   type LibraryEntryView,
   type LibraryMapping,
   type LibrarySort,
+  LIBRARY_LIMITS,
+  PUBLISHES_PER_10_MIN,
+  type PublishQuota,
   type PublishReview,
   searchEntries,
 } from '../domain/library-mapping';
@@ -136,6 +139,39 @@ export class ReviewPublicationHandler implements IQueryHandler<
       request,
     );
     return review;
+  }
+}
+
+export class PublishQuotaQuery {
+  constructor(readonly userId: string) {}
+}
+
+/**
+ * F5.20: before a bulk publish the app says how many new entries are left today — the same
+ * count the publish handler enforces (deleted entries count, new versions do not).
+ */
+@QueryHandler(PublishQuotaQuery)
+export class PublishQuotaHandler implements IQueryHandler<
+  PublishQuotaQuery,
+  PublishQuota
+> {
+  constructor(
+    private readonly library: LibraryRepositoryPort,
+    private readonly runtime: LibraryRuntime,
+  ) {}
+
+  async execute({ userId }: PublishQuotaQuery): Promise<PublishQuota> {
+    this.runtime.assertEnabled();
+    const since = new Date(
+      this.runtime.now().getTime() - 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const usedToday = await this.library.countPublishedSince(userId, since);
+    return {
+      newPerDay: LIBRARY_LIMITS.publishesPerDay,
+      usedToday,
+      remainingToday: Math.max(0, LIBRARY_LIMITS.publishesPerDay - usedToday),
+      publishesPer10Min: PUBLISHES_PER_10_MIN,
+    };
   }
 }
 

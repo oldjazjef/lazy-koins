@@ -288,7 +288,9 @@
         "uploading": "wird hochgeladen …",
         "done": "fertig",
         "failed": "fehlgeschlagen"
-      }
+      },
+      "needsMapping": "braucht ein Mapping",
+      "showSuggestion": "Vorschlag ansehen"
     },
     "template": {
       "label": "Vorlage im Standardformat:",
@@ -377,6 +379,32 @@
       "done": "{{count}} Datei(en) übernommen",
       "failed": "Die Dateien konnten nicht übernommen werden",
       "loadFailed": "Die anderen Projekte konnten nicht geladen werden"
+    },
+    "suggestions": {
+      "title": "Vorschläge für {{count}} Datei(en) ohne Mapping",
+      "body": "Für diese Dateien wurde kein Mapping automatisch gefunden. Hier sind die passendsten – nichts wird zugeordnet, bevor du klickst.",
+      "dialogTitle": "Vorschläge für diese Datei",
+      "libraryUnavailable": "Die Bibliothek war gerade nicht erreichbar – die Vorschläge kommen nur aus deinen Mappings und den Standard-Mappings.",
+      "suggestion": "Vorschlag:",
+      "coverage": "Übereinstimmung {{percent}} %",
+      "revision": "Stand {{revision}}",
+      "near": "{{matched}} von {{required}} Spalten gefunden.",
+      "missing": "Es fehlen: {{columns}}.",
+      "fileName": "Der Dateiname passt nicht zum Muster des Mappings.",
+      "showPreview": "Vorschau anzeigen",
+      "hidePreview": "Vorschau ausblenden",
+      "previewFailed": "Die Vorschau konnte nicht erstellt werden.",
+      "take": "Übernehmen",
+      "adapt": "Als Vorlage anpassen",
+      "others": "Andere Vorschläge ({{count}})",
+      "show": "Anzeigen",
+      "takeFailed": "Das Mapping konnte nicht übernommen werden",
+      "takenStandard": "Standard-Mapping als eigene Kopie übernommen und der Datei zugeordnet",
+      "source": {
+        "own": "eigenes Mapping",
+        "standard": "Standard-Mapping",
+        "library": "Bibliothek"
+      }
     }
   },
   "mappings": {
@@ -393,7 +421,7 @@
     "reapplyLater": "Später",
     "reapply": "Neu lesen",
     "upload": {
-      "button": "Mapping hochladen (.json)",
+      "button": "Mappings hochladen (.json)",
       "notJson": "Die Datei ist kein JSON",
       "invalid": "Das Mapping ist ungültig"
     },
@@ -535,6 +563,33 @@
       "notTable": "Das ist keine lesbare Tabelle (CSV oder XLSX)",
       "empty": "Die Datei ist leer",
       "loadFailed": "Die Datei konnte nicht geladen werden"
+    },
+    "import": {
+      "drop": "Mapping-Dateien (.json) hierher ziehen – mehrere gleichzeitig möglich.",
+      "title": "Mappings hochgeladen",
+      "summary": "{{stored}} gespeichert, {{duplicate}} schon vorhanden (übersprungen), {{problems}} mit Problemen.",
+      "state": {
+        "stored": "gespeichert",
+        "duplicate": "schon vorhanden",
+        "invalid": "ungültig",
+        "notJson": "kein JSON",
+        "tooLarge": "zu gross",
+        "tooMany": "nicht hochgeladen",
+        "failed": "fehlgeschlagen"
+      },
+      "open": "«{{name}}» öffnen",
+      "existing": "Du hast es schon als «{{name}}»",
+      "moreIssues": "… und {{count}} weitere Probleme",
+      "tooLargeHint": "Die Datei ist grösser als 1 MB – das ist kein Mapping.",
+      "tooManyHint": "Höchstens {{limit}} Dateien auf einmal – lade den Rest in einem zweiten Schritt hoch."
+    },
+    "selection": {
+      "label": "Auswahl",
+      "count": "{{count}} ausgewählt",
+      "publish": "In Bibliothek veröffentlichen",
+      "clear": "Auswahl aufheben",
+      "page": "Alle Mappings dieser Seite auswählen",
+      "row": "{{name}} auswählen"
     }
   },
   "ai": {
@@ -1810,7 +1865,10 @@
       "mappingReady": "Mapping-Vorschlag für {{name}} ist bereit",
       "statementReady": "Kontoauszug {{name}} ist ausgelesen"
     },
-    "libraryTake": "Mapping aus der Bibliothek übernehmen"
+    "libraryTake": "Mapping aus der Bibliothek übernehmen",
+    "suggestionTake": "Vorgeschlagenes Mapping übernehmen",
+    "mappingImport": "Mappings werden hochgeladen",
+    "libraryBulkPublish": "Mappings werden veröffentlicht"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2573,7 +2631,9 @@
       "libraryDisabled": "Dieser Server bietet keine öffentliche Bibliothek an.",
       "libraryRateLimited": "Zu viele Anfragen an den Bibliothek-Server – warte einen Moment.",
       "libraryUrlInvalid": "Diese Adresse kann nicht verwendet werden.",
-      "incompatibleSpec": "Dieses Mapping braucht eine neuere Version der App – aktualisiere lazy-koins."
+      "incompatibleSpec": "Dieses Mapping braucht eine neuere Version der App – aktualisiere lazy-koins.",
+      "duplicateMapping": "Genau dieses Mapping hast du schon.",
+      "libraryCopy": "Eine Kopie aus der Bibliothek kann nicht als neuer Eintrag veröffentlicht werden."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -2663,10 +2723,6 @@
       "fingerprint": "Erkennt Dateien mit den Spalten",
       "notFound": "Dieses Mapping gibt es in der Bibliothek nicht (mehr)."
     },
-    "matches": {
-      "title": "In der Bibliothek gefunden: {{count}} passende Mappings",
-      "body": "Andere haben schon Mappings für diesen Dateiaufbau veröffentlicht. «Übernehmen» legt eine eigene Kopie an und liest die Datei damit – ohne AI."
-    },
     "origin": {
       "label": "Bibliothek",
       "version": "übernommen, Version {{version}}",
@@ -2755,6 +2811,39 @@
         "never": "Nie: Anmeldedaten, deine E-Mail, Projekte, Dateiinhalte, Bewertungen oder Veröffentlichungen.",
         "offline": "Ohne Adresse, ausgeschaltet oder mit ausgeschalteten Online-Abfragen geht die App für die Bibliothek nie ins Internet."
       }
+    },
+    "bulk": {
+      "title": "{{count}} Mappings veröffentlichen",
+      "description": "Jedes Mapping wird einzeln geprüft: entferne, was persönlich aussieht, kontrolliere das JSON – veröffentlicht wird erst nach deiner Bestätigung, eines nach dem anderen.",
+      "quota": "Heute kannst du noch {{remaining}} von {{perDay}} neuen Einträgen veröffentlichen; ausgewählt sind {{count}} neue (neue Versionen zählen nicht).",
+      "exceedsToday": "Das sind mehr neue Einträge, als heute noch möglich sind: nur {{remaining}} von {{count}} werden angenommen, der Rest wird abgelehnt. Versuch es morgen wieder oder wähle weniger aus.",
+      "exceedsBudget": "Höchstens {{max}} Veröffentlichungen pro 10 Minuten – was darüber liegt, wird abgelehnt; versuch es danach noch einmal.",
+      "doneSummary": "{{published}} veröffentlicht, {{already}} schon veröffentlicht, {{refused}} abgelehnt.",
+      "state": {
+        "published": "veröffentlicht",
+        "version": "Version {{version}} veröffentlicht",
+        "already": "schon veröffentlicht",
+        "refused": "abgelehnt",
+        "blocked": "nicht möglich"
+      },
+      "alreadyHint": "Genau dieses Mapping ist schon in der Bibliothek.",
+      "newVersion": "Als neue Version veröffentlichen",
+      "refused": {
+        "publishLimit": "Heute sind keine neuen Einträge mehr möglich (höchstens 10 pro Tag) – versuch es morgen wieder.",
+        "rateLimited": "Zu viele Veröffentlichungen in kurzer Zeit – warte ein paar Minuten und versuch es nochmals."
+      },
+      "block": {
+        "libraryCopy": "Dieses Mapping ist eine Kopie aus der Bibliothek. Fremde Arbeit kann nicht als neuer Eintrag veröffentlicht werden – bewerte stattdessen das Original oder veröffentliche ein eigenes Mapping.",
+        "tooLarge": "Das Mapping ist zu gross für die Bibliothek.",
+        "reviewFailed": "Die Prüfung dieses Mappings ist fehlgeschlagen."
+      },
+      "mode": "Veröffentlichen als",
+      "modeNew": "neuer Eintrag",
+      "modeVersion": "neue Version {{version}} meines Eintrags",
+      "modeSkip": "nicht veröffentlichen",
+      "authorHint": "Gilt für alle ausgewählten Mappings. Leer = «Anonym»; nie dein Name oder deine E-Mail.",
+      "confirm": "Ich habe die {{count}} Mappings geprüft und will sie genau so veröffentlichen.",
+      "submit": "{{count}} veröffentlichen"
     }
   }
 }

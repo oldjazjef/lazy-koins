@@ -6,6 +6,7 @@
     hlmBtn
     variant="outline"
     type="button"
+    [disabled]="imports.running()"
     (click)="mappingPicker.click()"
   >
     <ng-icon name="lucideUpload" size="16" aria-hidden="true" />
@@ -16,6 +17,7 @@
     id="mappings-upload"
     class="sr-only"
     type="file"
+    multiple
     accept=".json,application/json"
     (change)="picked($event)"
   />
@@ -44,6 +46,17 @@
   </button>
 </lk-empty-state>
 } @else {
+<!-- F11.0u: several mapping files at once -->
+<div
+  class="text-muted-foreground mb-4 rounded-lg border-2 border-dashed px-4 py-3 text-center text-sm transition-colors"
+  [class.border-primary]="dragging()"
+  [class.bg-muted]="dragging()"
+  (dragover)="dragOver($event)"
+  (dragleave)="dragLeave()"
+  (drop)="drop($event)"
+>
+  {{ 'mappings.import.drop' | translate }}
+</div>
 <div class="mb-4 flex flex-wrap items-end gap-4">
   <div class="flex min-w-64 flex-1 flex-col gap-2">
     <label hlmLabel for="mappings-search"
@@ -77,12 +90,40 @@
   </div>
 </div>
 
-@if (service.visible().length === 0) {
+@if (canPublish() && selectedCount() > 0) {
+<!-- F5.20: bulk action on the selected rows -->
+<div
+  class="lk-panel mb-4 flex flex-wrap items-center gap-3 px-4 py-2 text-sm"
+  role="region"
+  [attr.aria-label]="'mappings.selection.label' | translate"
+>
+  <span class="font-medium" aria-live="polite"
+    >{{ 'mappings.selection.count' | translate: { count: selectedCount() }
+    }}</span
+  >
+  <button hlmBtn size="sm" type="button" (click)="publishSelected()">
+    <ng-icon name="lucideLibraryBig" size="14" aria-hidden="true" />
+    {{ 'mappings.selection.publish' | translate }}
+  </button>
+  <button
+    hlmBtn
+    variant="ghost"
+    size="sm"
+    type="button"
+    (click)="clearSelection()"
+  >
+    {{ 'mappings.selection.clear' | translate }}
+  </button>
+</div>
+} @if (service.visible().length === 0) {
 <lk-empty-state [message]="'mappings.list.noMatch' | translate" />
 } @else {
 <div hlmTableContainer class="lk-panel">
   <table hlmTable class="table-fixed">
     <colgroup>
+      @if (canPublish()) {
+      <col class="w-10" />
+      }
       <col />
       <col class="w-36" />
       <col class="hidden w-28 md:table-column" />
@@ -92,6 +133,17 @@
     </colgroup>
     <thead hlmTHead>
       <tr hlmTr>
+        @if (canPublish()) {
+        <th hlmTh>
+          <input
+            type="checkbox"
+            [checked]="pageSelected()"
+            [indeterminate]="pagePartly()"
+            [attr.aria-label]="'mappings.selection.page' | translate"
+            (change)="togglePage()"
+          />
+        </th>
+        }
         <th hlmTh>{{ 'mappings.fields.name' | translate }}</th>
         <th hlmTh>{{ 'mappings.fields.platform' | translate }}</th>
         <th hlmTh class="hidden md:table-cell">
@@ -108,7 +160,22 @@
     </thead>
     <tbody hlmTBody>
       @for (mapping of pager.visible(); track mapping.id) {
-      <tr hlmTr class="cursor-pointer" (click)="open(mapping.id)">
+      <tr
+        hlmTr
+        class="cursor-pointer"
+        [class.bg-muted]="isSelected(mapping)"
+        (click)="open(mapping.id)"
+      >
+        @if (canPublish()) {
+        <td hlmTd (click)="$event.stopPropagation()">
+          <input
+            type="checkbox"
+            [checked]="isSelected(mapping)"
+            [attr.aria-label]="'mappings.selection.row' | translate: { name: mapping.name }"
+            (change)="toggleRow(mapping)"
+          />
+        </td>
+        }
         <td hlmTd class="max-w-0">
           <a
             class="font-medium hover:underline"
@@ -152,6 +219,9 @@
 </div>
 <lk-paginator [pager]="pager" />
 } }
+
+<lk-mapping-import-results />
+<lk-bulk-publish-dialog />
 
 <!-- New mapping -->
 <hlm-dialog [state]="dialogState()" (stateChanged)="dialogChanged($event)">

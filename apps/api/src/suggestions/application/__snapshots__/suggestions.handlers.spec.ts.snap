@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the standard catalogue (F5.19) > pins each entry to its revision — change the JSON, bump the revision and this hash 1`] = `
+{
+  "binance-transaction-history": "1:d5eea6d492ed",
+  "bitfinex-ledger": "1:cd51aafaec3e",
+  "bitpanda-transactions": "1:a66da9c0b7c0",
+  "bitstamp-transactions": "1:e0e0e0b63641",
+  "bybit-transaction-log": "1:d05740c7b85a",
+  "coinbase-transaction-history": "1:2a707b4ec2ae",
+  "cryptocom-app-crypto-wallet": "1:551b294a650c",
+  "kraken-ledger": "1:6fa70f6b975b",
+  "kucoin-account-history": "1:351d50cf0134",
+  "kucoin-spot-orders": "1:4229275ac8cc",
+  "okx-funding-account-history": "1:756c2504c3fa",
+  "okx-trading-account-history": "1:75891e22c5f6",
+}
+`;

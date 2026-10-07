@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsObject, IsOptional } from 'class-validator';
+import { IsBoolean, IsIn, IsObject, IsOptional } from 'class-validator';
 import {
   type ImportMapping,
   MAPPING_ORIGINS,
@@ -39,6 +39,15 @@ export class CreateMappingDto {
   @IsOptional()
   @IsIn(CLIENT_ORIGINS)
   origin?: (typeof CLIENT_ORIGINS)[number];
+
+  @ApiPropertyOptional({
+    default: false,
+    description:
+      'Refuse a spec I already have (409 code duplicateMapping with existingId / existingName) — several .json at once',
+  })
+  @IsOptional()
+  @IsBoolean()
+  rejectDuplicate?: boolean;
 }
 
 export class UpdateMappingDto {
