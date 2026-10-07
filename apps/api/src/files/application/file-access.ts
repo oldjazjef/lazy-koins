@@ -1,8 +1,8 @@
 import {
-  ConflictException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { projectClosed } from '../../common/http/api-errors';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import type { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -14,7 +14,7 @@ import { UnreadableFileError } from './source-file-reader';
 /** F4.5: a closed project accepts no change to its files. */
 export function assertOpen(project: Project): void {
   if (project.status === 'closed') {
-    throw new ConflictException(
+    throw projectClosed(
       'The project is closed: reopen it first, then change its files',
     );
   }

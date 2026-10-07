@@ -1137,7 +1137,7 @@
     "refresh": "Refresh rates",
     "refreshAll": "Fetch all again",
     "estvImport": "Import ESTV rate list (Kursliste)",
-    "hint": "Rates are stored per project (ECB exchange rates, Binance daily close, CoinGecko with key). The calculation only reads stored rates; overrides and ESTV values take precedence. Kursliste: XML from ictax.admin.ch or CSV asset;kurs_chf;datum.",
+    "hint": "Rates are stored per project (ECB exchange rates, Binance daily close, CoinGecko with key). The calculation only reads stored rates; overrides and ESTV values take precedence. ESTV rate list (Kursliste): XML from ictax.admin.ch or CSV asset;kurs_chf;datum.",
     "summary": "Fetched: {{fx}} exchange rates",
     "refreshed": "Rates refreshed",
     "refreshFailed": "Rates could not be refreshed",
@@ -1145,7 +1145,7 @@
     "overrideFailed": "Rate could not be saved",
     "removed": "Rate removed",
     "removeFailed": "Rate could not be removed",
-    "estvFailed": "Kursliste could not be imported",
+    "estvFailed": "The ESTV rate list (Kursliste) could not be imported",
     "estvImported": "{{count}} ESTV rates imported",
     "loadFailed": "The rates could not be loaded.",
     "overrideTitle": "Override rate",
@@ -1652,7 +1652,7 @@
         "missingPrices": "{{count}} position(s) or income without a rate"
       },
       "estv": {
-        "fetchFailed": "ESTV Kursliste {{year}} could not be retrieved ({{reason}})",
+        "fetchFailed": "ESTV rate list (Kursliste) {{year}} could not be retrieved ({{reason}})",
         "newVersion": "New version available: {{label}}"
       },
       "key": {
@@ -1746,6 +1746,12 @@
         "unread": "Unread",
         "resolved": "Including resolved"
       }
+    },
+    "service": {
+      "ai": "AI",
+      "coingecko": "CoinGecko",
+      "mail": "mail (SMTP)",
+      "chain": "network lookups"
     }
   },
   "activity": {
@@ -2267,12 +2273,80 @@
         "executed": "Done ✓",
         "failed": "Failed:",
         "cancelled": "Cancelled"
+      },
+      "errors": {
+        "unknownTool": "unknown tool",
+        "invalidArguments": "invalid values",
+        "areaDisabled": "area not enabled",
+        "writeDisabled": "changes not allowed",
+        "notFound": "not found – it may have been deleted",
+        "conflict": "conflicts with the current state (e.g. the project is closed)",
+        "refused": "refused",
+        "failed": "unexpected error"
       }
     },
     "upload": {
       "drop": "Drag a file here (CSV, XLSX, PDF)",
       "pick": "Choose file",
       "show": "Show in Files"
+    },
+    "preview": {
+      "fallback": "With these values:",
+      "priceOverride": "Override the price of {{asset}} on {{date}}",
+      "reclassify": "Reclassify booking {{booking}}",
+      "manualBooking": "Manual booking {{asset}} on {{platform}}",
+      "manualHolding": "Manual holding {{asset}} on {{platform}}",
+      "openItem": "Edit open item: {{item}}",
+      "createExport": "Create export: {{kind}}",
+      "sendMail": "Send mail to {{to}}",
+      "hintStatus": "Set hint {{hint}} to “{{status}}”",
+      "removeFile": "Remove file “{{file}}” from the project",
+      "createMapping": "Save new mapping “{{name}}”",
+      "updateMapping": "Replace mapping “{{name}}” (version {{from}} → {{to}})",
+      "deleteMapping": "Delete mapping “{{name}}”",
+      "createProject": "New project “{{name}}” for {{year}} ({{canton}})",
+      "updateProject": "Change project “{{name}}”",
+      "deleteProject": "Permanently delete project “{{name}}” ({{year}})",
+      "updateSettings": "Change profile/settings",
+      "label": {
+        "reason": "Reason",
+        "price": "Price {{asset}} ({{unit}})",
+        "kind": "Type",
+        "booking": "Booking",
+        "holdingAt": "Holding at {{date}}",
+        "done": "Done",
+        "note": "Note",
+        "export": "Export",
+        "openItems": "Open items",
+        "to": "To",
+        "subject": "Subject",
+        "attachments": "Attachments",
+        "status": "Status",
+        "file": "File",
+        "mapping": "Mapping",
+        "version": "Version",
+        "name": "Name",
+        "taxYear": "Tax year",
+        "canton": "Canton",
+        "notes": "Notes",
+        "taxCurrency": "Tax currency",
+        "project": "Project",
+        "displayName": "Name",
+        "advisorName": "Tax advisor (Treuhänder)",
+        "advisorEmail": "Tax advisor email",
+        "onlineRates": "Online rate lookups"
+      },
+      "value": {
+        "noPrice": "no price",
+        "override": "{{price}} {{unit}} (override)",
+        "yes": "yes",
+        "no": "no"
+      }
+    },
+    "event": {
+      "executed": "Done: {{title}}",
+      "cancelled": "Cancelled: {{title}}",
+      "failed": "Failed: {{title}} – {{reason}}"
     }
   },
   "assistant": {
@@ -2424,6 +2498,40 @@
         "proposed": "Proposed"
       },
       "millis": "{{ms}} ms"
+    }
+  },
+  "errors": {
+    "api": {
+      "projectClosed": "The project is closed – reopen it first.",
+      "noCalculation": "The project has not been calculated yet.",
+      "offline": "Online rate lookups are switched off.",
+      "estvAutoOff": "The automatic ESTV rate list (Kursliste) is switched off on this server.",
+      "usedByClosedProject": "A closed project uses it – reopen that project first.",
+      "duplicateFile": "This file is already in the project.",
+      "alreadyDecided": "This has already been decided.",
+      "invalidCorrection": "The correction is invalid.",
+      "promptTooLong": "The prompt is too long.",
+      "tooManyTokens": "Too many active tokens – revoke one first.",
+      "setupIncomplete": "Required setup steps are still missing.",
+      "stepIncomplete": "This step is not complete yet.",
+      "stepRequired": "This step is required.",
+      "evidenceNotPdf": "The receipt must be a PDF of the project.",
+      "encryptionUnavailable": "Keys cannot be stored on this server (SETTINGS_ENCRYPTION_KEY is not set).",
+      "confirmationRequired": "Please confirm first.",
+      "consentRequired": "Your consent is still missing."
+    },
+    "status": {
+      "unreachable": "The server cannot be reached.",
+      "badRequest": "The input was not accepted.",
+      "unauthorized": "Your sign-in has expired – please sign in again.",
+      "forbidden": "Not permitted.",
+      "notFound": "Not found – it may have been deleted.",
+      "conflict": "Conflicts with the current state – reload the page and try again.",
+      "tooLarge": "Too large.",
+      "unprocessable": "The data could not be processed.",
+      "locked": "The app is locked.",
+      "rateLimited": "Too many requests – please wait a moment.",
+      "server": "Server error – please try again later."
     }
   }
 }

@@ -36,16 +36,31 @@ export interface ToolContext {
   readonly tokenId?: string;
 }
 
-/** One line of a proposal card: what changes, before → after (null = nothing / unknown). */
-export interface ToolChange {
-  readonly label: string;
-  readonly before: string | null;
-  readonly after: string | null;
+/**
+ * F11.2: a text of a proposal card the web renders in the user's language — `key` is a key of
+ * the web's message files (`chat.preview.*`, see `preview-texts.ts`), `params` its placeholders.
+ */
+export interface ToolText {
+  readonly key: string;
+  readonly params?: Readonly<Record<string, string | number>>;
 }
 
-/** What a write tool will do, shown before it runs (chat proposal card). */
+/** A value on a card: data shown as is (a name, an amount, an argument) or a text to translate. */
+export type ToolValue = string | ToolText;
+
+/** One line of a proposal card: what changes, before → after (null = nothing / unknown). */
+export interface ToolChange {
+  readonly label: ToolValue;
+  readonly before: ToolValue | null;
+  readonly after: ToolValue | null;
+}
+
+/**
+ * What a write tool will do, shown before it runs (chat proposal card). The summary and labels
+ * are keys + values (never German sentences), so the card follows the language of the app.
+ */
 export interface ToolPreview {
-  readonly summary: string;
+  readonly summary: ToolValue;
   readonly changes: readonly ToolChange[];
   /** The project concerned, for the card's link. */
   readonly projectId?: string;
@@ -57,7 +72,7 @@ export interface ToolDefinition<
 > {
   /** `snake_case`, `^[a-z][a-z0-9_]{2,63}$` — valid for OpenAI, Anthropic and MCP. */
   readonly name: string;
-  /** Short German title for cards and the MCP tool list. */
+  /** Short German title for cards and the MCP tool list (English: `tool-titles.ts`). */
   readonly title: string;
   /** What it does and when to use it — for the model; English. */
   readonly description: string;

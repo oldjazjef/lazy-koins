@@ -1,8 +1,22 @@
 import { z } from 'zod';
 import { aiReady } from '../../ai/domain/ai-settings';
 import { CH_CANTONS } from '../../projects/domain/project';
-import { type AnyTool, defineTool } from '../domain/tool';
+import { type AnyTool, defineTool, type ToolValue } from '../domain/tool';
+import { previewText, yesNo } from '../domain/preview-texts';
 import { link, projectLink, WORKSPACE_TABS, type ToolServices } from './common';
+
+/** The card labels of the profile fields `update_settings` may change. */
+const SETTINGS_LABELS = {
+  displayName: previewText('chat.preview.label.displayName'),
+  canton: previewText('chat.preview.label.canton'),
+  advisorName: previewText('chat.preview.label.advisorName'),
+  advisorEmail: previewText('chat.preview.label.advisorEmail'),
+  onlineRates: previewText('chat.preview.label.onlineRates'),
+} as const;
+
+function shown(value: unknown): ToolValue {
+  return typeof value === 'boolean' ? yesNo(value) : String(value);
+}
 
 /**
  * Settings WITHOUT keys (F11.16: "Einstellungen (ohne Schlüssel)"): the output schema has no
@@ -105,11 +119,14 @@ export function settingsTools(s: ToolServices): AnyTool[] {
         )
           .filter(([, value]) => value !== undefined)
           .map(([key, value]) => ({
-            label: key,
-            before: String(before[key]),
-            after: String(value),
+            label: SETTINGS_LABELS[key],
+            before: shown(before[key]),
+            after: shown(value),
           }));
-        return { summary: 'Profil/Einstellungen ändern', changes };
+        return {
+          summary: previewText('chat.preview.updateSettings'),
+          changes,
+        };
       },
     }),
     defineTool({

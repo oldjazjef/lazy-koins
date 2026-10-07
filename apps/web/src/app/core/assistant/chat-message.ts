@@ -6,8 +6,9 @@ import {
   input,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ChatAttachment, ChatMessageView } from '../api/assistant.types';
+import { eventText } from './proposal-text';
 import { appLink, type AppLink } from './chat-markdown';
 import { ChatText } from './chat-text';
 import { ChatUpload } from './chat-upload';
@@ -38,7 +39,20 @@ type ShownAttachment =
 })
 export class ChatMessage {
   protected readonly chat = inject(ChatService);
+  private readonly translate = inject(TranslateService);
   readonly message = input.required<ChatMessageView>();
+
+  /**
+   * An event in the user's language (F11.2); a row stored before has no outcome and shows its
+   * stored text.
+   */
+  protected readonly eventLine = computed(() => {
+    const message = this.message();
+    this.translate.currentLang();
+    return message.event
+      ? eventText(this.translate, message.event)
+      : message.content;
+  });
 
   protected readonly attachments = computed<readonly ShownAttachment[]>(() =>
     this.message().attachments.map((attachment: ChatAttachment) =>

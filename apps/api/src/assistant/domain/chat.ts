@@ -46,7 +46,12 @@ export interface ChatMessageData {
   readonly model?: string;
   /** event: the proposal it is about. */
   readonly proposalId?: string;
+  /** event: what became of it — the app renders the event from this in the user's language. */
+  readonly outcome?: ChatEventOutcome;
 }
+
+export const CHAT_EVENT_OUTCOMES = ['executed', 'cancelled', 'failed'] as const;
+export type ChatEventOutcome = (typeof CHAT_EVENT_OUTCOMES)[number];
 
 export interface ChatMessage {
   readonly id: string;

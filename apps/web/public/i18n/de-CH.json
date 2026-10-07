@@ -1746,6 +1746,12 @@
         "unread": "Ungelesene",
         "resolved": "Mit erledigten"
       }
+    },
+    "service": {
+      "ai": "AI",
+      "coingecko": "CoinGecko",
+      "mail": "Mail (SMTP)",
+      "chain": "Netzwerk-Abfragen"
     }
   },
   "activity": {
@@ -2267,12 +2273,80 @@
         "executed": "Ausgeführt ✓",
         "failed": "Fehlgeschlagen:",
         "cancelled": "Abgebrochen"
+      },
+      "errors": {
+        "unknownTool": "unbekanntes Werkzeug",
+        "invalidArguments": "ungültige Angaben",
+        "areaDisabled": "Bereich nicht freigegeben",
+        "writeDisabled": "Ändern nicht erlaubt",
+        "notFound": "nicht gefunden – vielleicht wurde es gelöscht",
+        "conflict": "passt nicht zum aktuellen Stand (z. B. Projekt abgeschlossen)",
+        "refused": "abgelehnt",
+        "failed": "unerwarteter Fehler"
       }
     },
     "upload": {
       "drop": "Datei hierher ziehen (CSV, XLSX, PDF)",
       "pick": "Datei wählen",
       "show": "In Dateien anzeigen"
+    },
+    "preview": {
+      "fallback": "Mit diesen Werten:",
+      "priceOverride": "Kurs von {{asset}} am {{date}} überschreiben",
+      "reclassify": "Buchung {{booking}} umklassieren",
+      "manualBooking": "Manuelle Buchung {{asset}} auf {{platform}}",
+      "manualHolding": "Manueller Bestand {{asset}} auf {{platform}}",
+      "openItem": "Offenen Punkt bearbeiten: {{item}}",
+      "createExport": "Export erstellen: {{kind}}",
+      "sendMail": "Mail an {{to}} senden",
+      "hintStatus": "Hinweis {{hint}} auf «{{status}}» setzen",
+      "removeFile": "Datei «{{file}}» aus dem Projekt entfernen",
+      "createMapping": "Neues Mapping «{{name}}» speichern",
+      "updateMapping": "Mapping «{{name}}» ersetzen (Version {{from}} → {{to}})",
+      "deleteMapping": "Mapping «{{name}}» löschen",
+      "createProject": "Neues Projekt «{{name}}» für {{year}} ({{canton}})",
+      "updateProject": "Projekt «{{name}}» ändern",
+      "deleteProject": "Projekt «{{name}}» ({{year}}) endgültig löschen",
+      "updateSettings": "Profil/Einstellungen ändern",
+      "label": {
+        "reason": "Begründung",
+        "price": "Kurs {{asset}} ({{unit}})",
+        "kind": "Art",
+        "booking": "Buchung",
+        "holdingAt": "Bestand per {{date}}",
+        "done": "Erledigt",
+        "note": "Notiz",
+        "export": "Export",
+        "openItems": "Offene Punkte",
+        "to": "An",
+        "subject": "Betreff",
+        "attachments": "Anhänge",
+        "status": "Status",
+        "file": "Datei",
+        "mapping": "Mapping",
+        "version": "Version",
+        "name": "Name",
+        "taxYear": "Steuerjahr",
+        "canton": "Kanton",
+        "notes": "Notizen",
+        "taxCurrency": "Steuerwährung",
+        "project": "Projekt",
+        "displayName": "Name",
+        "advisorName": "Treuhänder",
+        "advisorEmail": "E-Mail Treuhänder",
+        "onlineRates": "Kursabfragen aus dem Internet"
+      },
+      "value": {
+        "noPrice": "kein Kurs",
+        "override": "{{price}} {{unit}} (Override)",
+        "yes": "ja",
+        "no": "nein"
+      }
+    },
+    "event": {
+      "executed": "Ausgeführt: {{title}}",
+      "cancelled": "Abgebrochen: {{title}}",
+      "failed": "Fehlgeschlagen: {{title}} – {{reason}}"
     }
   },
   "assistant": {
@@ -2424,6 +2498,40 @@
         "proposed": "Vorgeschlagen"
       },
       "millis": "{{ms}} ms"
+    }
+  },
+  "errors": {
+    "api": {
+      "projectClosed": "Das Projekt ist abgeschlossen – öffne es zuerst wieder.",
+      "noCalculation": "Das Projekt ist noch nicht berechnet.",
+      "offline": "Kursabfragen aus dem Internet sind ausgeschaltet.",
+      "estvAutoOff": "Die automatische ESTV-Kursliste ist auf diesem Server ausgeschaltet.",
+      "usedByClosedProject": "Ein abgeschlossenes Projekt verwendet es – öffne dieses zuerst wieder.",
+      "duplicateFile": "Diese Datei ist schon im Projekt.",
+      "alreadyDecided": "Darüber wurde schon entschieden.",
+      "invalidCorrection": "Die Korrektur ist ungültig.",
+      "promptTooLong": "Der Prompt ist zu lang.",
+      "tooManyTokens": "Zu viele aktive Tokens – widerrufe zuerst eines.",
+      "setupIncomplete": "Pflichtschritte der Einrichtung fehlen noch.",
+      "stepIncomplete": "Dieser Schritt ist noch nicht vollständig.",
+      "stepRequired": "Dieser Schritt ist Pflicht.",
+      "evidenceNotPdf": "Der Beleg muss ein PDF des Projekts sein.",
+      "encryptionUnavailable": "Schlüssel können auf diesem Server nicht gespeichert werden (SETTINGS_ENCRYPTION_KEY fehlt).",
+      "confirmationRequired": "Bitte zuerst bestätigen.",
+      "consentRequired": "Deine Zustimmung fehlt noch."
+    },
+    "status": {
+      "unreachable": "Der Server ist nicht erreichbar.",
+      "badRequest": "Die Angaben wurden nicht angenommen.",
+      "unauthorized": "Die Anmeldung ist abgelaufen – bitte melde dich neu an.",
+      "forbidden": "Keine Berechtigung.",
+      "notFound": "Nicht gefunden – vielleicht wurde es gelöscht.",
+      "conflict": "Passt nicht zum aktuellen Stand – lade die Seite neu und versuche es nochmals.",
+      "tooLarge": "Zu gross.",
+      "unprocessable": "Die Daten konnten nicht verarbeitet werden.",
+      "locked": "Die App ist gesperrt.",
+      "rateLimited": "Zu viele Anfragen – warte einen Moment.",
+      "server": "Serverfehler – versuche es später nochmals."
     }
   }
 }

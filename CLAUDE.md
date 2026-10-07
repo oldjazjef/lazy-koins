@@ -1346,8 +1346,44 @@ disabled?, hidden? }`. Exactly one visible action → a plain icon button with t
   The data export (F10.7) translates only its information columns — the standard format's own
   columns are a file format and stay German. Notification titles are keys rendered by the web.
   Tool titles have an English map (`tools/domain/tool-titles.ts`; Einstellungen › MCP gets
-  `titles` per language, proposal cards the user's); proposal summaries/changes and the API's
-  own error `message`s (the app shows codes as keys) stay as they are — not translated yet.
+  `titles` per language, proposal cards the user's).
+- **Proposal cards** carry **keys, not sentences**: a tool's `preview` returns `ToolText`
+  (`{ key, params }`, `tools/domain/preview-texts.ts`: `previewText('chat.preview.…', …)` typed
+  against `PREVIEW_TEXTS`, `enumText` for codes with existing texts such as `bookings.kind.*`)
+  or a plain string for data (names, amounts, arguments); the web renders them
+  (`core/assistant/proposal-text.ts`, re-rendered on a language switch). `preview-texts.spec.ts`
+  checks every key + its placeholders in both message files and that no `summary:`/`label:`
+  literal creeps back into `tools/definitions`. Old proposals (German strings) show as stored.
+  Event rows (`Executed: …`, `Cancelled by the user: …`) are English lines for the model; the app
+  renders `chat.event.<outcome>` from `data.outcome` + the proposal's title, and a failed card
+  shows `chat.proposal.errors.<code>` — never the tool's English message. The chat's own answers
+  (loop limit, "prepared") are `APP_ANSWERS[locale]` in `chat-engine.ts`.
+- **API errors (decided 07.10.2026)**: the **code is the contract**; `message` stays English
+  (logs, OpenAPI, API clients) and the app never shows it. Coded families keep their own mapping
+  (`ai.errors.*`, `mail.errors.*`, `pin.errors.*`, `wallets.errors.*`, setup/key-check codes);
+  everything else goes through `extractErrorDetail` → `core/api/api-error.ts`: a known code →
+  `errors.api.<code>` (`projectClosed`, `noCalculation`, `offline`, `estvAutoOff`,
+  `usedByClosedProject`, `alreadyDecided`, `duplicateFile`, `invalidCorrection`, …; package codes
+  → `notifications.reason.*`), else the HTTP status → `errors.status.<name>`.
+  `NotificationService.error(key, detail)` translates an `ErrorText`. API side: 409s carry a code
+  (`common/http/api-errors.ts`: `conflict(code, message)`, `projectClosed()`) — a new
+  user-facing error gets a code + both texts. Technical diagnostics stay raw on purpose: the AI
+  error panel (provider message, cause, the gate's `detail`), `lk-smtp-error`, a wallet
+  provider's words, mapping-spec validation issues (zod paths/messages of the JSON format).
+- **Standard-format template** (`GET /api/standard-format/template.csv|xlsx?language=`, default
+  the user's language; the web passes the app's): the engine's `templateContent(language)` —
+  explanation sheet (`Explanation`), column descriptions, example notes and the labels follow the
+  language; **column headers and the sheet names `Buchungen`/`Bestände` stay German** (the format,
+  re-importable, same rule as the data export) and the English explanation says so. File names
+  `lazy-koins-template-*.csv|xlsx` in English.
+- **Notification params** are codes the web translates (`service` → `notifications.service.*`:
+  `ai | coingecko | mail | chain`); a stored row's old name is shown as it is.
+- **en.json stays English**: `core/i18n/en-language.spec.ts` fails on umlauts and common German
+  words, and on an official term (Treuhänder, Kursliste, Wertschriftenverzeichnis, …) outside its
+  "(…)" after the English words; exceptions in its `ALLOWED` list with the reason.
+- **User data is not translated**: project names/notes, file names, the `Beleg` text of a derived
+  statement CSV (`<pdf>, S. <n>` — content of a German-format file). The dev seed
+  (`scripts/dev/seed.mjs`) therefore keeps its German sample projects ("Steuern 2025").
 - **Adding a language** = one message file `public/i18n/<code>.json` + the code in
   `SUPPORTED_LOCALES` (web `core/i18n/locales.ts` with its formats in `LOCALE_FORMATS` and its
   Angular locale data, API `common/i18n/locale.ts`) + the server catalogue: `ExportTexts` file,

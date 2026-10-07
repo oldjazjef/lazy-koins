@@ -1,9 +1,9 @@
 import {
   BadRequestException,
-  ConflictException,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { projectClosed } from '../../common/http/api-errors';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -576,7 +576,7 @@ export class TakeOverFilesHandler implements ICommandHandler<
   }: TakeOverFilesCommand): Promise<{ added: number; skipped: number }> {
     const target = await loadOwnProject(this.projects, userId, projectId);
     if (target.status === 'closed') {
-      throw new ConflictException(
+      throw projectClosed(
         'The project is closed: reopen it first, then change its files',
       );
     }

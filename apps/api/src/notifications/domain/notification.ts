@@ -103,6 +103,7 @@ export const Topics = {
   missingPrices: (projectId: string) => `rates.missingPrices:${projectId}`,
   estvFetchFailed: (year: number) => `estv.fetchFailed:${year}`,
   estvNewVersion: (projectId: string) => `estv.newVersion:${projectId}`,
+  /** Its `params.service` is the same code — the web names it in the user's language (F11.2). */
   keyInvalid: (service: 'ai' | 'coingecko' | 'mail' | 'chain') =>
     `key.invalid:${service}`,
   walletFetchFailed: (walletId: string) => `wallet.fetchFailed:${walletId}`,

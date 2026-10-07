@@ -11,6 +11,7 @@ import type {
   ProjectFiles,
 } from '../../../../core/api/api.types';
 import { ActivityService } from '../../../../core/activity/activity.service';
+import { LanguageService } from '../../../../core/i18n/language.service';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { fileNameFrom } from '../../../../shared/files/save-blob';
 import { skeleton } from '../mapping-editor';
@@ -283,6 +284,37 @@ describe('ProjectFilesService', () => {
       'mappings.upload.invalid',
       'version: Invalid input',
     );
+  });
+});
+
+describe('template download (F11.2)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('asks for the template in the app language', async () => {
+    const { service, http } = await setup();
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: () => 'blob:x',
+      revokeObjectURL: () => undefined,
+    });
+    TestBed.inject(LanguageService).use('en');
+    for (const [kind, url] of [
+      ['xlsx', '/api/standard-format/template.xlsx?language=en'],
+      [
+        'bookings',
+        '/api/standard-format/template.csv?type=bookings&language=en',
+      ],
+    ] as const) {
+      const done = service.downloadTemplate(kind);
+      const request = http.expectOne(url);
+      request.flush(new Blob(['x']), {
+        headers: {
+          'Content-Disposition':
+            'attachment; filename="lazy-koins-template.xlsx"',
+        },
+      });
+      await done;
+    }
   });
 });
 

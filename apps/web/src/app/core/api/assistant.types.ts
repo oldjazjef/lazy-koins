@@ -61,10 +61,44 @@ export const PROPOSAL_STATUSES = [
 ] as const;
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 
+/**
+ * F11.2: a text of a proposal card — an i18n key (`chat.preview.*`, or an existing one such as
+ * `bookings.kind.trade`) with its values, which may themselves be such texts. The web renders it
+ * in the user's language; a plain string is data (a name, an amount) or, on a proposal stored
+ * before, the German sentence of that time.
+ */
+export interface ProposalText {
+  key: string;
+  params?: Record<string, string | number | ProposalText>;
+}
+export type ProposalValue = string | ProposalText;
+
 export interface ProposalChange {
-  label: string;
-  before: string | null;
-  after: string | null;
+  label: ProposalValue;
+  before: ProposalValue | null;
+  after: ProposalValue | null;
+}
+
+/** The codes of a failed tool run (`outcome.error.code`); each has `chat.proposal.errors.<code>`. */
+export const TOOL_ERROR_CODES = [
+  'unknownTool',
+  'invalidArguments',
+  'areaDisabled',
+  'writeDisabled',
+  'notFound',
+  'conflict',
+  'refused',
+  'failed',
+] as const;
+
+export const CHAT_EVENT_OUTCOMES = ['executed', 'cancelled', 'failed'] as const;
+export type ChatEventOutcome = (typeof CHAT_EVENT_OUTCOMES)[number];
+
+/** An event row: what became of a proposal (rows stored before F11.2 have none). */
+export interface ChatEventView {
+  outcome: ChatEventOutcome;
+  title: string;
+  errorCode?: string;
 }
 
 export interface ProposalView {
@@ -72,7 +106,7 @@ export interface ProposalView {
   tool: string;
   title: string;
   effect: ToolEffect;
-  summary: string;
+  summary: ProposalValue;
   changes: ProposalChange[];
   projectId: string | null;
   status: ProposalStatus;
@@ -97,6 +131,7 @@ export interface ChatMessageView {
   attachments: ChatAttachment[];
   proposals: ProposalView[];
   toolsUsed: string[];
+  event?: ChatEventView;
 }
 
 export interface ConversationView extends ConversationSummary {

@@ -1,8 +1,5 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { conflict } from '../../common/http/api-errors';
 import { ConfigService } from '@nestjs/config';
 import {
   CommandHandler,
@@ -378,7 +375,8 @@ export class RefreshDashboardRatesHandler implements ICommandHandler<
     }
     const settings = await this.settings.resolve(userId);
     if (!onlineAllowed(settings, this.config)) {
-      throw new ConflictException(
+      throw conflict(
+        'offline',
         'Rate lookups on the internet are switched off (settings)',
       );
     }

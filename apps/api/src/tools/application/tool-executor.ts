@@ -8,6 +8,7 @@ import {
   type ToolErrorCode,
   type ToolPreview,
 } from '../domain/tool';
+import { previewText } from '../domain/preview-texts';
 import type { ToolAuditStatus } from '../domain/tool-audit';
 import { ToolAuditRepositoryPort } from '../ports/tool-audit.repository.port';
 import { type McpToolPolicy, ToolRegistry } from './tool-registry';
@@ -146,7 +147,8 @@ export class ToolExecutor {
         ? (input as { projectId: string }).projectId
         : undefined;
     return {
-      summary: tool.title,
+      // The card shows the title in the user's language; the lines are the arguments as given.
+      summary: previewText('chat.preview.fallback'),
       changes: Object.entries(input as Record<string, unknown>)
         .filter(([key]) => key !== 'projectId')
         .map(([key, value]) => ({

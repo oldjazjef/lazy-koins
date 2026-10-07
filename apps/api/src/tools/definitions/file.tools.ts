@@ -3,6 +3,7 @@ import type { ProjectFileView } from '../../files/application/file-views';
 import { PROJECT_FILE_STATUSES } from '../../files/domain/project-file';
 import { HINT_STATUSES } from '../../files/domain/project-hint';
 import { type AnyTool, defineTool, ToolError } from '../domain/tool';
+import { enumText, previewText } from '../domain/preview-texts';
 import {
   fileLink,
   id,
@@ -222,17 +223,20 @@ export function fileTools(s: ToolServices): AnyTool[] {
         const hints = await s.files.hints(ctx.userId, input.projectId);
         const hint = hints.hints.find((h) => h.key === input.key);
         return {
-          summary: `Hinweis ${hint?.platform ?? input.key} auf «${input.status}» setzen`,
+          summary: previewText('chat.preview.hintStatus', {
+            hint: hint?.platform ?? input.key,
+            status: enumText('hintStatus', input.status),
+          }),
           changes: [
             {
-              label: 'Status',
-              before: hint?.status ?? null,
-              after: input.status,
+              label: previewText('chat.preview.label.status'),
+              before: hint?.status ? enumText('hintStatus', hint.status) : null,
+              after: enumText('hintStatus', input.status),
             },
             ...(input.note
               ? [
                   {
-                    label: 'Notiz',
+                    label: previewText('chat.preview.label.note'),
                     before: hint?.note || null,
                     after: input.note,
                   },
@@ -296,10 +300,12 @@ export function fileTools(s: ToolServices): AnyTool[] {
         const overview = await s.files.list(ctx.userId, input.projectId);
         const file = overview.files.find((f) => f.id === input.fileId);
         return {
-          summary: `Datei «${file?.displayName ?? input.fileId}» aus dem Projekt entfernen`,
+          summary: previewText('chat.preview.removeFile', {
+            file: file?.displayName ?? input.fileId,
+          }),
           changes: [
             {
-              label: 'Datei',
+              label: previewText('chat.preview.label.file'),
               before: file?.displayName ?? input.fileId,
               after: null,
             },

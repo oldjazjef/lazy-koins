@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
+import { conflict } from '../../common/http/api-errors';
 import { ConfigService } from '@nestjs/config';
 import {
   CommandHandler,
@@ -92,12 +93,14 @@ export class StartEstvUpdateHandler implements ICommandHandler<
   }: StartEstvUpdateCommand): Promise<EstvStatusView> {
     const resolved = await this.settings.resolve(userId);
     if (!this.sync.autoEnabled()) {
-      throw new ConflictException(
+      throw conflict(
+        'estvAutoOff',
         'The automatic ESTV Kursliste is switched off (ESTV_AUTO / RATES_ONLINE)',
       );
     }
     if (!resolved.onlineRates) {
-      throw new ConflictException(
+      throw conflict(
+        'offline',
         'Rate lookups on the internet are switched off (settings)',
       );
     }

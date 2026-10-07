@@ -1,9 +1,9 @@
 import {
   BadRequestException,
-  ConflictException,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { conflict } from '../../common/http/api-errors';
 import { ConfigService } from '@nestjs/config';
 import {
   CommandHandler,
@@ -268,7 +268,8 @@ export class RefreshRatesHandler implements ICommandHandler<
       !settings.onlineRates ||
       this.config.get('RATES_ONLINE', { infer: true }) === 'false'
     ) {
-      throw new ConflictException(
+      throw conflict(
+        'offline',
         'Rate lookups on the internet are switched off (settings)',
       );
     }
@@ -334,7 +335,7 @@ export class RefreshRatesHandler implements ICommandHandler<
     if (keyUse.rejected) {
       await this.notifications.raise(userId, Topics.keyInvalid('coingecko'), {
         kind: 'action',
-        params: { service: 'CoinGecko' },
+        params: { service: 'coingecko' },
         action: {
           labelKey: 'notifications.action.checkKey',
           route: '/app/settings/rates',

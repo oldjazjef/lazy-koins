@@ -13,7 +13,11 @@ import {
   columnNames,
   HOLDING_COLUMNS,
 } from './standard-format';
-import { standardTemplateCsv, TEMPLATE_SHEETS } from './template';
+import {
+  standardTemplateCsv,
+  TEMPLATE_SHEETS,
+  templateContent,
+} from './template';
 
 function fixture(name: string): SourceFile {
   const bytes = readFileSync(
@@ -161,5 +165,52 @@ describe('template', () => {
       const records = type === 'bookings' ? result.bookings : result.holdings;
       expect(records).toHaveLength(TEMPLATE_SHEETS[type].examples.length);
     }
+  });
+
+  it('in English: German headers (the format), English notes, the same records (F11.2)', () => {
+    const read = (text: string) =>
+      standardImporter.parse({
+        id: 't',
+        name: 't.csv',
+        kind: 'csv',
+        sheets: [{ name: 't', rows: parseCsv(text) }],
+      });
+    for (const type of ['bookings', 'holdings'] as const) {
+      const german = standardTemplateCsv(type);
+      const english = standardTemplateCsv(type, 'en');
+      expect(english.split('\r\n')[0]).toBe(german.split('\r\n')[0]);
+      const de = read(german);
+      const en = read(english);
+      expect(en.errors).toEqual([]);
+      const facts = (records: readonly object[]) =>
+        records.map((record) => {
+          const r = record as Record<string, unknown>;
+          return [
+            r['timestamp'] ?? r['asOf'],
+            r['kind'],
+            r['asset'],
+            r['quantity'],
+          ];
+        });
+      expect(facts(en.bookings)).toEqual(facts(de.bookings));
+      expect(facts(en.holdings)).toEqual(facts(de.holdings));
+      expect(en.bookings.length + en.holdings.length).toBeGreaterThan(0);
+    }
+    expect(standardTemplateCsv('bookings', 'en')).toContain('Buy BTC');
+    expect(standardTemplateCsv('bookings', 'en')).not.toContain('Kauf BTC');
+
+    const content = templateContent('en');
+    expect(content.explanationSheet).toBe('Explanation');
+    expect(content.explanation.join(' ')).toMatch(/stay German/);
+    expect(content.bookings.name).toBe('Buchungen');
+    expect(content.holdings.name).toBe('Bestände');
+    expect(content.bookings.columns.map((c) => c.name)).toEqual(
+      TEMPLATE_SHEETS.bookings.columns.map((c) => c.name),
+    );
+    expect(
+      content.bookings.columns.every(
+        (c) => !/[äöü]/.test(c.description.replace(/\([^)]*\)/g, '')),
+      ),
+    ).toBe(true);
   });
 });

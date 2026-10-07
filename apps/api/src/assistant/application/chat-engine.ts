@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { conflict } from '../../common/http/api-errors';
 import { AiGate, aiConflict } from '../../ai/application/ai-gate';
 import { type Locale, localeOr } from '../../common/i18n/locale';
 import { SettingsReader } from '../../settings/application/settings.handlers';
@@ -28,6 +24,7 @@ import {
 } from '../domain/assistant-settings';
 import {
   type ChatAttachment,
+  type ChatEventOutcome,
   type ChatMessage,
   type Conversation,
   type NewChatMessage,
@@ -58,8 +55,21 @@ export interface ChatQuestion {
   readonly consent: boolean;
 }
 
-const LIMIT_NOTE =
-  'Ich habe für diese Frage zu viele Schritte gebraucht und höre hier auf. Formuliere sie bitte enger oder frag nach dem nächsten Teil.';
+/** F11.2: the app's own answers in the chat, in the user's language. */
+export const APP_ANSWERS: Readonly<
+  Record<Locale, { readonly limit: string; readonly prepared: string }>
+> = {
+  'de-CH': {
+    limit:
+      'Ich habe für diese Frage zu viele Schritte gebraucht und höre hier auf. Formuliere sie bitte enger oder frag nach dem nächsten Teil.',
+    prepared: 'Ich habe folgende Änderung vorbereitet:',
+  },
+  en: {
+    limit:
+      'I needed too many steps for this question and stopped here. Please ask something narrower or ask for the next part.',
+    prepared: 'I have prepared the following change:',
+  },
+};
 
 /**
  * The chat loop (F11.14): question → model with the tool layer's chat tools → read tools run at
@@ -226,9 +236,9 @@ export class ChatEngine {
       role: 'assistant',
       content:
         answer === undefined
-          ? LIMIT_NOTE
+          ? APP_ANSWERS[locale].limit
           : answer.trim() === '' && proposals.length > 0
-            ? 'Ich habe folgende Änderung vorbereitet:'
+            ? APP_ANSWERS[locale].prepared
             : answer,
       data: {
         attachments,
@@ -269,11 +279,16 @@ export class ChatEngine {
       null,
     );
     if (!claimed) {
-      throw new ConflictException('This proposal was already decided');
+      throw conflict('alreadyDecided', 'This proposal was already decided');
     }
+    // F11.2: the stored line is for the model (English, like the tool notes); the app renders
+    // the event in the user's language from `data.outcome` and the proposal's title.
+    const what = `${proposal.preview.title} (${proposal.tool})`;
     let event: string;
+    let decided: ChatEventOutcome;
     if (action === 'cancel') {
-      event = `Abgebrochen: ${proposal.preview.title} – ${proposal.preview.summary}`;
+      event = `Cancelled by the user: ${what}`;
+      decided = 'cancelled';
     } else {
       const outcome = await this.executor.call(
         { userId, source: 'chat' },
@@ -286,16 +301,22 @@ export class ChatEngine {
           // The tool's (shortened) answer, kept with the proposal; the card shows only the status.
           output: cut(JSON.stringify(outcome.output), 2000),
         });
-        event = `Ausgeführt: ${proposal.preview.title} – ${proposal.preview.summary}`;
+        event = `Executed: ${what}`;
+        decided = 'executed';
       } else {
         await this.chats.setProposalResult(proposal.id, 'failed', {
           error: { code: outcome.error.code, message: outcome.error.message },
         });
-        event = `Fehlgeschlagen: ${proposal.preview.title} – ${outcome.error.message}`;
+        event = `Failed: ${what} – ${outcome.error.message}`;
+        decided = 'failed';
       }
     }
     await this.chats.append(conversation.id, [
-      { role: 'event', content: event, data: { proposalId: proposal.id } },
+      {
+        role: 'event',
+        content: event,
+        data: { proposalId: proposal.id, outcome: decided },
+      },
     ]);
     return this.view(conversation);
   }

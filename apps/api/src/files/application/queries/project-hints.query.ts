@@ -1,4 +1,5 @@
-import { ConflictException, Optional } from '@nestjs/common';
+import { Optional } from '@nestjs/common';
+import { projectClosed } from '../../../common/http/api-errors';
 import {
   CommandHandler,
   type ICommandHandler,
@@ -123,7 +124,7 @@ export class UpdateHintStateHandler implements ICommandHandler<
   }: UpdateHintStateCommand): Promise<HintState | null> {
     const project = await loadOwnProject(this.projects, userId, projectId);
     if (project.status === 'closed') {
-      throw new ConflictException('The project is closed: reopen it first');
+      throw projectClosed('The project is closed: reopen it first');
     }
     let saved: HintState | null = null;
     if (status === 'open') {

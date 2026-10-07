@@ -10,6 +10,7 @@ import { firstValueFrom } from 'rxjs';
 import { defineAction } from '../../../../core/actions/action';
 import { ActionRunner } from '../../../../core/actions/action-runner';
 import { apiUrl } from '../../../../core/api/api-url';
+import { LanguageService } from '../../../../core/i18n/language.service';
 import {
   type ActivityProgress,
   ActivityService,
@@ -62,6 +63,7 @@ export class ProjectFilesService {
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
   private readonly activity = inject(ActivityService);
+  private readonly language = inject(LanguageService);
 
   readonly projectId = signal<string | undefined>(undefined);
 
@@ -370,17 +372,25 @@ export class ProjectFilesService {
     }
   }
 
+  /**
+   * F11.2: in the app's language (explanations, example notes); the column headers stay German —
+   * they are the format.
+   */
   async downloadTemplate(kind: TemplateKind): Promise<void> {
+    const language = encodeURIComponent(this.language.locale());
     const path =
       kind === 'xlsx'
-        ? '/standard-format/template.xlsx'
-        : `/standard-format/template.csv?type=${kind}`;
+        ? `/standard-format/template.xlsx?language=${language}`
+        : `/standard-format/template.csv?type=${kind}&language=${language}`;
     try {
       const response = await this.fetchBlob(path as `/${string}`);
       saveBlob(
         this.document,
         response.body ?? new Blob(),
-        fileNameFrom(response.headers.get('Content-Disposition'), 'vorlage'),
+        fileNameFrom(
+          response.headers.get('Content-Disposition'),
+          'lazy-koins-template',
+        ),
       );
     } catch {
       this.notifications.error('files.downloadFailed');

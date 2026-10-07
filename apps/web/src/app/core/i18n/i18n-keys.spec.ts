@@ -58,11 +58,18 @@ import {
 import {
   AUDIT_SOURCES,
   AUDIT_STATUSES,
+  CHAT_EVENT_OUTCOMES,
   MCP_AREAS,
   MCP_TOKEN_STATES,
   TOKEN_EXPIRIES,
   TOOL_EFFECTS,
+  TOOL_ERROR_CODES,
 } from '../api/assistant.types';
+import {
+  API_ERROR_CODES,
+  HTTP_STATUS_NAMES,
+  PACKAGE_ERROR_CODES,
+} from '../api/api-error';
 import {
   KEY_CHECK_CODES,
   PIN_ERROR_CODES,
@@ -279,6 +286,15 @@ const DYNAMIC_KEYS = [
     ),
   ),
   ...[...PIN_ERROR_CODES, 'failed'].map((code) => `pin.errors.${code}`),
+  // F11.2: API errors by code / HTTP status, chat events and tool failures, notification params.
+  ...API_ERROR_CODES.map((code) => `errors.api.${code}`),
+  ...HTTP_STATUS_NAMES.map((name) => `errors.status.${name}`),
+  ...PACKAGE_ERROR_CODES.map((code) => `notifications.reason.${code}`),
+  ...TOOL_ERROR_CODES.map((code) => `chat.proposal.errors.${code}`),
+  ...CHAT_EVENT_OUTCOMES.map((outcome) => `chat.event.${outcome}`),
+  ...['ai', 'coingecko', 'mail', 'chain'].map(
+    (service) => `notifications.service.${service}`,
+  ),
   ...['idle', 'lock-screen', 'suspend', 'unknown'].map(
     (reason) => `pin.lock.reason.${reason}`,
   ),
