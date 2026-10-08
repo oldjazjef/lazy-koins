@@ -5,15 +5,29 @@ import {
   type BookingTreatmentRow,
   bookingTreatments,
   calculate,
+  toDecimalString,
 } from '@lazykoins/engine';
+
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
 import { loadOwnProject } from '../../projects/application/project-access';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
+import { TransactionEditRepositoryPort } from '../../transactions/ports/transaction-edit.repository.port';
 import { CalculationInputService } from './calculation-input.service';
 
 /** One page of a project's bookings; `limit` is capped here. */
 export const MAX_TRANSACTIONS_PAGE = 200;
 
+/**
+ * F9.6: `year` = the bookings of the tax year (default); `all` adds the earlier ones that decide a
+ * balance at 31.12. (treatment `balance`).
+ */
+export const TRANSACTION_SCOPES = ['year', 'all'] as const;
+export type TransactionScope = (typeof TRANSACTION_SCOPES)[number];
+
 export interface TransactionsFilter {
+  readonly scope?: TransactionScope;
   /** Words that must all appear in asset, platform, account, kind, raw type, note, file or id. */
   readonly q?: string;
   readonly treatment?: BookingTreatment;
@@ -26,6 +40,14 @@ export interface TransactionRow extends BookingTreatmentRow {
   /** F7.5: the project file the booking was read from (null for a manual booking). */
   readonly projectFileId: string | null;
   readonly fileName: string | null;
+  /** F9.8: the stable transaction key (global edits); null for a manual booking. */
+  readonly key: string | null;
+  /** original / changed (a global edit) / aiSuggested (an open AI suggestion, F9.10). */
+  readonly status: 'original' | 'changed' | 'aiSuggested';
+  readonly hidden: boolean;
+  readonly linkedKey: string | null;
+  /** The reason of the latest global edit. */
+  readonly editReason: string | null;
 }
 
 export interface TransactionsView {
@@ -64,6 +86,7 @@ export class ListTransactionsHandler implements IQueryHandler<
   constructor(
     private readonly projects: ProjectRepositoryPort,
     private readonly inputs: CalculationInputService,
+    private readonly edits: TransactionEditRepositoryPort,
   ) {}
 
   async execute({
@@ -75,17 +98,81 @@ export class ListTransactionsHandler implements IQueryHandler<
     const assembled = await this.inputs.build(project);
     const result = calculate(assembled.input);
     const fileOf = new Map(assembled.files.map((f) => [f.sha256, f] as const));
-    const all: TransactionRow[] = bookingTreatments(
-      assembled.input,
-      result,
-    ).map((row) => {
-      const file = fileOf.get(row.sourceFileId);
-      return {
-        ...row,
-        projectFileId: file?.projectFileId ?? null,
-        fileName: file?.displayName ?? null,
-      };
-    });
+    const reasons = new Map(
+      (await this.edits.listByOwner(userId)).map((e) => [e.id, e.reason]),
+    );
+    const suggested = new Set(
+      (await this.edits.listSuggestions(userId))
+        .filter((x) => x.status === 'open')
+        .map((x) => x.key),
+    );
+    // F9.8: hidden bookings are not in the input — they stay listed as `excluded`.
+    const hidden: BookingTreatmentRow[] = assembled.edits.hidden.map((b) => ({
+      id: b.id,
+      timestamp: b.timestamp,
+      platform: b.platform,
+      accountId: b.accountId,
+      asset: b.asset,
+      quantity: toDecimalString(b.quantity),
+      kind: b.kind,
+      importedKind: null,
+      fee: b.fee === undefined ? null : toDecimalString(b.fee),
+      feeAsset: b.fee === undefined ? null : (b.feeAsset ?? b.asset),
+      rawType: b.rawType,
+      note: b.note ?? null,
+      group: b.group ?? null,
+      sourceFileId: b.sourceFileId,
+      row: b.row,
+      manual: false,
+      treatment: 'excluded',
+      valueChf: null,
+      incomeCategory: null,
+      figureIds: [],
+      correctionId: null,
+      correctionReason: null,
+    }));
+    const cutoff = `${project.taxYear}-01-01T00:00:00.000Z`;
+    const scope = filter.scope ?? 'year';
+    const all: TransactionRow[] = [
+      ...bookingTreatments(assembled.input, result),
+      ...hidden,
+    ]
+      .filter(
+        (row) =>
+          row.treatment !== 'afterYear' &&
+          (row.timestamp >= cutoff ||
+            (scope === 'all' && row.treatment === 'balance')),
+      )
+      .sort(
+        (a, b) =>
+          compareText(b.timestamp, a.timestamp) || compareText(a.id, b.id),
+      )
+      .map((row) => {
+        const file = fileOf.get(row.sourceFileId);
+        const effect = assembled.edits.effects.get(row.id);
+        const key = row.manual ? null : (assembled.keys.get(row.id) ?? row.id);
+        const lastEdit = effect?.editIds[effect.editIds.length - 1];
+        return {
+          ...row,
+          importedKind:
+            row.importedKind ??
+            (effect && effect.before.kind !== effect.after.kind
+              ? effect.before.kind
+              : null),
+          projectFileId: file?.projectFileId ?? null,
+          fileName: file?.displayName ?? null,
+          key,
+          status:
+            key && suggested.has(key)
+              ? 'aiSuggested'
+              : effect
+                ? 'changed'
+                : 'original',
+          hidden: effect?.hidden ?? false,
+          linkedKey: effect?.linkedKey ?? null,
+          editReason: lastEdit ? (reasons.get(lastEdit) ?? null) : null,
+        };
+      });
 
     const words = (filter.q ?? '')
       .toLowerCase()
@@ -103,6 +190,7 @@ export class ListTransactionsHandler implements IQueryHandler<
         row.fileName ?? '',
         row.id,
         row.correctionReason ?? '',
+        row.editReason ?? '',
       ]
         .join(' ')
         .toLowerCase();

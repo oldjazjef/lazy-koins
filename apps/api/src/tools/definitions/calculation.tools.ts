@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  BOOKING_KINDS,
-  BOOKING_TREATMENTS,
-  CorrectionDataSchema,
-} from '@lazykoins/engine';
+import { BOOKING_TREATMENTS, CorrectionDataSchema } from '@lazykoins/engine';
 import type { ResultView } from '../../calculation/application/calculation.handlers';
 import {
   type AnyTool,
@@ -378,11 +374,12 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       name: 'list_transactions',
       title: 'Transaktionen',
       description:
-        'Every booking of the project (live input, newest first) and how it counts for tax: treatment income | oneOff | balance (decides the position at 31.12.) | checkOnly (account valued from a statement) | transfer | spam | unknown (unclassified) | afterYear | excluded (deactivated, with the reason). Filter by words (q: asset, platform, account, kind, raw type, note, file, booking id), treatment and platform. Use the booking id with reclassify_booking, exclude_booking or create_correction.',
+        'The bookings of the project tax year (F9.6; scope all = also earlier bookings that decide a balance at 31.12.), newest first, and how they count for tax: treatment income | oneOff | balance (decides the position at 31.12.) | checkOnly (account valued from a statement) | transfer | spam | unknown (unclassified) | excluded (hidden, with the reason). status original | changed (a global edit) | aiSuggested. Filter by words (q: asset, platform, account, kind, raw type, note, file, booking id), treatment and platform. Change one with its key via edit_transactions (global, F9.8).',
       area: 'results',
       effect: 'readOnly',
       input: z.object({
         projectId,
+        scope: z.enum(['year', 'all']).default('year'),
         q: z.string().trim().max(200).optional(),
         treatment: z.enum(BOOKING_TREATMENTS).optional(),
         platform: z.string().trim().max(80).optional(),
@@ -396,6 +393,8 @@ export function calculationTools(s: ToolServices): AnyTool[] {
         transactions: z.array(
           z.object({
             bookingId: z.string(),
+            key: z.string().nullable(),
+            status: z.string(),
             timestamp: z.string(),
             platform: z.string(),
             accountId: z.string(),
@@ -423,6 +422,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
           ctx.userId,
           input.projectId,
           {
+            scope: input.scope,
             q: input.q,
             treatment: input.treatment,
             platform: input.platform,
@@ -436,6 +436,8 @@ export function calculationTools(s: ToolServices): AnyTool[] {
           counts: view.counts,
           transactions: view.rows.map((r) => ({
             bookingId: r.id,
+            key: r.key,
+            status: r.status,
             timestamp: r.timestamp,
             platform: r.platform,
             accountId: r.accountId,
@@ -451,7 +453,7 @@ export function calculationTools(s: ToolServices): AnyTool[] {
             treatment: r.treatment,
             valueChf: r.valueChf,
             correctionId: r.correctionId,
-            correctionReason: r.correctionReason,
+            correctionReason: r.correctionReason ?? r.editReason,
             fileName: r.fileName,
             row: r.row,
             link: projectLink(input.projectId, 'transactions'),
@@ -770,81 +772,23 @@ export function calculationTools(s: ToolServices): AnyTool[] {
       },
     }),
     defineTool({
-      name: 'reclassify_booking',
-      title: 'Buchung umklassieren',
-      description: `F9.2: gives one booking (its record id from get_figure_records) another kind: ${BOOKING_KINDS.join(', ')}.`,
-      area: 'corrections',
-      effect: 'write',
-      input: z.object({
-        projectId,
-        bookingId: z.string().min(1).max(200),
-        kind: z.enum(BOOKING_KINDS),
-        reason,
-      }),
-      output: correctionOut,
-      async run(ctx, input) {
-        return correctionOf(
-          await s.calculation.createCorrection(
-            ctx.userId,
-            input.projectId,
-            {
-              type: 'reclassify',
-              bookingId: input.bookingId,
-              kind: input.kind,
-            },
-            input.reason,
-          ),
-        );
-      },
-      async preview(ctx, input) {
-        return correctionPreview(
-          ctx.userId,
-          input.projectId,
-          { type: 'reclassify', bookingId: input.bookingId, kind: input.kind },
-          input.reason,
-        );
-      },
-    }),
-    defineTool({
-      name: 'exclude_booking',
-      title: 'Buchung deaktivieren',
-      description:
-        'Leaves one booking out of the calculation (a duplicate, a test transfer, a row that does not belong to the user) — a correction with a reason, undoable with undo_correction; the file is not changed. bookingId from list_transactions or get_figure_records.',
-      area: 'corrections',
-      effect: 'write',
-      input: z.object({
-        projectId,
-        bookingId: z.string().min(1).max(200),
-        reason,
-      }),
-      output: correctionOut,
-      async run(ctx, input) {
-        return correctionOf(
-          await s.calculation.createCorrection(
-            ctx.userId,
-            input.projectId,
-            { type: 'exclude_booking', bookingId: input.bookingId },
-            input.reason,
-          ),
-        );
-      },
-      async preview(ctx, input) {
-        return correctionPreview(
-          ctx.userId,
-          input.projectId,
-          { type: 'exclude_booking', bookingId: input.bookingId },
-          input.reason,
-        );
-      },
-    }),
-    defineTool({
       name: 'create_correction',
       title: 'Korrektur erfassen',
       description:
-        'F9.3: any correction — manual_booking (a forgotten booking, hard fork, loss) or manual_holding (a balance at a date with its evidence), also price_override / reclassify / exclude_booking (leave one booking out, with a reason). `correction` follows the correction schema.',
+        'F9.3: a project correction — manual_booking (a forgotten booking, hard fork, loss), manual_holding (a balance at a date with its evidence) or price_override. Reclassifying or hiding an imported booking is a global transaction edit (edit_transactions, F9.8), not a correction. `correction` follows the correction schema.',
       area: 'corrections',
       effect: 'write',
-      input: z.object({ projectId, correction: CorrectionDataSchema, reason }),
+      input: z.object({
+        projectId,
+        correction: CorrectionDataSchema.refine(
+          (c) => c.type !== 'reclassify' && c.type !== 'exclude_booking',
+          {
+            message:
+              'Reclassifying or hiding a booking is a global transaction edit: use edit_transactions',
+          },
+        ),
+        reason,
+      }),
       output: correctionOut,
       async run(ctx, input) {
         return correctionOf(

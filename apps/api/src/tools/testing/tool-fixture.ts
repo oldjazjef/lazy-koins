@@ -1,3 +1,4 @@
+import { TransactionsService } from '../../transactions/transactions.service';
 import type { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { AiGate } from '../../ai/application/ai-gate';
 import {
@@ -236,6 +237,8 @@ export async function toolSetup() {
     mail: new MailService(commands, queries),
     ai,
     library: new LibraryService(commands, queries, libraryRuntime),
+    // F9.12: the transaction tools exist (their handlers are covered by transactions specs).
+    transactions: new TransactionsService(commands, queries),
   };
   const audit = new InMemoryToolAuditRepository();
   const registry = ToolRegistry.over(services);

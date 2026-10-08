@@ -52,6 +52,7 @@ async function setup(online: 'true' | 'false' = 'true') {
     userRates,
     t.inputs,
     t.userSettings,
+    t.transactionEdits,
     t.market,
   );
   const readFiles = vi.spyOn(t.inputs, 'recordsOf');

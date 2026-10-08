@@ -1,3 +1,7 @@
+import {
+  TRANSACTION_SCOPES,
+  type TransactionScope,
+} from '../application/transactions.handlers';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -79,6 +83,16 @@ export class FigureQueryDto {
 }
 
 export class TransactionsQueryDto {
+  @ApiPropertyOptional({
+    enum: TRANSACTION_SCOPES,
+    default: 'year',
+    description:
+      'F9.6: year = the tax year; all = also earlier bookings that decide a balance at 31.12.',
+  })
+  @IsOptional()
+  @IsIn(TRANSACTION_SCOPES)
+  scope?: TransactionScope;
+
   @ApiPropertyOptional({
     description:
       'Words that must all appear (asset, platform, account, kind, raw type, note, file, id, reason)',

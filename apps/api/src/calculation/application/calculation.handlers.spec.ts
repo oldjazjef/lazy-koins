@@ -11,6 +11,7 @@ import {
   GetChecksQuery,
   GetFigureRecordsQuery,
   GetResultQuery,
+  GetResultStatusQuery,
   ListCorrectionsQuery,
   SetCorrectionUndoneCommand,
   UpdateOpenItemCommand,
@@ -154,6 +155,18 @@ describe('calculation handlers', () => {
       new CalculateProjectCommand('anna', t.project.id),
     );
     const bookingId = first.result?.income[0]?.bookingId ?? '';
+    const manual = {
+      type: 'manual_booking' as const,
+      booking: {
+        platform: 'kraken',
+        accountId: 'spot',
+        timestamp: '2025-03-01T00:00:00Z',
+        asset: 'DOT',
+        quantity: '1',
+        kind: 'income_staking' as const,
+        priceUsd: '5',
+      },
+    };
 
     await expect(
       t.createCorrection.execute(
@@ -165,14 +178,22 @@ describe('calculation handlers', () => {
         ),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+    // F9.11: reclassifying / hiding is a global transaction edit now.
     await expect(
       t.createCorrection.execute(
         new CreateCorrectionCommand(
           'anna',
           t.project.id,
           { type: 'reclassify', bookingId, kind: 'transfer' },
-          '   ',
+          'Umbuchung',
         ),
+      ),
+    ).rejects.toMatchObject({
+      response: { code: 'useTransactionEdit' },
+    });
+    await expect(
+      t.createCorrection.execute(
+        new CreateCorrectionCommand('anna', t.project.id, manual, '   '),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
@@ -180,24 +201,24 @@ describe('calculation handlers', () => {
       new CreateCorrectionCommand(
         'anna',
         t.project.id,
-        { type: 'reclassify', bookingId, kind: 'transfer' },
-        'Umbuchung, kein Ertrag',
+        manual,
+        'Vergessene Staking-Belohnung',
       ),
     );
     const corrected = await t.calculate.execute(
       new CalculateProjectCommand('anna', t.project.id),
     );
-    expect(corrected.result?.totals.incomeChf).toBe('0');
+    expect(corrected.result?.totals.incomeChf).toBe('11.25');
     const [listed] = await t.listCorrections.execute(
       new ListCorrectionsQuery('anna', t.project.id),
     );
     expect(listed).toMatchObject({
-      reason: 'Umbuchung, kein Ertrag',
+      reason: 'Vergessene Staking-Belohnung',
       undoneAt: null,
       applied: {
         status: 'applied',
-        before: { kind: 'income_staking' },
-        after: { kind: 'transfer' },
+        before: null,
+        after: { kind: 'income_staking', asset: 'DOT' },
       },
     });
 
@@ -224,7 +245,36 @@ describe('calculation handlers', () => {
     const redone = await t.calculate.execute(
       new CalculateProjectCommand('anna', t.project.id),
     );
-    expect(redone.result?.totals.incomeChf).toBe('0');
+    expect(redone.result?.totals.incomeChf).toBe('11.25');
+  });
+
+  it('applies global transaction edits in the calculation and makes it stale (F9.8)', async () => {
+    const t = await calculationSetup();
+    const first = await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    const bookingId = first.result?.income[0]?.bookingId ?? '';
+    const [edit] = await t.transactionEdits.add('anna', [
+      {
+        key: bookingId,
+        changes: { kind: 'transfer' },
+        reason: 'Umbuchung, kein Ertrag',
+        source: 'user',
+      },
+    ]);
+    const status = await t.status.execute(
+      new GetResultStatusQuery('anna', t.project.id),
+    );
+    expect(status.stale).toBe(true);
+    const corrected = await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    expect(corrected.result?.totals.incomeChf).toBe('0');
+    await t.transactionEdits.setStatus(edit?.id ?? '', 'undone');
+    const undone = await t.calculate.execute(
+      new CalculateProjectCommand('anna', t.project.id),
+    );
+    expect(undone.result?.totals.incomeChf).toBe('6.75');
   });
 
   it('keeps a closed project read-only (F4.5)', async () => {

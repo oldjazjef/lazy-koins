@@ -1,3 +1,10 @@
+import {
+  fileKeyPrefix,
+  TRANSACTION_KEY_MAX,
+  TransactionChangesSchema,
+} from '@lazykoins/engine';
+import { EDIT_REASON_MAX } from '../../transactions/domain/transaction-edit';
+import { TransactionEditRepositoryPort } from '../../transactions/ports/transaction-edit.repository.port';
 import { Injectable } from '@nestjs/common';
 import {
   BOOKING_KINDS,
@@ -159,6 +166,23 @@ const CorrectionsSchema = z
   )
   .max(10_000);
 
+/**
+ * F9.8: the global edits of the project's transactions (keys of its files) — the package's
+ * importer adds them to its own edits. Absent in packages older than F9.8.
+ */
+const TransactionEditsSchema = z
+  .array(
+    z.object({
+      key: z.string().min(1).max(TRANSACTION_KEY_MAX),
+      changes: TransactionChangesSchema,
+      reason: z.string().trim().min(1).max(EDIT_REASON_MAX),
+      createdAt: ISO_TS,
+    }),
+  )
+  .max(100_000);
+
+const TRANSACTION_EDITS_PATH = 'data/transaction-edits.json';
+
 const RatesSchema = z
   .array(
     z.object({
@@ -242,6 +266,7 @@ export class ProjectPackageService {
     private readonly carryovers: CarryoverRepositoryPort,
     private readonly bundles: ProjectBundleRepositoryPort,
     private readonly analysis: FileAnalysisService,
+    private readonly transactionEdits: TransactionEditRepositoryPort,
   ) {}
 
   fileName(project: Project): string {
@@ -323,6 +348,25 @@ export class ProjectPackageService {
         undoneAt: c.undoneAt,
       }),
     );
+    // F9.8: the active global edits of this project's transactions (by file key prefix; wallet
+    // keys name a wallet of this installation and do not travel).
+    const prefixes = [...seenSha].map(fileKeyPrefix);
+    const touches = (key: string | null | undefined) =>
+      !!key && prefixes.some((prefix) => key.startsWith(prefix));
+    const transactionEdits = (
+      await this.transactionEdits.listByOwner(project.ownerId)
+    )
+      .filter(
+        (e) =>
+          e.status === 'active' &&
+          (touches(e.key) || touches(e.changes.linkedKey)),
+      )
+      .map((e) => ({
+        key: e.key,
+        changes: e.changes,
+        reason: e.reason,
+        createdAt: e.createdAt,
+      }));
     const rates = (await this.rates.listByProject(project.id)).map((r) => ({
       kind: r.kind,
       asset: r.asset,
@@ -375,6 +419,11 @@ export class ProjectPackageService {
         role: 'data',
         bytes: jsonBytes(carryovers),
       },
+      {
+        path: TRANSACTION_EDITS_PATH,
+        role: 'data',
+        bytes: jsonBytes(transactionEdits),
+      },
     );
     const manifest: Omit<ProjectManifest, 'counts'> & {
       counts: Record<string, number>;
@@ -401,6 +450,7 @@ export class ProjectPackageService {
         storedFiles: seenSha.size,
         mappings: manifestMappings.length,
         corrections: corrections.length,
+        transactionEdits: transactionEdits.length,
         rates: rates.length,
         openItemStates: states.length,
         carryovers: carryovers.length,
@@ -561,6 +611,28 @@ export class ProjectPackageService {
         undoneAt: c.undoneAt,
       };
     });
+    // F9.11: an older package's "umklassieren" / "ausblenden" corrections are global edits now.
+    const legacyEdits = corrections.flatMap((c) =>
+      c.undoneAt === null &&
+      (c.data.type === 'reclassify' || c.data.type === 'exclude_booking')
+        ? [
+            {
+              key: c.data.bookingId,
+              changes:
+                c.data.type === 'reclassify'
+                  ? { kind: c.data.kind }
+                  : { hidden: true },
+              reason: c.reason.slice(0, EDIT_REASON_MAX),
+            },
+          ]
+        : [],
+    );
+    const projectCorrections = corrections.filter(
+      (c) => c.data.type !== 'reclassify' && c.data.type !== 'exclude_booking',
+    );
+    const packagedEdits = opened.files.has(TRANSACTION_EDITS_PATH)
+      ? readJson(opened, TRANSACTION_EDITS_PATH, TransactionEditsSchema)
+      : [];
     const rates = readJson(opened, 'data/rates.json', RatesSchema);
     const states = readJson(opened, 'data/open-items.json', StatesSchema);
     const carryovers = readJson(
@@ -594,7 +666,7 @@ export class ProjectPackageService {
       name = `${manifest.project.name} (${n})`.slice(0, 120);
     }
 
-    const correctionKeys = new Set(corrections.map((c) => c.key));
+    const correctionKeys = new Set(projectCorrections.map((c) => c.key));
     const bundle: ProjectBundle = {
       target: {
         create: {
@@ -613,7 +685,7 @@ export class ProjectPackageService {
       },
       mappings: dedupeKeys(mappingsBundle),
       files: filesBundle,
-      corrections,
+      corrections: projectCorrections,
       rates,
       openItemStates: states.map((s) =>
         s.itemKey.startsWith(CARRIED_PREFIX) &&
@@ -642,6 +714,29 @@ export class ProjectPackageService {
       })),
     };
     const result = await this.bundles.write(ownerId, bundle);
+    // F9.8: the transaction edits join the owner's (an identical active one is not doubled).
+    const known = new Set(
+      (await this.transactionEdits.listByOwner(ownerId))
+        .filter((e) => e.status === 'active')
+        .map((e) => `${e.key}|${JSON.stringify(e.changes)}`),
+    );
+    const incoming = [...packagedEdits, ...legacyEdits].filter((e) => {
+      const id = `${e.key}|${JSON.stringify(e.changes)}`;
+      if (known.has(id)) return false;
+      known.add(id);
+      return true;
+    });
+    if (incoming.length > 0) {
+      await this.transactionEdits.add(
+        ownerId,
+        incoming.map((e) => ({
+          key: e.key,
+          changes: e.changes,
+          reason: e.reason,
+          source: 'user' as const,
+        })),
+      );
+    }
     return {
       projectId: result.projectId,
       name,

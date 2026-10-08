@@ -18,7 +18,9 @@ export type ConflictCode =
   | 'duplicateMapping'
   | 'libraryCopy'
   /** A provider that needs the user's key has none stored (price sources: CoinMarketCap). */
-  | 'noKey';
+  | 'noKey'
+  /** F9.9: a closed project uses the transaction — reopen it to change it. */
+  | 'transactionLocked';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

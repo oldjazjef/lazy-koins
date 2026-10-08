@@ -22,7 +22,7 @@ export interface McpPrincipal {
 
 const INSTRUCTIONS = `lazy-koins turns crypto exchange and wallet exports into Swiss tax documents (wealth at 31.12. and income per tax year).
 Start with list_projects; most tools take a projectId. Figures are decimal strings in CHF; every figure has a figureId for get_figure_records (the bookings behind it, with file and row).
-Changes are corrections with a reason (set_price_override, reclassify_booking, create_correction) and need calculate_project afterwards. Closed projects are read-only (409).
+Changes carry a reason: transactions are changed globally with edit_transactions (every project that uses them), prices and missing records are project corrections (set_price_override, create_correction); recalculate with calculate_project afterwards. Closed projects are read-only (409).
 Links in results are paths of the lazy-koins web app. No tool returns keys or passwords; the app gives no tax advice.`;
 
 const EFFECT_NOTE: Record<AnyTool['effect'], string> = {
