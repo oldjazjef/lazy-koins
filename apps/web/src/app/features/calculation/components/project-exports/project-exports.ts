@@ -25,6 +25,7 @@ import {
   isInternalKind,
   type MailDraft,
   STATEMENT_KINDS,
+  TAX_DOCUMENTS,
 } from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EmptyState } from '../../../../shared/components/empty-state';
@@ -79,6 +80,32 @@ export class ProjectExports {
   private readonly notifications = inject(NotificationService);
   protected readonly statementKinds = STATEMENT_KINDS;
   protected readonly internalKinds = INTERNAL_KINDS;
+  protected readonly documents = TAX_DOCUMENTS;
+
+  /** F10.14: the formats ticked per document; "Ausgewählte erstellen" makes them all. */
+  protected readonly chosen = signal<ReadonlySet<ExportKind>>(new Set());
+
+  protected toggleKind(kind: ExportKind): void {
+    this.chosen.update((set) => {
+      const next = new Set(set);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
+  }
+
+  /** The format part of a kind (`pdf`, `xlsx`, `csv`) for its label. */
+  protected formatOf(kind: ExportKind): string {
+    return kind.slice(kind.lastIndexOf('_') + 1);
+  }
+
+  protected createChosen(): void {
+    const kinds = this.documents
+      .flatMap((d) => d.kinds as readonly ExportKind[])
+      .filter((kind) => this.chosen().has(kind));
+    this.chosen.set(new Set());
+    void this.service.requestExports(kinds).catch(() => undefined);
+  }
 
   /** Stored documents in two groups: statements for the authority, internal reports. */
   protected readonly groups = computed(() => {

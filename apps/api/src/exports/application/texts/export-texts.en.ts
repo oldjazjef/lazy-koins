@@ -118,6 +118,9 @@ export const EN_EXPORT_TEXTS: ExportTexts = {
     einfach: 'simple',
     ausfuehrlich: 'detailed',
     'pruefbericht-intern': 'internal-review',
+    wertschriften: 'securities',
+    ertragsliste: 'income-list',
+    nachweis: 'evidence',
   },
 
   col: {
@@ -223,6 +226,82 @@ export const EN_EXPORT_TEXTS: ExportTexts = {
       'Every figure can be traced back to its booking in the original file.',
       `Created with lazy-koins ${m.appVersion}.`,
     ];
+  },
+
+  documents: {
+    origin: (file, row) => `${file}, row ${row}`,
+    originTx: (hash) => `Tx ${hash}`,
+    manualRecord: 'Entered manually (correction)',
+    securities: {
+      title: (taxYear) =>
+        `Statement of securities and assets (Wertschriften- und Guthabenverzeichnis) ${taxYear}`,
+      sheet: 'Securities',
+      intro:
+        'Crypto assets and balances on platforms and wallets, per asset and platform/wallet. Tax value = quantity × price at 31 December.',
+      incomeWith: (t) => `Income with WHT ${t}`,
+      incomeWithout: (t) => `Income without WHT ${t}`,
+      withholdingNote:
+        'Income from crypto assets is not subject to Swiss withholding tax (Verrechnungssteuer, WHT): it is in the column “without WHT”.',
+      totals: 'Total',
+      noHolding: 'no holding at 31 December',
+    },
+    incomeList: {
+      title: (taxYear) => `Income and receipts list ${taxYear}`,
+      lines: 'Income per inflow',
+      linesSheet: 'Income',
+      byCategory: 'Totals per category',
+      byAsset: 'Totals per asset',
+      summarySheet: 'Totals',
+      origin: 'Origin',
+      none: 'No taxable income in this year.',
+    },
+    evidence: {
+      title: (taxYear) => `Transactions and holdings evidence ${taxYear}`,
+      transactions: (taxYear) => `Transactions ${taxYear}`,
+      transactionsSheet: 'Transactions',
+      holdings: (taxYear) => `Holdings at 31 December ${taxYear}`,
+      holdingsSheet: 'Holdings 31 Dec',
+      treatment: 'For tax',
+      change: 'Change',
+      changeText: (before, after) => `${before} → ${after}`,
+      reason: 'Reason',
+      evidence: 'Evidence',
+      treatments: {
+        income: 'Income',
+        oneOff: 'One-off event',
+        balance: 'Holding',
+        checkOnly: 'Holding per statement',
+        transfer: 'Transfer between own accounts',
+        spam: 'Spam',
+        unknown: 'Holding',
+        afterYear: 'After the tax year',
+        excluded: 'Not taken into account',
+      },
+      kinds: {
+        trade: 'Trade',
+        deposit: 'Deposit',
+        withdrawal: 'Withdrawal',
+        fee: 'Fee',
+        transfer: 'Transfer',
+        income_interest: 'Income interest',
+        income_staking: 'Income staking',
+        income_airdrop: 'Airdrop',
+        income_launchpool: 'Income launchpool',
+        income_hardfork: 'Hard fork',
+        loss: 'Loss',
+        spam: 'Spam',
+        unknown: 'Other booking',
+      },
+      evidenceKinds: {
+        statement: (files) => `Account statement: ${files}`,
+        ledger: (bookings) => `Ledger from ${bookings} bookings`,
+        wallet: (files) => `Wallet fetch: ${files}`,
+        manual: (note) => (note ? `Manual, receipt: ${note}` : 'Manual'),
+      },
+      hiddenNote:
+        'Bookings not taken into account are listed with their reason; the original file stays unchanged.',
+      none: 'No transactions in this year.',
+    },
   },
 
   internal: {

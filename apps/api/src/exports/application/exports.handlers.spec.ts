@@ -66,6 +66,8 @@ async function setup(pdfAvailable = true) {
     t.inputs,
     calculation,
     hintStates,
+    t.corrections,
+    t.transactionEdits,
   );
   return {
     ...t,
@@ -449,6 +451,122 @@ describe('exports (F10)', () => {
     });
     const after = await t.data.build('anna', t.project, snapshot, 'x');
     expect(after.hints.map((h) => h.key)).toEqual(rest.map((h) => h.key));
+  });
+
+  it('writes the Wertschriftenverzeichnis as Excel with formulas, CSV and PDF (F10.11)', async () => {
+    const t = await setup();
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'securities_xlsx'),
+    );
+    expect(xlsx.fileName).toMatch(/_wertschriftenverzeichnis_.*\.xlsx$/);
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, xlsx.id),
+        )
+      ).bytes,
+    );
+    const sheet = sheetOf(workbook, 'Wertschriftenverzeichnis');
+    const texts = allTexts(workbook);
+    expect(texts).toContain('Wertschriften- und Guthabenverzeichnis 2025');
+    expect(texts.some((x) => /^SUM\(G\d+:G\d+\)$/.test(x))).toBe(true);
+    expect(texts.some((x) => /^ABS\(D\d+\)\*E\d+$/.test(x))).toBe(true);
+    let dotIncome: unknown;
+    sheet.eachRow((row) => {
+      if (row.getCell(3).value === 'DOT') dotIncome = row.getCell(9).value;
+    });
+    expect(dotIncome).toBe(6.75);
+    expectClean(texts);
+
+    const csv = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'securities_csv'),
+    );
+    expect(csv).toMatchObject({ mediaType: 'text/csv; charset=utf-8' });
+    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, csv.id),
+        )
+      ).bytes,
+    );
+    expect(text.charCodeAt(0)).toBe(0xfeff);
+    expect(text).toContain('Ertrag ohne VST CHF');
+    expect(text).toMatch(/kraken,spot,DOT,1\.5,.*,6\.75,/);
+    expectClean([text]);
+
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'securities_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('Verrechnungssteuer');
+    expect(html).toContain('Keine Steuerberatung');
+    expectClean([html]);
+  });
+
+  it('writes the Ertrags- und Belegliste with origin, sums per category and asset (F10.12)', async () => {
+    const t = await setup();
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'income_list_xlsx'),
+    );
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, xlsx.id),
+        )
+      ).bytes,
+    );
+    expect(workbook.worksheets.map((w) => w.name)).toEqual([
+      'Erträge',
+      'Summen',
+    ]);
+    const texts = allTexts(workbook);
+    expect(texts).toContain('buchungen.csv, Zeile 5');
+    expect(texts).toContain('Summen je Kategorie');
+    expect(texts).toContain('Summen je Asset');
+    expectClean(texts);
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'income_list_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('Ertrags- und Belegliste 2025');
+    expect(html).toContain('buchungen.csv, Zeile 5');
+    expect(html).toContain('6.75');
+    expectClean([html]);
+  });
+
+  it('writes the Transaktions- und Bestandesnachweis with changes and evidence (F10.13)', async () => {
+    const t = await setup();
+    await t.transactionEdits.add('anna', [
+      {
+        key: `${t.bookingsFile.sha256}::6`,
+        changes: { kind: 'transfer' },
+        reason: 'Umbuchung auf eigenes Konto',
+        source: 'user',
+      },
+    ]);
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'evidence_xlsx'),
+    );
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, xlsx.id),
+        )
+      ).bytes,
+    );
+    const texts = allTexts(workbook);
+    expect(texts).toContain('Übrige Buchung → Übertrag');
+    expect(texts).toContain('Umbuchung auf eigenes Konto');
+    expect(texts).toContain('Kontoauszug: bestaende.csv');
+    expect(texts.some((x) => /^SUM\(G\d+:G\d+\)$/.test(x))).toBe(true);
+    expectClean(texts);
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'evidence_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('Bestände per 31.12.2025');
+    expect(html).toContain('Umbuchung auf eigenes Konto');
+    expectClean([html]);
   });
 
   it('answers 503 with code pdfUnavailable for a PDF when no browser is available', async () => {

@@ -1,3 +1,4 @@
+import { mediaTypeOf } from '../../../exports/domain/project-export';
 import { Injectable } from '@nestjs/common';
 import {
   MAPPING_VERSION,
@@ -283,9 +284,7 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
               projectId,
               kind: item.kind,
               fileName: item.fileName,
-              mediaType: item.kind.endsWith('_pdf')
-                ? 'application/pdf'
-                : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              mediaType: mediaTypeOf(item.kind),
               bytes: new Uint8Array(item.bytes),
               size: item.bytes.length,
               snapshotId: null,

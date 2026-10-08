@@ -1248,6 +1248,32 @@ the internal report in separate cards, the list grouped „Auszüge für die Ste
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
 
+**Further tax documents (F10.11–F10.14, requirement 08.10.2026)** — same rules as the statements
+(declared figures only, neutral no-price footnote, F10.3/F10.4 header, tax currency), kinds in
+`STATEMENT_KINDS` (attachable, the latest per kind preselected in the Treuhänder mail): migration
+`20261010120000_tax_documents` widens the `project_export.kind` CHECK; `extensionOf`/`mediaTypeOf`
+(`text/csv` for `_csv`). One pure row model `exports/application/documents-model.ts` rendered by
+`excel/documents-workbook.ts` and `pdf/documents-html.ts`; `ExportDataService.documents()` adds
+what only these need (`ExportData.documents`): record origins (file + row, a wallet's tx = its
+`Referenz`, a correction), the evidence per position (statement files / ledger bookings / wallet
+fetch / manual with its receipt) and the year's transactions via `projectTransactionRows`
+(the project tab's rows, with `importedAsset` and `marketValue` = |qty| × price of the day).
+
+- `securities_pdf|xlsx|csv` **Wertschriftenverzeichnis**: a line per platform/account/asset
+  (positions + assets that only brought income), quantity, price + source, tax value
+  (`=ABS(qty)*price`), income with VST (always 0 for crypto) / without VST (income lines + Earn
+  gaps), `SUM` totals; CSV with BOM and `.` decimals for the tax software.
+- `income_list_pdf|xlsx` **Ertrags- und Belegliste**: every non-spam income line with date,
+  category, net quantity, price + source, value (formula unless valued from the platform's USD
+  value), origin; sums per category and per asset, the positive Earn gaps with the method text.
+- `evidence_pdf|xlsx` **Transaktions- und Bestandesnachweis**: the year's transactions (kind,
+  "vorher → nachher" of a global edit, reason, treatment, value, origin) and the holdings at 31.12.
+  with price, source, value formula and evidence. Texts: `ExportTexts.documents` (de-CH + en).
+- Web (F10.14): Exporte tab card "Weitere Steuerdokumente" — one panel per document
+  (`TAX_DOCUMENTS`) with description and format checkboxes, "Ausgewählte erstellen (N)" →
+  `ProjectWorkspaceService.requestExports(kinds)` (asks once while open items exist, then one
+  after the other). Tool `create_export` takes the new kinds.
+
 ## Price sources (F7.4b)
 
 User request (07.10.2026): CoinMarketCap as a selectable price provider, plus other **free**

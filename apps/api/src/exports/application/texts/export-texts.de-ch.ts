@@ -115,6 +115,9 @@ export const DE_CH_EXPORT_TEXTS: ExportTexts = {
     einfach: 'einfach',
     ausfuehrlich: 'ausfuehrlich',
     'pruefbericht-intern': 'pruefbericht-intern',
+    wertschriften: 'wertschriftenverzeichnis',
+    ertragsliste: 'ertragsliste',
+    nachweis: 'nachweis',
   },
 
   col: {
@@ -220,6 +223,81 @@ export const DE_CH_EXPORT_TEXTS: ExportTexts = {
       'Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar.',
       `Erstellt mit lazy-koins ${m.appVersion}.`,
     ];
+  },
+
+  documents: {
+    origin: (file, row) => `${file}, Zeile ${row}`,
+    originTx: (hash) => `Tx ${hash}`,
+    manualRecord: 'Manuelle Erfassung (Korrektur)',
+    securities: {
+      title: (taxYear) => `Wertschriften- und Guthabenverzeichnis ${taxYear}`,
+      sheet: 'Wertschriftenverzeichnis',
+      intro:
+        'Kryptowährungen und Guthaben auf Plattformen und Wallets, je Asset und Plattform/Wallet. Steuerwert = Menge × Kurs per 31.12.',
+      incomeWith: (t) => `Ertrag mit VST ${t}`,
+      incomeWithout: (t) => `Ertrag ohne VST ${t}`,
+      withholdingNote:
+        'Erträge aus Kryptowährungen unterliegen nicht der Verrechnungssteuer (VST): sie stehen in der Spalte «ohne VST».',
+      totals: 'Total',
+      noHolding: 'kein Bestand per 31.12.',
+    },
+    incomeList: {
+      title: (taxYear) => `Ertrags- und Belegliste ${taxYear}`,
+      lines: 'Erträge je Zufluss',
+      linesSheet: 'Erträge',
+      byCategory: 'Summen je Kategorie',
+      byAsset: 'Summen je Asset',
+      summarySheet: 'Summen',
+      origin: 'Herkunft',
+      none: 'Keine steuerbaren Erträge in diesem Jahr.',
+    },
+    evidence: {
+      title: (taxYear) => `Transaktions- und Bestandesnachweis ${taxYear}`,
+      transactions: (taxYear) => `Transaktionen ${taxYear}`,
+      transactionsSheet: 'Transaktionen',
+      holdings: (taxYear) => `Bestände per 31.12.${taxYear}`,
+      holdingsSheet: 'Bestände 31.12.',
+      treatment: 'Steuerlich',
+      change: 'Änderung',
+      changeText: (before, after) => `${before} → ${after}`,
+      reason: 'Begründung',
+      evidence: 'Nachweis',
+      treatments: {
+        income: 'Ertrag',
+        oneOff: 'Einmalereignis',
+        balance: 'Bestand',
+        checkOnly: 'Bestand laut Kontoauszug',
+        transfer: 'Übertrag eigene Konten',
+        spam: 'Spam',
+        unknown: 'Bestand',
+        afterYear: 'Nach dem Steuerjahr',
+        excluded: 'Nicht berücksichtigt',
+      },
+      kinds: {
+        trade: 'Handel',
+        deposit: 'Einzahlung',
+        withdrawal: 'Auszahlung',
+        fee: 'Gebühr',
+        transfer: 'Übertrag',
+        income_interest: 'Ertrag Zinsen',
+        income_staking: 'Ertrag Staking',
+        income_airdrop: 'Airdrop',
+        income_launchpool: 'Ertrag Launchpool',
+        income_hardfork: 'Hardfork',
+        loss: 'Verlust',
+        spam: 'Spam',
+        unknown: 'Übrige Buchung',
+      },
+      evidenceKinds: {
+        statement: (files) => `Kontoauszug: ${files}`,
+        ledger: (bookings) => `Ledger aus ${bookings} Buchungen`,
+        wallet: (files) => `Wallet-Abruf: ${files}`,
+        manual: (note) => (note ? `Manuell, Beleg: ${note}` : 'Manuell'),
+      },
+      hiddenNote:
+        'Nicht berücksichtigte Buchungen sind mit Begründung aufgeführt; die Originaldatei bleibt unverändert.',
+      none: 'Keine Transaktionen in diesem Jahr.',
+    },
   },
 
   internal: {

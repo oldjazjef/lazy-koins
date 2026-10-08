@@ -106,6 +106,8 @@ async function setup(options: { allowPrivate?: boolean; key?: string } = {}) {
     t.inputs,
     calculation,
     new InMemoryHintStateRepository(),
+    t.corrections,
+    t.transactionEdits,
   );
   const runtime = new MailRuntime(
     new SecretBox(options.key ?? 'test-encryption-key'),

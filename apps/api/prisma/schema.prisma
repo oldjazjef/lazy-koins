@@ -453,7 +453,8 @@ model ProjectExport {
   id         String   @id @default(uuid(7))
   projectId  String   @map("project_id")
   /// simple_pdf | simple_xlsx | detailed_pdf | detailed_xlsx | internal_report_pdf |
-  /// internal_report_xlsx. CHECK in the migrations (widened by 20261008090000).
+  /// internal_report_xlsx | securities_pdf|xlsx|csv | income_list_pdf|xlsx | evidence_pdf|xlsx.
+  /// CHECK in the migrations (widened by 20261008090000 and 20261010120000).
   kind       String
   fileName   String   @map("file_name")
   mediaType  String   @map("media_type")

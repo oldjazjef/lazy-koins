@@ -59,7 +59,8 @@ export interface CorrectionDraft {
 
 /** A statement waiting for the user's "create anyway" while open items exist (F10.2a). */
 export interface PendingExport {
-  readonly kind: ExportKind;
+  /** One statement, or several documents created together (F10.14). */
+  readonly kinds: readonly ExportKind[];
   readonly openItems: number;
 }
 
@@ -472,21 +473,31 @@ export class ProjectWorkspaceService {
    * internal report is created at once — it is where the open items are.
    */
   async requestExport(kind: ExportKind): Promise<void> {
-    if (!isInternalKind(kind)) {
+    await this.requestExports([kind]);
+  }
+
+  /** F10.14: several documents at once — asked once, then created one after the other. */
+  async requestExports(kinds: readonly ExportKind[]): Promise<void> {
+    if (kinds.length === 0) return;
+    if (kinds.some((kind) => !isInternalKind(kind))) {
       const openItems = await this.openItemCount();
       if (openItems > 0) {
-        this.pendingExport.set({ kind, openItems });
+        this.pendingExport.set({ kinds, openItems });
         return;
       }
     }
-    await this.createExport(kind);
+    await this.createExports(kinds);
   }
 
   async confirmExport(): Promise<void> {
     const pending = this.pendingExport();
     if (!pending) return;
     this.pendingExport.set(null);
-    await this.createExport(pending.kind);
+    await this.createExports(pending.kinds);
+  }
+
+  private async createExports(kinds: readonly ExportKind[]): Promise<void> {
+    for (const kind of kinds) await this.createExport(kind);
   }
 
   cancelExport(): void {

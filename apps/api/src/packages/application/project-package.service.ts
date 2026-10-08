@@ -1,3 +1,4 @@
+import { extensionOf } from '../../exports/domain/project-export';
 import {
   fileKeyPrefix,
   TRANSACTION_KEY_MAX,
@@ -395,7 +396,7 @@ export class ProjectPackageService {
     for (const meta of await this.exports.listByProject(project.id)) {
       const content = await this.exports.findContent(meta.id);
       if (!content) continue;
-      const path = `exports/${meta.id}.${meta.kind.endsWith('_pdf') ? 'pdf' : 'xlsx'}`;
+      const path = `exports/${meta.id}.${extensionOf(meta.kind)}`;
       out.push({ path, role: 'export', bytes: content.bytes, store: true });
       manifestExports.push({
         path,

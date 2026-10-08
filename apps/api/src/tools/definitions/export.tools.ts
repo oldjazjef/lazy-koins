@@ -58,7 +58,7 @@ export function exportTools(s: ToolServices): AnyTool[] {
       name: 'create_export',
       title: 'Auszug erstellen',
       description:
-        'Creates a statement (simple_pdf, simple_xlsx, detailed_pdf, detailed_xlsx) or the internal report (internal_report_pdf/xlsx); recalculates first when the result is stale. Statements contain no open items — mention open items to the user before creating one.',
+        'Creates a statement (simple_pdf, simple_xlsx, detailed_pdf, detailed_xlsx), a further tax document — Wertschriftenverzeichnis (securities_pdf/xlsx/csv), Ertrags- und Belegliste (income_list_pdf/xlsx), Transaktions- und Bestandesnachweis (evidence_pdf/xlsx) — or the internal report (internal_report_pdf/xlsx); recalculates first when the result is stale. Statements contain no open items — mention open items to the user before creating one.',
       area: 'exports',
       effect: 'write',
       input: z.object({ projectId, kind: z.enum(EXPORT_KINDS) }),

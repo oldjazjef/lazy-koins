@@ -629,6 +629,8 @@ describe('notification triggers (F11.12)', () => {
       t.inputs,
       calculation,
       t.hintStates,
+      t.corrections,
+      t.transactionEdits,
     );
     class BrokenPdf extends PdfRendererPort {
       async available() {

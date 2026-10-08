@@ -1552,7 +1552,14 @@
       "detailed_pdf": "Ausführlich (PDF)",
       "detailed_xlsx": "Ausführlich (Excel)",
       "internal_report_pdf": "Prüfbericht intern (PDF)",
-      "internal_report_xlsx": "Prüfbericht intern (Excel)"
+      "internal_report_xlsx": "Prüfbericht intern (Excel)",
+      "securities_pdf": "Wertschriftenverzeichnis (PDF)",
+      "securities_xlsx": "Wertschriftenverzeichnis (Excel)",
+      "securities_csv": "Wertschriftenverzeichnis (CSV)",
+      "income_list_pdf": "Ertrags- und Belegliste (PDF)",
+      "income_list_xlsx": "Ertrags- und Belegliste (Excel)",
+      "evidence_pdf": "Transaktions- und Bestandesnachweis (PDF)",
+      "evidence_xlsx": "Transaktions- und Bestandesnachweis (Excel)"
     },
     "fields": {
       "createdAt": "Erstellt",
@@ -1589,6 +1596,29 @@
       "packageHint": "Das Projekt-Paket (.lkproj.zip) enthält Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse, Prüf-Notizen und die erstellten Auszüge – zum Import in die Web- oder Desktop-App.",
       "failed": "Der Datenexport ist fehlgeschlagen",
       "packageFailed": "Das Projekt-Paket konnte nicht erstellt werden"
+    },
+    "documents": {
+      "title": "Weitere Steuerdokumente",
+      "hint": "Dokumente nach gängigem Aufbau – wie die Auszüge ohne offene Punkte, gespeichert und an die Mail an den Treuhänder anhängbar. Wähle die Formate und erstelle mehrere auf einmal.",
+      "formats": "Formate",
+      "create": "Ausgewählte erstellen ({{count}})",
+      "format": {
+        "pdf": "PDF",
+        "xlsx": "Excel",
+        "csv": "CSV"
+      },
+      "securities": {
+        "title": "Wertschriftenverzeichnis",
+        "description": "Je Asset und Plattform/Wallet: Menge, Steuerwert per 31.12. (Kurs, Quelle) und Ertrag des Jahres (ohne Verrechnungssteuer), mit Summen. CSV zum Übertragen in die Steuersoftware."
+      },
+      "income_list": {
+        "title": "Ertrags- und Belegliste",
+        "description": "Jeder steuerbare Zufluss mit Datum, Kurs, Wert und Herkunft (Datei + Zeile bzw. Tx); Summen je Kategorie und Asset, Earn-Lücke erläutert."
+      },
+      "evidence": {
+        "title": "Transaktions- und Bestandesnachweis",
+        "description": "Alle Transaktionen des Jahres mit Änderungen und Begründung, Bestände per 31.12. mit Kurs, Quelle und Nachweis – für Rückfragen des Steueramts."
+      }
     }
   },
   "profile": {
