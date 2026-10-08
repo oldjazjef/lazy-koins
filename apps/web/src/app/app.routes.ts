@@ -76,6 +76,11 @@ export const appRoutes: Route[] = [
         path: 'setup',
         loadChildren: () => import('./features/setup/setup.routes'),
       },
+      {
+        // F11.21: the step-by-step guide — also open while the setup wizard is not finished.
+        path: 'help',
+        loadChildren: () => import('./features/help/help.routes'),
+      },
     ],
   },
   { path: '**', redirectTo: 'app' },

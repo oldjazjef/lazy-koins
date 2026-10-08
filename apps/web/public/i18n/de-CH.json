@@ -74,7 +74,8 @@
     "adminOverview": "Übersicht",
     "adminUsers": "Benutzer",
     "adminLibrary": "Bibliothek moderieren",
-    "adminAudit": "Protokoll"
+    "adminAudit": "Protokoll",
+    "help": "Hilfe"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -3558,6 +3559,354 @@
         "library": {
           "hide": "Eintrag ausgeblendet",
           "unhide": "Eintrag angezeigt"
+        }
+      }
+    }
+  },
+  "help": {
+    "title": "Hilfe",
+    "subtitle": "Schritt für Schritt: so arbeitest du mit lazy-koins",
+    "intro": {
+      "title": "So funktioniert lazy-koins",
+      "body": "lazy-koins macht aus den Exporten deiner Krypto-Börsen und Wallets die Steuerunterlagen eines Steuerjahres: das Vermögen per 31.12. und den Ertrag, als einfacher und ausführlicher Auszug. Der Weg: einmal einrichten, pro Steuerjahr ein Projekt anlegen, Dateien und Wallets hinzufügen, Kurse holen, prüfen, berechnen und exportieren.",
+      "noAdvice": "lazy-koins ist keine Steuerberatung. Prüfe die Ergebnisse selbst oder lass sie von einer Fachperson prüfen, z. B. von deinem Treuhänder."
+    },
+    "toc": {
+      "title": "Inhalt",
+      "show": "Inhalt anzeigen",
+      "hide": "Inhalt ausblenden"
+    },
+    "search": {
+      "label": "Hilfe durchsuchen",
+      "placeholder": "z. B. Mapping, Kurs, PIN",
+      "results": "{{count}} von {{total}} Abschnitten",
+      "none": "Nichts gefunden. Versuche ein anderes Wort.",
+      "clear": "Suche zurücksetzen"
+    },
+    "stepOf": "Schritt {{number}} von {{total}}",
+    "whereLabel": "Wo:",
+    "stepsTitle": "So gehst du vor",
+    "tipsTitle": "Tipps",
+    "open": "Öffnen: {{target}}",
+    "only": {
+      "web": "Nur Web-App",
+      "desktop": "Nur Desktop-App"
+    },
+    "context": "Hilfe zu diesem Bereich",
+    "setupBanner": {
+      "text": "Die Einrichtung ist noch nicht abgeschlossen.",
+      "action": "Einrichtung fortsetzen",
+      "wizard": "Hilfe zur Einrichtung"
+    },
+    "links": {
+      "setup": "Einrichtung",
+      "profile": "Profil",
+      "settings": "Einstellungen",
+      "projects": "Projekte",
+      "projectsNew": "Neues Projekt",
+      "files": "Dateien",
+      "mappings": "Mappings",
+      "library": "Bibliothek",
+      "wallets": "Wallets",
+      "walletsNew": "Wallet hinzufügen",
+      "settingsWallets": "Einstellungen › Wallets",
+      "settingsRates": "Einstellungen › Kurse",
+      "settingsAi": "Einstellungen › AI-Plugin",
+      "settingsMcp": "Einstellungen › MCP",
+      "settingsMail": "Einstellungen › Mail",
+      "settingsStorage": "Einstellungen › Speicherort",
+      "settingsSystem": "Einstellungen › System",
+      "transactions": "Transaktionen",
+      "dashboard": "Dashboard",
+      "notifications": "Benachrichtigungen"
+    },
+    "sections": {
+      "setup": {
+        "title": "Einrichtung",
+        "purpose": "Beim ersten Start führt dich ein Assistent durch alles, was lazy-koins zum Arbeiten braucht. Pflicht sind nur das Profil und in der Desktop-App der PIN; alles andere kannst du überspringen und später nachholen.",
+        "where": "Einrichtungs-Assistent beim ersten Start; danach Profil (Benutzermenü unten links) und Einstellungen.",
+        "steps": {
+          "profile": "Profil: Gib Name und Wohnkanton ein und wähle Sprache, Zahlen- und Datumsformat. Name und Kanton erscheinen auf den Auszügen.",
+          "advisor": "Treuhänder: Name und E-Mail-Adresse, falls dir jemand bei der Steuererklärung hilft.",
+          "ai": "AI-Plugin: Anbieter, Adresse, Modell und Schlüssel eintragen und die Verbindung testen. Ohne AI funktioniert alles weiter; Mappings schreibst du dann von Hand.",
+          "rates": "Kurse: Kursabfragen aus dem Internet einschalten, optional einen CoinGecko-Schlüssel hinterlegen und die Kursanbieter samt Reihenfolge wählen.",
+          "wallets": "Wallets & Netzwerke: Etherscan-Schlüssel (einer für alle EVM-Chains) und Helius-Schlüssel (Solana) eintragen und testen. Bitcoin und Cardano brauchen keinen Schlüssel.",
+          "mail": "Mail: einen Mailer (SMTP) einrichten und eine Test-Mail an dich senden. Ohne Mailer kopierst du den Mailtext selbst.",
+          "storage": "Speicherort: den Ordner für Datenbank und Originaldateien wählen, auch einen Sync-Ordner.",
+          "pin": "PIN: 4 bis 8 Ziffern, zweimal eingeben. In der Desktop-App Pflicht, in der Web-App freiwillig.",
+          "summary": "Zusammenfassung: Sieh nach, was noch fehlt und was das bedeutet, dann «App starten» oder «Erstes Projekt anlegen»."
+        },
+        "tips": {
+          "later": "Alles bleibt später einzeln änderbar: das Profil im Benutzermenü, Schlüssel und Anbieter unter Einstellungen.",
+          "again": "Den Assistenten startest du erneut unter Einstellungen › System › «Einrichtung erneut durchlaufen».",
+          "keys": "Schlüssel und Passwörter werden verschlüsselt gespeichert und nie wieder angezeigt – nur ihre letzten Zeichen."
+        }
+      },
+      "project": {
+        "title": "Projekt anlegen",
+        "purpose": "Ein Projekt ist ein Steuerjahr, z. B. Steuern 2025. Darin wählst du Dateien und Wallets aus, prüfst und berechnest – und erstellst am Ende die Auszüge.",
+        "where": "Projekte im Hauptmenü.",
+        "steps": {
+          "open": "Öffne Projekte und wähle «Neues Projekt».",
+          "facts": "Gib Name und Steuerjahr ein und wähle Land und Kanton.",
+          "currency": "Wähle die Steuerwährung – in der Schweiz CHF. In ihr werden Vermögen und Ertrag bewertet; die ESTV-Kursliste gilt nur für CHF.",
+          "create": "Wähle «Projekt anlegen». Das Projekt öffnet sich mit dem Reiter Allgemein.",
+          "status": "Im Reiter Allgemein setzt du den Status: in Arbeit, geprüft oder abgeschlossen. Ein abgeschlossenes Projekt ist schreibgeschützt; «Wieder öffnen» entsperrt es nach einer Bestätigung."
+        },
+        "tips": {
+          "tabs": "Die Reiter eines Projekts: Allgemein · Dateien · Hinweise · Wallets · Kurse · Transaktionen · Ergebnis · Prüfungen · Korrekturen · Exporte.",
+          "currencyChange": "Änderst du die Steuerwährung später, fragt die App nach, und das Ergebnis muss neu berechnet werden."
+        }
+      },
+      "files": {
+        "title": "Dateien und Mappings",
+        "purpose": "Deine Exporte von Börsen und Wallets (CSV, XLSX, PDF) sind die Grundlage. Dateien gehören dir, nicht einem Projekt: Du lädst sie einmal hoch, und jedes Projekt wählt aus, welche es verwendet. Gelesen wird jede Tabelle über das Standardformat oder ein Mapping.",
+        "where": "Dateien und Mappings im Hauptmenü; im Projekt der Reiter Dateien.",
+        "steps": {
+          "upload": "Lade deine Exporte unter Dateien mit «Dateien hochladen» hoch oder ziehe sie in das Feld. Doppelte Dateien werden erkannt.",
+          "template": "Hast du keinen passenden Export, trage die Buchungen in die Vorlage im Standardformat ein (im Projekt-Reiter Dateien: Excel oder CSV für Buchungen bzw. Bestände) und lade sie hoch.",
+          "suggestion": "Wird eine Tabelle nicht erkannt, zeigt die App einen Vorschlag mit Vorschau – aus deinen Mappings, den mitgelieferten Standard-Mappings oder der Bibliothek. «Übernehmen» ordnet ihn mit einem Klick zu.",
+          "noMatch": "Passt nichts, schreibt «Mit AI erstellen» ein Mapping, oder «Neues Mapping» öffnet den Editor mit einer Vorlage aus der Datei. Ein beinahe passendes Mapping änderst du mit «Als Vorlage anpassen».",
+          "select": "Im Projekt-Reiter Dateien wählst du mit «Dateien auswählen», welche Dateien zählen. Vorausgewählt sind die, deren Zeitraum das Steuerjahr berührt.",
+          "pdf": "Ein PDF-Kontoauszug ist ein Beleg. «Mit AI auslesen» übernimmt die Bestände daraus als eigene Datei.",
+          "deactivate": "Soll eine Datei in einem Projekt nicht zählen, wähle in ihrer Zeile «Deaktivieren» (optional mit Notiz). Sie bleibt gespeichert und lässt sich wieder aktivieren."
+        },
+        "tips": {
+          "mappings": "Ein Mapping gilt für alle deine Projekte: Eine neue Datei mit gleichem Aufbau wird künftig automatisch erkannt – ohne AI. Unter Mappings siehst, bearbeitest, lädst und teilst du sie.",
+          "library": "In der Bibliothek findest du Mappings anderer Benutzer. «Übernehmen» legt eine eigene Kopie an; eigene Mappings teilst du mit «In Bibliothek veröffentlichen» – erst nach einer Datenschutz-Prüfung.",
+          "libraryDesktop": "Die Desktop-App hat keine eigene Bibliothek, kann aber unter Einstellungen › Bibliothek die eines lazy-koins-Servers lesen.",
+          "remove": "«Aus Projekt entfernen» nimmt eine Datei nur aus dem Projekt. Löschen kannst du sie unter Dateien – nicht, solange ein abgeschlossenes Projekt sie verwendet.",
+          "guide": "Welche Exporte du brauchst und wo du sie findest, zeigt «Welche Dateien brauche ich?» im Projekt-Reiter Dateien."
+        }
+      },
+      "wallets": {
+        "title": "Wallets",
+        "purpose": "Für deine Wallet-Adressen holt lazy-koins Bewegungen und Erträge direkt aus dem Netzwerk. Du erfasst nur die öffentliche Adresse – nie eine Seed-Phrase oder einen privaten Schlüssel.",
+        "where": "Wallets im Hauptmenü; im Projekt der Reiter Wallets.",
+        "steps": {
+          "add": "Wähle unter Wallets «Wallet hinzufügen» und gib Bezeichnung, öffentliche Adresse (bei Bitcoin auch xpub, ypub oder zpub), Netzwerke und Notizen an.",
+          "check": "«Netzwerke prüfen» zeigt, auf welchen Netzwerken die Adresse je genutzt wurde.",
+          "fetch": "«Abrufen» holt die Bewegungen. Spam-Token werden erkannt und ausgeblendet; mit «kein Spam» stufst du einen Token zurück.",
+          "project": "Im Projekt-Reiter Wallets nimmst du das Wallet mit «Wallet hinzufügen» auf. Daraus entstehen abgeleitete Dateien im Standardformat.",
+          "manual": "Für Netzwerke ohne automatischen Abruf (z. B. Cosmos, den Saldo bei Cardano und Polkadot) erfasst du im Projekt mit «Saldo erfassen» den Saldo per Stichtag samt PDF-Beleg."
+        },
+        "tips": {
+          "secret": "Gibst du versehentlich eine Seed-Phrase oder einen privaten Schlüssel ein, lehnt die App die Eingabe ab und speichert nichts.",
+          "keys": "Schlüssel für Etherscan, Helius und weitere Dienste hinterlegst du unter Einstellungen › Wallets, jeweils mit einem Test."
+        }
+      },
+      "rates": {
+        "title": "Kurse",
+        "purpose": "Für die Bewertung braucht lazy-koins Kurse: Steuerwerte per 31.12. aus der ESTV-Kursliste, Tageskurse für Erträge und Wechselkurse der EZB. Jeder Kurs behält seine Quelle.",
+        "where": "Im Projekt der Reiter Kurse; Anbieter und Schlüssel unter Einstellungen › Kurse.",
+        "steps": {
+          "providers": "Wähle unter Einstellungen › Kurse die Kursanbieter und ihre Reihenfolge (Standard: Binance, dann CoinGecko) und teste sie.",
+          "refresh": "Wähle im Projekt-Reiter Kurse «Kurse aktualisieren». Die App holt Wechselkurse, übernimmt die ESTV-Kursliste und fragt pro Asset die Anbieter der Reihe nach.",
+          "estv": "Gibt es einen neueren Stand der ESTV-Kursliste, übernimmst du ihn mit «Neuen Stand übernehmen».",
+          "source": "Prüfe unter «Kursquelle je Asset», woher jeder Kurs kommt. Stimmt einer nicht, wähle «Falscher Kurs? Coin wählen» und such den richtigen Coin.",
+          "ambiguous": "Steht ein Kürzel für mehrere Coins (z. B. OPN), holt die App keinen Kurs, bis du den Coin gewählt hast. Bei einer blossen Warnung genügt «Passt so».",
+          "override": "Fehlt ein Kurs oder willst du einen eigenen Wert, setze ihn mit «Überschreiben» für ein Datum, z. B. den 31.12."
+        },
+        "tips": {
+          "offline": "Ohne Kursabfragen aus dem Internet arbeitet die App nur mit gespeicherten und von Hand erfassten Kursen; die Kursliste lässt sich auch mit «ESTV-Kursliste importieren» einlesen.",
+          "coinGlobal": "Ein gewählter Coin gilt für alle Projekte und das Dashboard. Betroffene Projekte sind danach veraltet und brauchen eine Neuberechnung."
+        }
+      },
+      "transactions": {
+        "title": "Transaktionen",
+        "purpose": "Eine Transaktion ist eine Buchung aus einer Datei oder einem Wallet-Abruf. Hier siehst du, wie jede zählt, und korrigierst sie. Änderungen gelten global – in jedem Projekt, das die Transaktion verwendet.",
+        "where": "Transaktionen im Hauptmenü (alle); im Projekt der Reiter Transaktionen (nur das Steuerjahr).",
+        "steps": {
+          "filter": "Filtere nach Zeitraum, Plattform, Konto, Asset und Art. «Nur unbekannt / zu prüfen» zeigt, was noch eingeordnet werden muss.",
+          "detail": "Ein Klick auf eine Zeile öffnet die Details: Originalzeile der Datei, Wert und Änderungsverlauf.",
+          "edit": "Mit «Bearbeiten» änderst du Art, Asset oder Notiz – für eine oder mehrere ausgewählte Transaktionen, immer mit Begründung.",
+          "link": "Interne Überträge verbindest du mit «Mit Gegenbuchung verknüpfen»; beide Seiten zählen dann als Transfer.",
+          "ai": "«Mit AI analysieren» schlägt pro Transaktion eine Art mit Begründung vor. Du übernimmst Vorschläge einzeln oder gesammelt – vorher ändert sich nichts.",
+          "hide": "«Ausblenden» nimmt eine Transaktion aus der Rechnung, z. B. Spam. Jede Änderung lässt sich im Verlauf rückgängig machen."
+        },
+        "tips": {
+          "locked": "Transaktionen eines abgeschlossenen Projekts sind gesperrt. Zum Ändern öffnest du das Projekt wieder.",
+          "rule": "«Als Regel ins Mapping» übernimmt eine Einordnung ins Mapping, damit künftige Dateien gleich gelesen werden.",
+          "stale": "Nach einer Änderung sind die betroffenen Projekte veraltet – berechne sie neu."
+        }
+      },
+      "checks": {
+        "title": "Hinweise, Prüfungen und offene Punkte",
+        "purpose": "Bevor du exportierst, zeigt dir lazy-koins, was fehlt oder nicht zusammenpasst. Hinweise betreffen die Dateien, Prüfungen und offene Punkte das berechnete Ergebnis.",
+        "where": "Im Projekt die Reiter Hinweise und Prüfungen.",
+        "steps": {
+          "hints": "Öffne den Reiter Hinweise. Dort stehen z. B. «Fehlende Datei», «Lücke am Ende» oder «Nicht erkannte Datei» – mit einer Anleitung, wo du den Export findest.",
+          "solve": "Löse einen Hinweis direkt in seiner Zeile, z. B. mit «Datei hochladen», «Mapping zuordnen» oder «Bestand manuell erfassen».",
+          "dismiss": "Ist alles in Ordnung, wähle «Als in Ordnung markieren» (mit Notiz) oder «Ignorieren». Der Status bleibt auch nach einer Neuberechnung.",
+          "checks": "Nach der Berechnung zeigt der Reiter Prüfungen eine Ampel je Prüfung, z. B. ob der Saldo laut Ledger dem Kontoauszug entspricht oder ob Positionen ohne Kurs sind.",
+          "openItems": "Unter «Offene Punkte» steht jeder Punkt mit geschätzter Auswirkung. Hake erledigte ab und schreib eine Notiz dazu; «Buchungen anzeigen» führt zu den Buchungen dahinter."
+        },
+        "tips": {
+          "comparison": "Gibt es ein Vorjahresprojekt, vergleichen die Prüfungen Vermögen, Ertrag und Positionen mit dem Vorjahr.",
+          "internal": "Offene Punkte erscheinen nie auf den Auszügen für die Steuerbehörde, nur im internen Prüfbericht."
+        }
+      },
+      "corrections": {
+        "title": "Korrekturen",
+        "purpose": "Korrekturen ändern nie die Originaldateien. Sie werden über die gelesenen Daten gelegt – jede mit Begründung und Vorher/Nachher, jederzeit rückgängig zu machen.",
+        "where": "Im Projekt der Reiter Korrekturen; vieles auch direkt aus dem Ergebnis und den Hinweisen.",
+        "steps": {
+          "new": "Wähle im Reiter Korrekturen unter «Neue Korrektur» die Art: «Kurs überschreiben», «Manuelle Buchung» oder «Manueller Bestand».",
+          "fill": "Fülle die Felder aus, gib eine Begründung an und wähle «Korrektur erfassen». Das Ergebnis wird neu berechnet.",
+          "history": "Im Verlauf steht jede Korrektur mit Vorher/Nachher; «Rückgängig» und «Wieder anwenden» schalten sie aus und wieder ein.",
+          "fromResult": "Schneller geht es aus dem Ergebnis: «Kurs überschreiben», «Menge erfassen» oder «Umklassieren» bei der betroffenen Zeile."
+        },
+        "tips": {
+          "reclassify": "Eine Buchung umklassieren oder ausblenden machst du unter Transaktionen – das gilt dann in allen Projekten.",
+          "manualHolding": "Fehlt ein Kontoauszug per 31.12., erfasst du den Bestand als «Manueller Bestand» mit Stichtag und Beleg."
+        }
+      },
+      "result": {
+        "title": "Berechnen und Ergebnis",
+        "purpose": "Die Berechnung ergibt den Steuerwert per 31.12. und den Ertrag des Jahres. Jede Zahl lässt sich bis zur Zeile in der Originaldatei zurückverfolgen.",
+        "where": "Im Projekt der Reiter Ergebnis.",
+        "steps": {
+          "calculate": "Wähle «Neu berechnen». Gleiche Daten ergeben immer das gleiche Ergebnis.",
+          "stale": "Hat sich seit der letzten Berechnung etwas geändert (Datei, Kurs, Korrektur, Transaktion), steht oben «Daten geändert – neu berechnen». Berechne dann neu.",
+          "read": "Lies das Vermögen je Plattform/Wallet, den Ertrag je Kategorie, die Earn-Lücke (Differenzmethode) und die Einmalereignisse.",
+          "drill": "Klicke auf einen Betrag: Du siehst die Buchungen dahinter mit Quelldatei und Zeile.",
+          "missing": "Positionen ohne Kurs sind markiert und zählen nicht im Total – hol den Kurs im Reiter Kurse oder überschreibe ihn."
+        },
+        "tips": {
+          "auto": "Die App rechnet nie still im Hintergrund neu. Ein Auszug berechnet vorher neu, wenn die Daten veraltet sind.",
+          "previous": "Das Vorjahresprojekt liefert den Anfangsbestand für die Prüfungen."
+        }
+      },
+      "exports": {
+        "title": "Exporte",
+        "purpose": "Hier entstehen die Unterlagen für die Steuererklärung. Auszüge für die Steuerbehörde enthalten nur, was deklariert wird – keine offenen Punkte und keine Prüfhinweise.",
+        "where": "Im Projekt der Reiter Exporte.",
+        "steps": {
+          "statement": "Erstelle unter «Auszug erstellen» den einfachen und den ausführlichen Auszug, je als PDF oder Excel.",
+          "documents": "Unter «Weitere Steuerdokumente» wählst du Wertschriftenverzeichnis, Ertrags- und Belegliste, Transaktions- und Bestandesnachweis oder den E-Steuerauszug samt Format und erstellst mehrere auf einmal.",
+          "internal": "Den internen Prüfbericht mit Prüfungen, offenen Punkten und Positionen ohne Kurs erstellst du in seiner eigenen Karte – er ist nur für dich.",
+          "openItems": "Gibt es noch offene Punkte, fragt die App vorher nach: «Zu den Prüfungen» führt hin, «Trotzdem erstellen» erstellt den Auszug.",
+          "download": "Alle erstellten Auszüge bleiben mit Datum gespeichert und lassen sich jederzeit herunterladen."
+        },
+        "tips": {
+          "etax": "Den E-Steuerauszug eCH-0196 (XML und PDF mit Barcodes) kann kantonale Steuersoftware einlesen; es gibt ihn nur für Projekte in CHF.",
+          "data": "In der Karte Daten exportierst du Buchungen und Bestände im Standardformat (CSV oder Excel), auf Wunsch gefiltert – die Datei lässt sich wieder importieren.",
+          "package": "«Projekt-Paket herunterladen» sichert das ganze Projekt als ZIP, z. B. für den Umzug in die Desktop-App."
+        }
+      },
+      "advisor": {
+        "title": "An den Treuhänder senden",
+        "purpose": "Schick die Auszüge direkt aus der App an deinen Treuhänder – oder halte fest, dass du sie auf anderem Weg übergeben hast.",
+        "where": "Im Projekt der Reiter Exporte, Karte «An Treuhänder».",
+        "steps": {
+          "prepare": "Hinterlege Name und E-Mail des Treuhänders im Profil und für den direkten Versand einen Mailer unter Einstellungen › Mail.",
+          "open": "Wähle «An Treuhänder senden». Empfänger, Betreff und Text kommen aus der Vorlage und lassen sich noch ändern.",
+          "attach": "Wähle die Anhänge. Der neuste Auszug je Art ist vorausgewählt, der interne Prüfbericht nie.",
+          "confirm": "Wähle «Weiter zur Kontrolle», prüfe alles und dann «Jetzt senden». Jede Mail wird im Projekt protokolliert.",
+          "mark": "Hast du die Unterlagen per Post oder persönlich übergeben, wähle «Als gesendet markieren» mit Datum, Weg und Notiz."
+        },
+        "tips": {
+          "noMailer": "Ohne Mailer kopierst du den Text oder öffnest ihn mit «Im Mailprogramm öffnen» (ohne Anhänge).",
+          "changed": "Änderst du danach Daten oder erstellst neue Auszüge, zeigt das Projekt «seit dem Versand geändert».",
+          "template": "Betreff und Text der Vorlage passt du unter Einstellungen › Mail an."
+        }
+      },
+      "followUp": {
+        "title": "Folgeprojekt für das nächste Jahr",
+        "purpose": "Für das nächste Steuerjahr beginnst du nicht von vorne: Das Folgeprojekt übernimmt, was weiter gilt.",
+        "where": "Im Projekt oben rechts «Folgeprojekt erstellen».",
+        "steps": {
+          "open": "Öffne das Projekt des Vorjahres und wähle «Folgeprojekt erstellen».",
+          "facts": "Prüfe Name, Jahr (Vorjahr + 1), Land und Kanton.",
+          "choose": "Wähle, was übernommen wird: Dateien (vorausgewählt, wenn ihr Zeitraum ins neue Jahr reicht), Wallets, Korrekturen, die über das Jahr hinaus gelten, offene Punkte und Notizen.",
+          "create": "Wähle unten «Folgeprojekt erstellen». Das Vorjahresprojekt bleibt unverändert; im neuen Projekt steht, was woher übernommen wurde."
+        },
+        "tips": {
+          "files": "Übernommene Dateien werden verknüpft, nicht kopiert.",
+          "takeOver": "Einzelne Dateien eines anderen Projekts holst du im Projekt-Reiter Dateien mit «Aus anderem Projekt übernehmen»."
+        }
+      },
+      "dashboard": {
+        "title": "Dashboard und Benachrichtigungen",
+        "purpose": "Das Dashboard zeigt dein ganzes Krypto-Vermögen über alle Projekte – aus denselben Daten und Kursen wie die Steuerberechnung.",
+        "where": "Dashboard im Hauptmenü (die Startseite); die Glocke oben rechts.",
+        "steps": {
+          "period": "Wähle den Zeitraum, z. B. «Laufendes Jahr», «Letzte 12 Monate» oder ein Steuerjahr.",
+          "read": "Lies Gesamtwert und Verlauf, Einzahlungen, Auszahlungen, Ertrag, Kosten und Gebühren sowie die Verteilung nach Asset. Ein Klick auf eine Kennzahl zeigt die Buchungen dahinter.",
+          "holdings": "Die Tabelle Bestände zeigt Menge, Kurs und Marktwert je Asset, auf Wunsch nach Plattform aufgeklappt.",
+          "rates": "Fehlen Kurse, hol sie mit «Kurse aktualisieren». Ein fehlender Kurs zählt nie als 0, sondern ist markiert.",
+          "bell": "Die Glocke oben rechts meldet z. B. fehlgeschlagene Kursabrufe, Dateien ohne Mapping oder neue offene Punkte – jeweils mit einer direkten Aktion."
+        },
+        "tips": {
+          "currency": "Projekte in verschiedenen Steuerwährungen werden nicht zusammengerechnet; wähle die Währung oben auf dem Dashboard.",
+          "notifications": "Alle Meldungen mit Filtern findest du auf der Seite Benachrichtigungen (über die Glocke)."
+        }
+      },
+      "assistant": {
+        "title": "AI-Assistent und MCP",
+        "purpose": "Der Assistent im Chat beantwortet Fragen zu deinen Daten, findet Ursachen und schlägt Änderungen vor. Über MCP nutzen auch externe AI-Clients wie Claude Desktop die Funktionen der App.",
+        "where": "Der Assistent oben rechts (Roboter-Symbol); Einstellungen › AI-Plugin und Einstellungen › MCP.",
+        "steps": {
+          "enable": "Richte zuerst das AI-Plugin ein – in der Einrichtung oder unter Einstellungen › AI-Plugin.",
+          "open": "Öffne den Assistenten oben rechts und stimme beim ersten Mal dem Datenschutz-Hinweis zu.",
+          "ask": "Frag z. B. „Warum fehlt der Kurs für FLR?“. Antworten enthalten Links bis zur Buchung.",
+          "confirm": "Jede Änderung zeigt der Assistent zuerst als Vorschlag mit Vorher/Nachher; ausgeführt wird sie erst mit «Ausführen».",
+          "mcp": "Für externe Clients aktivierst du unter Einstellungen › MCP den Server, wählst die freigegebenen Bereiche und erstellst ein Zugriffstoken. Die Seite zeigt die Konfiguration für gängige Clients.",
+          "mcpDesktop": "In der Desktop-App verbindest du Claude Desktop über den stdio-Eintrag, den die MCP-Seite fertig anzeigt."
+        },
+        "tips": {
+          "prompt": "Unter Einstellungen › AI-Plugin passt du die Anweisung des Assistenten an; die Sicherheitsregeln gelten immer.",
+          "data": "Gesendet wird nur, was für die Frage nötig ist. Abgeschlossene Projekte bleiben auch für den Assistenten schreibgeschützt."
+        }
+      },
+      "privacy": {
+        "title": "Desktop-App, Web-App und deine Daten",
+        "purpose": "lazy-koins gibt es als Web-App (mehrere Benutzer, mit Anmeldung) und als Desktop-App für macOS und Windows (ein Benutzer, ohne Anmeldung, Daten nur auf deinem Rechner) – mit denselben Funktionen.",
+        "where": "Profil (Benutzermenü), Einstellungen › System und in der Desktop-App Einstellungen › Speicherort.",
+        "steps": {
+          "package": "Ein Projekt ziehst du als Projekt-Paket um: im Reiter Exporte «Projekt-Paket herunterladen», in der anderen App unter Projekte «Projekt importieren».",
+          "account": "Alle deine Daten lädst du im Profil mit «Alle Daten herunterladen» als Konto-Paket herunter (ohne API-Schlüssel); «Konto-Paket importieren» liest es wieder ein.",
+          "storage": "Unter Einstellungen › Speicherort wählst du den Datenordner, auch einen Sync-Ordner von OneDrive, Google Drive oder Proton Drive. Danach startet die App neu.",
+          "pin": "Mit einem PIN (Profil › PIN-Sperre) sperrt sich die App beim Öffnen und nach einer Pause; «Jetzt sperren» im Benutzermenü sperrt sofort."
+        },
+        "tips": {
+          "privacy": "Deine Daten sieht nur dein Konto. Ins Internet geht nur, was du auslöst: Kursabfragen (abschaltbar), Wallet-Abrufe und – nach Zustimmung und mit Vorschau – AI-Anfragen.",
+          "sync": "Arbeite nicht gleichzeitig auf zwei Geräten mit demselben Sync-Ordner; die App warnt bei Konflikten.",
+          "library": "Die Desktop-App kann die Mapping-Bibliothek eines Servers lesen (Einstellungen › Bibliothek); dafür verlassen nur Kopfzeile und Dateiname einer Datei das Gerät.",
+          "web": "In der Web-App meldest du dich mit E-Mail und Passwort oder mit Google an; abmelden kannst du dich im Benutzermenü."
+        }
+      }
+    },
+    "faq": {
+      "title": "Häufige Fragen und Probleme",
+      "items": {
+        "notRecognised": {
+          "question": "Meine Datei wird nicht erkannt.",
+          "answer": "Im Projekt-Reiter Dateien steht für die Datei ein Mapping-Vorschlag mit «Übernehmen». Ohne Vorschlag hilft «Mit AI erstellen» oder «Neues Mapping». Ein PDF ist ein Beleg – Bestände holst du mit «Mit AI auslesen». Oder du trägst die Daten in die Vorlage im Standardformat ein."
+        },
+        "missingFile": {
+          "question": "Die App meldet eine fehlende Datei.",
+          "answer": "Der Reiter Hinweise erklärt, welcher Export fehlt und wo du ihn findest. Fehlt wirklich nichts, z. B. weil das Konto nicht mehr genutzt wird, wähle «Als in Ordnung markieren» mit einer Notiz."
+        },
+        "wrongRate": {
+          "question": "Ein Kurs ist falsch oder fehlt.",
+          "answer": "Im Projekt-Reiter Kurse zeigt «Kursquelle je Asset» die Quelle. Steht dort der falsche Coin, wähle «Falscher Kurs? Coin wählen». Fehlt ein Kurs, wähle «Kurse aktualisieren» oder setze ihn mit «Überschreiben». Sind die Kursabfragen aus dem Internet aus, kommen keine neuen Kurse."
+        },
+        "stale": {
+          "question": "Das Ergebnis ist veraltet.",
+          "answer": "Seit der letzten Berechnung hat sich etwas geändert – eine Datei, ein Kurs, eine Korrektur, eine Transaktion oder ein Wallet. Wähle im Projekt «Neu berechnen»."
+        },
+        "keyMissing": {
+          "question": "Ein Schlüssel fehlt oder wird abgelehnt.",
+          "answer": "Hinterlege oder ersetze ihn unter Einstellungen (Kurse, Wallets, AI-Plugin oder Mail) und prüfe ihn mit dem Test daneben. Gespeicherte Schlüssel werden nie angezeigt – gib ihn im Zweifel neu ein."
+        },
+        "readOnly": {
+          "question": "Ich kann nichts ändern.",
+          "answer": "Das Projekt ist abgeschlossen und deshalb schreibgeschützt; auch die Transaktionen, die es verwendet, sind gesperrt. Öffne es im Reiter Allgemein mit «Wieder öffnen»."
+        },
+        "pin": {
+          "question": "Ich habe den PIN vergessen.",
+          "answer": "Wähle auf dem Sperrbildschirm «PIN vergessen?». In der Web-App setzt du ihn nach einer neuen Anmeldung neu. In der Desktop-App wird er zurückgesetzt; dabei werden alle gespeicherten Schlüssel gelöscht, und du gibst sie neu ein."
         }
       }
     }

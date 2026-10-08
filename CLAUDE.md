@@ -197,7 +197,8 @@ apps/web/                   # Angular app
                             #   embedded in the project detail; project-workspace hosts the tabs, its
                             #   service is shared by them; ai-assist = the AI dialogs; mapping-editor =
                             #   the editor body of a project's new mapping; the mappings feature uses its own
-                            #   components/mapping-workbench with a sample file)
+                            #   components/mapping-workbench with a sample file), help (F11.21: the guide,
+                            #   help-content.ts = its structure, texts under `help.*`; components/help-link = the "?")
     shared/format/          #   formatChf / formatQuantity / formatDate + lkChf / lkQuantity / lkDate / lkNumber
                             #   pipes (active format = a signal, F11.2; decimal.js)
     shared/ai/              #   aiErrorKey — the API's AI error codes → `ai.errors.<code>`
@@ -968,6 +969,49 @@ it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (def
   main.ts tells the window (`lock.onLocked`).
 - The PIN guards an open app, not the files: whoever copies the data folder (database + key file)
   can try all PINs offline.
+
+## Help (F11.21)
+
+User request (10.2026): „Menüpunkt für Hilfe, wo Schritt für Schritt beschrieben wird, wie das Tool
+funktioniert“. Web only (`features/help`, `/app/help`, lazy route; no API).
+
+- **Where the texts live (decided)**: structured **i18n keys** under `help.*` in both message
+  files — not Markdown files under `public/help/`. So the guide gets everything the other texts
+  get for free: key parity and placeholders (`i18n-keys.spec.ts`), no German in en.json
+  (`en-language.spec.ts`), the language switch without a reload, and it is rendered with the
+  `translate` pipe only (plain text, no `innerHTML`, no Markdown renderer to keep safe). The
+  **structure** is code: `features/help/help-content.ts` — `HELP_SECTIONS` (id, steps, tips,
+  "Öffnen" links, each item/link optionally `only: 'web' | 'desktop'`, links optionally
+  `needsLibrary` / `needsDesktopBridge`), `HELP_FAQ`, `HELP_SECTION_FOR_TAB` (workspace tab →
+  section), `helpKeys`/`allHelpKeys()` (listed in `i18n-keys.spec.ts`). A section's texts:
+  `help.sections.<id>.{title,purpose,where}`, `….steps.<item>`, `….tips.<item>`; links
+  `help.links.<id>`; FAQ `help.faq.items.<id>.{question,answer}`. Order in the array = "Schritt N
+  von M". Plain text conventions: UI labels in «…» (de-CH) / “…” (en), example sentences in „…“ /
+  ‘…’, no `{{…}}` in help texts (ngx-translate would interpolate it).
+- **Page** (`pages/help-page`, `HelpPageService` provided by the page): sticky header, the
+  "keine Steuerberatung" note on top, intro card, one card per step (step number, purpose,
+  "Wo:", numbered steps, tips, "Öffnen: …" router links), then the FAQ. Left column from `lg`
+  (sticky): search (`normalise`/`matches`: every word, case- and accent-insensitive, over the
+  translated texts of the current language; FAQ included; numbers stay) + TOC (`<nav>`, links
+  `/app/help#<id>`; below `lg` a disclosure button). A fragment (`#files`, `#faq`) or TOC click →
+  `reveal(id)` (clears a search that hides it) → scroll, focus the `h2`, mark it 2.5 s
+  (`lk-help-highlight`; `aria-current="location"` in the TOC). Mode: `AuthService.hasAccount`
+  = web, else desktop; items for the other app are not shown, the rest are badged "Nur Web-App"
+  / "Nur Desktop-App". Styles `lk-help-*` in styles.css.
+- **Reachable**: sidebar footer above the user menu (`HELP_NAV_ITEM`); `setupGuard` lets
+  `/app/help` through while the wizard is open (`OPEN_DURING_SETUP`), the wizard's header has
+  "Hilfe zur Einrichtung", the help page shows "Einrichtung fortsetzen" meanwhile. Contextual
+  "?" = `lk-help-link` (`features/help/components/help-link`, `[section]`, optional
+  `[labelKey]`) in the project header (follows the open tab), Dateien and Transaktionen.
+- **Tests**: `help-content.spec.ts` (every "Öffnen" path resolves through the real router config
+  incl. the lazy feature routes — redirects do not count; no orphan `help.*` key; **every quoted
+  UI label in the help is a text the app shows**, so renaming a button without the help fails),
+  `help-page.service.spec.ts` (numbering, search, modes, reveal), `help-page.spec.ts` (TOC deep
+  links, scroll/mark/focus, search, mobile TOC, wizard banner), `help-link.spec.ts`, app-shell /
+  nav-config / setupGuard specs.
+- **Rule: a feature change updates the help.** New page, renamed button, changed flow → adjust
+  the matching section's texts in **both** message files (and `HELP_SECTIONS` when steps, links or
+  web/desktop availability change). The guide describes only what exists.
 
 ## Platform admin (user request 08.10.2026: „sehr minimale Management-Plattform“)
 
@@ -1997,7 +2041,8 @@ are provided by the component (`providers: [...]`), list/form services are root.
   version badge; content = `<nav aria-label>` with the main navigation from `nav-config.ts` (the
   single source: `NAV_ITEMS`, `children` = an expandable sub-list like etx's, `navItemsFor` =
   the library rule, `isNavActive`/`isNavRowActive` = the most specific entry carries
-  `aria-current`; a parent row only while its sub-items cannot be seen); footer = the user menu
+  `aria-current`; a parent row only while its sub-items cannot be seen); footer = **Hilfe**
+  (`HELP_NAV_ITEM`, F11.21 — in the footer so it stays visible during the wizard) above the user menu
   (spartan dropdown: Profil, Einstellungen, Jetzt sperren with a PIN, Abmelden with an account;
   the e-mail only with an account). From `md` (768 px wide is still mobile) it collapses to icons
   (tooltips) — remembered in the cookie `lk_sidebar` (`core/layout/sidebar-config.ts`,
@@ -2005,7 +2050,7 @@ are provided by the component (`providers: [...]`), list/form services are root.
   sheet (Escape closes it, focus returns to the trigger; it closes after a navigation). The
   content (`main[hlmSidebarInset]`) has a slim top bar (`hlmSidebarTrigger` at the left;
   bell, assistant, theme at the right), then `.lk-scroll-area` (the only scrolling part) beside
-  the chat panel. The setup wizard hides the `<nav>` (header and user menu stay). Sidebar
+  the chat panel. The setup wizard hides the `<nav>` (header, Hilfe and user menu stay). Sidebar
   colours: the `--sidebar*` tokens in `styles.css`. `app-shell.spec.ts` guards nav-in-sidebar,
   the trigger, collapse, the mobile sheet, `aria-current` and the wizard rule. No tab bar.
 - **Every action that can take more than ~1 s goes through the `ActivityService`** (user rule,
@@ -2340,6 +2385,9 @@ the budget (vendored); its one noisy rule is switched off in `libs/ui/utils/esli
   belong in the internal report (F10.2a) and the Treuhänder mail.
 - **Network is optional** (F11.3): with rate lookups off, everything still works from stored or
   manually entered rates.
+- **The help follows the app** (F11.21): a change to a page, button or flow updates the matching
+  `help.*` texts in both message files (see "Help"); `help-content.spec.ts` catches renamed
+  labels and dead links, not changed behaviour.
 
 ## Private data
 

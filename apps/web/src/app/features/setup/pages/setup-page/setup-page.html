@@ -1,7 +1,9 @@
 <lk-page-header
   [title]="'setup.title' | translate"
   [subtitle]="'setup.subtitle' | translate"
-/>
+>
+  <lk-help-link [section]="'setup'" [labelKey]="'help.setupBanner.wizard'" />
+</lk-page-header>
 
 @if (service.loading()) {
 <hlm-skeleton class="h-96 w-full" />

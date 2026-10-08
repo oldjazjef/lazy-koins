@@ -1,4 +1,5 @@
 import {
+  HELP_NAV_ITEM,
   isNavActive,
   isNavRowActive,
   NAV_ICONS,
@@ -63,11 +64,17 @@ describe('main navigation', () => {
   });
 
   it('registers every icon it uses', () => {
-    for (const item of NAV_ITEMS.flatMap((item) => [
-      item,
-      ...(item.children ?? []),
-    ])) {
+    for (const item of [
+      ...NAV_ITEMS.flatMap((item) => [item, ...(item.children ?? [])]),
+      HELP_NAV_ITEM,
+    ]) {
       expect(Object.keys(NAV_ICONS)).toContain(item.icon);
     }
+  });
+
+  it('keeps "Hilfe" out of the main list: it sits above the user menu (F11.21)', () => {
+    expect(HELP_NAV_ITEM.path).toBe('/app/help');
+    expect(HELP_NAV_ITEM.labelKey).toBe('nav.help');
+    expect(NAV_ITEMS.map((item) => item.path)).not.toContain('/app/help');
   });
 });

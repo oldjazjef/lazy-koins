@@ -9,6 +9,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './locales';
+import { allHelpKeys } from '../../features/help/help-content';
 import {
   LOCAL_SETTINGS_SECTIONS,
   SETTINGS_SECTIONS,
@@ -356,6 +357,8 @@ const DYNAMIC_KEYS = [
   ...['idle', 'lock-screen', 'suspend', 'unknown'].map(
     (reason) => `pin.lock.reason.${reason}`,
   ),
+  // F11.21: the guide's texts, built from its structure (`features/help/help-content.ts`).
+  ...allHelpKeys(),
 ];
 
 /** Keys that only exist in specs (fixtures of the copied ActionRunner spec). */
