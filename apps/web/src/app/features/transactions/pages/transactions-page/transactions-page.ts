@@ -59,7 +59,10 @@ type RowActionId =
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-/** The row menu of one transaction; changes are hidden while a closed project uses it (F9.9). */
+/**
+ * The row menu of one transaction; changes are hidden while a closed project uses it (F9.9). The
+ * AI review stays: it only suggests (accepting a suggestion is still refused while locked).
+ */
 export function ledgerActions(t: Transaction): RowAction<RowActionId>[] {
   const locked = t.lockedBy.length > 0;
   return [
@@ -82,12 +85,7 @@ export function ledgerActions(t: Transaction): RowAction<RowActionId>[] {
       icon: lucideLink2,
       hidden: locked,
     },
-    {
-      id: 'ai',
-      labelKey: 'ledger.actions.ai',
-      icon: lucideSparkles,
-      hidden: locked,
-    },
+    { id: 'ai', labelKey: 'ledger.actions.ai', icon: lucideSparkles },
     {
       id: 'show',
       labelKey: 'txEdit.save.show',
@@ -141,6 +139,8 @@ function isoDay(date: Date): string {
     ...HlmTableImports,
   ],
   providers: [provideIcons({ lucideSparkles })],
+  // Fill-page mode: the table takes the rest of the height and is the only part that scrolls.
+  host: { class: 'lk-fill-page' },
   templateUrl: './transactions-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

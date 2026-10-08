@@ -143,6 +143,11 @@
     }}</span
   >
   <span class="flex-1"></span>
+  <!-- The AI review only suggests, so it is offered for locked rows too (F9.9/F9.10). -->
+  <button hlmBtn size="sm" variant="outline" type="button" (click)="aiReview()">
+    <ng-icon name="lucideSparkles" size="14" aria-hidden="true" />
+    {{ 'ledger.actions.ai' | translate }}
+  </button>
   @if (selectionLocked()) {
   <span class="text-muted-foreground"
     >{{ 'ledger.selectionLocked' | translate }}</span
@@ -167,9 +172,6 @@
     (click)="bulk('edit')"
   >
     {{ 'txEdit.save.edit' | translate }}
-  </button>
-  <button hlmBtn size="sm" variant="outline" type="button" (click)="aiReview()">
-    {{ 'ledger.actions.ai' | translate }}
   </button>
   <button
     hlmBtn
@@ -202,7 +204,7 @@
   }
 </lk-empty-state>
 } @else {
-<div hlmTableContainer class="lk-panel">
+<div hlmTableContainer class="lk-panel lk-fill-scroll">
   <table hlmTable class="table-fixed">
     <colgroup>
       <col class="w-10" />
