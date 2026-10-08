@@ -11,6 +11,8 @@ export class MeResponseDto {
   })
   signInProvider!: string;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
+  @ApiProperty({ description: 'May use the management pages (/api/admin)' })
+  isPlatformAdmin!: boolean;
 
   static from(user: User): MeResponseDto {
     return {
@@ -19,6 +21,7 @@ export class MeResponseDto {
       displayName: user.displayName,
       signInProvider: user.signInProvider,
       createdAt: user.createdAt,
+      isPlatformAdmin: user.isPlatformAdmin,
     };
   }
 }

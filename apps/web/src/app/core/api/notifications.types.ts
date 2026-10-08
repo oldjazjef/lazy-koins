@@ -35,6 +35,7 @@ export const NOTIFICATION_TITLE_BASES = [
   `project.changedSinceSent`,
   `desktop.syncConflict`,
   `setup.incomplete`,
+  `library.hidden`,
   `task.done`,
   `task.failed`,
 ] as const;

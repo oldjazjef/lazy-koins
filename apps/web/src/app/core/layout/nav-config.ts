@@ -5,8 +5,11 @@ import {
   lucideFolderOpen,
   lucideLayoutDashboard,
   lucideLibraryBig,
+  lucideScrollText,
   lucideSettings,
+  lucideShieldCheck,
   lucideUserRound,
+  lucideUsers,
   lucideWallet,
 } from '@ng-icons/lucide';
 
@@ -19,6 +22,8 @@ export interface NavItem {
    * the desktop a linked web deployment's — `LibraryAvailability`).
    */
   readonly needsLibrary?: boolean;
+  /** Only for platform admins (`AdminAccess`). */
+  readonly needsAdmin?: boolean;
   /**
    * Sub-items, listed under the entry in the sidebar (expandable, like etx). User rule: the
    * library belongs to Mappings.
@@ -74,6 +79,38 @@ export const NAV_ITEMS: readonly NavItem[] = [
     labelKey: 'nav.wallets',
     icon: 'lucideWallet',
   },
+  {
+    path: '/app/admin',
+    labelKey: 'nav.admin',
+    icon: 'lucideShieldCheck',
+    needsAdmin: true,
+    children: [
+      {
+        path: '/app/admin',
+        labelKey: 'nav.adminOverview',
+        icon: 'lucideLayoutDashboard',
+        needsAdmin: true,
+      },
+      {
+        path: '/app/admin/users',
+        labelKey: 'nav.adminUsers',
+        icon: 'lucideUsers',
+        needsAdmin: true,
+      },
+      {
+        path: '/app/admin/library',
+        labelKey: 'nav.adminLibrary',
+        icon: 'lucideLibraryBig',
+        needsAdmin: true,
+      },
+      {
+        path: '/app/admin/audit',
+        labelKey: 'nav.adminAudit',
+        icon: 'lucideScrollText',
+        needsAdmin: true,
+      },
+    ],
+  },
 ];
 
 /** The user menu in the sidebar's footer (ANFORDERUNGEN §11): Profil and Einstellungen. */
@@ -92,11 +129,15 @@ export const USER_MENU_ITEMS: readonly NavItem[] = [
 
 /**
  * The main navigation for this app: without the library entry while there is no library to open
- * (a desktop without a linked web library). An entry left with a single sub-item (Mappings
- * then) becomes a plain link.
+ * (a desktop without a linked web library), without "Administration" for everyone but platform
+ * admins. An entry left with a single sub-item (Mappings then) becomes a plain link.
  */
-export function navItemsFor(libraryAvailable: boolean): readonly NavItem[] {
-  const allowed = (item: NavItem) => libraryAvailable || !item.needsLibrary;
+export function navItemsFor(
+  libraryAvailable: boolean,
+  isAdmin = false,
+): readonly NavItem[] {
+  const allowed = (item: NavItem) =>
+    (libraryAvailable || !item.needsLibrary) && (isAdmin || !item.needsAdmin);
   return NAV_ITEMS.filter(allowed).map((item) => {
     const children = item.children?.filter(allowed) ?? [];
     const { children: _all, ...plain } = item;
@@ -106,6 +147,9 @@ export function navItemsFor(libraryAvailable: boolean): readonly NavItem[] {
 
 export const NAV_ICONS = {
   lucideArrowLeftRight,
+  lucideScrollText,
+  lucideShieldCheck,
+  lucideUsers,
   lucideFileJson,
   lucideFiles,
   lucideFolderOpen,

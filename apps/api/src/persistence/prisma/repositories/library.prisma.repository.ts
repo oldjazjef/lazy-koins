@@ -32,6 +32,8 @@ function toEntry(row: LibraryMappingRow): LibraryMapping {
     publishedAt: toIsoString(row.publishedAt),
     updatedAt: toIsoString(row.updatedAt),
     deletedAt: row.deletedAt ? toIsoString(row.deletedAt) : null,
+    hiddenAt: row.hiddenAt ? toIsoString(row.hiddenAt) : null,
+    hiddenReason: row.hiddenReason,
   };
 }
 
@@ -55,7 +57,7 @@ export class LibraryPrismaRepository extends LibraryRepositoryPort {
 
   async listActive(): Promise<LibraryMapping[]> {
     const rows = await this.prisma.libraryMapping.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, hiddenAt: null },
       orderBy: [{ publishedAt: 'desc' }, { id: 'asc' }],
     });
     return rows.map(toEntry);
@@ -68,7 +70,7 @@ export class LibraryPrismaRepository extends LibraryRepositoryPort {
 
   async findActiveByAuthor(authorId: string): Promise<LibraryMapping[]> {
     const rows = await this.prisma.libraryMapping.findMany({
-      where: { authorId, deletedAt: null },
+      where: { authorId, deletedAt: null, hiddenAt: null },
       orderBy: [{ publishedAt: 'desc' }, { id: 'asc' }],
     });
     return rows.map(toEntry);

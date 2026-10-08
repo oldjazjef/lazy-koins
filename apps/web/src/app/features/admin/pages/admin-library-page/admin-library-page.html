@@ -1,0 +1,199 @@
+<lk-page-header
+  [title]="'admin.library.title' | translate"
+  [subtitle]="'admin.library.subtitle' | translate"
+/>
+
+<div class="mb-4 flex flex-wrap items-end gap-4">
+  <div class="flex min-w-64 flex-1 flex-col gap-2">
+    <label hlmLabel for="admin-library-search"
+      >{{ 'admin.library.search' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="admin-library-search"
+      type="search"
+      [ngModel]="search()"
+      (ngModelChange)="typed($event)"
+    />
+  </div>
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="admin-library-filter"
+      >{{ 'admin.library.filter' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="admin-library-filter"
+      [ngModel]="service.filter()"
+      (ngModelChange)="setFilter($event)"
+    >
+      @for (filter of filters; track filter) {
+      <option [value]="filter">
+        {{ 'admin.library.filters.' + filter | translate }}
+      </option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (service.entries.isLoading() && !service.entries.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.entries.error()) {
+<lk-empty-state [message]="'admin.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.entries.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.rows().length === 0) {
+<lk-empty-state [message]="'admin.library.empty' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="hidden w-56 md:table-column" />
+      <col class="hidden w-24 lg:table-column" />
+      <col class="w-32" />
+      <col class="w-14" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'admin.library.entry' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'admin.library.author' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right lg:table-cell">
+          {{ 'admin.library.taken' | translate }}
+        </th>
+        <th hlmTh>{{ 'admin.library.status' | translate }}</th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (entry of pager.visible(); track entry.id) {
+      <tr hlmTr>
+        <td hlmTd class="max-w-0">
+          @let title = entry.name + ' · ' + entry.platform + ' · v' +
+          entry.version;
+          <span [lkTruncate]="title">{{ title }}</span>
+          @if (entry.description) {
+          <span
+            class="text-muted-foreground text-xs"
+            [lkTruncate]="entry.description"
+            >{{ entry.description }}</span
+          >
+          } @if (entry.hiddenReason) {
+          <span
+            class="text-muted-foreground text-xs"
+            [lkTruncate]="entry.hiddenReason"
+            >{{ 'admin.library.hiddenBecause' | translate: { reason:
+            entry.hiddenReason } }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="hidden max-w-0 md:table-cell">
+          @let pseudonym = entry.authorName ?? ('library.anonymous' |
+          translate);
+          <span [lkTruncate]="pseudonym">{{ pseudonym }}</span>
+          <span
+            class="text-muted-foreground text-xs"
+            [lkTruncate]="entry.authorEmail"
+            >{{ entry.authorEmail }}</span
+          >
+        </td>
+        <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+          {{ entry.usageCount }}
+        </td>
+        <td hlmTd>
+          @if (entry.hiddenAt) {
+          <span hlmBadge variant="destructive"
+            >{{ 'admin.library.badges.hidden' | translate }}</span
+          >
+          } @else {
+          <span hlmBadge variant="outline"
+            >{{ 'admin.library.badges.visible' | translate }}</span
+          >
+          }
+          <span class="text-muted-foreground block text-xs tabular-nums"
+            >{{ entry.publishedAt | lkDate }}</span
+          >
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions().get(entry.id) ?? []"
+            (selected)="act($event, entry)"
+          />
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+@if (service.total() > service.rows().length) {
+<p class="text-muted-foreground mt-2 text-sm">
+  {{ 'admin.shownOf' | translate: { shown: service.rows().length, total:
+  service.total() } }}
+</p>
+} }
+
+<hlm-dialog
+  [state]="dialog() ? 'open' : 'closed'"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'admin.library.dialogs.' + current.kind + '.title' | translate }}
+      </h3>
+      <p hlmDialogDescription>
+        {{ 'admin.library.dialogs.' + current.kind + '.body' | translate: {
+        name: current.entry.name } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (current.kind === 'hide') {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="admin-library-reason"
+          >{{ 'admin.reason' | translate }}</label
+        >
+        <textarea
+          hlmTextarea
+          id="admin-library-reason"
+          rows="3"
+          class="w-full"
+          [attr.maxlength]="reasonMax"
+          [ngModel]="reason()"
+          (ngModelChange)="reason.set($event)"
+        ></textarea>
+      </div>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [variant]="current.kind === 'hide' ? 'destructive' : 'default'"
+        [disabled]="!canConfirm() || busy()"
+        (click)="confirm()"
+      >
+        {{ 'admin.library.dialogs.' + current.kind + '.action' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

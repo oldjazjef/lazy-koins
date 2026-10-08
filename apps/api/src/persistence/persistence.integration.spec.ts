@@ -101,6 +101,9 @@ describe('users', () => {
     expect(again.email).toBe('changed@it.dev');
     expect(await users.findPrincipalByIdentityUid(identity.uid)).toEqual({
       id: created.id,
+      isPlatformAdmin: false,
+      blockedAt: null,
+      lastSeenAt: null,
     });
   });
 });

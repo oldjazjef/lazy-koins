@@ -175,6 +175,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     mcp/                    #   F11.16: /api/mcp (SDK, stateless), PATs, MCP settings + audit endpoints
     setup/                  #   F11.0s: setup wizard progress + facts (what is configured)
     pin/                    #   F11.0p: PIN (scrypt), unlock sessions, PinLockGuard (423), forgot
+    admin/                  #   platform admin: PlatformAdminGuard, overview/users/library/audit (metadata only)
     notifications/          #   F11.11–F11.13: NotificationService (raise/resolve by topic), ProjectNotifications,
                             #   list/count/read/dismiss, activity + sync-conflict reports (global module)
     common/crypto/          #   SecretBox (AES-256-GCM, SETTINGS_ENCRYPTION_KEY)
@@ -967,6 +968,42 @@ it in localStorage and resets after the new sign-in). Auto-lock 1–240 min (def
   main.ts tells the window (`lock.onLocked`).
 - The PIN guards an open app, not the files: whoever copies the data folder (database + key file)
   can try all PINs offline.
+
+## Platform admin (user request 08.10.2026: „sehr minimale Management-Plattform“)
+
+A minimal admin area **inside the web app** (`/app/admin`, `features/admin`; API slice `admin/`),
+**metadata only** — admins never see projects, files, transactions, settings or keys of other
+accounts (Steuergeheimnis), and there is no "sign in as".
+
+- **Role**: `user.is_platform_admin`, read from the database on **every request**
+  (`PrincipalService` → `AuthenticatedUser.isPlatformAdmin`), never from the token. Bootstrap:
+  `PLATFORM_ADMIN_EMAILS` (comma-separated) grants it on sign-in **only when the identity provider
+  verified the address** (`emailVerified`), never with `AUTH_MODE=local`. Admins grant/revoke it in
+  the app.
+- **Blocking**: `user.blocked_at` + `blocked_reason` → `PrincipalService` answers **403
+  `accountBlocked`** to every request of that account (web: `authInterceptor` → `/blocked`).
+  `user.last_seen_at` is touched at most every 15 min.
+- **Backend enforcement**: `PlatformAdminGuard` on the whole `AdminController` (class level):
+  404 with `AUTH_MODE=local` (the desktop has no admin area), 403 `adminOnly` for everyone else.
+  Handlers add: never on oneself (409 `adminSelf`), never block/delete another admin (revoke the
+  role first, 409 `adminTarget`), a blocked user cannot become admin, block/hide/delete need a
+  reason (400 `reasonRequired`), delete needs the account's e-mail typed again (400
+  `confirmationMismatch`) and cascades like F2.2. **Every write is audited** in `admin_audit`
+  (actor id + e-mail snapshot, action, target, label, reason; no FK — it outlives both).
+  `admin.http.spec.ts` (real guards over HTTP: every route 401/403 without the role and without
+  side effects, a revoked role refused at the next request, blocked 403, local 404, no other
+  controller under `admin`), `admin.handlers.spec.ts`, `admin.persistence.integration.spec.ts`.
+- **API**: `GET /api/admin/overview` (counts, storage, DB size), `GET …/users?q&filter=all|blocked|
+admins`, `POST …/users/:id/block|unblock {reason}`, `PUT …/users/:id/admin {admin}`, `DELETE
+…/users/:id {reason, confirmEmail}`, `GET …/library?filter=all|visible|hidden`, `POST
+…/library/:id/hide|unhide {reason}`, `GET …/audit`. A **hidden** library entry
+  (`library_mapping.hidden_at` + reason, migration `20261010140000_platform_admin`) is gone for
+  everyone like a deleted one (`isVisible`), copies untouched; its author gets the info
+  notification `library.hidden:<id>` (resolved on unhide).
+- **Web**: `AdminAccess` (`core/admin`, from `GET /api/me` → `isPlatformAdmin`) drives the nav
+  entry (`NavItem.needsAdmin`, `navItemsFor(library, isAdmin)`) and `adminGuard` (`canMatch`);
+  pages Übersicht (+ ESTV status/update, version) · Konten · Bibliothek · Protokoll, DataChanges
+  scope `admin`.
 
 ## Notifications (F11.11–F11.13)
 

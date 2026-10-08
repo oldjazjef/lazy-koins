@@ -1,0 +1,81 @@
+<lk-page-header
+  [title]="'admin.audit.title' | translate"
+  [subtitle]="'admin.audit.subtitle' | translate"
+/>
+
+@if (service.audit.isLoading() && !service.audit.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.audit.error()) {
+<lk-empty-state [message]="'admin.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.audit.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.rows().length === 0) {
+<lk-empty-state [message]="'admin.audit.empty' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col class="w-40" />
+      <col class="w-44" />
+      <col />
+      <col class="hidden w-56 md:table-column" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'admin.audit.when' | translate }}</th>
+        <th hlmTh>{{ 'admin.audit.action' | translate }}</th>
+        <th hlmTh>{{ 'admin.audit.target' | translate }}</th>
+        <th hlmTh class="hidden md:table-cell">
+          {{ 'admin.audit.actor' | translate }}
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (entry of pager.visible(); track entry.id) {
+      <tr hlmTr>
+        <td hlmTd class="tabular-nums">
+          {{ entry.createdAt | lkDate: 'dateTime' }}
+        </td>
+        <td hlmTd>
+          <span hlmBadge variant="outline"
+            >{{ 'admin.audit.actions.' + entry.action | translate }}</span
+          >
+        </td>
+        <td hlmTd class="max-w-0">
+          <span [lkTruncate]="entry.targetLabel">{{ entry.targetLabel }}</span>
+          @if (entry.reason) {
+          <span
+            class="text-muted-foreground text-xs"
+            [lkTruncate]="entry.reason"
+            >{{ entry.reason }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="hidden max-w-0 md:table-cell">
+          <span class="text-muted-foreground" [lkTruncate]="entry.actorEmail"
+            >{{ entry.actorEmail }}</span
+          >
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+@if (service.total() > service.rows().length) {
+<p class="text-muted-foreground mt-2 text-sm">
+  {{ 'admin.shownOf' | translate: { shown: service.rows().length, total:
+  service.total() } }}
+</p>
+} }
