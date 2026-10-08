@@ -93,7 +93,7 @@ export function dashboardCorrections(
     const date =
       data.type === 'price_override'
         ? data.date
-        : data.type === 'reclassify'
+        : data.type === 'reclassify' || data.type === 'exclude_booking'
           ? timestampOf.get(data.bookingId)
           : data.type === 'manual_booking'
             ? data.booking.timestamp

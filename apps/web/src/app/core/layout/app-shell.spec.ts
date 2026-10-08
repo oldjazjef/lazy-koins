@@ -125,6 +125,8 @@ describe('AppShell', () => {
     expect(links(el)).toEqual([
       '/app/dashboard',
       '/app/projects',
+      '/app/files',
+      '/app/transactions',
       '/app/mappings',
       '/app/wallets',
     ]);
@@ -133,6 +135,14 @@ describe('AppShell', () => {
     expect(
       el.querySelector('main > header lk-notification-bell'),
     ).not.toBeNull();
+  });
+
+  it('shows the liability disclaimer under every page', async () => {
+    const { el } = await setup();
+    expect(
+      el.querySelector('.lk-scroll-content footer[data-disclaimer]')
+        ?.textContent,
+    ).toContain('app.disclaimer');
   });
 
   it('has a sidebar trigger in the top bar (mobile + collapse)', async () => {
@@ -195,6 +205,8 @@ describe('AppShell', () => {
     expect(links(el)).toEqual([
       '/app/dashboard',
       '/app/projects',
+      '/app/files',
+      '/app/transactions',
       '/app/mappings',
       '/app/wallets',
     ]);

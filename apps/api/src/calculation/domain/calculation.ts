@@ -51,6 +51,7 @@ export const STORED_CORRECTION_TYPES = [
   'reclassify',
   'manual_booking',
   'manual_holding',
+  'exclude_booking',
 ] as const satisfies readonly CorrectionType[];
 
 export interface StoredCorrection {

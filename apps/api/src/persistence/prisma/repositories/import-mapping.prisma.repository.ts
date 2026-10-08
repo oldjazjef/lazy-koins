@@ -118,7 +118,8 @@ export class ImportMappingPrismaRepository extends ImportMappingRepositoryPort {
 
   async delete(id: string): Promise<number> {
     return this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.projectFile.updateMany({
+      // F5.21: the reading belongs to the stored file — every project selecting it follows.
+      const { count } = await tx.storedFile.updateMany({
         where: { mappingId: id },
         data: {
           status: 'needs_mapping',

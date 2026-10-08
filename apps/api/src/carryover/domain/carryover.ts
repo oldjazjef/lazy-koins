@@ -72,13 +72,17 @@ export interface ProjectBundle {
   readonly files: readonly {
     readonly key: string;
     readonly stored:
-      { readonly existingId: string } | { readonly create: NewStoredFile };
+      | { readonly existingId: string }
+      | { readonly create: Omit<NewStoredFile, 'analysis' | 'source'> };
     readonly displayName: string;
     /** `uploaded`, `from_project:<id>`; ignored when `derivedFromKey` is set. */
     readonly origin: string;
     /** `derived_from:<the new project file of that key>`. */
     readonly derivedFromKey?: string;
-    /** Its `mappingId` is replaced by the mapping of `mappingKey`. */
+    /**
+     * Its `mappingId` is replaced by the mapping of `mappingKey`. Written to the stored file only
+     * when it is new — a file the owner already has keeps its reading (F5.21).
+     */
     readonly analysis: FileAnalysis;
     readonly mappingKey: string | null;
     /**

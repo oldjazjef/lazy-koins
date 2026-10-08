@@ -111,11 +111,12 @@ async function addNew(ownerId: string, projectId: string, text: string) {
         mediaType: 'text/csv',
         kind: 'csv',
         originalName: 'a.csv',
+        source: 'uploaded',
+        analysis: ANALYSIS,
       },
     },
     displayName: 'a.csv',
     origin: 'uploaded',
-    analysis: ANALYSIS,
   });
   if (!('created' in result)) throw new Error('expected a new entry');
   return result.created;
@@ -175,11 +176,12 @@ describe('stored files and project files', () => {
           mediaType: 'text/csv',
           kind: 'csv',
           originalName: 'b.csv',
+          source: 'uploaded',
+          analysis: ANALYSIS,
         },
       },
       displayName: 'b.csv',
       origin: 'uploaded',
-      analysis: ANALYSIS,
     });
     expect(again).toEqual({
       duplicate: expect.objectContaining({ id: first.id }),
@@ -190,14 +192,13 @@ describe('stored files and project files', () => {
       stored: { existingId: first.fileId },
       displayName: 'c.csv',
       origin: 'uploaded',
-      analysis: ANALYSIS,
     });
     expect(reused).toEqual({
       duplicate: expect.objectContaining({ id: first.id }),
     });
   });
 
-  it('shares bytes between projects and deletes them with the last reference (F5.7)', async () => {
+  it('shares bytes between projects and keeps them when the last project lets go (F5.23)', async () => {
     const owner = await newUser('share');
     const p1 = await newProject(owner.id, 'P1');
     const p2 = await newProject(owner.id, 'P2');
@@ -208,7 +209,6 @@ describe('stored files and project files', () => {
       stored: { existingId: first.fileId },
       displayName: 'copy.csv',
       origin: `from_project:${p1.id}`,
-      analysis: ANALYSIS,
     });
     if (!('created' in second)) throw new Error('expected a new entry');
     expect(await files.firstOtherProjectUsing(first.fileId, p2.id)).toBe(p1.id);
@@ -216,13 +216,78 @@ describe('stored files and project files', () => {
       1,
     );
 
-    expect(await files.remove(first.id)).toEqual({ storedFileDeleted: false });
+    expect(await files.remove(first.id)).toBe(true);
     expect(await files.readContent(first.fileId)).toBeDefined();
-    expect(await files.remove(second.created.id)).toEqual({
-      storedFileDeleted: true,
+    expect(await files.remove(second.created.id)).toBe(true);
+    // F5.23: the bytes stay among the user's files — only deleteStored removes them.
+    expect(await files.readContent(first.fileId)).toBeDefined();
+    expect(await files.remove(second.created.id)).toBe(false);
+    expect((await files.findStored(first.fileId))?.usages).toEqual([]);
+  });
+
+  it('keeps the reading on the stored file, shared by every project (F5.21), and deletes with the entries (F5.23)', async () => {
+    const owner = await newUser('global');
+    const p1 = await newProject(owner.id, 'P1');
+    const p2 = await newProject(owner.id, 'P2');
+    const first = await addNew(owner.id, p1.id, `global ${randomUUID()}`);
+    const second = await files.add({
+      ownerId: owner.id,
+      projectId: p2.id,
+      stored: { existingId: first.fileId },
+      displayName: 'copy.csv',
+      origin: 'selected',
     });
-    expect(await files.readContent(first.fileId)).toBeUndefined();
-    expect(await files.remove(second.created.id)).toBeUndefined();
+    if (!('created' in second)) throw new Error('expected a new entry');
+    await files.updateAnalysis(first.id, {
+      ...ANALYSIS,
+      status: 'evidence_only',
+      bookingCount: 0,
+      coverage: [],
+    });
+    expect(await files.findById(second.created.id)).toMatchObject({
+      status: 'evidence_only',
+      bookingCount: 0,
+    });
+    const listed = await files.listByOwner(owner.id);
+    expect(listed).toHaveLength(1);
+    expect(listed[0]).toMatchObject({
+      id: first.fileId,
+      status: 'evidence_only',
+      source: 'uploaded',
+      usages: [
+        { projectFileId: first.id, projectId: p1.id, active: true },
+        { projectFileId: second.created.id, projectId: p2.id, active: true },
+      ],
+    });
+    const { bytes, sha256 } = bytesOf(`standalone ${randomUUID()}`);
+    const standalone = await files.addStored(owner.id, {
+      sha256,
+      bytes,
+      mediaType: 'text/csv',
+      kind: 'csv',
+      originalName: 'solo.csv',
+      source: 'uploaded',
+      analysis: ANALYSIS,
+    });
+    if (!('created' in standalone)) throw new Error('expected a new file');
+    expect(standalone.created.usages).toEqual([]);
+    expect(
+      await files.addStored(owner.id, {
+        sha256,
+        bytes,
+        mediaType: 'text/csv',
+        kind: 'csv',
+        originalName: 'again.csv',
+        source: 'uploaded',
+        analysis: ANALYSIS,
+      }),
+    ).toEqual({
+      duplicate: expect.objectContaining({ id: standalone.created.id }),
+    });
+    expect(await files.deleteStored(first.fileId)).toBe(true);
+    expect(await files.listByProject(p1.id)).toEqual([]);
+    expect(await files.listByProject(p2.id)).toEqual([]);
+    expect(await files.deleteStored(first.fileId)).toBe(false);
   });
 
   it('deactivates one project entry and activates it again (F5.7a)', async () => {
@@ -236,7 +301,6 @@ describe('stored files and project files', () => {
       stored: { existingId: first.fileId },
       displayName: 'copy.csv',
       origin: `from_project:${p1.id}`,
-      analysis: ANALYSIS,
     });
     if (!('created' in second)) throw new Error('expected a new entry');
     expect(first).toMatchObject({ disabledAt: null, disabledNote: null });
@@ -257,7 +321,7 @@ describe('stored files and project files', () => {
     expect(await files.setDeactivation(randomUUID(), null)).toBeUndefined();
   });
 
-  it('purges unreferenced bytes when a project is deleted, keeping shared ones', async () => {
+  it('keeps every file when a project is deleted (F5.23: files are global)', async () => {
     const owner = await newUser('purge');
     const p1 = await newProject(owner.id, 'P1');
     const p2 = await newProject(owner.id, 'P2');
@@ -269,10 +333,9 @@ describe('stored files and project files', () => {
       stored: { existingId: shared.fileId },
       displayName: 'shared.csv',
       origin: `from_project:${p1.id}`,
-      analysis: ANALYSIS,
     });
     expect(await projects.delete(p1.id)).toBe(true);
-    expect(await files.readContent(only.fileId)).toBeUndefined();
+    expect(await files.readContent(only.fileId)).toBeDefined();
     expect(await files.readContent(shared.fileId)).toBeDefined();
     expect(await projects.delete(p1.id)).toBe(false);
   });
@@ -454,8 +517,6 @@ describe('CHECK constraints of the files migration', () => {
         project_id: project.id,
         file_id: goodId,
         display_name: 'a.csv',
-        status: 'standard',
-        coverage: '[]',
         origin: 'uploaded',
         added_at: now,
         ...columns,
@@ -466,14 +527,30 @@ describe('CHECK constraints of the files migration', () => {
         ...Object.values(row),
       );
     };
+    // F5.21: the reading lives on the stored file — its CHECKs moved there.
     for (const bad of [
       { status: 'unknown' },
       { status: 'mapped' },
-      { origin: 'stolen' },
-      { origin: 'from_project:' },
       { booking_count: -1 },
       { period_from: '2025-12-31', period_to: '2025-01-01' },
       { coverage: 'nope' },
+      { source: 'stolen' },
+      { source: 'wallet:' },
+    ]) {
+      const sets = Object.keys(bad)
+        .map((n) => `"${n}" = ?`)
+        .join(', ');
+      await expect(
+        prisma.$executeRawUnsafe(
+          `UPDATE "stored_file" SET ${sets} WHERE "id" = ?`,
+          ...Object.values(bad),
+          goodId,
+        ),
+      ).rejects.toThrow(/CHECK constraint failed/);
+    }
+    for (const bad of [
+      { origin: 'stolen' },
+      { origin: 'from_project:' },
       { display_name: '' },
       // F5.7a: a note only with a deactivation, at most 500 characters.
       { disabled_note: 'ohne Datum' },

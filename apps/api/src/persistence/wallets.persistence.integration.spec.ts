@@ -296,11 +296,12 @@ describe('project_file after the wallets migration', () => {
           mediaType: 'text/csv',
           kind: 'csv',
           originalName: 'Ledger.wallet-buchungen.csv',
+          source: 'uploaded',
+          analysis: NOT_ANALYSED,
         },
       },
       displayName: 'Ledger.wallet-buchungen.csv',
       origin: `wallet:${randomUUID()}`,
-      analysis: NOT_ANALYSED,
     });
     if (!('created' in added)) throw new Error('expected a new entry');
     expect(added.created.origin).toMatch(/^wallet:/);
@@ -311,8 +312,6 @@ describe('project_file after the wallets migration', () => {
         project_id: project.id,
         file_id: added.created.fileId,
         display_name: 'x.csv',
-        status: 'standard',
-        coverage: '[]',
         origin: 'uploaded',
         added_at: toSqliteTimestamp(new Date()),
         ...columns,
@@ -320,9 +319,6 @@ describe('project_file after the wallets migration', () => {
     for (const bad of [
       { origin: 'wallet:' },
       { origin: 'derived_from:' },
-      { status: 'mapped' },
-      { booking_count: -1 },
-      { coverage: 'nope' },
       { display_name: ' ' },
     ]) {
       await expect(entry(bad)).rejects.toThrow(/CHECK constraint failed/);

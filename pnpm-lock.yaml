@@ -354,6 +354,9 @@ importers:
       webpack-cli:
         specifier: ^7.0.0
         version: 7.2.3(js-yaml@5.4.3)(json5@2.2.3)(webpack@5.111.1)
+      xmllint-wasm:
+        specifier: 5.3.0
+        version: 5.3.0(@types/node@24.19.0)
 
 packages:
 
@@ -10340,6 +10343,12 @@ packages:
 
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
+
+  xmllint-wasm@5.3.0:
+    resolution: {integrity: sha512-sEgRXdf2t13eYCFCURmCE6h2hwleEOIS9VL/jOh9JJJnez2YXIooi2Ghm05/JZEPXyPawN8sMASPVZlmh8Sd6A==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
 
   xxhash-wasm@1.1.0:
     resolution: {integrity: sha512-147y/6YNh+tlp6nd/2pWq38i9h6mz/EuQ6njIrmW8D1BS5nCqs0P6DG+m6zTGnNz5I+uhZ0SHxBs9BsPrwcKDA==}
@@ -21232,6 +21241,10 @@ snapshots:
   xmlbuilder@15.1.1: {}
 
   xmlchars@2.2.0: {}
+
+  xmllint-wasm@5.3.0(@types/node@24.19.0):
+    dependencies:
+      '@types/node': 24.19.0
 
   xxhash-wasm@1.1.0: {}
 

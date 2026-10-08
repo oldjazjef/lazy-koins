@@ -104,9 +104,15 @@ describe('follow-up project (F4.4a)', () => {
         'anna',
         t.project.id,
         {
-          type: 'reclassify',
-          bookingId: `${t.ledger.sha256}::3`,
-          kind: 'income_airdrop',
+          type: 'manual_booking',
+          booking: {
+            platform: 'ledger',
+            accountId: 'main',
+            timestamp: '2025-11-01T00:00:00Z',
+            asset: 'ETH',
+            quantity: '0.5',
+            kind: 'income_airdrop',
+          },
         },
         'Airdrop',
       ),

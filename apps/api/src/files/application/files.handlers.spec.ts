@@ -181,6 +181,29 @@ describe('upload (F5.1–F5.4)', () => {
     expect(content.mediaType).toBe('text/csv');
   });
 
+  it("groups a mapped file without records under the mapping's platform (F5.25)", async () => {
+    const t = await setup();
+    await t.createMapping.execute(
+      new CreateMappingCommand('anna', spec('kraken-ledger'), 'copied'),
+    );
+    // Only the header row: an empty year of history.
+    const header = readFileSync(resolve(ENGINE, KRAKEN_CLASSIC), 'utf8').split(
+      /\r?\n/,
+    )[0];
+    const empty = await t.upload(
+      t.p1.id,
+      'ledgers-2019.csv',
+      new TextEncoder().encode(`${header}\n`),
+    );
+    expect(empty).toMatchObject({
+      status: 'mapped',
+      platform: 'kraken',
+      bookingCount: 0,
+      holdingCount: 0,
+      period: null,
+    });
+  });
+
   it('needs a mapping for an unknown layout, and uses a stored one by fingerprint', async () => {
     const t = await setup();
     const unknown = await t.upload(t.p1.id, 'ledgers.csv', fixture(KRAKEN));
@@ -501,7 +524,7 @@ describe('overview, preview, removal (F5.5–F5.8)', () => {
     ).toEqual({ kind: 'pdf' });
   });
 
-  it('deletes the bytes only with the last reference (F5.7), never in a closed project', async () => {
+  it('removes a file from the project only; the bytes stay among my files (F5.23), never in a closed project', async () => {
     const t = await setup();
     const a = await t.upload(t.p1.id, 'a.csv', fixture(STANDARD));
     const b = await t.upload(t.p2.id, 'a.csv', fixture(STANDARD));
@@ -516,7 +539,8 @@ describe('overview, preview, removal (F5.5–F5.8)', () => {
     ).rejects.toBeInstanceOf(ConflictException);
     await t.projects.update(t.p2.id, { status: 'in_progress' });
     await t.remove.execute(new RemoveProjectFileCommand('anna', t.p2.id, b.id));
-    expect(t.files.stored.size).toBe(0);
+    expect(t.files.stored.size).toBe(1);
+    expect(await t.files.listByProject(t.p2.id)).toEqual([]);
   });
 });
 
@@ -654,6 +678,51 @@ describe('deactivating a file (F5.7a)', () => {
   });
 });
 
+describe('global files (F5.21–F5.23)', () => {
+  it('reads a file once for every project that selects it, and the same bytes are not read again', async () => {
+    const t = await setup();
+    const a = await t.upload(t.p1.id, 'l.csv', fixture(KRAKEN));
+    const b = await t.upload(t.p2.id, 'l.csv', fixture(KRAKEN));
+    expect(t.files.stored.size).toBe(1);
+    expect(a.status).toBe('needs_mapping');
+    const mapping = await t.createMapping.execute(
+      new CreateMappingCommand('anna', spec('kraken-ledger'), 'manual'),
+    );
+    await t.change.execute(
+      new ChangeProjectFileCommand('anna', t.p1.id, a.id, {
+        mode: 'mapping',
+        mappingId: mapping.id,
+      }),
+    );
+    // Assigned in 2025, read so in 2024 too (F5.21).
+    expect(await t.files.findById(b.id)).toMatchObject({
+      status: 'mapped',
+      mappingId: mapping.id,
+      bookingCount: 13,
+    });
+  });
+
+  it('refuses to change how a file is read while a closed project uses it (409 usedByClosedProject)', async () => {
+    const t = await setup();
+    const a = await t.upload(t.p1.id, 'l.csv', fixture(KRAKEN));
+    await t.upload(t.p2.id, 'l.csv', fixture(KRAKEN));
+    await t.projects.update(t.p2.id, { status: 'closed' });
+    const refused = await t.change
+      .execute(
+        new ChangeProjectFileCommand('anna', t.p1.id, a.id, {
+          mode: 'evidenceOnly',
+        }),
+      )
+      .catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(ConflictException);
+    expect((refused as ConflictException).getResponse()).toMatchObject({
+      code: 'usedByClosedProject',
+      projects: [{ id: t.p2.id, name: 'Steuern 2024', taxYear: 2024 }],
+    });
+    expect((await t.files.findById(a.id))?.status).toBe('needs_mapping');
+  });
+});
+
 describe('assigning and editing mappings', () => {
   it('previews an unsaved spec (with validation), then assigns a mapping, evidence only, automatic', async () => {
     const t = await setup();
@@ -745,7 +814,8 @@ describe('assigning and editing mappings', () => {
       new CreateMappingCommand('anna', spec('kraken-ledger'), 'manual'),
     );
     const open = await t.upload(t.p1.id, 'l.csv', fixture(KRAKEN));
-    await t.upload(t.p2.id, 'l.csv', fixture(KRAKEN));
+    // Another file, used by a closed project: its reading must not change (F4.5, F5.21).
+    await t.upload(t.p2.id, 'old.csv', fixture(KRAKEN_CLASSIC));
     await t.projects.update(t.p2.id, { status: 'closed' });
 
     const edited = spec('kraken-ledger') as {

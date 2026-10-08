@@ -185,13 +185,18 @@ describe('stale snapshot after every relevant change (F7.6)', () => {
   it('a correction added, undone and redone', async () => {
     const { t, id, recalculate, staleEverywhere } = await setup();
     const view = await recalculate();
-    const bookingId = view.result?.income[0]?.bookingId ?? '';
+    expect(view.result).toBeDefined();
     const correction = await t.createCorrection.execute(
       new CreateCorrectionCommand(
         'anna',
         id,
-        { type: 'reclassify', bookingId, kind: 'transfer' },
-        'Umbuchung',
+        {
+          type: 'price_override',
+          asset: 'BTC',
+          date: '2025-12-31',
+          priceChf: '1',
+        },
+        'Kurs laut Beleg',
       ),
     );
     expect(await staleEverywhere()).toBe(true);
@@ -206,6 +211,29 @@ describe('stale snapshot after every relevant change (F7.6)', () => {
     await t.undo.execute(
       new SetCorrectionUndoneCommand('anna', id, correction.id, false),
     );
+    expect(await staleEverywhere()).toBe(true);
+  });
+
+  it('a global transaction edit of one of its transactions, undone (F9.8)', async () => {
+    const { t, recalculate, staleEverywhere } = await setup();
+    const view = await recalculate();
+    const bookingId = view.result?.income[0]?.bookingId ?? '';
+    // An edit of a transaction no file of the project has leaves it current.
+    await t.transactionEdits.add('anna', [
+      { key: 'ff:1', changes: { kind: 'spam' }, reason: 'x', source: 'user' },
+    ]);
+    expect(await staleEverywhere()).toBe(false);
+    const [edit] = await t.transactionEdits.add('anna', [
+      {
+        key: bookingId,
+        changes: { kind: 'transfer' },
+        reason: 'Umbuchung',
+        source: 'user',
+      },
+    ]);
+    expect(await staleEverywhere()).toBe(true);
+    await recalculate();
+    await t.transactionEdits.setStatus(edit?.id ?? '', 'undone');
     expect(await staleEverywhere()).toBe(true);
   });
 

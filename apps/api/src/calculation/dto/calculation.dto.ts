@@ -1,12 +1,22 @@
+import {
+  TRANSACTION_SCOPES,
+  type TransactionScope,
+} from '../application/transactions.handlers';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsIn,
+  IsInt,
   IsObject,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
+import { BOOKING_TREATMENTS, type BookingTreatment } from '@lazykoins/engine';
 
 /**
  * The calculation's answers are the engine's JSON as is (libs/engine `calculation/types.ts`):
@@ -70,6 +80,77 @@ export class FigureQueryDto {
   @MinLength(3)
   @MaxLength(500)
   figure!: string;
+}
+
+export class TransactionsQueryDto {
+  @ApiPropertyOptional({
+    enum: TRANSACTION_SCOPES,
+    default: 'year',
+    description:
+      'F9.6: year = the tax year; all = also earlier bookings that decide a balance at 31.12.',
+  })
+  @IsOptional()
+  @IsIn(TRANSACTION_SCOPES)
+  scope?: TransactionScope;
+
+  @ApiPropertyOptional({
+    description:
+      'Words that must all appear (asset, platform, account, kind, raw type, note, file, id, reason)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  q?: string;
+
+  @ApiPropertyOptional({ enum: BOOKING_TREATMENTS })
+  @IsOptional()
+  @IsIn(BOOKING_TREATMENTS)
+  treatment?: BookingTreatment;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  platform?: string;
+
+  @ApiPropertyOptional({ minimum: 0, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 200, default: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+}
+
+export class TransactionsResponseDto {
+  @ApiProperty() taxYear!: number;
+  @ApiProperty({ description: 'Tax currency of every valueChf (F4.1a)' })
+  currency!: string;
+  @ApiProperty({ description: 'Rows matching the filter, before paging' })
+  total!: number;
+  @ApiProperty() offset!: number;
+  @ApiProperty() limit!: number;
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { type: 'number' },
+    description: 'Per treatment, the treatment filter aside',
+  })
+  counts!: Record<string, number>;
+  @ApiProperty({ type: [String] }) platforms!: string[];
+  @ApiProperty({
+    type: 'array',
+    items: { type: 'object', additionalProperties: true },
+    description:
+      'libs/engine BookingTreatmentRow (treatment: income | oneOff | balance | checkOnly | transfer | spam | unknown | afterYear | excluded; valueChf, figureIds, correctionId + reason) + projectFileId, fileName',
+  })
+  rows!: Record<string, unknown>[];
 }
 
 export class FigureRecordsResponseDto {
@@ -142,7 +223,7 @@ export class CreateCorrectionDto {
     type: 'object',
     additionalProperties: true,
     description:
-      '{ type: price_override, asset, date, priceChf } | { type: reclassify, bookingId, kind } | { type: manual_booking, booking: {…} } | { type: manual_holding, holding: {…} } — amounts as decimal strings',
+      '{ type: price_override, asset, date, priceChf } | { type: reclassify, bookingId, kind } | { type: manual_booking, booking: {…} } | { type: manual_holding, holding: {…} } | { type: exclude_booking, bookingId } — amounts as decimal strings',
   })
   @IsObject()
   data!: Record<string, unknown>;

@@ -448,6 +448,19 @@ export class CreateCorrectionHandler implements ICommandHandler<
         issues: validation.issues,
       });
     }
+    // F9.11: reclassifying or hiding an imported booking is a global transaction edit now.
+    if (
+      validation.data.type === 'reclassify' ||
+      validation.data.type === 'exclude_booking'
+    ) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        message:
+          'Reclassify or hide a booking with a global transaction edit (POST /api/transactions/edits)',
+        code: 'useTransactionEdit',
+      });
+    }
     const trimmed = reason.trim();
     if (trimmed === '') throw new BadRequestException('reason is required');
     const created = await this.corrections.create(project.id, {

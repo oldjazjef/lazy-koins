@@ -27,6 +27,7 @@ import { ProjectCorrections } from '../project-corrections/project-corrections';
 import { ProjectExports } from '../project-exports/project-exports';
 import { ProjectRates } from '../project-rates/project-rates';
 import { ProjectResult } from '../project-result/project-result';
+import { ProjectTransactions } from '../project-transactions';
 import {
   ProjectWorkspaceService,
   WORKSPACE_TABS,
@@ -50,6 +51,7 @@ import {
     AiAssist,
     ProjectRates,
     ProjectResult,
+    ProjectTransactions,
     ProjectChecks,
     ProjectCorrections,
     ProjectExports,

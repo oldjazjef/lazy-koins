@@ -21,15 +21,62 @@ describe('changeOf — URL/method → scope and project', () => {
     ['GET', `/api/projects/${P}/result`, null],
     ['GET', '/api/mappings', null],
     // Project data: files, calculation, corrections, rates, exports, mail, F4.7, hints, items.
-    ['POST', `/api/projects/${P}/files`, { projectId: P }],
-    ['DELETE', `/api/projects/${P}/files/f1`, { projectId: P }],
-    ['PATCH', `/api/projects/${P}/files/f1`, { projectId: P }],
+    ['POST', `/api/projects/${P}/files`, { projectId: P, scope: 'files' }],
+    // F5.21: how a file is read is the file's — every project selecting it follows.
+    [
+      'DELETE',
+      `/api/projects/${P}/files/f1`,
+      { projectId: null, scope: 'files' },
+    ],
+    [
+      'PATCH',
+      `/api/projects/${P}/files/f1`,
+      { projectId: null, scope: 'files' },
+    ],
+    // F5.22: Dateien auswählen.
+    [
+      'POST',
+      `/api/projects/${P}/files/select`,
+      { projectId: P, scope: 'files' },
+    ],
     // F5.7a: (de)activating a file also settles/raises its notifications.
     [
       'PATCH',
       `/api/projects/${P}/files/f1/active`,
-      { projectId: P, scope: 'notifications' },
+      { projectId: P, scope: ['notifications', 'files'] },
     ],
+    // F9.8–F9.10: global transaction edits change every project that reads them.
+    [
+      'POST',
+      '/api/transactions/edits',
+      { projectId: null, scope: 'transactions' },
+    ],
+    [
+      'POST',
+      '/api/transactions/edits/e1/undo',
+      { projectId: null, scope: 'transactions' },
+    ],
+    [
+      'POST',
+      '/api/transactions/suggestions/accept',
+      { projectId: null, scope: 'transactions' },
+    ],
+    [
+      'POST',
+      '/api/transactions/mapping-rule',
+      { projectId: null, scope: ['mappings', 'transactions'] },
+    ],
+    ['POST', '/api/transactions/ai/suggest', { scope: 'transactions' }],
+    [
+      'POST',
+      '/api/transactions/suggestions/dismiss',
+      { scope: 'transactions' },
+    ],
+    ['POST', '/api/transactions/ai/payload', null],
+    // F5.21: my files.
+    ['POST', '/api/files', { scope: 'files' }],
+    ['PATCH', '/api/files/f1', { projectId: null, scope: 'files' }],
+    ['DELETE', '/api/files/f1', { projectId: null, scope: 'files' }],
     ['POST', `/api/projects/${P}/calculate`, { projectId: P }],
     ['POST', `/api/projects/${P}/corrections`, { projectId: P }],
     ['POST', `/api/projects/${P}/corrections/c1/undo`, { projectId: P }],
@@ -48,12 +95,12 @@ describe('changeOf — URL/method → scope and project', () => {
     [
       'POST',
       `/api/projects/${P}/files/f1/ai/statement/accept`,
-      { projectId: P },
+      { projectId: P, scope: 'files' },
     ],
     [
       'POST',
       `/api/projects/${P}/files/f1/ai/mapping/accept`,
-      { projectId: P, scope: 'mappings' },
+      { projectId: null, scope: ['mappings', 'files'] },
     ],
     [
       'POST',
@@ -64,27 +111,43 @@ describe('changeOf — URL/method → scope and project', () => {
     ['POST', '/api/projects', { scope: 'projects' }],
     ['POST', '/api/projects/import-package', { scope: 'projects' }],
     // Global data that every project reads.
-    ['PUT', '/api/mappings/m1', { projectId: null, scope: 'mappings' }],
+    [
+      'PUT',
+      '/api/mappings/m1',
+      { projectId: null, scope: ['mappings', 'files'] },
+    ],
     [
       'POST',
       '/api/mappings/m1/reapply',
-      { projectId: null, scope: 'mappings' },
+      { projectId: null, scope: ['mappings', 'files'] },
     ],
-    ['DELETE', '/api/mappings/m1', { projectId: null, scope: 'mappings' }],
-    ['POST', '/api/mappings', { projectId: null, scope: 'mappings' }],
+    [
+      'DELETE',
+      '/api/mappings/m1',
+      { projectId: null, scope: ['mappings', 'files'] },
+    ],
+    [
+      'POST',
+      '/api/mappings',
+      { projectId: null, scope: ['mappings', 'files'] },
+    ],
     [
       'POST',
       '/api/ai/mapping-sample/accept',
-      { projectId: null, scope: 'mappings' },
+      { projectId: null, scope: ['mappings', 'files'] },
     ],
     // F5.16: a library entry taken = a new mapping, maybe assigned to a file of any project.
-    ['POST', '/api/library/l1/take', { projectId: null, scope: 'mappings' }],
+    [
+      'POST',
+      '/api/library/l1/take',
+      { projectId: null, scope: ['mappings', 'files'] },
+    ],
     ['POST', '/api/library/review', null],
     // F5.19: a standard mapping taken = a copy, maybe assigned to a file of any project.
     [
       'POST',
       '/api/standard-mappings/kraken-ledger/take',
-      { projectId: null, scope: 'mappings' },
+      { projectId: null, scope: ['mappings', 'files'] },
     ],
     // F5.18 (desktop): the link to a web library; its test stores nothing.
     ['PUT', '/api/settings/library', { scope: 'settings' }],
@@ -163,6 +226,7 @@ describe('changeOf — URL/method → scope and project', () => {
   it('ignores the query string', () => {
     expect(changeOf('POST', `/api/projects/${P}/files?name=a.csv`)).toEqual({
       projectId: P,
+      scope: 'files',
     });
   });
 });

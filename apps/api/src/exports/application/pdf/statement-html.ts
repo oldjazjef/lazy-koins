@@ -105,7 +105,7 @@ function incomeTable(data: ExportData, k: ExportKit): string {
     <tbody>${rows}<tr class="total"><td colspan="2">${e(col.total)}</td><td class="num">${e(k.chf(data.result.totals.incomeChf))}</td></tr></tbody></table>`;
 }
 
-function footer(data: ExportData): string {
+export function footer(data: ExportData): string {
   return `<footer>${e(data.rules.labels.formReference(data.canton))}<br>${e(data.rules.labels.noTaxAdvice)}<br>${e(`lazy-koins ${data.appVersion}`)}</footer>`;
 }
 

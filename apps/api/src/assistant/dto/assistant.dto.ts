@@ -36,6 +36,7 @@ export const WORKSPACE_TAB_NAMES = [
   'hints',
   'wallets',
   'rates',
+  'transactions',
   'result',
   'checks',
   'corrections',

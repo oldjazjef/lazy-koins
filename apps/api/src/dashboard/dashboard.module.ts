@@ -31,5 +31,7 @@ import { DashboardService } from './dashboard.service';
     GetDashboardRecordsHandler,
     RefreshDashboardRatesHandler,
   ],
+  // F9.5: the global transaction list values with the same rates as the dashboard.
+  exports: [DashboardInputService],
 })
 export class DashboardModule {}

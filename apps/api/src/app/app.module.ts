@@ -16,6 +16,7 @@ import { validateEnv } from '../config/env';
 import { CalculationModule } from '../calculation/calculation.module';
 import { CarryoverModule } from '../carryover/carryover.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { TransactionsModule } from '../transactions/transactions.module';
 import { PackagesModule } from '../packages/packages.module';
 import { PinLockGuard } from '../pin/pin-lock.guard';
 import { PinModule } from '../pin/pin.module';
@@ -71,6 +72,7 @@ import { AppController } from './app.controller';
     WalletsModule,
     MailModule,
     DashboardModule,
+    TransactionsModule,
     CarryoverModule,
     PackagesModule,
     AssistantModule,

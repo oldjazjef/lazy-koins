@@ -300,7 +300,7 @@ describe('ProjectWorkspaceService', () => {
     });
     await asked;
     expect(service.pendingExport()).toEqual({
-      kind: 'simple_pdf',
+      kinds: ['simple_pdf'],
       openItems: 1,
     });
     http.expectNone('/api/projects/p1/exports');

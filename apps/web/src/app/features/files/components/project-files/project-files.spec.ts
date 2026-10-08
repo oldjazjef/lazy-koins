@@ -1,5 +1,5 @@
 import type { ProjectFile } from '../../../../core/api/api.types';
-import { fileActions } from './project-files';
+import { fileActions, isReadEmpty } from './project-files';
 
 const file = (over: Partial<ProjectFile> = {}): ProjectFile => ({
   id: 'f1',
@@ -82,5 +82,17 @@ describe('fileActions (the row menu of the files table)', () => {
       'files.actions.preview',
       'files.actions.download',
     ]);
+  });
+});
+
+describe('isReadEmpty (F5.25: "Gelesen – leer")', () => {
+  it('is a read file without bookings and balances, never one that still needs a mapping', () => {
+    expect(isReadEmpty(file({ bookingCount: 0, holdingCount: 0 }))).toBe(true);
+    expect(isReadEmpty(file())).toBe(false);
+    expect(
+      isReadEmpty(
+        file({ status: 'needs_mapping', bookingCount: 0, holdingCount: 0 }),
+      ),
+    ).toBe(false);
   });
 });

@@ -35,14 +35,22 @@
       <p class="text-muted-foreground text-xs">
         {{ 'files.upload.limits' | translate }}
       </p>
-      <!-- The take-over is a change to the project: DataChanges reloads the files. -->
-      <lk-take-over-files [projectId]="projectId()" />
+      <!-- Select and take-over change the project: DataChanges reloads the files. -->
+      <div class="flex flex-wrap justify-center gap-2">
+        <lk-select-files [projectId]="projectId()" />
+        <lk-take-over-files [projectId]="projectId()" />
+      </div>
     </div>
     } @else {
     <p class="text-muted-foreground text-sm">
       {{ 'files.closedHint' | translate }}
     </p>
-    } @if (service.uploads().length > 0) {
+    }
+    <!-- What to download from the platforms; open while the project has no files yet. -->
+    <lk-file-guide
+      [open]="service.overview.hasValue() && service.overview.value().groups.length === 0"
+    />
+    @if (service.uploads().length > 0) {
     <div class="flex flex-col gap-2" aria-live="polite">
       <progress
         class="w-full"
@@ -253,10 +261,19 @@
                     [title]="'files.disabled.tooltip' | translate: { date: (file.disabledAt ?? '' | lkDate) }"
                     >{{ 'files.disabled.badge' | translate }}</span
                   >
-                  }
+                  } @if (isReadEmpty(file)) {
+                  <!-- F5.25: read with its mapping, but nothing in it — info, not an error -->
+                  <span
+                    hlmBadge
+                    variant="outline"
+                    [title]="'files.status.readEmptyHint' | translate"
+                    >{{ 'files.status.readEmpty' | translate }}</span
+                  >
+                  } @else {
                   <span hlmBadge [variant]="statusVariant(file.status)"
                     >{{ 'files.status.' + file.status | translate }}</span
                   >
+                  }
                 </span>
                 @if (file.mappingName && file.mappingId) {
                 <a
@@ -269,7 +286,7 @@
               </td>
               <td hlmTd class="hidden tabular-nums lg:table-cell">
                 @if (file.period) { {{ file.period.from | lkDate }} – {{
-                file.period.to | lkDate }} }
+                file.period.to | lkDate }} } @else if (isReadEmpty(file)) { – }
               </td>
               <td
                 hlmTd

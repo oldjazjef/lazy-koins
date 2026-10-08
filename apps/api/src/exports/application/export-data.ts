@@ -5,6 +5,8 @@ import type {
 } from '@lazykoins/engine';
 import type { Locale } from '../../common/i18n/locale';
 import type { StoredResult } from '../../calculation/domain/calculation';
+import type { TransactionRow } from '../../calculation/application/transactions.handlers';
+import type { ETaxData } from './e-tax/e-tax-statement';
 import { type DocumentFormat, EXPORT_TEXTS } from './export-texts';
 
 /** Everything a document shows — assembled once, rendered as Excel, HTML/PDF or mail text. */
@@ -37,9 +39,51 @@ export interface ExportData {
   })[];
   /** F5.8 missing-file hints of the project's files — internal report only. */
   readonly hints: readonly MissingFileHint[];
+  /** F10.11–F10.13 only. */
+  readonly documents?: DocumentData;
+  /** F10.10 only. */
+  readonly eTax?: ETaxData;
 }
 
-export type ExportVariant = 'einfach' | 'ausfuehrlich' | 'pruefbericht-intern';
+export type ExportVariant =
+  | 'einfach'
+  | 'ausfuehrlich'
+  | 'pruefbericht-intern'
+  | 'wertschriften'
+  | 'ertragsliste'
+  | 'nachweis'
+  | 'e-steuerauszug';
+
+/** F7.5: where a record of the result comes from — the file and row, or a wallet's tx. */
+export interface RecordOrigin {
+  readonly file: string;
+  readonly row: number;
+  /** A wallet fetch: the transaction hash (the file's Referenz). */
+  readonly tx: string | null;
+  /** Entered as a correction (manual booking/holding). */
+  readonly manual: boolean;
+}
+
+/** F10.13 (b): what a balance at 31.12. rests on. */
+export interface HoldingEvidence {
+  readonly kind: 'statement' | 'ledger' | 'wallet' | 'manual';
+  /** Statement / wallet files behind it. */
+  readonly files: readonly string[];
+  /** Bookings of a ledger position. */
+  readonly bookings: number;
+  /** A manual holding's receipt (F6.5). */
+  readonly note: string;
+}
+
+/** What the further tax documents need beyond the result (F10.11–F10.13). */
+export interface DocumentData {
+  /** Record id → origin. */
+  readonly origins: Readonly<Record<string, RecordOrigin>>;
+  /** Position id → evidence. */
+  readonly evidence: Readonly<Record<string, HoldingEvidence>>;
+  /** F10.13 (a): the year's transactions with their changes (F9.8). */
+  readonly transactions: readonly TransactionRow[];
+}
 
 /**
  * `Steuern-2025_einfach_2026-01-15.xlsx` — no characters a file system dislikes; the variant in
@@ -49,7 +93,7 @@ export function exportFileName(
   data: Pick<ExportData, 'projectName' | 'createdAt'> &
     Partial<Pick<ExportData, 'locale'>>,
   variant: ExportVariant,
-  extension: 'pdf' | 'xlsx',
+  extension: 'pdf' | 'xlsx' | 'csv' | 'xml',
 ): string {
   const base =
     data.projectName

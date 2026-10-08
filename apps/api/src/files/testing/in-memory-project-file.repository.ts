@@ -4,10 +4,12 @@ import type {
   ProjectFile,
   StoredFileContent,
   StoredFileMeta,
+  UserFile,
 } from '../domain/project-file';
 import {
   type AddProjectFileInput,
   type MappingUse,
+  type NewStoredFile,
   ProjectFileRepositoryPort,
 } from '../ports/project-file.repository.port';
 
@@ -18,8 +20,13 @@ interface Entry {
   readonly displayName: string;
   readonly origin: string;
   readonly addedAt: string;
-  analysis: FileAnalysis;
   deactivation: FileDeactivation | null;
+}
+
+/** A stored file of the double: bytes, facts and its reading (F5.21). */
+export interface InMemoryStoredFile extends StoredFileContent {
+  analysis: FileAnalysis;
+  readonly source: string;
 }
 
 /**
@@ -27,7 +34,7 @@ interface Entry {
  * mock. The Prisma adapter is held to the same contract by persistence.integration.spec.ts.
  */
 export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
-  readonly stored = new Map<string, StoredFileContent>();
+  readonly stored = new Map<string, InMemoryStoredFile>();
   readonly entries = new Map<string, Entry>();
   private seq = 0;
   private clock = Date.parse('2026-01-01T00:00:00.000Z');
@@ -36,13 +43,15 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     ownerId: string,
     sha256: string,
   ): Promise<StoredFileMeta | undefined> {
-    return [...this.stored.values()].find(
+    const found = [...this.stored.values()].find(
       (file) => file.ownerId === ownerId && file.sha256 === sha256,
     );
+    return found && this.meta(found);
   }
 
   async readContent(fileId: string): Promise<StoredFileContent | undefined> {
-    return this.stored.get(fileId);
+    const found = this.stored.get(fileId);
+    return found && { ...this.meta(found), bytes: found.bytes };
   }
 
   async findInProject(
@@ -77,14 +86,16 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
 
   async listByMapping(mappingId: string): Promise<ProjectFile[]> {
     return [...this.entries.values()]
-      .filter((e) => e.analysis.mappingId === mappingId)
+      .filter(
+        (e) => this.stored.get(e.fileId)?.analysis.mappingId === mappingId,
+      )
       .map((e) => this.toFile(e));
   }
 
   async countByMappings(mappingIds: readonly string[]): Promise<MappingUse[]> {
     const counts = new Map<string, MappingUse>();
     for (const entry of this.entries.values()) {
-      const mappingId = entry.analysis.mappingId;
+      const mappingId = this.stored.get(entry.fileId)?.analysis.mappingId;
       if (!mappingId || !mappingIds.includes(mappingId)) continue;
       const key = `${mappingId}|${entry.projectId}`;
       const files = (counts.get(key)?.files ?? 0) + 1;
@@ -108,19 +119,7 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
         throw new Error('The stored file belongs to another owner');
       }
     } else {
-      this.seq += 1;
-      fileId = `f${this.seq}`;
-      this.stored.set(fileId, {
-        id: fileId,
-        ownerId: input.ownerId,
-        sha256: input.stored.create.sha256,
-        bytes: input.stored.create.bytes,
-        size: input.stored.create.bytes.length,
-        mediaType: input.stored.create.mediaType,
-        kind: input.stored.create.kind,
-        originalName: input.stored.create.originalName,
-        createdAt: this.tick(),
-      });
+      fileId = this.create(input.ownerId, input.stored.create).id;
     }
     const existing = await this.findInProject(input.projectId, fileId);
     if (existing) return { duplicate: existing };
@@ -132,7 +131,6 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
       displayName: input.displayName,
       origin: input.origin,
       addedAt: this.tick(),
-      analysis: input.analysis,
       deactivation: null,
     };
     this.entries.set(entry.id, entry);
@@ -144,8 +142,9 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     analysis: FileAnalysis,
   ): Promise<ProjectFile | undefined> {
     const entry = this.entries.get(id);
-    if (!entry) return undefined;
-    entry.analysis = analysis;
+    const stored = entry && this.stored.get(entry.fileId);
+    if (!entry || !stored) return undefined;
+    stored.analysis = analysis;
     return this.toFile(entry);
   }
 
@@ -159,24 +158,112 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     return this.toFile(entry);
   }
 
-  async remove(
+  async remove(id: string): Promise<boolean> {
+    return this.entries.delete(id);
+  }
+
+  async listByOwner(ownerId: string): Promise<UserFile[]> {
+    return [...this.stored.values()]
+      .filter((file) => file.ownerId === ownerId)
+      .sort((a, b) =>
+        a.createdAt === b.createdAt
+          ? b.id.localeCompare(a.id)
+          : b.createdAt.localeCompare(a.createdAt),
+      )
+      .map((file) => this.toUserFile(file));
+  }
+
+  async findStored(id: string): Promise<UserFile | undefined> {
+    const found = this.stored.get(id);
+    return found && this.toUserFile(found);
+  }
+
+  async listStoredByMapping(mappingId: string): Promise<UserFile[]> {
+    return [...this.stored.values()]
+      .filter((file) => file.analysis.mappingId === mappingId)
+      .map((file) => this.toUserFile(file));
+  }
+
+  async addStored(
+    ownerId: string,
+    file: NewStoredFile,
+  ): Promise<{ created: UserFile } | { duplicate: UserFile }> {
+    const existing = await this.findStoredBySha(ownerId, file.sha256);
+    const stored = existing && this.stored.get(existing.id);
+    if (stored) return { duplicate: this.toUserFile(stored) };
+    return { created: this.toUserFile(this.create(ownerId, file)) };
+  }
+
+  async updateStoredAnalysis(
     id: string,
-  ): Promise<{ storedFileDeleted: boolean } | undefined> {
-    const entry = this.entries.get(id);
-    if (!entry) return undefined;
-    this.entries.delete(id);
-    const stillUsed = [...this.entries.values()].some(
-      (e) => e.fileId === entry.fileId,
-    );
-    if (!stillUsed) this.stored.delete(entry.fileId);
-    return { storedFileDeleted: !stillUsed };
+    analysis: FileAnalysis,
+  ): Promise<UserFile | undefined> {
+    const found = this.stored.get(id);
+    if (!found) return undefined;
+    found.analysis = analysis;
+    return this.toUserFile(found);
+  }
+
+  async deleteStored(id: string): Promise<boolean> {
+    if (!this.stored.delete(id)) return false;
+    for (const [entryId, entry] of this.entries) {
+      if (entry.fileId === id) this.entries.delete(entryId);
+    }
+    return true;
+  }
+
+  private create(ownerId: string, file: NewStoredFile): InMemoryStoredFile {
+    this.seq += 1;
+    const created: InMemoryStoredFile = {
+      id: `f${this.seq}`,
+      ownerId,
+      sha256: file.sha256,
+      bytes: file.bytes,
+      size: file.bytes.length,
+      mediaType: file.mediaType,
+      kind: file.kind,
+      originalName: file.originalName,
+      createdAt: this.tick(),
+      analysis: file.analysis,
+      source: file.source,
+    };
+    this.stored.set(created.id, created);
+    return created;
+  }
+
+  private meta(file: InMemoryStoredFile): StoredFileMeta {
+    return {
+      id: file.id,
+      ownerId: file.ownerId,
+      sha256: file.sha256,
+      size: file.size,
+      mediaType: file.mediaType,
+      kind: file.kind,
+      originalName: file.originalName,
+      createdAt: file.createdAt,
+    };
+  }
+
+  private toUserFile(file: InMemoryStoredFile): UserFile {
+    return {
+      ...this.meta(file),
+      ...file.analysis,
+      source: file.source,
+      usages: [...this.entries.values()]
+        .filter((e) => e.fileId === file.id)
+        .map((e) => ({
+          projectFileId: e.id,
+          projectId: e.projectId,
+          active: e.deactivation === null,
+        })),
+    };
   }
 
   private toFile(entry: Entry): ProjectFile {
     const stored = this.stored.get(entry.fileId);
     if (!stored) throw new Error('dangling entry');
     return {
-      ...entry.analysis,
+      ...stored.analysis,
       id: entry.id,
       projectId: entry.projectId,
       fileId: entry.fileId,

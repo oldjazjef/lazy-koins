@@ -14,8 +14,8 @@ export class RemoveProjectFileCommand {
 }
 
 /**
- * F5.7: removes the file from the project; the original bytes are deleted only when no project
- * uses them any more (the adapter decides that in the same transaction).
+ * F5.23 "Aus Projekt entfernen": the file leaves the project and stays among the user's files
+ * (deleting the bytes happens only in the files area).
  */
 @CommandHandler(RemoveProjectFileCommand)
 export class RemoveProjectFileHandler implements ICommandHandler<

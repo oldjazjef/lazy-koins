@@ -82,6 +82,9 @@ interface Seeded {
   readonly walletLabel: string;
   readonly walletAddress: string;
   readonly correctionId: string;
+  /** F9.8: a global edit of one of A's transactions, and that transaction's key. */
+  readonly transactionEditId: string;
+  readonly transactionKey: string;
   readonly exportId: string;
   readonly figureId: string;
   readonly openItemKey: string;
@@ -234,6 +237,22 @@ async function seed(tag: string, address: string): Promise<Seeded> {
     priceChf: '91234.5',
     reason: `Isolation ${tag}`,
   });
+  const transactions = await must<{ transactions: { key: string }[] }>(
+    userId,
+    'search_transactions',
+    {},
+  );
+  const editedKey = transactions.transactions[0]?.key ?? '';
+  await must(userId, 'edit_transactions', {
+    keys: [editedKey],
+    changes: { note: `Isolation ${tag}` },
+    reason: `Isolation ${tag}`,
+  });
+  const editDetail = await must<{ history: { id: string }[] }>(
+    userId,
+    'get_transaction',
+    { key: editedKey },
+  );
   await must(userId, 'calculate_project', { projectId: project.id });
   const positions = await must<{ positions: { figureId: string }[] }>(
     userId,
@@ -305,6 +324,8 @@ async function seed(tag: string, address: string): Promise<Seeded> {
     walletLabel,
     walletAddress: address,
     correctionId: correction.id,
+    transactionEditId: editDetail.history[0]?.id ?? '',
+    transactionKey: editedKey,
     exportId: exported.id,
     figureId: positions.positions[0]?.figureId ?? 'pos:none',
     openItemKey: checks.items[0]?.key ?? 'none',
@@ -550,6 +571,16 @@ const CASES: Record<string, (a: Seeded, b: Seeded) => Attack[]> = {
   get_result: (a) => [{ args: { projectId: a.projectId } }],
   list_positions: (a) => [{ args: { projectId: a.projectId } }],
   list_income: (a) => [{ args: { projectId: a.projectId } }],
+  list_transactions: (a) => [
+    { args: { projectId: a.projectId } },
+    { args: { projectId: a.projectId, q: 'ETH', treatment: 'balance' } },
+  ],
+  exclude_booking: (a) => [
+    // A wallet transaction key only A has: B's ledger has no such transaction.
+    {
+      args: { key: `wallet:${a.walletId}:ethereum:0xa:0`, reason: 'B tries A' },
+    },
+  ],
   get_figure_records: (a, b) => [
     {
       args: { projectId: a.projectId, figureId: a.figureId, includeRaw: true },
@@ -579,12 +610,28 @@ const CASES: Record<string, (a: Seeded, b: Seeded) => Attack[]> = {
   reclassify_booking: (a) => [
     {
       args: {
-        projectId: a.projectId,
-        bookingId: 'any',
+        key: `wallet:${a.walletId}:ethereum:0xa:0`,
         kind: 'deposit',
         reason: 'B tries A',
       },
     },
+  ],
+  // F9.12: the global transactions — B only ever sees and changes B's own.
+  search_transactions: () => [{ args: {}, expect: 'own' }],
+  // Same file bytes for A and B → the same key: B sees B's own transaction and only B's edits.
+  get_transaction: (a) => [{ args: { key: a.transactionKey }, expect: 'own' }],
+  edit_transactions: (a) => [
+    {
+      args: {
+        keys: [`wallet:${a.walletId}:ethereum:0xa:0`],
+        changes: { kind: 'spam' },
+        reason: 'B tries A',
+      },
+    },
+  ],
+  undo_transaction_edit: (a) => [
+    { args: { editId: a.transactionEditId } },
+    { args: { editId: a.transactionEditId, undo: false } },
   ],
   create_correction: (a) => [
     {
@@ -740,6 +787,7 @@ beforeAll(async () => {
     ...A.fileIds,
     A.walletId,
     A.correctionId,
+    A.transactionEditId,
     A.exportId,
     A.conversationId,
     A.proposalId,

@@ -20,7 +20,7 @@ two as a package (F1.3).
 > tool layer for the chat sidebar and the MCP server), the Angular web app (`apps/web`: login, the
 > **Dashboard** (start page, first in the main navigation), project
 > list with Vermögen/Ertrag, the project **workspace** with tabs Allgemein · Dateien · Hinweise ·
-> Wallets · Kurse · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
+> Wallets · Kurse · Transaktionen · Ergebnis · Prüfungen · Korrekturen · Exporte (tab bar in the sticky page header); the app-wide **activity indicator**; the global **Mappings** page = F11.0 in the main navigation;
 > the **Bibliothek** (mapping library; on the desktop a linked web server's, F5.18) as its sub-item (`/app/mappings/library`; in the sidebar the entry expands to Meine Mappings · Bibliothek, `NavItem.children`);
 > Profil and Einstellungen › Kurse/Wallets/AI behind the user menu; the **setup wizard** F11.0s and
 > the **PIN lock** F11.0p, enforced by the API), the pure engine (`libs/engine`:
@@ -169,6 +169,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     carryover/              #   F4.4a follow-up project, F4.4 take-over, ProjectBundle (one transaction)
     packages/               #   F10.8/F10.9: .lkproj.zip / account package (fflate), manifest + verification
     mail/                   #   F11.10/F10.6a: mailer + template settings, compose/send, send log
+    transactions/           #   F9.5–F9.12: global transaction list (ledger), global edits, AI suggestions
     tools/                  #   F11.14/F11.16: the ONE tool layer — registry, executor (policy + audit), definitions/
     assistant/              #   F11.14/F11.15: chat conversations, ChatEngine (tool loop, proposals), prompt
     mcp/                    #   F11.16: /api/mcp (SDK, stateless), PATs, MCP settings + audit endpoints
@@ -187,7 +188,7 @@ apps/web/                   # Angular app
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/ (toasts),
                             #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
                             #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
-    features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
+    features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page), files (F5.21: the global Dateien page),
                             #   mappings (F11.0: list + detail, several .json at once, bulk publish), library
                             #   (F5.15–F5.20: list + entry, publish + bulk-publish dialogs), profile (+ account package), settings
                             #   (shell + rates/wallets/ai/mail; components/ = the forms shared with
@@ -354,10 +355,36 @@ Upload flow (`files/application/commands/upload-project-file.command.ts`): kind 
 (`%PDF-`, ZIP with `xl/`, text) → SHA-256 → duplicate in the same project = **409** with
 `existing` → standard format, else the owner's mappings by fingerprint (standard wins; among
 mappings: surest, then most recently changed) → status `standard | mapped | needs_mapping`; a PDF
-is `evidence_only`. Same bytes in another project of the owner: stored once, origin
-`from_project:<id>`. Only counts, period and per-account **coverage** are stored on the
-`project_file` row — bookings are not persisted as rows yet. F5.8 hints are computed from that
-coverage (`coverage/missing-files.ts`), no platform knowledge.
+is `evidence_only`. Same bytes in another project of the owner: stored once (linked, the
+reading kept). Only status, mapping, counts, period and per-account **coverage** are stored —
+on the **`stored_file`** row since F5.24 (one reading for every project) — bookings are not
+persisted as rows yet. F5.8 hints are computed from that coverage (`coverage/missing-files.ts`),
+no platform knowledge.
+
+**Global files (F5.21–F5.25, requirements on dev 10.2026)** — a file belongs to the **user**, a
+project only **selects** it. Migration `20261010100000_global_files` moved the reading
+(status, mapping, platform, period, counts, coverage) from `project_file` to `stored_file` (+
+`source` = `uploaded | derived_from:<stored id> | wallet:<id>`; the newest project's reading
+won, a disagreement raised the info notification `files.readingConflict:<stored id>`);
+`project_file` keeps only the selection (display name, origin incl. **`selected`**, deactivation
+F5.7a). Rules: changing the reading (`ChangeProjectFileCommand`, `PATCH /api/files/:id`, re-apply)
+changes it for **every** project and is refused (409 `usedByClosedProject` + `projects`) while a
+closed project uses the file (`projectsReading`, `files/application/file-access.ts`); "Aus
+Projekt entfernen" (`DELETE …/projects/:id/files/:fileId`) only unlinks — the bytes stay, also
+when a project is deleted; **deleting** is only on the global page (`DELETE /api/files/:id`,
+every link gone, same 409); a wallet's orphaned derived files are removed by the sync. API
+(`files/my-files.controller.ts`, `my-files.handlers.ts`): `GET|POST /api/files` (raw body like
+the project upload, duplicate 409 `duplicateFile`), `GET …/:id/content|preview`, `PATCH|DELETE
+/api/files/:id`, `GET /api/projects/:id/file-candidates` (every file of mine + `selected` +
+`suggested` = period touches the tax year or holdings dated 31.12.), `POST
+/api/projects/:id/files/select {fileIds}` (origin `selected`). Web: **Dateien** in the main
+navigation (`features/files/pages/my-files-page`, `/app/files`: grouped by platform, upload,
+search/platform filter, "Verwendet in" links to `#file-<pf id>`, row actions preview · download
+· assign (not PDFs) · add to project · delete; a 409 names the closed projects in the dialog)
+and in a project's files card **"Dateien auswählen"** (`components/select-files`: suggested ones
+pre-ticked, "nur passende", search). DataChanges scope `files`. F5.25: a mapped file with 0
+records shows "Gelesen – leer" (`isReadEmpty`), and migration `20261010090000_empty_mapped_file_platform`
+filled its platform from the mapping.
 
 **Hinweise (F5.8)** — `GET /api/projects/:id/hints` (`files/application/queries/project-hints.query.ts`)
 = the engine's `missingFileHints` (kinds `noYearData` "Fehlende Datei", `startsLate`, `endsEarly`,
@@ -1136,6 +1163,75 @@ symbol, contract? }`; `COIN_PROVIDERS` = `coingecko`, `coinmarketcap` (F7.4b); a
   Datum". `COINGECKO_IDS` (built-in ids, OPN = `open-ticketing-ecosystem`) are only the
   fallback after Binance and the picker's suggestion.
 
+**Transaktionen** (user request 07.10.2026: „eine Ansicht, wo man alle Transaktionen sieht und
+wie sie zur Steuerrechnung zählen“; extended by F9.5–F9.12, 08.10.2026: „Änderungen gelten
+global – eine Wahrheit pro Transaktion“) — engine `calculation/treatments.ts`:
+`bookingTreatments(input, result)` = every booking newest first with its **treatment**
+(`BOOKING_TREATMENTS`: `income`, `oneOff`, `balance`, `checkOnly`, `transfer`, `spam`, `unknown`,
+`afterYear`, `excluded`) and the figure ids it feeds.
+
+- **Global edits (F9.8)** — engine `transactions/edits.ts`: a transaction has a **stable key**
+  (`transactionKeys`): a file booking's id `<SHA-256>:<row>[…]`, a wallet fetch's
+  `wallet:<wallet id>:<network>:<tx hash>:<n>` (stays the same across refetches). An edit
+  (`TransactionChangesSchema`: `kind`, `asset`, `note`, `hidden`, `linkedKey` — a link makes
+  both sides `transfer`, `null` unlinks) is folded per key in creation order and applied by
+  `applyTransactionEdits` **before** the project corrections, in `CalculationInputService.build`
+  and `DashboardInputService.records` alike; hidden bookings leave the input (the project tab
+  lists them as `excluded`). Only edits whose key or link touches a project's file / wallet
+  prefixes enter its input hash (no file read) — an edit makes exactly the affected projects
+  stale. Migration `20261010110000_transaction_edits`: `transaction_edit` (owner FK cascade,
+  `tx_key` ≤ 300, `changes` JSON object, reason ≤ 1000, source `user|ai|migrated`, status
+  `active|undone|superseded`, `decided_at` unless active, `origin`) and `transaction_suggestion`
+  (one per owner + key, kind CHECK, confidence 0–100, status `open|accepted|dismissed`).
+  **F9.11**: every project correction `reclassify`/`exclude_booking` became an edit (same id,
+  reason, time; the newest project wins per transaction, the others `superseded` with their
+  project as `origin`; undone ones `undone`) and was deleted from the projects. The API refuses
+  new ones (400 `useTransactionEdit`); the corrections form no longer offers them. The engine
+  still applies them (older packages): the package import turns them into edits.
+- **API** (`apps/api/src/transactions/`): `TransactionLedgerService.ledger(userId)` = every
+  readable file of mine (F5.21, also in no project) read again, keyed, deduped by key (the
+  newest wallet fetch wins), edits applied, the projects using each file, **`lockedBy`** = the
+  closed ones (F9.9), the value in the newest project's tax currency with the dashboard's rates
+  (`dashboardRates` + user cache). `GET /api/transactions` (from/to, platform, account, asset,
+  kind, `changed`, `review` = unknown or an open AI suggestion, `walletId`, `q`, ≤ 200 per page),
+  `GET …/detail?key=` (original row `raw`, history incl. links pointing at it), `POST
+…/edits {keys ≤ 500, changes, reason}` (one edit per key; unknown key 404, a link joins exactly
+  one other, locked → 409 `transactionLocked` + `projects`), `POST …/edits/:id/undo|redo`
+  (also a superseded one), F9.10 `POST …/ai/payload {keys}` (exactly what is sent: refs `t1…`
+  and counter-booking candidates `c1…`, no keys/file names/hashes/notes; `consentGiven`) →
+  `POST …/ai/suggest {keys, consent}` (gate as every AI call, one repair round, stored as
+  suggestions — nothing changes) → `POST …/suggestions/accept|dismiss {ids}` (accept = edits with
+  source `ai`), `POST …/mapping-rule {key, kind}` (the platform type → kind as the first kind
+  rule of the mapping that read it, via `UpdateMappingCommand`; files keep their reading until
+  re-applied). Project tab: `GET /projects/:id/transactions?scope=year|all` (default the tax
+  year; `all` adds earlier bookings that decide a balance, F9.6) with `key`, `status`,
+  `hidden`, `linkedKey`, `editReason` per row. Packages (F10.8) carry the project's active edits
+  (`data/transaction-edits.json`, file keys only); the import adds them to the importer's.
+- **Tools** (F9.12, `tools/definitions/transaction.tools.ts`, registered when the service is
+  there): `search_transactions`, `get_transaction` (read), `edit_transactions`,
+  `reclassify_booking`, `exclude_booking` (all global edits by `key`, write → proposal),
+  `undo_transaction_edit`; `create_correction` refuses reclassify/exclude. The isolation suite
+  attacks each with a wallet key only A has (B's ledger: 404) and shows B its own transaction
+  for a key both have (same bytes).
+- **Web**: **Transaktionen** in the main navigation (`features/transactions`, `/app/transactions`,
+  `?key=` opens a detail): filters (date range, platform, account, asset, kind, "nur unbekannt",
+  "nur geänderte", search), server-side paging, selection on the page + bulk bar (edit, hide, AI,
+  accept suggestions), row actions (details + history, accept, edit, link, AI, hide/show — hidden
+  while locked). Shared in `shared/transactions/`: `TransactionEditsService` (root, the one
+  client; `lockedProjectsOf`), `lk-transaction-edit-dialog` (kind for many, asset + note for one,
+  hide/show, reason required, locked projects named), `lk-transaction-detail-dialog` (facts,
+  suggestion accept/dismiss, history with undo/redo, original row, "Als Regel ins Mapping"),
+  `lk-transaction-link-dialog` (`counterCandidates`: same asset, opposite sign, another
+  account, ±7 days), `lk-transaction-ai-dialog` (payload shown, consent, AI error panel). The
+  project tab (`calculation/components/project-transactions`) uses the same dialogs and a
+  "frühere Buchungen" toggle; the result tab's "Umklassieren" of an income line opens the edit
+  dialog (`ProjectWorkspaceService.transactionOf`). F9.7: the project Wallets tab shows each
+  wallet's transactions of the tax year (`lk-wallet-year-transactions`, `walletId` filter).
+  DataChanges scope `transactions`; edits/undo/accept/rule = every project.
+- **Mit AI beheben** (chat): row action and "Mit AI prüfen" call `ChatService.startWith(question)`;
+  the default prompt points the model at `search_transactions` / `edit_transactions`. Nothing
+  changes without "Ausführen".
+
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —
 never open items, check lights, „zu prüfen“/„nachtragen“ wording or a "to check" fill. A position
@@ -1151,6 +1247,48 @@ scans every cell/HTML of the statements for forbidden words. Web (Exporte tab): 
 the internal report in separate cards, the list grouped „Auszüge für die Steuerbehörde“ /
 „Intern“; `ProjectWorkspaceService.requestExport()` asks (`pendingExport` → dialog „Es gibt noch
 N offene Punkte. Trotzdem erstellen?“ with a way to Prüfungen) while open items are not done.
+
+**Further tax documents (F10.11–F10.14, requirement 08.10.2026)** — same rules as the statements
+(declared figures only, neutral no-price footnote, F10.3/F10.4 header, tax currency), kinds in
+`STATEMENT_KINDS` (attachable, the latest per kind preselected in the Treuhänder mail): migration
+`20261010120000_tax_documents` widens the `project_export.kind` CHECK; `extensionOf`/`mediaTypeOf`
+(`text/csv` for `_csv`). One pure row model `exports/application/documents-model.ts` rendered by
+`excel/documents-workbook.ts` and `pdf/documents-html.ts`; `ExportDataService.documents()` adds
+what only these need (`ExportData.documents`): record origins (file + row, a wallet's tx = its
+`Referenz`, a correction), the evidence per position (statement files / ledger bookings / wallet
+fetch / manual with its receipt) and the year's transactions via `projectTransactionRows`
+(the project tab's rows, with `importedAsset` and `marketValue` = |qty| × price of the day).
+
+- `securities_pdf|xlsx|csv` **Wertschriftenverzeichnis**: a line per platform/account/asset
+  (positions + assets that only brought income), quantity, price + source, tax value
+  (`=ABS(qty)*price`), income with VST (always 0 for crypto) / without VST (income lines + Earn
+  gaps), `SUM` totals; CSV with BOM and `.` decimals for the tax software.
+- `income_list_pdf|xlsx` **Ertrags- und Belegliste**: every non-spam income line with date,
+  category, net quantity, price + source, value (formula unless valued from the platform's USD
+  value), origin; sums per category and per asset, the positive Earn gaps with the method text.
+- `evidence_pdf|xlsx` **Transaktions- und Bestandesnachweis**: the year's transactions (kind,
+  "vorher → nachher" of a global edit, reason, treatment, value, origin) and the holdings at 31.12.
+  with price, source, value formula and evidence. Texts: `ExportTexts.documents` (de-CH + en).
+- Web (F10.14): Exporte tab card "Weitere Steuerdokumente" — one panel per document
+  (`TAX_DOCUMENTS`) with description and format checkboxes, "Ausgewählte erstellen (N)" →
+  `ProjectWorkspaceService.requestExports(kinds)` (asks once while open items exist, then one
+  after the other). Tool `create_export` takes the new kinds.
+
+**E-Steuerauszug eCH-0196 (F10.10, research + decisions in `docs/ECH-0196.md`)** — kinds
+`etax_xml` (`application/xml`) and `etax_pdf` in `STATEMENT_KINDS` (migration
+`20261010130000_e_tax_statement` widens the kind CHECK again), CHF projects only (409
+`eTaxNeedsChf`; the web card is disabled with a note). Version **2.2.0** (namespace
+`…/eCH-0196/2`, `minorVersion="22"`). `exports/application/e-tax/`: `e-tax-statement.ts` (pure
+model + XML: one depot per platform/account, one security per asset, `securityCategory="CURRNOTE"`
+without ISIN, `CURRNOTE.CURRENCY` for fiat, Kursliste name + valor via `ExportDataService.eTax()`
+(same ticker/alias and same value), `taxValue` only for a holding > 0 with `kursliste`/`undefined`
+flags, income as payments with `grossRevenueB`, Earn gap on 31.12., no `stock`, totals rounded
+once (< 100 → 3, else 2 decimals, half up); institution = lazy-koins (no LEI/UID), id
+`CH00000<LK+12 hex><year>123101`), `pdf417.ts` (Macro PDF417 port of pdf417-py, MIT;
+`pdf417-patterns.ts` generated), `code128.ts`, `png.ts`, `e-tax-html.ts` (readable pages with
+page barcode 197, then barcode sheets 196 with ≤ 6 segments of 13 × 35 at EC 4, 450 bytes each,
+ZLIB). Tests: XSD validation with `xmllint-wasm` against `e-tax/schema/` (the official XSDs, local
+imports) and a read-back of the barcode images (`e-tax/testing/barcode-reader.ts`).
 
 ## Price sources (F7.4b)
 
@@ -1572,8 +1710,9 @@ prisma/schema.prisma` must still report **no difference**.
 - **Files** (migration `20261006120000_files_and_mappings`): `stored_file` (BLOB, unique
   `(owner_id, sha256)`, CHECKs: hex SHA-256, kind, `size = length(bytes)`), `import_mapping`
   (spec as JSON text, `json_valid` CHECK) and `project_file` (status/origin/count/period CHECKs,
-  `mapped` needs a `mapping_id`). A stored file is deleted with its **last** `project_file` — in the
-  same transaction, also when a project is deleted (`ProjectPrismaRepository.delete`).
+  `mapped` needs a `mapping_id`). Since `20261010100000_global_files` (F5.24) the reading and
+  its CHECKs live on `stored_file`, and a stored file is deleted only from the global Dateien
+  page — never with its last `project_file` or a project. `global-files.migration.integration.spec.ts`.
 - **Mail** (migration `20261008130000_mail`, new tables only): `mail_settings` (PK `user_id`;
   security/port CHECKs, password sealed `enc:v1:%`, hint ≤ 8), `mail_template` (PK
   `(user_id, language)`, language/length CHECKs), `mail_log` (status, `json_valid` array,
@@ -2310,7 +2449,9 @@ projects/:projectId/files` (sub-paths keep the JSON parser) and turns body-parse
 - Tools that write files can turn a BOM escape (U+FEFF) into the real character; in source build it
   with `String.fromCharCode(0xfeff)` (`rates/kursliste.ts`).
 - PDF exports need Chromium for `playwright-core` (`pnpm exec playwright-core install chromium`,
-  or `PDF_CHROMIUM_PATH`); without it the API answers 503 for PDFs, Excel still works.
+  or `PDF_CHROMIUM_PATH`); without it the API answers 503 `pdfUnavailable` for PDFs, Excel still
+  works. The API image installs Alpine's `chromium` (+ Noto/DejaVu fonts) and sets
+  `PDF_CHROMIUM_PATH=/usr/local/bin/lk-chromium` (Playwright's own download is glibc-only).
 - Rate adapters parse JSON with the reviver's **source text** (`parseJsonKeepingNumbers`) so a
   rate never becomes a JS number; Node ≥ 21 provides it.
 - Several agents may share the Browser pane: pass `tabId` explicitly when driving it. A live check

@@ -2,7 +2,8 @@
   "app": {
     "name": "lazy-koins",
     "version": "lazy-koins v{{version}} ({{commit}})",
-    "versionBadge": "v{{version}}"
+    "versionBadge": "v{{version}}",
+    "disclaimer": "Hobby project without warranty: we are not tax or finance professionals and accept no liability – neither for calculations nor for statements or their consequences. Check everything yourself or have a professional check it; this is not tax or financial advice."
   },
   "actions": {
     "undo": "Undo"
@@ -66,7 +67,9 @@
     "library": "Library",
     "myMappings": "My mappings",
     "toggleSidebar": "Show or hide the sidebar",
-    "toggleSection": "{{section}}: expand or collapse the sub-items"
+    "toggleSection": "{{section}}: expand or collapse the sub-items",
+    "files": "Files",
+    "transactions": "Transactions"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
@@ -273,8 +276,8 @@
     "size": "{{kind}} · {{kb}} kB",
     "records": "{{bookings}} bookings · {{holdings}} holdings",
     "rowErrorCount": "{{count}} rows with errors",
-    "removeTitle": "Remove file?",
-    "removeBody": "“{{name}}” will be removed from this project. The file is only deleted permanently once no project uses it any more.",
+    "removeTitle": "Remove from project?",
+    "removeBody": "“{{name}}” is only removed from this project. The file stays under “Files”; you can delete it there.",
     "upload": {
       "drop": "Drag files here (CSV, XLSX, PDF) – several at once are possible.",
       "pick": "Choose files",
@@ -328,7 +331,9 @@
       "standard": "Standard format",
       "mapped": "Read with mapping",
       "needs_mapping": "Mapping missing",
-      "evidence_only": "Receipt only"
+      "evidence_only": "Receipt only",
+      "readEmpty": "Read – empty",
+      "readEmptyHint": "The file was read with its mapping but contains no bookings and no balances (e.g. an empty year of history). It does not count as coverage."
     },
     "origin": {
       "fromProject": "from project “{{name}}”",
@@ -342,7 +347,7 @@
       "preview": "Preview",
       "download": "Download",
       "assign": "Assign",
-      "remove": "Remove",
+      "remove": "Remove from project",
       "aiMapping": "Create mapping with AI",
       "aiStatement": "Read with AI",
       "deactivate": "Deactivate",
@@ -427,6 +432,53 @@
       "deactivated": "File deactivated – the result needs to be recalculated",
       "activated": "File activated – the result needs to be recalculated",
       "failed": "The file could not be changed"
+    },
+    "guide": {
+      "title": "Which files do I need?",
+      "intro": "For your taxes you need the complete data of every exchange, broker and wallet you had during the tax year – including accounts that are empty or closed today.",
+      "needTitle": "Per platform or account",
+      "need": {
+        "transactions": "Transaction history or ledger: every booking of the account – buys, sells, swaps, fees, deposits, withdrawals, rewards. This is the most important file; if the platform offers it, it often covers everything else.",
+        "trades": "Trade or order history: the executed trades with price and fee (open or cancelled orders are not needed).",
+        "transfers": "Deposits and withdrawals: crypto (with network and address) and fiat (CHF, EUR, USD) – so transfers between your own accounts are recognised.",
+        "rewards": "Staking, earn, interest, lending, airdrops, cashback: everything you received – this is taxable income.",
+        "statement": "Account or balance statement as of 31.12. (PDF or CSV): the holdings per asset on that day. It is used to check that the history adds up.",
+        "previousYear": "Holdings as of 31.12. of the previous year (or last year's project as a follow-up project): for the opening balance and the earn gap.",
+        "wallets": "Your own wallets (Ledger, Trezor, MetaMask, …): add addresses or xpub in the Wallets tab, or upload the wallet software's export."
+      },
+      "tipsTitle": "When downloading",
+      "tips": {
+        "period": "Period: at least 01.01.–31.12. of the tax year, better from account opening – then holdings and cost bases add up.",
+        "everything": "If the platform asks: choose all assets, all accounts (spot, earn, futures, sub-accounts) and all columns.",
+        "format": "Prefer CSV or Excel (XLSX), PDF only for statements. Upload files unchanged – don't open and re-save them in Excel.",
+        "closedAccounts": "Accounts with a single booking or a small remaining balance count too."
+      },
+      "platformsTitle": "Examples: where to find the files",
+      "platformsNote": "Menus change over time – the names are pointers, not a guarantee.",
+      "platforms": {
+        "kraken": "Kraken: Documents or History → Export → “Ledgers” (all assets, all fields, CSV); plus the statement as of 31.12.",
+        "binance": "Binance: Orders → Transaction History → “Export Transaction Records” (all accounts); plus the account statement as of 31.12.",
+        "bitfinex": "Bitfinex: Reports → “Ledgers”, plus “Trades” and “Movements” (deposits and withdrawals).",
+        "coinbase": "Coinbase: Profile → Reports or Statements → transaction history (CSV, all assets).",
+        "bitpanda": "Bitpanda: History → export transactions (CSV); plus the annual or tax statement.",
+        "revolut": "Revolut: Crypto → statement (Excel or CSV) for the whole tax year; plus the crypto tax report if offered."
+      },
+      "unknown": "A platform is not recognised? A mapping helps (“Create with AI” or by hand) – or enter the bookings in the standard-format template."
+    },
+    "select": {
+      "open": "Select files",
+      "title": "Select files",
+      "hint": "Your files from “Files”. Preselected are the ones that touch the tax year or hold balances at 31 December.",
+      "empty": "You have no files yet. Upload them here or under “Files”.",
+      "search": "Name or platform",
+      "onlySuggested": "Only matching",
+      "suggested": "fits the year",
+      "already": "already in the project",
+      "noMatch": "No file matches the search.",
+      "confirm": "Add {{count}}",
+      "done": "{{count}} file(s) added",
+      "failed": "The files could not be added",
+      "loadFailed": "The files could not be loaded"
     }
   },
   "mappings": {
@@ -1054,6 +1106,7 @@
       "hints": "Hints",
       "wallets": "Wallets",
       "rates": "Rates",
+      "transactions": "Transactions",
       "result": "Result",
       "checks": "Checks",
       "corrections": "Corrections",
@@ -1063,6 +1116,78 @@
   "calculation": {
     "calculated": "Recalculated",
     "calculateFailed": "Calculation failed"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "subtitle": "The bookings of the tax year and how they count in the tax calculation. Changes apply globally – in every project that uses the transaction; the original file stays unchanged.",
+    "search": "Search",
+    "searchPlaceholder": "Asset, platform, account, kind, file …",
+    "platform": "Platform",
+    "allPlatforms": "All platforms",
+    "treatmentFilter": "Filter by treatment",
+    "all": "All",
+    "legendTitle": "What do the treatments mean?",
+    "liveHint": "Computed live from the current files, corrections and rates – even before you recalculate.",
+    "empty": "No bookings yet. Upload exports in the Files tab.",
+    "emptyFiltered": "No booking matches this filter.",
+    "loadFailed": "The transactions could not be loaded.",
+    "columns": {
+      "date": "Time (UTC)",
+      "booking": "Booking",
+      "quantity": "Quantity",
+      "treatment": "For tax"
+    },
+    "treatment": {
+      "income": "Income",
+      "oneOff": "One-off event",
+      "balance": "Wealth",
+      "checkOnly": "Check only",
+      "transfer": "Transfer",
+      "spam": "Spam",
+      "unknown": "Unclassified",
+      "afterYear": "After the tax year",
+      "excluded": "Deactivated"
+    },
+    "help": {
+      "income": "Taxable income of the year (staking, interest, airdrops …), valued on the day it arrived, net of the fee – counts as income.",
+      "oneOff": "A loss or another one-off event, listed separately in the statement.",
+      "balance": "Changes the account's holdings and so the wealth as of 31.12. A buy or sell in itself is not taxable for private assets.",
+      "checkOnly": "The account is valued from a statement as of 31.12.; the booking is only checked against it.",
+      "transfer": "A transfer between your own accounts – neutral for tax.",
+      "spam": "Spam or scam token – neither wealth nor income.",
+      "unknown": "Not classified yet: counted in the holdings and an open item until you reclassify it.",
+      "afterYear": "Lies after 31.12. of the tax year – does not count in this project.",
+      "excluded": "Deactivated by you (with a reason) – ignored in the calculation until you activate it again."
+    },
+    "origin": "{{file}}, row {{row}}",
+    "manual": "Manual booking (correction)",
+    "importedAs": "Imported as “{{kind}}”, reclassified",
+    "fee": "Fee {{fee}} {{asset}}",
+    "noPrice": "no price",
+    "reason": "Reason: {{reason}}",
+    "figureTitle": "{{asset}} on {{platform}}",
+    "actions": {
+      "aiFix": "Fix with AI",
+      "exclude": "Deactivate",
+      "reactivate": "Activate again",
+      "reclassify": "Reclassify",
+      "figure": "Show in the calculation"
+    },
+    "exclude": {
+      "title": "Deactivate booking",
+      "body": "{{quantity}} {{asset}} on {{platform}} will no longer count in the tax calculation.",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. imported twice, test transfer, not mine",
+      "reasonRequired": "Please give a reason.",
+      "hint": "This is stored as a correction (with date and reason) and can be undone at any time. The project is recalculated afterwards."
+    },
+    "ai": {
+      "reviewButton": "Check with AI",
+      "reviewHint": "The assistant looks at unclassified, duplicate and suspicious bookings and proposes corrections – you confirm each one.",
+      "review": "Check the transactions of this project for mistakes: unclassified bookings, duplicates (same time, quantity and asset), transfers between own accounts that count as deposits or withdrawals, and income that is not income. Briefly explain what you find and propose a correction for every wrong booking (reclassify, deactivate with a reason or add a missing booking).",
+      "fix": "Check this booking and fix it if it is wrong: {{quantity}} {{asset}} at {{timestamp}} on {{platform}} / {{account}}, kind “{{kind}}” (original type “{{rawType}}”), {{origin}}, booking id {{id}}. Currently for tax: {{treatment}}. Also look at the neighbouring bookings and propose the matching correction (reclassify, deactivate with a reason or add a missing booking) – or say that it is right."
+    },
+    "showEarlier": "Show earlier bookings that decide the balance at 31 December"
   },
   "records": {
     "title": "Underlying bookings",
@@ -1242,7 +1367,8 @@
       "price_override": "Override rate",
       "reclassify": "Reclassify booking",
       "manual_booking": "Manual booking",
-      "manual_holding": "Manual holding"
+      "manual_holding": "Manual holding",
+      "exclude_booking": "Deactivate booking"
     },
     "status": {
       "applied": "applied",
@@ -1426,7 +1552,16 @@
       "detailed_pdf": "Detailed (PDF)",
       "detailed_xlsx": "Detailed (Excel)",
       "internal_report_pdf": "Internal review report (PDF)",
-      "internal_report_xlsx": "Internal review report (Excel)"
+      "internal_report_xlsx": "Internal review report (Excel)",
+      "securities_pdf": "Statement of securities (PDF)",
+      "securities_xlsx": "Statement of securities (Excel)",
+      "securities_csv": "Statement of securities (CSV)",
+      "income_list_pdf": "Income and receipts list (PDF)",
+      "income_list_xlsx": "Income and receipts list (Excel)",
+      "evidence_pdf": "Transactions and holdings evidence (PDF)",
+      "evidence_xlsx": "Transactions and holdings evidence (Excel)",
+      "etax_pdf": "E-tax statement eCH-0196 (PDF)",
+      "etax_xml": "E-tax statement eCH-0196 (XML)"
     },
     "fields": {
       "createdAt": "Created",
@@ -1463,6 +1598,35 @@
       "packageHint": "The project package (.lkproj.zip) contains original files, mappings, corrections with history, rates, review notes and the created statements – for import into the web or desktop app.",
       "failed": "The data export failed",
       "packageFailed": "The project package could not be created"
+    },
+    "documents": {
+      "title": "Further tax documents",
+      "hint": "Documents in the usual layout – like the statements without open items, stored and attachable to the mail to your tax advisor. Choose the formats and create several at once.",
+      "formats": "Formats",
+      "create": "Create selected ({{count}})",
+      "format": {
+        "pdf": "PDF",
+        "xlsx": "Excel",
+        "csv": "CSV",
+        "xml": "XML"
+      },
+      "securities": {
+        "title": "Statement of securities",
+        "description": "Per asset and platform/wallet: quantity, tax value at 31 December (price, source) and the year’s income (without withholding tax), with totals. CSV to copy into the tax software."
+      },
+      "income_list": {
+        "title": "Income and receipts list",
+        "description": "Every taxable inflow with date, price, value and origin (file + row or tx); totals per category and asset, the Earn gap explained."
+      },
+      "evidence": {
+        "title": "Transactions and holdings evidence",
+        "description": "Every transaction of the year with its changes and reason, holdings at 31 December with price, source and evidence – for questions from the tax office."
+      },
+      "etax": {
+        "title": "E-tax statement (eCH-0196)",
+        "description": "Securities list after the Swiss standard eCH-0196 (version 2.2) for import into the cantonal tax software: the PDF with barcode sheets to scan or enclose, the XML for a direct import. Cryptocurrencies are mapped as currencies without ISIN; the limitations are listed in the document.",
+        "needsChf": "Only for projects in CHF: the standard has tax values in francs only."
+      }
     }
   },
   "profile": {
@@ -1704,6 +1868,13 @@
       "remove": "Remove",
       "added": "Balance added.",
       "removed": "Balance removed."
+    },
+    "year": {
+      "title": "Transactions {{year}} ({{count}})",
+      "empty": "No transactions in this year (not fetched yet?).",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}} of {{pages}}"
     }
   },
   "hints": {
@@ -1852,7 +2023,8 @@
       "toRates": "Go to rates",
       "toExports": "Go to statements",
       "toStorage": "Check storage location",
-      "toSetup": "Set up"
+      "toSetup": "Set up",
+      "toGlobalFiles": "Go to files"
     },
     "title": {
       "rates": {
@@ -1905,6 +2077,9 @@
       },
       "setup": {
         "incomplete": "Setup incomplete: {{count}} item(s) still missing (e.g. key or mailer)"
+      },
+      "files": {
+        "readingConflict": "File was read differently in your projects: {{name}}"
       }
     },
     "reason": {
@@ -1989,7 +2164,8 @@
     "suggestionTake": "Taking the suggested mapping",
     "mappingImport": "Uploading mappings",
     "libraryBulkPublish": "Publishing mappings",
-    "coin": "Saving the coin for {{asset}}"
+    "coin": "Saving the coin for {{asset}}",
+    "transactionAi": "AI is reviewing transactions"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2560,7 +2736,10 @@
         "stars": "Stars",
         "privacyFindings": "Values that look personal",
         "pseudonym": "Display name",
-        "active": "Active"
+        "active": "Active",
+        "asset": "Asset",
+        "hidden": "Hidden",
+        "link": "Counter-booking"
       },
       "value": {
         "noPrice": "no price",
@@ -2577,7 +2756,9 @@
       "rateLibraryMapping": "Rate mapping \"{{name}}\"",
       "deleteLibraryMapping": "Remove mapping \"{{name}}\" from the library",
       "deactivateFile": "Deactivate file “{{file}}” (ignored by the calculation)",
-      "activateFile": "Activate file “{{file}}” again"
+      "activateFile": "Activate file “{{file}}” again",
+      "excludeBooking": "Deactivate booking {{booking}}",
+      "editTransactions": "Change {{count}} transaction(s) (applies in every project)"
     },
     "event": {
       "executed": "Done: {{title}}",
@@ -2772,7 +2953,16 @@
       "libraryCopy": "A copy taken from the library cannot be published as a new entry.",
       "unknownCoin": "The price provider does not know this coin.",
       "coinProviderFailed": "The price provider cannot be reached right now.",
-      "noKey": "No key is stored for this provider – enter it under Settings › Rates."
+      "noKey": "No key is stored for this provider – enter it under Settings › Rates.",
+      "pdfUnavailable": "PDFs cannot be created on this server right now (no browser for printing). Excel still works.",
+      "transactionLocked": "A closed project uses this transaction – reopen the project to change it",
+      "useTransactionEdit": "Reclassifying and hiding are changes to the transaction (Transactions), not project corrections",
+      "reasonRequired": "Please give a reason",
+      "invalidChanges": "The change is not valid",
+      "nothingToReview": "There is no transaction to review",
+      "noMapping": "This transaction is not read with a mapping",
+      "badAnswer": "The AI answer could not be used",
+      "eTaxNeedsChf": "The e-tax statement is only available for projects in CHF."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -3025,5 +3215,181 @@
     "removeFailed": "The assignment could not be removed",
     "chosen": "Coin saved, prices fetched again",
     "dismissed": "Note hidden"
+  },
+  "myFiles": {
+    "title": "Files",
+    "subtitle": "All your files, independent of projects – grouped by platform. How a file is read applies to every project that uses it.",
+    "upload": "Upload files",
+    "drop": "Drop files here (CSV, XLSX, PDF)",
+    "empty": "No files yet. Upload your platforms’ exports and select them in your projects afterwards.",
+    "noMatch": "No file matches the search.",
+    "search": "Search",
+    "searchPlaceholder": "Name, platform, mapping or project",
+    "platform": "Platform",
+    "allPlatforms": "All platforms",
+    "usedIn": "Used in",
+    "usedInCount": "Used in {{count}} project(s)",
+    "unused": "Not in any project",
+    "source": {
+      "uploaded": "uploaded",
+      "derived": "derived from a PDF",
+      "wallet": "from a wallet"
+    },
+    "actions": {
+      "add": "Add to project",
+      "delete": "Delete"
+    },
+    "assign": {
+      "body": "The assignment applies to every project that uses this file."
+    },
+    "add": {
+      "title": "Add to project",
+      "body": "“{{name}}” will be used in the chosen project.",
+      "project": "Project",
+      "none": "No open project without this file."
+    },
+    "delete": {
+      "title": "Delete file?",
+      "body": "“{{name}}” will be deleted permanently – also from every project that uses it.",
+      "usedIn": "Used in:"
+    },
+    "blocked": "Not possible: closed projects use this file ({{projects}}). Reopen them first.",
+    "deleted": "File deleted",
+    "deleteFailed": "The file could not be deleted",
+    "added": "File added to the project",
+    "addFailed": "The file could not be added"
+  },
+  "ledger": {
+    "title": "Transactions",
+    "subtitle": "Every transaction from all your files and wallets. Changes apply in every project that uses the transaction – with a reason, and they can be undone.",
+    "aiAll": "Review unknown ones with AI",
+    "period": "Period",
+    "year": "Year {{year}}",
+    "search": "Search",
+    "searchPlaceholder": "Asset, reference, note, type …",
+    "platform": "Platform / wallet",
+    "account": "Account",
+    "asset": "Asset",
+    "all": "All",
+    "onlyReview": "Only unknown / to review",
+    "onlyChanged": "Only changed",
+    "reset": "Reset filters",
+    "unreadable": "{{count}} file(s) could not be read",
+    "selected": "{{count}} selected",
+    "selectionLocked": "The selection contains locked transactions (closed project).",
+    "acceptSelected": "Accept {{count}} AI suggestions",
+    "clearSelection": "Clear selection",
+    "empty": "No transactions yet. Upload your platforms’ exports under “Files”.",
+    "noMatch": "No transaction matches the filter.",
+    "toFiles": "Go to files",
+    "loadFailed": "The transactions could not be loaded.",
+    "selectAll": "Select all on this page",
+    "select": "Select {{asset}}",
+    "value": "Value {{currency}}",
+    "status": "Status",
+    "locked": "Locked",
+    "lockedTitle": "A closed project uses this transaction",
+    "hidden": "Hidden",
+    "suggested": "AI: {{kind}} ({{confidence}} %)",
+    "statusValue": {
+      "original": "Original",
+      "changed": "Changed",
+      "aiSuggested": "Suggested by AI"
+    },
+    "actions": {
+      "detail": "Details and history",
+      "accept": "Accept AI suggestion",
+      "ai": "Review with AI"
+    }
+  },
+  "txEdit": {
+    "title": {
+      "edit": "Edit {{count}} transaction(s)",
+      "hide": "Hide {{count}} transaction(s)",
+      "show": "Show the transaction again"
+    },
+    "globalHint": "Applies in every project that uses the transaction. The original file stays unchanged.",
+    "kind": "Kind",
+    "unchanged": "Unchanged",
+    "asset": "Asset",
+    "note": "Note",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. move to my own account, imported twice, staking income",
+    "reasonRequired": "Please give a reason.",
+    "undoHint": "Every change is stored with its date and reason and can be undone. Affected projects need to be recalculated.",
+    "locked": "Not possible: closed projects use the transaction ({{projects}}). Reopen them first.",
+    "lockedHint": "Locked: {{projects}} is closed – unlock it to make changes.",
+    "save": {
+      "edit": "Edit",
+      "hide": "Hide",
+      "show": "Show again"
+    },
+    "saved": "Transactions changed",
+    "saveFailed": "The change could not be saved",
+    "undoDone": "Change undone or restored",
+    "undoFailed": "That did not work",
+    "suggestionsDecided": "AI suggestions decided",
+    "suggestionsFailed": "The AI suggestions could not be applied",
+    "ruleAdded": "Rule added to the mapping – re-apply the mapping if needed",
+    "ruleFailed": "The rule could not be added",
+    "history": {
+      "hidden": "Hidden",
+      "shown": "Shown again",
+      "linked": "Linked with its counter-booking",
+      "unlinked": "Link removed"
+    }
+  },
+  "txDetail": {
+    "title": "Transaction",
+    "when": "Time (UTC)",
+    "where": "Platform · account",
+    "original": "originally {{value}}",
+    "amount": "Quantity",
+    "value": "Value",
+    "rawType": "Platform type",
+    "group": "Reference",
+    "source": "Source",
+    "projects": "Projects",
+    "noProject": "In no project",
+    "linkedWith": "Linked with {{quantity}} {{asset}} on {{platform}} on {{date}} (both count as a transfer).",
+    "suggestion": "AI suggestion: {{kind}} ({{confidence}} % sure)",
+    "accept": "Accept",
+    "dismiss": "Dismiss",
+    "history": "History of changes",
+    "noHistory": "No change yet.",
+    "status": {
+      "active": "Active",
+      "undone": "Undone",
+      "superseded": "Superseded"
+    },
+    "fromProject": "from {{project}}",
+    "undo": "Undo",
+    "redo": "Restore",
+    "raw": "Original row of the file",
+    "loadFailed": "The transaction could not be loaded.",
+    "rule": "Add as mapping rule",
+    "link": "Link with counter-booking",
+    "by": {
+      "user": "By you",
+      "ai": "AI suggestion",
+      "migrated": "From a project correction"
+    }
+  },
+  "txLink": {
+    "title": "Link with counter-booking",
+    "body": "{{quantity}} {{asset}} on {{platform}} is a move between your own accounts. Choose the counter-booking – both then count as a transfer.",
+    "none": "No matching counter-booking found (same asset, opposite sign, another account, ±7 days).",
+    "choose": "Counter-booking",
+    "reasonPlaceholder": "e.g. withdrawal to my Ledger",
+    "save": "Link"
+  },
+  "txAi": {
+    "title": "Review with AI",
+    "hint": "The AI suggests a kind per transaction with a reason and confidence. Nothing changes until you accept the suggestions.",
+    "count": "{{count}} transaction(s) will be reviewed.",
+    "sentHint": "Exactly this data is sent to your AI provider – without file names, addresses or transaction ids:",
+    "consent": "I agree that this excerpt is sent to my AI provider (also for later AI requests; revocable under Settings › AI).",
+    "run": "Review",
+    "done": "{{count}} suggestions received – they are marked “Suggested by AI”."
   }
 }

@@ -1,3 +1,4 @@
+import type { TransactionsService } from '../../transactions/transactions.service';
 import { z } from 'zod';
 import type { AiGate } from '../../ai/application/ai-gate';
 import type { CalculationService } from '../../calculation/calculation.service';
@@ -25,6 +26,8 @@ export interface ToolServices {
   readonly ai: AiGate;
   /** F5.15–F5.17: the mapping library — its tools exist only where it is enabled (web). */
   readonly library?: LibraryService;
+  /** F9.12: the global transactions (absent in specs that do not build the slice). */
+  readonly transactions?: TransactionsService;
 }
 
 export const id = (what: string) =>
@@ -61,6 +64,7 @@ export const WORKSPACE_TABS = [
   'hints',
   'wallets',
   'rates',
+  'transactions',
   'result',
   'checks',
   'corrections',

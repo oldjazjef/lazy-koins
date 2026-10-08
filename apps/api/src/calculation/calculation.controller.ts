@@ -32,6 +32,8 @@ import {
   OpenItemStateResponseDto,
   ResultResponseDto,
   ResultStatusResponseDto,
+  TransactionsQueryDto,
+  TransactionsResponseDto,
   UpdateOpenItemDto,
 } from './dto/calculation.dto';
 
@@ -104,6 +106,25 @@ export class CalculationController {
       projectId,
       query.figure,
     )) as unknown as FigureRecordsResponseDto;
+  }
+
+  @Get('transactions')
+  @ApiOperation({
+    summary:
+      'Every booking and how it counts in the tax calculation (live input), filtered and paged',
+  })
+  @ApiOkResponse({ type: TransactionsResponseDto })
+  @ApiNotFoundResponse({ description: 'Missing, or not mine' })
+  async transactions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query() query: TransactionsQueryDto,
+  ): Promise<TransactionsResponseDto> {
+    return (await this.calculation.transactions(
+      user.userId,
+      projectId,
+      query,
+    )) as unknown as TransactionsResponseDto;
   }
 
   @Get('checks')

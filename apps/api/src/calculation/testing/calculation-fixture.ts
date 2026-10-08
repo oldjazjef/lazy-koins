@@ -13,6 +13,7 @@ import {
   InMemoryCoinMarketRepository,
   InMemoryProjectRateRepository,
 } from '../../rates/testing/in-memory-project-rate.repository';
+import { InMemoryTransactionEditRepository } from '../../transactions/testing/in-memory-transaction-edit.repository';
 import { InMemoryWalletRepository } from '../../wallets/testing/in-memory-wallet.repository';
 import { InMemoryUserSettingsRepository } from '../../settings/testing/in-memory-user-settings.repository';
 import { CalculationInputService } from '../application/calculation-input.service';
@@ -27,6 +28,7 @@ import {
   SetCorrectionUndoneHandler,
   UpdateOpenItemHandler,
 } from '../application/calculation.handlers';
+import { ListTransactionsHandler } from '../application/transactions.handlers';
 import {
   InMemoryCorrectionRepository,
   InMemoryOpenItemStateRepository,
@@ -72,6 +74,8 @@ export async function calculationSetup() {
   const userSettings = new InMemoryUserSettingsRepository();
   // The deployment-wide market list (shared tickers, F7.4) — empty unless a spec fills it.
   const market = new InMemoryCoinMarketRepository();
+  // F9.8: the owner's global transaction edits.
+  const transactionEdits = new InMemoryTransactionEditRepository();
   const inputs = new CalculationInputService(
     projects,
     files,
@@ -82,6 +86,7 @@ export async function calculationSetup() {
     reader,
     wallets,
     userSettings,
+    transactionEdits,
     market,
   );
   const project = await projects.create('anna', {
@@ -144,6 +149,7 @@ export async function calculationSetup() {
     wallets,
     userSettings,
     market,
+    transactionEdits,
     /** Adds a synthetic standard-format file to the project. */
     addFile: (name: string, csv: string) =>
       upload.execute(
@@ -177,5 +183,10 @@ export async function calculationSetup() {
       inputs,
     ),
     status: new GetResultStatusHandler(projects, inputs, snapshots),
+    transactions: new ListTransactionsHandler(
+      projects,
+      inputs,
+      transactionEdits,
+    ),
   };
 }

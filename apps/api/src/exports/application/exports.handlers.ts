@@ -12,7 +12,10 @@ import {
   QueryHandler,
 } from '@nestjs/cqrs';
 import {
+  CORRECTION_SOURCE_PREFIX,
   countryRules,
+  parseDecimal,
+  isCorrectionRecord,
   missingFileHints,
   rulesInLanguage,
   withTaxCurrency,
@@ -24,8 +27,17 @@ import { CalculationService } from '../../calculation/calculation.service';
 import type { Snapshot } from '../../calculation/domain/calculation';
 import {
   CalculationSnapshotRepositoryPort,
+  CorrectionRepositoryPort,
   OpenItemStateRepositoryPort,
 } from '../../calculation/ports/calculation.repository.port';
+import { projectTransactionRows } from '../../calculation/application/transactions.handlers';
+import { TransactionEditRepositoryPort } from '../../transactions/ports/transaction-edit.repository.port';
+import { originWalletId } from '../../wallets/domain/wallet';
+import { ESTV_SYMBOL_ALIASES } from '../../rates/domain/estv';
+import { RATE_ALIASES } from '../../rates/domain/project-rate';
+import { EstvKurslisteRepositoryPort } from '../../rates/ports/estv.port';
+import { eTaxPdfHtml, eTaxXml } from './e-tax/e-tax-document';
+import { type ETaxData, eTaxClientNumber } from './e-tax/e-tax-statement';
 import { readsRecords } from '../../files/domain/project-file';
 import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
@@ -37,10 +49,11 @@ import type { Project } from '../../projects/domain/project';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
 import { SettingsReader } from '../../settings/application/settings.handlers';
 import { UserRepositoryPort } from '../../users/ports/user.repository.port';
-import type {
-  ExportKind,
-  ProjectExportContent,
-  ProjectExportMeta,
+import {
+  type ExportKind,
+  extensionOf,
+  type ProjectExportContent,
+  type ProjectExportMeta,
 } from '../domain/project-export';
 import {
   PdfRendererPort,
@@ -48,12 +61,26 @@ import {
   ProjectExportRepositoryPort,
 } from '../ports/project-export.repository.port';
 import { detailedWorkbook } from './excel/detailed-workbook';
+import {
+  evidenceWorkbook,
+  incomeListWorkbook,
+  securitiesCsv,
+  securitiesWorkbook,
+} from './excel/documents-workbook';
+import {
+  evidenceHtml,
+  incomeListHtml,
+  securitiesHtml,
+} from './pdf/documents-html';
 import { internalWorkbook } from './excel/internal-workbook';
 import { simpleWorkbook } from './excel/simple-workbook';
 import {
+  type DocumentData,
   type ExportData,
   exportFileName,
   type ExportVariant,
+  type HoldingEvidence,
+  type RecordOrigin,
 } from './export-data';
 import { type MailDraft, mailDraft } from './mail-draft';
 import { internalReportHtml } from './pdf/internal-report-html';
@@ -74,7 +101,138 @@ export class ExportDataService {
     private readonly inputs: CalculationInputService,
     private readonly calculation: CalculationService,
     private readonly hintStates: HintStateRepositoryPort,
+    private readonly corrections: CorrectionRepositoryPort,
+    private readonly transactionEdits: TransactionEditRepositoryPort,
+    @Optional() private readonly estv?: EstvKurslisteRepositoryPort,
   ) {}
+
+  /**
+   * F10.10: the pseudonymous customer number and, per asset valued from the ESTV Kursliste, the
+   * entry's name and valor number (same ticker or alias and the same value as applied, F7.4a).
+   */
+  async eTax(project: Project, snapshot: Snapshot): Promise<ETaxData> {
+    const estvPositions = snapshot.result.positions.filter(
+      (p) => p.status === 'ok' && p.priceOrigin === 'estv' && p.priceChf,
+    );
+    const list =
+      estvPositions.length > 0 && this.estv
+        ? (await this.estv.listRates(project.taxYear)).filter(
+            (r) => r.kind !== 'fx',
+          )
+        : [];
+    const titles: Record<string, { name: string; valorNumber: string | null }> =
+      {};
+    for (const position of estvPositions) {
+      const asset = position.asset.toUpperCase();
+      const symbols = new Set(
+        [
+          asset,
+          ...(ESTV_SYMBOL_ALIASES[asset] ?? []),
+          ...(RATE_ALIASES[asset] ?? []),
+        ].map((s) => s.toUpperCase()),
+      );
+      const price = parseDecimal(position.priceChf ?? '0');
+      const fitting = list.filter(
+        (r) =>
+          symbols.has(r.symbol.toUpperCase()) &&
+          parseDecimal(r.value).equals(price),
+      );
+      const distinct = new Set(
+        fitting.map((r) => `${r.valorNumber ?? ''}|${r.name}`),
+      );
+      const [first] = fitting;
+      if (first && distinct.size === 1) {
+        titles[position.asset] = {
+          name: first.name,
+          valorNumber: first.valorNumber,
+        };
+      }
+    }
+    return { clientNumber: eTaxClientNumber(project.id), titles };
+  }
+
+  /**
+   * F10.11–F10.13: where every record comes from (file + row, a wallet's tx, a correction), what
+   * each balance at 31.12. rests on, and the year's transactions with their changes.
+   */
+  async documents(project: Project, snapshot: Snapshot): Promise<DocumentData> {
+    const records = (await this.snapshots.records(snapshot.id)) ?? {};
+    const files = new Map(
+      (await this.files.listByProject(project.id)).map(
+        (f) =>
+          [
+            f.sha256,
+            {
+              name: f.displayName,
+              wallet: originWalletId(f.origin) !== undefined,
+            },
+          ] as const,
+      ),
+    );
+    const notes = new Map(
+      (await this.corrections.listByProject(project.id)).map((c) => [
+        `${CORRECTION_SOURCE_PREFIX}${c.id}`,
+        c.data.type === 'manual_holding' ? (c.data.holding.evidence ?? '') : '',
+      ]),
+    );
+    const origins: Record<string, RecordOrigin> = {};
+    for (const [id, record] of Object.entries(records)) {
+      const file = files.get(record.sourceFileId);
+      origins[id] = {
+        file: file?.name ?? '',
+        row: record.row,
+        tx: file?.wallet ? (record.raw?.['Referenz'] ?? null) || null : null,
+        manual: isCorrectionRecord(record.sourceFileId),
+      };
+    }
+    const evidence: Record<string, HoldingEvidence> = {};
+    for (const position of snapshot.result.positions) {
+      const behind = position.recordIds.flatMap((id) => {
+        const record = records[id];
+        return record ? [record] : [];
+      });
+      const holdings = behind.filter((r) => r.type === 'holding');
+      const fileNames = [
+        ...new Set(
+          behind
+            .filter((r) => !isCorrectionRecord(r.sourceFileId))
+            .flatMap((r) => {
+              const file = files.get(r.sourceFileId);
+              return file ? [file.name] : [];
+            }),
+        ),
+      ].sort();
+      const wallet = behind.some((r) => files.get(r.sourceFileId)?.wallet);
+      evidence[position.id] =
+        position.quantitySource === 'manual'
+          ? {
+              kind: 'manual',
+              files: [],
+              bookings: 0,
+              note:
+                holdings
+                  .map((r) => notes.get(r.sourceFileId) ?? '')
+                  .find((n) => n !== '') ?? '',
+            }
+          : {
+              kind: wallet
+                ? 'wallet'
+                : position.quantitySource === 'statement'
+                  ? 'statement'
+                  : 'ledger',
+              files: fileNames,
+              bookings: behind.filter((r) => r.type === 'booking').length,
+              note: '',
+            };
+    }
+    const { all } = await projectTransactionRows(
+      this.inputs,
+      this.transactionEdits,
+      project,
+      'year',
+    );
+    return { origins, evidence, transactions: all };
+  }
 
   /**
    * The latest snapshot; an open project is recalculated first when its data changed (or it was
@@ -165,11 +323,46 @@ export class CreateExportCommand {
   ) {}
 }
 
+/** The kinds that need the records, evidence and transactions (F10.11–F10.13). */
+const DOCUMENT_KINDS: ReadonlySet<ExportKind> = new Set([
+  'securities_pdf',
+  'securities_xlsx',
+  'securities_csv',
+  'income_list_pdf',
+  'income_list_xlsx',
+  'evidence_pdf',
+  'evidence_xlsx',
+]);
+
+/** F10.10: the E-Steuerauszug (CHF only). */
+const ETAX_KINDS: ReadonlySet<ExportKind> = new Set(['etax_pdf', 'etax_xml']);
+
+const PDF_HTML: Readonly<
+  Record<Extract<ExportKind, `${string}_pdf`>, (data: ExportData) => string>
+> = {
+  simple_pdf: simpleStatementHtml,
+  detailed_pdf: detailedStatementHtml,
+  internal_report_pdf: internalReportHtml,
+  securities_pdf: securitiesHtml,
+  income_list_pdf: incomeListHtml,
+  evidence_pdf: evidenceHtml,
+  etax_pdf: eTaxPdfHtml,
+};
+
 const VARIANTS: Readonly<Record<ExportKind, ExportVariant>> = {
   simple_pdf: 'einfach',
   simple_xlsx: 'einfach',
   detailed_pdf: 'ausfuehrlich',
   detailed_xlsx: 'ausfuehrlich',
+  securities_pdf: 'wertschriften',
+  securities_xlsx: 'wertschriften',
+  securities_csv: 'wertschriften',
+  income_list_pdf: 'ertragsliste',
+  income_list_xlsx: 'ertragsliste',
+  evidence_pdf: 'nachweis',
+  evidence_xlsx: 'nachweis',
+  etax_pdf: 'e-steuerauszug',
+  etax_xml: 'e-steuerauszug',
   internal_report_pdf: 'pruefbericht-intern',
   internal_report_xlsx: 'pruefbericht-intern',
 };
@@ -229,20 +422,27 @@ export class CreateExportHandler implements ICommandHandler<
     kind: ExportKind,
   ): Promise<ProjectExportMeta> {
     const snapshot = await this.data.currentSnapshot(userId, project);
-    const data = await this.data.build(
+    if (ETAX_KINDS.has(kind) && snapshot.result.currency !== 'CHF') {
+      throw conflict(
+        'eTaxNeedsChf',
+        'The E-Steuerauszug (eCH-0196) is in CHF: the project has another tax currency',
+      );
+    }
+    const base = await this.data.build(
       userId,
       project,
       snapshot,
       new Date().toISOString(),
     );
+    const data: ExportData = DOCUMENT_KINDS.has(kind)
+      ? { ...base, documents: await this.data.documents(project, snapshot) }
+      : ETAX_KINDS.has(kind)
+        ? { ...base, eTax: await this.data.eTax(project, snapshot) }
+        : base;
     const bytes = await this.render(kind, data);
     return this.exports.create(project.id, {
       kind,
-      fileName: exportFileName(
-        data,
-        VARIANTS[kind],
-        kind.endsWith('_pdf') ? 'pdf' : 'xlsx',
-      ),
+      fileName: exportFileName(data, VARIANTS[kind], extensionOf(kind)),
       bytes,
       snapshotId: snapshot.id,
       wealthChf: snapshot.wealthChf,
@@ -255,6 +455,16 @@ export class CreateExportHandler implements ICommandHandler<
     data: ExportData,
   ): Promise<Uint8Array> {
     switch (kind) {
+      case 'securities_csv':
+        return securitiesCsv(data);
+      case 'securities_xlsx':
+        return securitiesWorkbook(data);
+      case 'income_list_xlsx':
+        return incomeListWorkbook(data);
+      case 'evidence_xlsx':
+        return evidenceWorkbook(data);
+      case 'etax_xml':
+        return new TextEncoder().encode(eTaxXml(data));
       case 'simple_xlsx':
         return simpleWorkbook(data);
       case 'detailed_xlsx':
@@ -264,19 +474,21 @@ export class CreateExportHandler implements ICommandHandler<
       case 'simple_pdf':
       case 'detailed_pdf':
       case 'internal_report_pdf':
+      case 'securities_pdf':
+      case 'income_list_pdf':
+      case 'evidence_pdf':
+      case 'etax_pdf':
         try {
-          return await this.pdf.render(
-            kind === 'simple_pdf'
-              ? simpleStatementHtml(data)
-              : kind === 'detailed_pdf'
-                ? detailedStatementHtml(data)
-                : internalReportHtml(data),
-          );
+          return await this.pdf.render(PDF_HTML[kind](data));
         } catch (error) {
           if (error instanceof PdfUnavailableError) {
-            throw new ServiceUnavailableException(
-              'PDF exports need Chromium: pnpm exec playwright-core install chromium',
-            );
+            throw new ServiceUnavailableException({
+              statusCode: 503,
+              error: 'Service Unavailable',
+              message:
+                'PDF exports need Chromium: pnpm exec playwright-core install chromium, or PDF_CHROMIUM_PATH',
+              code: 'pdfUnavailable',
+            });
           }
           throw error;
         }

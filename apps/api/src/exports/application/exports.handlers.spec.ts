@@ -1,6 +1,10 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { inflateSync } from 'node:zlib';
 import ExcelJS from 'exceljs';
+import { validateXML } from 'xmllint-wasm';
 import {
   CalculateProjectCommand,
   GetChecksQuery,
@@ -33,8 +37,55 @@ import {
   ListExportsQuery,
 } from './exports.handlers';
 import { escapeHtml } from './pdf/statement-html';
+import { eTaxStatement, eTaxStatementXml } from './e-tax/e-tax-statement';
+import {
+  codewordsOf,
+  readMonochromePng,
+  readSegment,
+} from './e-tax/testing/barcode-reader';
 
-async function setup(pdfAvailable = true) {
+import {
+  crypto as estvCrypto,
+  InMemoryEstvRepository,
+} from '../../rates/testing/in-memory-estv';
+
+const SCHEMA_DIR = join(__dirname, 'e-tax', 'schema');
+
+/** F10.10: validates against the official eCH-0196 2.2 XSD (with its eCH imports). */
+async function ech0196Errors(xml: string): Promise<string[]> {
+  const read = (f: string) => readFileSync(join(SCHEMA_DIR, f), 'utf8');
+  const main = 'eCH-0196-2-2.xsd';
+  const result = await validateXML({
+    xml: { fileName: 'statement.xml', contents: xml },
+    schema: { fileName: main, contents: read(main) },
+    preload: readdirSync(SCHEMA_DIR)
+      .filter((f) => f.endsWith('.xsd') && f !== main)
+      .map((f) => ({ fileName: f, contents: read(f) })),
+  });
+  return result.errors.map((e) => e.rawMessage);
+}
+
+/** The XML the barcode sheets of a rendered E-Steuerauszug carry. */
+function xmlFromBarcodes(html: string): string {
+  const images = [...html.matchAll(/src="data:image\/png;base64,([^"]+)"/g)];
+  const segments = images.map((m) =>
+    readSegment(
+      codewordsOf(readMonochromePng(Buffer.from(m[1] ?? '', 'base64')), 13),
+      4,
+      4,
+    ),
+  );
+  expect(segments.map((s) => s.index)).toEqual(segments.map((_, i) => i));
+  expect(segments.at(-1)?.last).toBe(true);
+  return inflateSync(Buffer.concat(segments.map((s) => s.bytes))).toString(
+    'utf8',
+  );
+}
+
+async function setup(
+  pdfAvailable = true,
+  estv: InMemoryEstvRepository = new InMemoryEstvRepository(),
+) {
   const t = await calculationSetup();
   const settingsRepo = new InMemoryUserSettingsRepository();
   await settingsRepo.save('anna', {
@@ -66,6 +117,9 @@ async function setup(pdfAvailable = true) {
     t.inputs,
     calculation,
     hintStates,
+    t.corrections,
+    t.transactionEdits,
+    estv,
   );
   return {
     ...t,
@@ -451,13 +505,240 @@ describe('exports (F10)', () => {
     expect(after.hints.map((h) => h.key)).toEqual(rest.map((h) => h.key));
   });
 
-  it('answers 503 for a PDF when no browser is available', async () => {
-    const t = await setup(false);
+  it('writes the Wertschriftenverzeichnis as Excel with formulas, CSV and PDF (F10.11)', async () => {
+    const t = await setup();
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'securities_xlsx'),
+    );
+    expect(xlsx.fileName).toMatch(/_wertschriftenverzeichnis_.*\.xlsx$/);
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, xlsx.id),
+        )
+      ).bytes,
+    );
+    const sheet = sheetOf(workbook, 'Wertschriftenverzeichnis');
+    const texts = allTexts(workbook);
+    expect(texts).toContain('Wertschriften- und Guthabenverzeichnis 2025');
+    expect(texts.some((x) => /^SUM\(G\d+:G\d+\)$/.test(x))).toBe(true);
+    expect(texts.some((x) => /^ABS\(D\d+\)\*E\d+$/.test(x))).toBe(true);
+    let dotIncome: unknown;
+    sheet.eachRow((row) => {
+      if (row.getCell(3).value === 'DOT') dotIncome = row.getCell(9).value;
+    });
+    expect(dotIncome).toBe(6.75);
+    expectClean(texts);
+
+    const csv = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'securities_csv'),
+    );
+    expect(csv).toMatchObject({ mediaType: 'text/csv; charset=utf-8' });
+    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, csv.id),
+        )
+      ).bytes,
+    );
+    expect(text.charCodeAt(0)).toBe(0xfeff);
+    expect(text).toContain('Ertrag ohne VST CHF');
+    expect(text).toMatch(/kraken,spot,DOT,1\.5,.*,6\.75,/);
+    expectClean([text]);
+
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'securities_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('Verrechnungssteuer');
+    expect(html).toContain('Keine Steuerberatung');
+    expectClean([html]);
+  });
+
+  it('writes the E-Steuerauszug as XML valid against the official eCH-0196 2.2 XSD (F10.10)', async () => {
+    const t = await setup();
+    const meta = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'etax_xml'),
+    );
+    expect(meta).toMatchObject({ mediaType: 'application/xml' });
+    expect(meta.fileName).toMatch(/_e-steuerauszug_.*\.xml$/);
+    const xml = new TextDecoder().decode(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, meta.id),
+        )
+      ).bytes,
+    );
+    expect(await ech0196Errors(xml)).toEqual([]);
+    expect(xml).toContain('minorVersion="22"');
+    expect(xml).toContain(`canton="${t.project.canton}"`);
+    expect(xml).toContain('institution name="lazy-koins (selbst erstellt)"');
+    expect(xml).toContain('firstName="Anna" lastName="Muster"');
+    expect(xml).toMatch(/id="CH00000LK[0-9A-F]{12}2025123101"/);
+    expect(xml).toMatch(/securityCategory="CURRNOTE" securityName="DOT"/);
+    // Income without withholding tax: Rubrik B only.
+    expect(xml).toMatch(/grossRevenueB="6\.75"/);
+    expect(xml).toContain('totalGrossRevenueA="0"');
+    expect(xml).not.toMatch(/ISIN|isin=/);
+
+    // A Kursliste title brings its name and valor number; still valid.
+    const snapshot = await t.snapshots.latest(t.project.id);
+    if (!snapshot) throw new Error('no snapshot');
+    const data = await t.data.build(
+      'anna',
+      t.project,
+      snapshot,
+      meta.createdAt,
+    );
+    const titled = eTaxStatementXml(
+      eTaxStatement(data, {
+        clientNumber: 'LK000000000001',
+        titles: { DOT: { name: 'Polkadot', valorNumber: '12345678' } },
+      }),
+    );
+    expect(titled).toContain('valorNumber="12345678"');
+    expect(titled).toContain('securityName="Polkadot (DOT)"');
+    expect(await ech0196Errors(titled)).toEqual([]);
+  });
+
+  it('prints the E-Steuerauszug with page barcodes and PDF417 sheets that carry the XML (F10.10)', async () => {
+    const t = await setup();
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'etax_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('E-Steuerauszug 2025 (eCH-0196)');
+    expect(html).toContain('Barcode-Blatt 1 von 1');
+    // Page barcodes: readable page 1 (form 197), barcode sheet 2 (form 196, 2D flag set).
+    expect(html).toContain('1972200000001011');
+    expect(html).toContain('1962200000002111');
+    const xml = xmlFromBarcodes(html);
+    expect(await ech0196Errors(xml)).toEqual([]);
+    expect(xml).toContain(
+      '<taxStatement xmlns="http://www.ech.ch/xmlns/eCH-0196/2"',
+    );
+    expectClean([html.replace(/data:image\/png;base64,[^"]+/g, '')]);
+  });
+
+  it('names a security after the Kursliste entry its value came from (F10.10)', async () => {
+    const estv = new InMemoryEstvRepository();
+    const t = await setup(true, estv);
+    const base = await t.data.currentSnapshot('anna', t.project);
+    const position = (asset: string, price: string) => ({
+      ...base.result.positions[0],
+      id: `pos:${asset}`,
+      asset,
+      status: 'ok' as const,
+      priceOrigin: 'estv' as const,
+      priceChf: price,
+    });
+    estv.rates.set(2025, [
+      estvCrypto('BTC', 'Bitcoin', '80000.5', '3841927'),
+      estvCrypto('ETH', 'Ethereum', '3000', '24476758'),
+    ]);
+    const eTax = await t.data.eTax(t.project, {
+      ...base,
+      result: {
+        ...base.result,
+        positions: [
+          position('BTC', '80000.50'),
+          // Another value than the Kursliste's: not this entry.
+          position('ETH', '2999'),
+        ],
+      },
+    });
+    expect(eTax.titles).toEqual({
+      BTC: { name: 'Bitcoin', valorNumber: '3841927' },
+    });
+    expect(eTax.clientNumber).toMatch(/^LK[0-9A-F]{12}$/);
+  });
+
+  it('refuses the E-Steuerauszug for a project in another tax currency (F10.10)', async () => {
+    const t = await setup();
+    await t.projects.update(t.project.id, { taxCurrency: 'EUR' });
     await expect(
       t.create.execute(
-        new CreateExportCommand('anna', t.project.id, 'detailed_pdf'),
+        new CreateExportCommand('anna', t.project.id, 'etax_xml'),
       ),
-    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    ).rejects.toMatchObject({ response: { code: 'eTaxNeedsChf' } });
+  });
+
+  it('writes the Ertrags- und Belegliste with origin, sums per category and asset (F10.12)', async () => {
+    const t = await setup();
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'income_list_xlsx'),
+    );
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, xlsx.id),
+        )
+      ).bytes,
+    );
+    expect(workbook.worksheets.map((w) => w.name)).toEqual([
+      'Erträge',
+      'Summen',
+    ]);
+    const texts = allTexts(workbook);
+    expect(texts).toContain('buchungen.csv, Zeile 5');
+    expect(texts).toContain('Summen je Kategorie');
+    expect(texts).toContain('Summen je Asset');
+    expectClean(texts);
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'income_list_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('Ertrags- und Belegliste 2025');
+    expect(html).toContain('buchungen.csv, Zeile 5');
+    expect(html).toContain('6.75');
+    expectClean([html]);
+  });
+
+  it('writes the Transaktions- und Bestandesnachweis with changes and evidence (F10.13)', async () => {
+    const t = await setup();
+    await t.transactionEdits.add('anna', [
+      {
+        key: `${t.bookingsFile.sha256}::6`,
+        changes: { kind: 'transfer' },
+        reason: 'Umbuchung auf eigenes Konto',
+        source: 'user',
+      },
+    ]);
+    const xlsx = await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'evidence_xlsx'),
+    );
+    const workbook = await workbookOf(
+      (
+        await t.content.execute(
+          new GetExportContentQuery('anna', t.project.id, xlsx.id),
+        )
+      ).bytes,
+    );
+    const texts = allTexts(workbook);
+    expect(texts).toContain('Übrige Buchung → Übertrag');
+    expect(texts).toContain('Umbuchung auf eigenes Konto');
+    expect(texts).toContain('Kontoauszug: bestaende.csv');
+    expect(texts.some((x) => /^SUM\(G\d+:G\d+\)$/.test(x))).toBe(true);
+    expectClean(texts);
+    await t.create.execute(
+      new CreateExportCommand('anna', t.project.id, 'evidence_pdf'),
+    );
+    const html = t.pdf.rendered.at(-1) ?? '';
+    expect(html).toContain('Bestände per 31.12.2025');
+    expect(html).toContain('Umbuchung auf eigenes Konto');
+    expectClean([html]);
+  });
+
+  it('answers 503 with code pdfUnavailable for a PDF when no browser is available', async () => {
+    const t = await setup(false);
+    const error: unknown = await t.create
+      .execute(new CreateExportCommand('anna', t.project.id, 'detailed_pdf'))
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ServiceUnavailableException);
+    // The app shows `errors.api.pdfUnavailable` instead of a generic server error.
+    expect((error as ServiceUnavailableException).getResponse()).toMatchObject({
+      code: 'pdfUnavailable',
+    });
   });
 
   it('drafts the mail to the Treuhänder with the two figures, attachments and open questions (F10.6)', async () => {

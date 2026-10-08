@@ -96,6 +96,7 @@ export class FileAnalysisService {
       `${MAPPING_PREFIX}${mapping.id}`,
       mapping.id,
       'mapped',
+      mapping.spec.platform,
     );
   }
 
@@ -160,6 +161,11 @@ function summarise(
   importerId: string,
   mappingId: string | null,
   status: FileAnalysis['status'],
+  /**
+   * F5.25: the mapping's platform for a file that was read but holds no record (an empty
+   * order history of one year) — so it groups under its platform, not under "Ohne Plattform".
+   */
+  emptyPlatform: string | null = null,
 ): FileAnalysis {
   const platforms: string[] = [];
   for (const record of [...result.bookings, ...result.holdings]) {
@@ -169,7 +175,7 @@ function summarise(
     status,
     importerId,
     mappingId,
-    platform: platforms.length > 0 ? platforms.join(',') : null,
+    platform: platforms.length > 0 ? platforms.join(',') : emptyPlatform,
     period: result.period,
     bookingCount: result.bookings.length,
     holdingCount: result.holdings.length,

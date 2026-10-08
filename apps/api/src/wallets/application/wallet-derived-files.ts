@@ -16,7 +16,7 @@ import { FileAnalysisService } from '../../files/application/file-analysis.servi
 import { cleanFileName } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
-import { type Wallet, walletOrigin } from '../domain/wallet';
+import { originWalletId, type Wallet, walletOrigin } from '../domain/wallet';
 import { WalletRepositoryPort } from '../ports/wallet.repository.port';
 
 /**
@@ -147,6 +147,7 @@ export class WalletDerivedFiles {
           kind: 'csv',
           bytes: file.bytes,
           origin,
+          source: origin,
         });
         keep.add(created.id);
         // F5.7a: new bytes replacing a deactivated file of the same kind (bookings / balances)
@@ -168,7 +169,7 @@ export class WalletDerivedFiles {
       }
     }
     for (const file of existing) {
-      if (!keep.has(file.id)) await this.files.remove(file.id);
+      if (!keep.has(file.id)) await this.removeDerived(file.id, file.fileId);
     }
     this.logger.log(
       `project ${projectId}: wallet ${wallet.id} → ${keep.size} derived file(s)`,
@@ -195,8 +196,29 @@ export class WalletDerivedFiles {
         continue;
       }
       for (const file of await this.files.listByProject(projectId)) {
-        if (file.origin === origin) await this.files.remove(file.id);
+        if (file.origin === origin) {
+          await this.removeDerived(file.id, file.fileId);
+        }
       }
+    }
+  }
+
+  /**
+   * Takes an outdated derived file out of the project; the stored copy goes too once no project
+   * selects it — a wallet's old versions must not pile up among the user's files (F5.21).
+   */
+  private async removeDerived(
+    projectFileId: string,
+    storedFileId: string,
+  ): Promise<void> {
+    await this.files.remove(projectFileId);
+    const stored = await this.files.findStored(storedFileId);
+    if (
+      stored &&
+      stored.usages.length === 0 &&
+      originWalletId(stored.source) !== undefined
+    ) {
+      await this.files.deleteStored(storedFileId);
     }
   }
 }
