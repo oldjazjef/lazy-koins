@@ -145,6 +145,7 @@ export const TITLE_BASES = [
   'file.needsMapping',
   'file.rowErrors',
   'file.readFailed',
+  'files.readingConflict',
   'hints.open',
   'checks.openItems',
   'project.changedSinceSent',

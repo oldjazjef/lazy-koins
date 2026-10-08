@@ -189,9 +189,8 @@ export class InMemoryProjectFileRepository extends ProjectFileRepositoryPort {
     file: NewStoredFile,
   ): Promise<{ created: UserFile } | { duplicate: UserFile }> {
     const existing = await this.findStoredBySha(ownerId, file.sha256);
-    if (existing) {
-      return { duplicate: this.toUserFile(this.stored.get(existing.id)!) };
-    }
+    const stored = existing && this.stored.get(existing.id);
+    if (stored) return { duplicate: this.toUserFile(stored) };
     return { created: this.toUserFile(this.create(ownerId, file)) };
   }
 

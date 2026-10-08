@@ -28,6 +28,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/projects/projects.routes'),
       },
       {
+        path: 'files',
+        loadChildren: () => import('./features/files/files.routes'),
+      },
+      {
         path: 'mappings',
         loadChildren: () => import('./features/mappings/mappings.routes'),
       },

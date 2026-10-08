@@ -67,7 +67,8 @@
     "library": "Library",
     "myMappings": "My mappings",
     "toggleSidebar": "Show or hide the sidebar",
-    "toggleSection": "{{section}}: expand or collapse the sub-items"
+    "toggleSection": "{{section}}: expand or collapse the sub-items",
+    "files": "Files"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
@@ -274,8 +275,8 @@
     "size": "{{kind}} · {{kb}} kB",
     "records": "{{bookings}} bookings · {{holdings}} holdings",
     "rowErrorCount": "{{count}} rows with errors",
-    "removeTitle": "Remove file?",
-    "removeBody": "“{{name}}” will be removed from this project. The file is only deleted permanently once no project uses it any more.",
+    "removeTitle": "Remove from project?",
+    "removeBody": "“{{name}}” is only removed from this project. The file stays under “Files”; you can delete it there.",
     "upload": {
       "drop": "Drag files here (CSV, XLSX, PDF) – several at once are possible.",
       "pick": "Choose files",
@@ -345,7 +346,7 @@
       "preview": "Preview",
       "download": "Download",
       "assign": "Assign",
-      "remove": "Remove",
+      "remove": "Remove from project",
       "aiMapping": "Create mapping with AI",
       "aiStatement": "Read with AI",
       "deactivate": "Deactivate",
@@ -462,6 +463,21 @@
         "revolut": "Revolut: Crypto → statement (Excel or CSV) for the whole tax year; plus the crypto tax report if offered."
       },
       "unknown": "A platform is not recognised? A mapping helps (“Create with AI” or by hand) – or enter the bookings in the standard-format template."
+    },
+    "select": {
+      "open": "Select files",
+      "title": "Select files",
+      "hint": "Your files from “Files”. Preselected are the ones that touch the tax year or hold balances at 31 December.",
+      "empty": "You have no files yet. Upload them here or under “Files”.",
+      "search": "Name or platform",
+      "onlySuggested": "Only matching",
+      "suggested": "fits the year",
+      "already": "already in the project",
+      "noMatch": "No file matches the search.",
+      "confirm": "Add {{count}}",
+      "done": "{{count}} file(s) added",
+      "failed": "The files could not be added",
+      "loadFailed": "The files could not be loaded"
     }
   },
   "mappings": {
@@ -1960,7 +1976,8 @@
       "toRates": "Go to rates",
       "toExports": "Go to statements",
       "toStorage": "Check storage location",
-      "toSetup": "Set up"
+      "toSetup": "Set up",
+      "toGlobalFiles": "Go to files"
     },
     "title": {
       "rates": {
@@ -2013,6 +2030,9 @@
       },
       "setup": {
         "incomplete": "Setup incomplete: {{count}} item(s) still missing (e.g. key or mailer)"
+      },
+      "files": {
+        "readingConflict": "File was read differently in your projects: {{name}}"
       }
     },
     "reason": {
@@ -3135,5 +3155,48 @@
     "removeFailed": "The assignment could not be removed",
     "chosen": "Coin saved, prices fetched again",
     "dismissed": "Note hidden"
+  },
+  "myFiles": {
+    "title": "Files",
+    "subtitle": "All your files, independent of projects – grouped by platform. How a file is read applies to every project that uses it.",
+    "upload": "Upload files",
+    "drop": "Drop files here (CSV, XLSX, PDF)",
+    "empty": "No files yet. Upload your platforms’ exports and select them in your projects afterwards.",
+    "noMatch": "No file matches the search.",
+    "search": "Search",
+    "searchPlaceholder": "Name, platform, mapping or project",
+    "platform": "Platform",
+    "allPlatforms": "All platforms",
+    "usedIn": "Used in",
+    "usedInCount": "Used in {{count}} project(s)",
+    "unused": "Not in any project",
+    "source": {
+      "uploaded": "uploaded",
+      "derived": "derived from a PDF",
+      "wallet": "from a wallet"
+    },
+    "actions": {
+      "add": "Add to project",
+      "delete": "Delete"
+    },
+    "assign": {
+      "body": "The assignment applies to every project that uses this file."
+    },
+    "add": {
+      "title": "Add to project",
+      "body": "“{{name}}” will be used in the chosen project.",
+      "project": "Project",
+      "none": "No open project without this file."
+    },
+    "delete": {
+      "title": "Delete file?",
+      "body": "“{{name}}” will be deleted permanently – also from every project that uses it.",
+      "usedIn": "Used in:"
+    },
+    "blocked": "Not possible: closed projects use this file ({{projects}}). Reopen them first.",
+    "deleted": "File deleted",
+    "deleteFailed": "The file could not be deleted",
+    "added": "File added to the project",
+    "addFailed": "The file could not be added"
   }
 }

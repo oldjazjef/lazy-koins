@@ -67,7 +67,8 @@
     "library": "Bibliothek",
     "myMappings": "Meine Mappings",
     "toggleSidebar": "Seitenleiste ein- oder ausblenden",
-    "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen"
+    "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen",
+    "files": "Dateien"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -274,8 +275,8 @@
     "size": "{{kind}} · {{kb}} kB",
     "records": "{{bookings}} Buchungen · {{holdings}} Bestände",
     "rowErrorCount": "{{count}} Zeilen mit Fehlern",
-    "removeTitle": "Datei entfernen?",
-    "removeBody": "«{{name}}» wird aus diesem Projekt entfernt. Endgültig gelöscht wird die Datei erst, wenn kein Projekt sie mehr verwendet.",
+    "removeTitle": "Aus Projekt entfernen?",
+    "removeBody": "«{{name}}» wird nur aus diesem Projekt entfernt. Die Datei bleibt unter «Dateien» erhalten; löschen kannst du sie dort.",
     "upload": {
       "drop": "Dateien hierher ziehen (CSV, XLSX, PDF) – mehrere gleichzeitig möglich.",
       "pick": "Dateien auswählen",
@@ -345,7 +346,7 @@
       "preview": "Vorschau",
       "download": "Herunterladen",
       "assign": "Zuordnen",
-      "remove": "Entfernen",
+      "remove": "Aus Projekt entfernen",
       "aiMapping": "Mapping mit AI erstellen",
       "aiStatement": "Mit AI auslesen",
       "deactivate": "Deaktivieren",
@@ -462,6 +463,21 @@
         "revolut": "Revolut: Krypto → Kontoauszug (Excel oder CSV) für das ganze Steuerjahr; dazu der Krypto-Steuerbericht, falls angeboten."
       },
       "unknown": "Eine Plattform wird nicht erkannt? Dann hilft ein Mapping («Mit AI erstellen» oder von Hand) – oder du trägst die Buchungen in die Vorlage im Standardformat ein."
+    },
+    "select": {
+      "open": "Dateien auswählen",
+      "title": "Dateien auswählen",
+      "hint": "Deine Dateien aus «Dateien». Vorausgewählt sind die, die das Steuerjahr betreffen oder Bestände per 31.12. enthalten.",
+      "empty": "Du hast noch keine Dateien. Lade sie hier oder unter «Dateien» hoch.",
+      "search": "Name oder Plattform",
+      "onlySuggested": "Nur passende",
+      "suggested": "passt zum Jahr",
+      "already": "bereits im Projekt",
+      "noMatch": "Keine Datei passt zur Suche.",
+      "confirm": "{{count}} hinzufügen",
+      "done": "{{count}} Datei(en) hinzugefügt",
+      "failed": "Dateien konnten nicht hinzugefügt werden",
+      "loadFailed": "Dateien konnten nicht geladen werden"
     }
   },
   "mappings": {
@@ -1960,7 +1976,8 @@
       "toRates": "Zu den Kursen",
       "toExports": "Zu den Auszügen",
       "toStorage": "Speicherort prüfen",
-      "toSetup": "Einrichten"
+      "toSetup": "Einrichten",
+      "toGlobalFiles": "Zu den Dateien"
     },
     "title": {
       "rates": {
@@ -2013,6 +2030,9 @@
       },
       "setup": {
         "incomplete": "Einrichtung unvollständig: {{count}} Punkt(e) fehlen noch (z. B. Schlüssel oder Mailer)"
+      },
+      "files": {
+        "readingConflict": "Datei wurde in Projekten unterschiedlich gelesen: {{name}}"
       }
     },
     "reason": {
@@ -3135,5 +3155,48 @@
     "removeFailed": "Zuordnung konnte nicht entfernt werden",
     "chosen": "Coin gespeichert, Kurse neu abgerufen",
     "dismissed": "Hinweis ausgeblendet"
+  },
+  "myFiles": {
+    "title": "Dateien",
+    "subtitle": "Alle deine Dateien, unabhängig von Projekten – nach Plattform gruppiert. Wie eine Datei gelesen wird, gilt für jedes Projekt, das sie verwendet.",
+    "upload": "Dateien hochladen",
+    "drop": "Dateien hierher ziehen (CSV, XLSX, PDF)",
+    "empty": "Noch keine Dateien. Lade Exporte deiner Plattformen hoch und wähle sie danach in deinen Projekten aus.",
+    "noMatch": "Keine Datei passt zur Suche.",
+    "search": "Suchen",
+    "searchPlaceholder": "Name, Plattform, Mapping oder Projekt",
+    "platform": "Plattform",
+    "allPlatforms": "Alle Plattformen",
+    "usedIn": "Verwendet in",
+    "usedInCount": "In {{count}} Projekt(en) verwendet",
+    "unused": "In keinem Projekt",
+    "source": {
+      "uploaded": "hochgeladen",
+      "derived": "aus PDF abgeleitet",
+      "wallet": "aus Wallet"
+    },
+    "actions": {
+      "add": "Zu Projekt hinzufügen",
+      "delete": "Löschen"
+    },
+    "assign": {
+      "body": "Die Zuordnung gilt für jedes Projekt, das diese Datei verwendet."
+    },
+    "add": {
+      "title": "Zu Projekt hinzufügen",
+      "body": "«{{name}}» wird im gewählten Projekt verwendet.",
+      "project": "Projekt",
+      "none": "Kein offenes Projekt ohne diese Datei."
+    },
+    "delete": {
+      "title": "Datei löschen?",
+      "body": "«{{name}}» wird endgültig gelöscht – auch aus allen Projekten, die sie verwenden.",
+      "usedIn": "Verwendet in:"
+    },
+    "blocked": "Nicht möglich: abgeschlossene Projekte verwenden die Datei ({{projects}}). Öffne sie zuerst wieder.",
+    "deleted": "Datei gelöscht",
+    "deleteFailed": "Datei konnte nicht gelöscht werden",
+    "added": "Datei zum Projekt hinzugefügt",
+    "addFailed": "Datei konnte nicht hinzugefügt werden"
   }
 }

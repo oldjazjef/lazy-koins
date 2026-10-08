@@ -54,6 +54,7 @@ import { AiAssistState } from '../ai-assist';
 import { MappingPreviewView } from '../mapping-preview';
 import { ProjectMappings } from '../project-mappings';
 import { MappingEditorState } from '../project-mappings/mapping-editor.state';
+import { SelectFiles } from '../select-files';
 import { TakeOverFiles } from '../take-over-files';
 import { FileGuide } from '../file-guide';
 import {
@@ -106,6 +107,7 @@ export function isReadEmpty(
   selector: 'lk-project-files',
   imports: [
     FileGuide,
+    SelectFiles,
     TakeOverFiles,
     MappingSuggestions,
     LkDatePipe,

@@ -56,7 +56,7 @@ const RULES: readonly (readonly [
   // follow; its "ohne Mapping"/"Zeilenfehler" notifications are resolved or raised again.
   [
     /^projects\/([^/]+)\/files\/[^/]+\/active$/,
-    (m) => ({ projectId: m[1], scope: 'notifications' }),
+    (m) => ({ projectId: m[1], scope: ['notifications', 'files'] }),
   ],
   [/^projects$/, () => ({ scope: 'projects' })],
   // F7.4 "Coin wählen": the coin of a ticker is the user's — it removes that asset's fetched
@@ -72,10 +72,10 @@ const RULES: readonly (readonly [
   ],
   // A mapping saved from a project's file: the mappings page shows it, too.
   [
-    /^projects\/([^/]+)\/files\/[^/]+\/ai\/mapping\/accept$/,
-    (m) => ({
-      projectId: m[1],
-      scope: 'mappings',
+    /^projects\/[^/]+\/files\/[^/]+\/ai\/mapping\/accept$/,
+    () => ({
+      projectId: EVERY_PROJECT,
+      scope: ['mappings', 'files'],
     }),
   ],
   [
@@ -85,17 +85,34 @@ const RULES: readonly (readonly [
       scope: 'wallets',
     }),
   ],
+  // F5.21: how a file is read is the file's — every project selecting it follows (a removal
+  // from the project shares the URL and only reloads more).
+  [
+    /^projects\/([^/]+)\/files\/select$/,
+    (m) => ({ projectId: m[1], scope: 'files' }),
+  ],
+  [
+    /^projects\/[^/]+\/files\/[^/]+$/,
+    () => ({ projectId: EVERY_PROJECT, scope: 'files' }),
+  ],
+  // An upload, a selection (F5.22) or a derived file: the project and my files.
+  [
+    /^projects\/([^/]+)\/files(\/.*)?$/,
+    (m) => ({ projectId: m[1], scope: 'files' }),
+  ],
+  [/^files$/, () => ({ scope: 'files' })],
+  [/^files\/.+$/, () => ({ projectId: EVERY_PROJECT, scope: 'files' })],
   [/^projects\/([^/]+)(\/.*)?$/, (m) => ({ projectId: m[1] })],
   // Mappings and wallets feed every project that uses them (files read again, derived files).
   [
     /^mappings(\/.*)?$/,
-    () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
+    () => ({ projectId: EVERY_PROJECT, scope: ['mappings', 'files'] }),
   ],
   [
     /^ai\/mapping-sample\/accept$/,
     () => ({
       projectId: EVERY_PROJECT,
-      scope: 'mappings',
+      scope: ['mappings', 'files'],
     }),
   ],
   [/^wallets(\/.*)?$/, () => ({ projectId: EVERY_PROJECT, scope: 'wallets' })],
@@ -103,13 +120,13 @@ const RULES: readonly (readonly [
   // project the URL does not name. Publishing / rating / deleting an entry touch no own data.
   [
     /^library\/[^/]+\/take$/,
-    () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
+    () => ({ projectId: EVERY_PROJECT, scope: ['mappings', 'files'] }),
   ],
   // F5.19: taking a standard mapping = a copy in my mappings, maybe assigned to a file of a
   // project the URL does not name (as the library's take).
   [
     /^standard-mappings\/[^/]+\/take$/,
-    () => ({ projectId: EVERY_PROJECT, scope: 'mappings' }),
+    () => ({ projectId: EVERY_PROJECT, scope: ['mappings', 'files'] }),
   ],
   // A new ESTV Kursliste: every project's Kurse tab says "neuer Stand".
   [

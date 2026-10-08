@@ -187,7 +187,7 @@ apps/web/                   # Angular app
     core/                   #   actions/, api/, auth/, config/, i18n/, layout/, notifications/ (toasts),
                             #   notification-centre/ (bell + NotificationCentreService, F11.11), theme/,
                             #   pin/ (lock service, interceptor, lock screen), setup/ (state + guard)
-    features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page),
+    features/<feature>/     #   login, dashboard (page + project card), projects (+ follow-up page), files (F5.21: the global Dateien page),
                             #   mappings (F11.0: list + detail, several .json at once, bulk publish), library
                             #   (F5.15–F5.20: list + entry, publish + bulk-publish dialogs), profile (+ account package), settings
                             #   (shell + rates/wallets/ai/mail; components/ = the forms shared with
@@ -354,10 +354,36 @@ Upload flow (`files/application/commands/upload-project-file.command.ts`): kind 
 (`%PDF-`, ZIP with `xl/`, text) → SHA-256 → duplicate in the same project = **409** with
 `existing` → standard format, else the owner's mappings by fingerprint (standard wins; among
 mappings: surest, then most recently changed) → status `standard | mapped | needs_mapping`; a PDF
-is `evidence_only`. Same bytes in another project of the owner: stored once, origin
-`from_project:<id>`. Only counts, period and per-account **coverage** are stored on the
-`project_file` row — bookings are not persisted as rows yet. F5.8 hints are computed from that
-coverage (`coverage/missing-files.ts`), no platform knowledge.
+is `evidence_only`. Same bytes in another project of the owner: stored once (linked, the
+reading kept). Only status, mapping, counts, period and per-account **coverage** are stored —
+on the **`stored_file`** row since F5.24 (one reading for every project) — bookings are not
+persisted as rows yet. F5.8 hints are computed from that coverage (`coverage/missing-files.ts`),
+no platform knowledge.
+
+**Global files (F5.21–F5.25, requirements on dev 10.2026)** — a file belongs to the **user**, a
+project only **selects** it. Migration `20261010100000_global_files` moved the reading
+(status, mapping, platform, period, counts, coverage) from `project_file` to `stored_file` (+
+`source` = `uploaded | derived_from:<stored id> | wallet:<id>`; the newest project's reading
+won, a disagreement raised the info notification `files.readingConflict:<stored id>`);
+`project_file` keeps only the selection (display name, origin incl. **`selected`**, deactivation
+F5.7a). Rules: changing the reading (`ChangeProjectFileCommand`, `PATCH /api/files/:id`, re-apply)
+changes it for **every** project and is refused (409 `usedByClosedProject` + `projects`) while a
+closed project uses the file (`projectsReading`, `files/application/file-access.ts`); "Aus
+Projekt entfernen" (`DELETE …/projects/:id/files/:fileId`) only unlinks — the bytes stay, also
+when a project is deleted; **deleting** is only on the global page (`DELETE /api/files/:id`,
+every link gone, same 409); a wallet's orphaned derived files are removed by the sync. API
+(`files/my-files.controller.ts`, `my-files.handlers.ts`): `GET|POST /api/files` (raw body like
+the project upload, duplicate 409 `duplicateFile`), `GET …/:id/content|preview`, `PATCH|DELETE
+/api/files/:id`, `GET /api/projects/:id/file-candidates` (every file of mine + `selected` +
+`suggested` = period touches the tax year or holdings dated 31.12.), `POST
+/api/projects/:id/files/select {fileIds}` (origin `selected`). Web: **Dateien** in the main
+navigation (`features/files/pages/my-files-page`, `/app/files`: grouped by platform, upload,
+search/platform filter, "Verwendet in" links to `#file-<pf id>`, row actions preview · download
+· assign (not PDFs) · add to project · delete; a 409 names the closed projects in the dialog)
+and in a project's files card **"Dateien auswählen"** (`components/select-files`: suggested ones
+pre-ticked, "nur passende", search). DataChanges scope `files`. F5.25: a mapped file with 0
+records shows "Gelesen – leer" (`isReadEmpty`), and migration `20261010090000_empty_mapped_file_platform`
+filled its platform from the mapping.
 
 **Hinweise (F5.8)** — `GET /api/projects/:id/hints` (`files/application/queries/project-hints.query.ts`)
 = the engine's `missingFileHints` (kinds `noYearData` "Fehlende Datei", `startsLate`, `endsEarly`,
@@ -1602,8 +1628,9 @@ prisma/schema.prisma` must still report **no difference**.
 - **Files** (migration `20261006120000_files_and_mappings`): `stored_file` (BLOB, unique
   `(owner_id, sha256)`, CHECKs: hex SHA-256, kind, `size = length(bytes)`), `import_mapping`
   (spec as JSON text, `json_valid` CHECK) and `project_file` (status/origin/count/period CHECKs,
-  `mapped` needs a `mapping_id`). A stored file is deleted with its **last** `project_file` — in the
-  same transaction, also when a project is deleted (`ProjectPrismaRepository.delete`).
+  `mapped` needs a `mapping_id`). Since `20261010100000_global_files` (F5.24) the reading and
+  its CHECKs live on `stored_file`, and a stored file is deleted only from the global Dateien
+  page — never with its last `project_file` or a project. `global-files.migration.integration.spec.ts`.
 - **Mail** (migration `20261008130000_mail`, new tables only): `mail_settings` (PK `user_id`;
   security/port CHECKs, password sealed `enc:v1:%`, hint ≤ 8), `mail_template` (PK
   `(user_id, language)`, language/length CHECKs), `mail_log` (status, `json_valid` array,

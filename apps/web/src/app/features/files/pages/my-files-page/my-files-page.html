@@ -1,0 +1,419 @@
+<lk-page-header
+  [title]="'myFiles.title' | translate"
+  [subtitle]="'myFiles.subtitle' | translate"
+>
+  <button hlmBtn type="button" (click)="filePicker.click()">
+    <ng-icon name="lucideUpload" size="16" aria-hidden="true" />
+    {{ 'myFiles.upload' | translate }}
+  </button>
+  <input
+    #filePicker
+    id="my-files-upload"
+    class="sr-only"
+    type="file"
+    multiple
+    accept=".csv,.xlsx,.pdf,text/csv,application/pdf"
+    (change)="picked($event)"
+  />
+</lk-page-header>
+
+<div
+  class="text-muted-foreground mb-4 rounded-lg border-2 border-dashed px-4 py-3 text-center text-sm transition-colors"
+  [class.border-primary]="dragging()"
+  [class.bg-muted]="dragging()"
+  (dragover)="dragOver($event)"
+  (dragleave)="dragging.set(false)"
+  (drop)="drop($event)"
+>
+  {{ 'myFiles.drop' | translate }}
+</div>
+
+@if (service.files.isLoading() && !service.files.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.files.error()) {
+<lk-empty-state [message]="'files.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.files.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.isEmpty()) {
+<lk-empty-state [message]="'myFiles.empty' | translate" />
+} @else {
+<div class="mb-4 flex flex-wrap items-end gap-4">
+  <div class="flex min-w-64 flex-1 flex-col gap-2">
+    <label hlmLabel for="my-files-search"
+      >{{ 'myFiles.search' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="my-files-search"
+      type="search"
+      [placeholder]="'myFiles.searchPlaceholder' | translate"
+      [ngModel]="service.search()"
+      (ngModelChange)="service.search.set($event)"
+    />
+  </div>
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="my-files-platform"
+      >{{ 'myFiles.platform' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="my-files-platform"
+      [ngModel]="service.platform()"
+      (ngModelChange)="service.platform.set($event)"
+    >
+      <option value="">{{ 'myFiles.allPlatforms' | translate }}</option>
+      @for (platform of service.platforms(); track platform) {
+      <option [value]="platform">{{ platform }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (service.visible().length === 0) {
+<lk-empty-state [message]="'myFiles.noMatch' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-44" />
+      <col class="hidden w-52 lg:table-column" />
+      <col class="hidden w-36 md:table-column" />
+      <col class="hidden w-56 xl:table-column" />
+      <col class="w-14" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'files.fields.name' | translate }}</th>
+        <th hlmTh>{{ 'files.fields.status' | translate }}</th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'files.fields.period' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right md:table-cell">
+          {{ 'files.fields.records' | translate }}
+        </th>
+        <th hlmTh class="hidden xl:table-cell">
+          {{ 'myFiles.usedIn' | translate }}
+        </th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (file of pager.visible(); track file.id; let index = $index) { @if
+      (startsGroup(index)) {
+      <tr hlmTr class="bg-muted">
+        <th hlmTh colspan="6" [attr.scope]="'colgroup'" class="font-medium">
+          {{ file.platform ?? ('files.group.unread' | translate) }}
+        </th>
+      </tr>
+      }
+      <tr hlmTr>
+        <td hlmTd class="max-w-0">
+          <span class="font-medium" [lkTruncate]="file.name"
+            >{{ file.name }}</span
+          >
+          <span class="text-muted-foreground block truncate text-xs"
+            >{{ 'files.size' | translate: { kind: file.kind.toUpperCase(), kb:
+            (file.size / 1024 | lkNumber) } }} · {{ file.createdAt | lkDate }} ·
+            {{ 'myFiles.source.' + file.source | translate }}</span
+          >
+          <!-- below xl the projects are a second line -->
+          <span class="text-muted-foreground block truncate text-xs xl:hidden"
+            >{{ file.usedIn.length === 0 ? ('myFiles.unused' | translate) :
+            ('myFiles.usedInCount' | translate: { count: file.usedIn.length })
+            }}</span
+          >
+        </td>
+        <td hlmTd class="max-w-0">
+          @if (isReadEmpty(file)) {
+          <span
+            hlmBadge
+            variant="outline"
+            [title]="'files.status.readEmptyHint' | translate"
+            >{{ 'files.status.readEmpty' | translate }}</span
+          >
+          } @else {
+          <span hlmBadge [variant]="statusVariant(file.status)"
+            >{{ 'files.status.' + file.status | translate }}</span
+          >
+          } @if (file.mappingName && file.mappingId) {
+          <a
+            class="text-muted-foreground block text-xs hover:underline"
+            [lkTruncate]="file.mappingName"
+            [routerLink]="['/app/mappings', file.mappingId]"
+            >{{ file.mappingName }}</a
+          >
+          }
+        </td>
+        <td hlmTd class="hidden tabular-nums lg:table-cell">
+          @if (file.period) { {{ file.period.from | lkDate }} – {{
+          file.period.to | lkDate }} } @else { – }
+        </td>
+        <td
+          hlmTd
+          class="hidden text-right whitespace-normal tabular-nums md:table-cell"
+        >
+          {{ 'files.records' | translate: { bookings: file.bookingCount,
+          holdings: file.holdingCount } }} @if (file.errorCount > 0) {
+          <span class="text-destructive block text-xs"
+            >{{ 'files.rowErrorCount' | translate: { count: file.errorCount }
+            }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="hidden max-w-0 xl:table-cell">
+          @for (usage of file.usedIn; track usage.projectFileId) {
+          <a
+            class="block text-xs hover:underline"
+            [class.text-muted-foreground]="!usage.active"
+            [routerLink]="['/app/projects', usage.projectId]"
+            [fragment]="'file-' + usage.projectFileId"
+            [lkTruncate]="usage.projectName + ' (' + usage.taxYear + ')'"
+            >{{ usage.projectName }} ({{ usage.taxYear }})</a
+          >
+          } @empty {
+          <span class="text-muted-foreground text-xs"
+            >{{ 'myFiles.unused' | translate }}</span
+          >
+          }
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions().get(file.id) ?? []"
+            (selected)="act($event, file)"
+          />
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+} }
+
+<!-- Preview (F5.6) -->
+<hlm-dialog
+  [state]="dialogState('preview')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-5xl">
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ current.file.name }}</h3>
+      <p hlmDialogDescription>{{ 'files.preview.description' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (current.file.kind === 'pdf') { @if (safePdfUrl(); as url) {
+      <iframe
+        class="h-[65vh] w-full rounded border"
+        [src]="url"
+        [title]="current.file.name"
+      ></iframe>
+      } } @else if (tablePreview(); as preview) { @for (sheet of preview.sheets
+      ?? []; track sheet.name) {
+      <div class="flex flex-col gap-2">
+        <p class="text-muted-foreground text-sm">
+          {{ 'files.preview.sheet' | translate: { name: sheet.name, shown:
+          sheet.rows.length, total: sheet.totalRows } }}
+        </p>
+        <div hlmTableContainer class="lk-panel">
+          <table hlmTable>
+            <tbody hlmTBody>
+              @for (row of sheet.rows; track $index; let first = $first) {
+              <tr hlmTr [class.font-medium]="first">
+                @for (cell of row; track $index) {
+                <td hlmTd class="font-mono text-xs">
+                  <span class="max-w-64" [lkTruncate]="cell">{{ cell }}</span>
+                </td>
+                }
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      } } @else {
+      <hlm-skeleton class="h-64 w-full" />
+      }
+    </div>
+    @if (current.file.kind === 'pdf') {
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" (click)="openPdfInTab()">
+        {{ 'files.preview.openInTab' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    } }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- How the file is read (for every project that uses it) -->
+<hlm-dialog
+  [state]="dialogState('assign')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'files.assign.title' | translate: { name: current.file.name } }}
+      </h3>
+      <p hlmDialogDescription>{{ 'myFiles.assign.body' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="my-file-assign"
+          >{{ 'files.assign.mapping' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="my-file-assign"
+          [ngModel]="assignChoice()"
+          (ngModelChange)="assignChoice.set($event)"
+        >
+          <option value="automatic">
+            {{ 'files.assign.automatic' | translate }}
+          </option>
+          <option value="evidenceOnly">
+            {{ 'files.assign.evidenceOnly' | translate }}
+          </option>
+          @for (mapping of service.mappings.value() ?? []; track mapping.id) {
+          <option [value]="'mapping:' + mapping.id">
+            {{ mapping.name }} ({{ mapping.platform }})
+          </option>
+          }
+        </select>
+      </div>
+      @if (blockedBy().length > 0) {
+      <p class="text-destructive text-sm" role="alert">
+        {{ 'myFiles.blocked' | translate: { projects: blockedBy().join(', ') }
+        }}
+      </p>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.isBusy()"
+        (click)="confirmAssign(current.file)"
+      >
+        {{ 'files.assign.apply' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Add to a project (F5.22) -->
+<hlm-dialog [state]="dialogState('add')" (stateChanged)="dialogChanged($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'myFiles.add.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'myFiles.add.body' | translate: { name: current.file.name } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @let targets = projectsFor(current.file); @if (targets.length === 0) {
+      <p class="text-muted-foreground text-sm">
+        {{ 'myFiles.add.none' | translate }}
+      </p>
+      } @else {
+      <div class="flex flex-col gap-2">
+        <label hlmLabel for="my-file-add"
+          >{{ 'myFiles.add.project' | translate }}</label
+        >
+        <select
+          hlmInput
+          id="my-file-add"
+          [ngModel]="addTarget()"
+          (ngModelChange)="addTarget.set($event)"
+        >
+          @for (project of targets; track project.id) {
+          <option [value]="project.id">
+            {{ project.name }} ({{ project.taxYear }})
+          </option>
+          }
+        </select>
+      </div>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="!addTarget()"
+        (click)="confirmAdd(current.file)"
+      >
+        {{ 'myFiles.actions.add' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Delete everywhere (F5.23) -->
+<hlm-dialog
+  [state]="dialogState('delete')"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'myFiles.delete.title' | translate }}</h3>
+      <p hlmDialogDescription>
+        {{ 'myFiles.delete.body' | translate: { name: current.file.name } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (current.file.usedIn.length > 0) {
+      <p class="text-sm">{{ 'myFiles.delete.usedIn' | translate }}</p>
+      <ul class="list-disc pl-5 text-sm">
+        @for (usage of current.file.usedIn; track usage.projectFileId) {
+        <li>{{ usage.projectName }} ({{ usage.taxYear }})</li>
+        }
+      </ul>
+      } @if (blockedBy().length > 0) {
+      <p class="text-destructive text-sm" role="alert">
+        {{ 'myFiles.blocked' | translate: { projects: blockedBy().join(', ') }
+        }}
+      </p>
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="destructive"
+        type="button"
+        [disabled]="service.isBusy()"
+        (click)="confirmDelete(current.file)"
+      >
+        {{ 'myFiles.actions.delete' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

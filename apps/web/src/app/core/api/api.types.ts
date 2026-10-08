@@ -191,6 +191,56 @@ export interface SetFileActiveRequest {
   note?: string;
 }
 
+/** F5.21: one project that selects one of my files. */
+export interface FileUsage {
+  projectFileId: string;
+  projectId: string;
+  projectName: string;
+  taxYear: number;
+  projectStatus: ProjectStatus;
+  /** false = deactivated in that project (F5.7a). */
+  active: boolean;
+}
+
+/** `GET /api/files` (F5.21): one of my files, independent of projects. */
+export interface UserFile {
+  id: string;
+  sha256: string;
+  /** The name of the first upload. */
+  name: string;
+  kind: 'csv' | 'xlsx' | 'pdf';
+  size: number;
+  createdAt: string;
+  status: ProjectFileStatus;
+  platform: string | null;
+  mappingId: string | null;
+  mappingName: string | null;
+  period: Period | null;
+  bookingCount: number;
+  holdingCount: number;
+  errorCount: number;
+  /** derived = a standard CSV the AI read from a PDF; wallet = a wallet fetch. */
+  source: 'uploaded' | 'derived' | 'wallet';
+  sourceWalletId: string | null;
+  derivedFromFileId: string | null;
+  /** Newest tax year first. */
+  usedIn: FileUsage[];
+}
+
+/** `GET /api/projects/:id/file-candidates` (F5.22). */
+export interface FileCandidate extends UserFile {
+  /** Already in the project. */
+  selected: boolean;
+  /** Pre-ticked: touches the tax year or holds balances at 31.12. */
+  suggested: boolean;
+}
+
+/** `POST /api/projects/:id/files/select`. */
+export interface SelectFilesResult {
+  added: number;
+  alreadySelected: number;
+}
+
 export const MISSING_FILE_KINDS = [
   'noYearData',
   'startsLate',
