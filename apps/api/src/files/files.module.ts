@@ -24,6 +24,20 @@ import { PreviewMappingHandler } from './application/queries/preview-mapping.que
 import { SourceFileReader } from './application/source-file-reader';
 import { FilesController } from './files.controller';
 import {
+  ChangeMyFileHandler,
+  DeleteMyFileHandler,
+  GetMyFileContentHandler,
+  ListFileCandidatesHandler,
+  ListMyFilesHandler,
+  PreviewMyFileHandler,
+  SelectProjectFilesHandler,
+  UploadMyFileHandler,
+} from './application/my-files.handlers';
+import {
+  MyFilesController,
+  ProjectFileSelectionController,
+} from './my-files.controller';
+import {
   ListProjectHintsHandler,
   UpdateHintStateHandler,
 } from './application/queries/project-hints.query';
@@ -33,12 +47,19 @@ import { HintsController } from './hints.controller';
 import { StandardFormatController } from './standard-format.controller';
 
 /**
- * Files of a project (F5): upload, overview, download, preview, removal, reading with the
- * standard format or a mapping spec. Storage ports are bound in the global `PersistenceModule`.
+ * Files (F5): my files independent of projects (F5.21–F5.23) and their selection in a project —
+ * upload, overview, download, preview, removal, reading with the standard format or a mapping
+ * spec. Storage ports are bound in the global `PersistenceModule`.
  */
 @Module({
   imports: [CqrsModule],
-  controllers: [FilesController, HintsController, StandardFormatController],
+  controllers: [
+    FilesController,
+    MyFilesController,
+    ProjectFileSelectionController,
+    HintsController,
+    StandardFormatController,
+  ],
   providers: [
     FilesService,
     FileViews,
@@ -58,6 +79,14 @@ import { StandardFormatController } from './standard-format.controller';
     ListProjectHintsHandler,
     UpdateHintStateHandler,
     FileRowErrorsHandler,
+    ListMyFilesHandler,
+    UploadMyFileHandler,
+    GetMyFileContentHandler,
+    PreviewMyFileHandler,
+    ChangeMyFileHandler,
+    DeleteMyFileHandler,
+    ListFileCandidatesHandler,
+    SelectProjectFilesHandler,
   ],
   exports: [
     FilesService,
@@ -69,10 +98,12 @@ import { StandardFormatController } from './standard-format.controller';
 })
 export class FilesModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    // Only the upload reads a raw body; everything else keeps the JSON parser.
-    consumer.apply(RawBodyMiddleware).forRoutes({
-      path: 'projects/:projectId/files',
-      method: RequestMethod.POST,
-    });
+    // Only the uploads read a raw body; everything else keeps the JSON parser.
+    consumer
+      .apply(RawBodyMiddleware)
+      .forRoutes(
+        { path: 'projects/:projectId/files', method: RequestMethod.POST },
+        { path: 'files', method: RequestMethod.POST },
+      );
   }
 }

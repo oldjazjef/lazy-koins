@@ -35,6 +35,19 @@ import {
   type FileRowErrors,
   FileRowErrorsQuery,
 } from './application/queries/row-errors.query';
+import {
+  ChangeMyFileCommand,
+  DeleteMyFileCommand,
+  type FileCandidate,
+  GetMyFileContentQuery,
+  ListFileCandidatesQuery,
+  ListMyFilesQuery,
+  PreviewMyFileQuery,
+  SelectProjectFilesCommand,
+  type SelectResult,
+  UploadMyFileCommand,
+  type UserFileView,
+} from './application/my-files.handlers';
 import type { ProjectFile, StoredFileContent } from './domain/project-file';
 import type { HintState, HintStatus } from './domain/project-hint';
 
@@ -144,6 +157,60 @@ export class FilesService {
   ): Promise<FileRowErrors> {
     return this.queries.execute(
       new FileRowErrorsQuery(userId, projectId, fileId, limit),
+    );
+  }
+
+  // --- My files (F5.21–F5.23) ---
+
+  myFiles(userId: string): Promise<UserFileView[]> {
+    return this.queries.execute(new ListMyFilesQuery(userId));
+  }
+
+  uploadMine(
+    userId: string,
+    name: string,
+    bytes: Uint8Array,
+  ): Promise<UserFileView> {
+    return this.commands.execute(new UploadMyFileCommand(userId, name, bytes));
+  }
+
+  myContent(userId: string, fileId: string): Promise<StoredFileContent> {
+    return this.queries.execute(new GetMyFileContentQuery(userId, fileId));
+  }
+
+  previewMine(
+    userId: string,
+    fileId: string,
+    rows: number,
+  ): Promise<FilePreview> {
+    return this.queries.execute(new PreviewMyFileQuery(userId, fileId, rows));
+  }
+
+  changeMine(
+    userId: string,
+    fileId: string,
+    assignment: FileAssignment,
+  ): Promise<UserFileView> {
+    return this.commands.execute(
+      new ChangeMyFileCommand(userId, fileId, assignment),
+    );
+  }
+
+  deleteMine(userId: string, fileId: string): Promise<void> {
+    return this.commands.execute(new DeleteMyFileCommand(userId, fileId));
+  }
+
+  candidates(userId: string, projectId: string): Promise<FileCandidate[]> {
+    return this.queries.execute(new ListFileCandidatesQuery(userId, projectId));
+  }
+
+  select(
+    userId: string,
+    projectId: string,
+    fileIds: readonly string[],
+  ): Promise<SelectResult> {
+    return this.commands.execute(
+      new SelectProjectFilesCommand(userId, projectId, fileIds),
     );
   }
 

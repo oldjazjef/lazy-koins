@@ -82,21 +82,7 @@ export class UploadProjectFileHandler implements ICommandHandler<
     const project = await loadOwnProject(this.projects, userId, projectId);
     assertOpen(project);
 
-    const displayName = cleanFileName(name);
-    if (!displayName)
-      throw new BadRequestException('name: a file name is required');
-    if (bytes.length === 0) throw new BadRequestException('The file is empty');
-    if (bytes.length > MAX_FILE_BYTES) {
-      throw new PayloadTooLargeException(
-        `The file is larger than ${MAX_FILE_BYTES / 1024 / 1024} MB`,
-      );
-    }
-    const kind = sniffFileKind(bytes);
-    if (!kind) {
-      throw new UnsupportedMediaTypeException(
-        'Only CSV, XLSX and PDF files are accepted',
-      );
-    }
+    const { displayName, kind } = checkUpload(name, bytes);
 
     let stored: ProjectFile;
     try {
@@ -131,6 +117,33 @@ export class UploadProjectFileHandler implements ICommandHandler<
     await this.projectNotifications?.filesChanged(userId, project.id);
     return stored;
   }
+}
+
+/**
+ * F5.1: the name and bytes of an upload, checked — a name, not empty, at most 20 MB, and CSV,
+ * XLSX or PDF recognised from the bytes (never the name). Shared by the project and the global
+ * upload (F5.21).
+ */
+export function checkUpload(
+  name: string,
+  bytes: Uint8Array,
+): { displayName: string; kind: FileKind } {
+  const displayName = cleanFileName(name);
+  if (!displayName)
+    throw new BadRequestException('name: a file name is required');
+  if (bytes.length === 0) throw new BadRequestException('The file is empty');
+  if (bytes.length > MAX_FILE_BYTES) {
+    throw new PayloadTooLargeException(
+      `The file is larger than ${MAX_FILE_BYTES / 1024 / 1024} MB`,
+    );
+  }
+  const kind = sniffFileKind(bytes);
+  if (!kind) {
+    throw new UnsupportedMediaTypeException(
+      'Only CSV, XLSX and PDF files are accepted',
+    );
+  }
+  return { displayName, kind };
 }
 
 /**
