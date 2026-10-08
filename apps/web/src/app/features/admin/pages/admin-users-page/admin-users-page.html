@@ -1,0 +1,222 @@
+<lk-page-header
+  [title]="'admin.users.title' | translate"
+  [subtitle]="'admin.users.subtitle' | translate"
+/>
+
+<div class="mb-4 flex flex-wrap items-end gap-4">
+  <div class="flex min-w-64 flex-1 flex-col gap-2">
+    <label hlmLabel for="admin-users-search"
+      >{{ 'admin.users.search' | translate }}</label
+    >
+    <input
+      hlmInput
+      id="admin-users-search"
+      type="search"
+      [ngModel]="search()"
+      (ngModelChange)="typed($event)"
+    />
+  </div>
+  <div class="flex flex-col gap-2">
+    <label hlmLabel for="admin-users-filter"
+      >{{ 'admin.users.filter' | translate }}</label
+    >
+    <select
+      hlmInput
+      id="admin-users-filter"
+      [ngModel]="service.filter()"
+      (ngModelChange)="setFilter($event)"
+    >
+      @for (filter of filters; track filter) {
+      <option [value]="filter">
+        {{ 'admin.users.filters.' + filter | translate }}
+      </option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (service.users.isLoading() && !service.users.hasValue()) {
+<div class="flex flex-col gap-3">
+  @for (row of skeletonRows; track row) {
+  <hlm-skeleton class="h-12 w-full" />
+  }
+</div>
+} @else if (service.users.error()) {
+<lk-empty-state [message]="'admin.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.users.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.rows().length === 0) {
+<lk-empty-state [message]="'admin.users.empty' | translate" />
+} @else {
+<div hlmTableContainer class="lk-panel">
+  <table hlmTable class="table-fixed">
+    <colgroup>
+      <col />
+      <col class="w-32" />
+      <col class="hidden w-28 md:table-column" />
+      <col class="hidden w-28 lg:table-column" />
+      <col class="hidden w-36 lg:table-column" />
+      <col class="w-14" />
+    </colgroup>
+    <thead hlmTHead>
+      <tr hlmTr>
+        <th hlmTh>{{ 'admin.users.account' | translate }}</th>
+        <th hlmTh>{{ 'admin.users.status' | translate }}</th>
+        <th hlmTh class="hidden text-right md:table-cell">
+          {{ 'admin.users.projects' | translate }}
+        </th>
+        <th hlmTh class="hidden text-right lg:table-cell">
+          {{ 'admin.users.storage' | translate }}
+        </th>
+        <th hlmTh class="hidden lg:table-cell">
+          {{ 'admin.users.lastSeen' | translate }}
+        </th>
+        <th hlmTh class="lk-sticky-actions text-right">
+          <span class="sr-only">{{ 'common.actions' | translate }}</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody hlmTBody>
+      @for (user of pager.visible(); track user.id) {
+      <tr hlmTr>
+        <td hlmTd class="max-w-0">
+          <span [lkTruncate]="user.email">{{ user.email }}</span>
+          @let line = user.displayName + ' · ' + user.signInProvider;
+          <span class="text-muted-foreground text-xs" [lkTruncate]="line"
+            >{{ line }}</span
+          >
+          @if (user.blockedReason) {
+          <span
+            class="text-muted-foreground text-xs"
+            [lkTruncate]="user.blockedReason"
+            >{{ 'admin.users.blockedBecause' | translate: { reason:
+            user.blockedReason } }}</span
+          >
+          }
+        </td>
+        <td hlmTd>
+          <div class="flex flex-wrap gap-1">
+            @if (user.isPlatformAdmin) {
+            <span hlmBadge>{{ 'admin.users.badges.admin' | translate }}</span>
+            } @if (user.blockedAt) {
+            <span hlmBadge variant="destructive"
+              >{{ 'admin.users.badges.blocked' | translate }}</span
+            >
+            } @if (!user.isPlatformAdmin && !user.blockedAt) {
+            <span hlmBadge variant="outline"
+              >{{ 'admin.users.badges.active' | translate }}</span
+            >
+            }
+          </div>
+        </td>
+        <td hlmTd class="hidden text-right tabular-nums md:table-cell">
+          {{ user.projects }}
+          <span class="text-muted-foreground block text-xs"
+            >{{ 'admin.users.filesCount' | translate: { count: user.storedFiles
+            } }}</span
+          >
+        </td>
+        <td hlmTd class="hidden text-right tabular-nums lg:table-cell">
+          {{ bytes(user.storageBytes) }}
+        </td>
+        <td hlmTd class="hidden tabular-nums lg:table-cell">
+          @if (user.lastSeenAt) { {{ user.lastSeenAt | lkDate: 'dateTime' }} }
+          @else { – }
+          <span class="text-muted-foreground block text-xs"
+            >{{ 'admin.users.created' | translate: { date: (user.createdAt |
+            lkDate) } }}</span
+          >
+        </td>
+        <td hlmTd class="lk-sticky-actions text-right">
+          <lk-row-actions
+            [actions]="actions().get(user.id) ?? []"
+            (selected)="act($event, user)"
+          />
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<lk-paginator [pager]="pager" />
+@if (service.total() > service.rows().length) {
+<p class="text-muted-foreground mt-2 text-sm">
+  {{ 'admin.shownOf' | translate: { shown: service.rows().length, total:
+  service.total() } }}
+</p>
+} }
+
+<hlm-dialog
+  [state]="dialog() ? 'open' : 'closed'"
+  (stateChanged)="dialogChanged($event)"
+>
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (dialog(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'admin.users.dialogs.' + current.kind + '.title' | translate }}
+      </h3>
+      <p hlmDialogDescription>
+        {{ 'admin.users.dialogs.' + current.kind + '.body' | translate: { email:
+        current.user.email } }}
+      </p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-4">
+        @if (current.kind === 'block' || current.kind === 'delete') {
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="admin-user-reason"
+            >{{ 'admin.reason' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="admin-user-reason"
+            rows="3"
+            class="w-full"
+            [attr.maxlength]="reasonMax"
+            [ngModel]="reason()"
+            (ngModelChange)="reason.set($event)"
+          ></textarea>
+        </div>
+        } @if (current.kind === 'delete') {
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="admin-user-confirm"
+            >{{ 'admin.users.dialogs.delete.confirm' | translate: { email:
+            current.user.email } }}</label
+          >
+          <input
+            hlmInput
+            id="admin-user-confirm"
+            type="email"
+            autocomplete="off"
+            [ngModel]="confirmEmail()"
+            (ngModelChange)="confirmEmail.set($event)"
+          />
+        </div>
+        }
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [variant]="current.kind === 'block' || current.kind === 'delete' ? 'destructive' : 'default'"
+        [disabled]="!canConfirm() || busy()"
+        (click)="confirm()"
+      >
+        {{ 'admin.users.dialogs.' + current.kind + '.action' | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

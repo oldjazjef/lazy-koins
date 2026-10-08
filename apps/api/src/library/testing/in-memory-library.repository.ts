@@ -1,7 +1,8 @@
 import { mappingFingerprint } from '@lazykoins/engine';
-import type {
-  LibraryMapping,
-  LibraryPublication,
+import {
+  isVisible,
+  type LibraryMapping,
+  type LibraryPublication,
 } from '../domain/library-mapping';
 import { LibraryRepositoryPort } from '../ports/library.repository.port';
 
@@ -15,7 +16,7 @@ export class InMemoryLibraryRepository extends LibraryRepositoryPort {
 
   async listActive(): Promise<LibraryMapping[]> {
     return [...this.rows.values()]
-      .filter((entry) => entry.deletedAt === null)
+      .filter(isVisible)
       .sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
   }
 
@@ -61,6 +62,8 @@ export class InMemoryLibraryRepository extends LibraryRepositoryPort {
       publishedAt: this.now,
       updatedAt: this.now,
       deletedAt: null,
+      hiddenAt: null,
+      hiddenReason: null,
     };
     this.rows.set(entry.id, entry);
     return entry;

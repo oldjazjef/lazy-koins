@@ -69,7 +69,12 @@
     "toggleSidebar": "Show or hide the sidebar",
     "toggleSection": "{{section}}: expand or collapse the sub-items",
     "files": "Files",
-    "transactions": "Transactions"
+    "transactions": "Transactions",
+    "admin": "Administration",
+    "adminOverview": "Overview",
+    "adminUsers": "Users",
+    "adminLibrary": "Moderate library",
+    "adminAudit": "Audit log"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
@@ -2080,6 +2085,9 @@
       },
       "files": {
         "readingConflict": "File was read differently in your projects: {{name}}"
+      },
+      "library": {
+        "hidden": "Your library entry \"{{name}}\" was hidden: {{reason}}"
       }
     },
     "reason": {
@@ -2165,7 +2173,8 @@
     "mappingImport": "Uploading mappings",
     "libraryBulkPublish": "Publishing mappings",
     "coin": "Saving the coin for {{asset}}",
-    "transactionAi": "AI is reviewing transactions"
+    "transactionAi": "AI is reviewing transactions",
+    "adminDeleteUser": "Deleting the account"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2962,7 +2971,12 @@
       "nothingToReview": "There is no transaction to review",
       "noMapping": "This transaction is not read with a mapping",
       "badAnswer": "The AI answer could not be used",
-      "eTaxNeedsChf": "The e-tax statement is only available for projects in CHF."
+      "eTaxNeedsChf": "The e-tax statement is only available for projects in CHF.",
+      "accountBlocked": "This account is blocked.",
+      "adminOnly": "Administrators only.",
+      "adminSelf": "Not possible on your own account.",
+      "adminTarget": "Revoke the admin role first.",
+      "confirmationMismatch": "The e-mail address you typed does not match."
     },
     "status": {
       "unreachable": "The server cannot be reached.",
@@ -3391,5 +3405,161 @@
     "consent": "I agree that this excerpt is sent to my AI provider (also for later AI requests; revocable under Settings › AI).",
     "run": "Review",
     "done": "{{count}} suggestions received – they are marked “Suggested by AI”."
+  },
+  "blocked": {
+    "title": "Account blocked",
+    "text": "Your account was blocked by the administration. Contact the operators of lazy-koins if you have questions about it.",
+    "signOut": "Sign out"
+  },
+  "admin": {
+    "loadFailed": "Could not be loaded.",
+    "reason": "Reason",
+    "shownOf": "Showing {{shown}} of {{total}} – narrow the search.",
+    "privacyNote": "Administration only sees accounts and counts – never users' projects, files, transactions or settings.",
+    "overview": {
+      "title": "Administration",
+      "subtitle": "State of the platform",
+      "accounts": "Accounts",
+      "users": "Users",
+      "activeUsers": "Active (30 days)",
+      "blockedUsers": "Blocked",
+      "admins": "Admins",
+      "toUsers": "Manage users",
+      "data": "Data",
+      "projects": "Projects",
+      "storedFiles": "Files",
+      "database": "Database",
+      "version": "Version",
+      "library": "Library",
+      "libraryEntries": "Public entries",
+      "hiddenEntries": "Hidden",
+      "toLibrary": "Moderate library",
+      "estv": "ESTV price list (Kursliste)",
+      "estvYears": "Stored years",
+      "estvChecked": "Last checked",
+      "estvUpdate": "Update now"
+    },
+    "users": {
+      "title": "Users",
+      "subtitle": "Block accounts, grant the admin role, delete accounts",
+      "search": "Search (e-mail or name)",
+      "filter": "Show",
+      "filters": {
+        "all": "All",
+        "blocked": "Blocked",
+        "admins": "Admins"
+      },
+      "empty": "No users found.",
+      "account": "Account",
+      "status": "Status",
+      "projects": "Projects",
+      "storage": "Storage",
+      "lastSeen": "Last active",
+      "filesCount": "{{count}} files",
+      "created": "since {{date}}",
+      "blockedBecause": "Blocked: {{reason}}",
+      "badges": {
+        "admin": "Admin",
+        "blocked": "Blocked",
+        "active": "Active"
+      },
+      "actions": {
+        "block": "Block",
+        "unblock": "Unblock",
+        "grant": "Make admin",
+        "revoke": "Revoke admin role",
+        "delete": "Delete account"
+      },
+      "failed": "The change failed.",
+      "deleted": "Account deleted.",
+      "dialogs": {
+        "block": {
+          "title": "Block account",
+          "body": "{{email}} can no longer use the app until the account is unblocked. The data is kept.",
+          "action": "Block"
+        },
+        "unblock": {
+          "title": "Unblock account",
+          "body": "{{email}} can use the app again.",
+          "action": "Unblock"
+        },
+        "grant": {
+          "title": "Make admin",
+          "body": "{{email}} gets access to the administration (accounts, library, audit log).",
+          "action": "Grant admin role"
+        },
+        "revoke": {
+          "title": "Revoke admin role",
+          "body": "{{email}} loses access to the administration.",
+          "action": "Revoke role"
+        },
+        "delete": {
+          "title": "Delete account",
+          "body": "The account {{email}} is deleted for good with all its projects, files, mappings, wallets and settings. This cannot be undone.",
+          "confirm": "Type {{email}} to confirm",
+          "action": "Delete for good"
+        }
+      }
+    },
+    "library": {
+      "title": "Moderate library",
+      "subtitle": "Hide public mappings or show them again",
+      "search": "Search (name, platform, pseudonym, e-mail)",
+      "filter": "Show",
+      "filters": {
+        "all": "All",
+        "visible": "Visible",
+        "hidden": "Hidden"
+      },
+      "empty": "No entries found.",
+      "entry": "Entry",
+      "author": "Author",
+      "taken": "Taken",
+      "status": "Status",
+      "hiddenBecause": "Hidden: {{reason}}",
+      "badges": {
+        "hidden": "Hidden",
+        "visible": "Visible"
+      },
+      "actions": {
+        "hide": "Hide",
+        "unhide": "Show again"
+      },
+      "failed": "The change failed.",
+      "dialogs": {
+        "hide": {
+          "title": "Hide entry",
+          "body": "\"{{name}}\" disappears from the library. The author is notified with the reason; copies already taken are kept.",
+          "action": "Hide"
+        },
+        "unhide": {
+          "title": "Show again",
+          "body": "\"{{name}}\" can be found in the library again.",
+          "action": "Show again"
+        }
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "subtitle": "Every administration action, newest first",
+      "empty": "No actions yet.",
+      "when": "When",
+      "action": "Action",
+      "target": "Target",
+      "actor": "By",
+      "actions": {
+        "user": {
+          "block": "Blocked",
+          "unblock": "Unblocked",
+          "grantAdmin": "Admin role granted",
+          "revokeAdmin": "Admin role revoked",
+          "delete": "Account deleted"
+        },
+        "library": {
+          "hide": "Entry hidden",
+          "unhide": "Entry shown"
+        }
+      }
+    }
   }
 }

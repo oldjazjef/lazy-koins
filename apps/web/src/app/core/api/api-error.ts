@@ -58,6 +58,12 @@ export const API_ERROR_CODES = [
   // F9.8–F9.11: global transaction edits.
   'transactionLocked',
   'eTaxNeedsChf',
+  'accountBlocked',
+  'adminOnly',
+  'adminSelf',
+  'adminTarget',
+  'reasonRequired',
+  'confirmationMismatch',
   'useTransactionEdit',
   'reasonRequired',
   'invalidChanges',

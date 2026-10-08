@@ -29,6 +29,8 @@ export const DATA_SCOPES = [
   'files',
   // F9.5: the global transactions (edits, AI suggestions).
   'transactions',
+  // The management pages (platform admins): accounts, library moderation, audit.
+  'admin',
 ] as const;
 export type DataScope = (typeof DATA_SCOPES)[number];
 

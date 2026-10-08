@@ -22,7 +22,11 @@ export type ConflictCode =
   /** F9.9: a closed project uses the transaction — reopen it to change it. */
   | 'transactionLocked'
   /** F10.10: the E-Steuerauszug is in CHF — a project in another tax currency has none. */
-  | 'eTaxNeedsChf';
+  | 'eTaxNeedsChf'
+  /** Admin: never on one's own account (block, delete, role). */
+  | 'adminSelf'
+  /** Admin: another admin is blocked or deleted only after the role was revoked. */
+  | 'adminTarget';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

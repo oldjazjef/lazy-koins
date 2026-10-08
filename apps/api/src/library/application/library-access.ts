@@ -18,19 +18,20 @@ import {
 } from '../../mappings/application/mapping-access';
 import type { ImportMappingRepositoryPort } from '../../mappings/ports/import-mapping.repository.port';
 import {
+  isVisible,
   LIBRARY_LIMITS,
   type LibraryMapping,
   type PublishReview,
 } from '../domain/library-mapping';
 import type { LibraryRepositoryPort } from '../ports/library.repository.port';
 
-/** An entry anyone may see: missing and deleted read the same (404). */
+/** An entry anyone may see: missing, deleted and hidden read the same (404). */
 export async function loadActiveEntry(
   library: LibraryRepositoryPort,
   libraryId: string,
 ): Promise<LibraryMapping> {
   const entry = await library.findById(libraryId);
-  if (!entry || entry.deletedAt !== null) {
+  if (!entry || !isVisible(entry)) {
     throw new NotFoundException('No such library mapping');
   }
   return entry;
@@ -46,7 +47,7 @@ export async function loadOwnEntry(
   libraryId: string,
 ): Promise<LibraryMapping> {
   const entry = await library.findById(libraryId);
-  if (!entry || entry.deletedAt !== null || entry.authorId !== userId) {
+  if (!entry || !isVisible(entry) || entry.authorId !== userId) {
     throw new NotFoundException('No such library mapping');
   }
   return entry;

@@ -45,6 +45,17 @@ export interface LibraryMapping {
   readonly publishedAt: string;
   readonly updatedAt: string;
   readonly deletedAt: string | null;
+  /** Hidden by a platform admin (moderation) — gone for everyone, like a deleted entry. */
+  readonly hiddenAt: string | null;
+  readonly hiddenReason: string | null;
+}
+
+/** Neither deleted by its author nor hidden by moderation: it exists for everyone. */
+export function isVisible(entry: {
+  readonly deletedAt: string | null;
+  readonly hiddenAt: string | null;
+}): boolean {
+  return entry.deletedAt === null && entry.hiddenAt === null;
 }
 
 /** What a publish stores (a new entry or a new version of one). */
@@ -179,7 +190,7 @@ export function searchEntries(
   const platform = (criteria.platform ?? '').trim().toLowerCase();
   const matching = entries.filter(
     (entry) =>
-      entry.deletedAt === null &&
+      isVisible(entry) &&
       (platform === '' || entry.platform === platform) &&
       (needle === '' ||
         entry.name.toLocaleLowerCase('de-CH').includes(needle) ||

@@ -37,6 +37,7 @@ import { ChatSidebar } from '../assistant/chat-sidebar';
 import { UserSettingsService } from '../../features/settings/user-settings.service';
 import { AuthService } from '../auth/auth.service';
 import { LanguageService } from '../i18n/language.service';
+import { AdminAccess } from '../admin/admin-access.service';
 import { LibraryAvailability } from '../library/library-availability.service';
 import { PinLockService } from '../pin/pin-lock.service';
 import { SetupStateService } from '../setup/setup-state.service';
@@ -97,8 +98,10 @@ export class AppShell {
    * linked to a web library and online).
    */
   private readonly library = inject(LibraryAvailability);
+  /** "Administration" for platform admins only (asked once from `/api/me`). */
+  private readonly admin = inject(AdminAccess);
   protected readonly items = computed(() =>
-    navItemsFor(this.library.available()),
+    navItemsFor(this.library.available(), this.admin.isAdmin()),
   );
   protected readonly userItems = USER_MENU_ITEMS;
   protected readonly auth = inject(AuthService);
@@ -108,6 +111,7 @@ export class AppShell {
   protected readonly chat = inject(ChatService);
   /** F11.0s: no main navigation until the setup wizard is finished. */
   protected readonly setup = inject(SetupStateService);
+
   /** F11.0p: "Jetzt sperren" in the user menu when a PIN is set. */
   protected readonly pin = inject(PinLockService);
   /** Expanded/collapsed (desktop, remembered in a cookie) or the open sheet (mobile). */
@@ -176,6 +180,7 @@ export class AppShell {
   );
 
   constructor() {
+    void this.admin.load();
     // Signed in: the bell polls (F11.11) until signing out.
     this.centre.start();
     inject(DestroyRef).onDestroy(() => this.centre.stop());

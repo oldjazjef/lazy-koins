@@ -1,0 +1,98 @@
+<lk-page-header
+  [title]="'admin.overview.title' | translate"
+  [subtitle]="'admin.overview.subtitle' | translate"
+/>
+
+@if (service.overview.isLoading() && !service.overview.hasValue()) {
+<hlm-skeleton class="h-40 w-full" />
+} @else if (service.overview.error()) {
+<lk-empty-state [message]="'admin.loadFailed' | translate">
+  <button
+    hlmBtn
+    variant="outline"
+    type="button"
+    (click)="service.overview.reload()"
+  >
+    {{ 'common.retry' | translate }}
+  </button>
+</lk-empty-state>
+} @else if (service.overview.hasValue()) { @let o = service.overview.value();
+<div class="grid gap-4 md:grid-cols-2">
+  <section class="lk-panel p-4">
+    <h2 class="mb-3 font-medium">
+      {{ 'admin.overview.accounts' | translate }}
+    </h2>
+    <dl class="lk-facts">
+      <dt>{{ 'admin.overview.users' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.users | lkNumber }}</dd>
+      <dt>{{ 'admin.overview.activeUsers' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.activeUsers | lkNumber }}</dd>
+      <dt>{{ 'admin.overview.blockedUsers' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.blockedUsers | lkNumber }}</dd>
+      <dt>{{ 'admin.overview.admins' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.admins | lkNumber }}</dd>
+    </dl>
+    <a hlmBtn variant="outline" size="sm" class="mt-3" routerLink="users">
+      {{ 'admin.overview.toUsers' | translate }}
+    </a>
+  </section>
+  <section class="lk-panel p-4">
+    <h2 class="mb-3 font-medium">{{ 'admin.overview.data' | translate }}</h2>
+    <dl class="lk-facts">
+      <dt>{{ 'admin.overview.projects' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.projects | lkNumber }}</dd>
+      <dt>{{ 'admin.overview.storedFiles' | translate }}</dt>
+      <dd class="tabular-nums">
+        {{ o.storedFiles | lkNumber }} · {{ bytes(o.storageBytes) }}
+      </dd>
+      <dt>{{ 'admin.overview.database' | translate }}</dt>
+      <dd class="tabular-nums">{{ bytes(o.databaseBytes) }}</dd>
+      <dt>{{ 'admin.overview.version' | translate }}</dt>
+      <dd>{{ version.info()?.full ?? '–' }}</dd>
+    </dl>
+  </section>
+  <section class="lk-panel p-4">
+    <h2 class="mb-3 font-medium">{{ 'admin.overview.library' | translate }}</h2>
+    <dl class="lk-facts">
+      <dt>{{ 'admin.overview.libraryEntries' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.libraryEntries | lkNumber }}</dd>
+      <dt>{{ 'admin.overview.hiddenEntries' | translate }}</dt>
+      <dd class="tabular-nums">{{ o.hiddenLibraryEntries | lkNumber }}</dd>
+    </dl>
+    <a hlmBtn variant="outline" size="sm" class="mt-3" routerLink="library">
+      {{ 'admin.overview.toLibrary' | translate }}
+    </a>
+  </section>
+  <section class="lk-panel p-4">
+    <h2 class="mb-3 font-medium">{{ 'admin.overview.estv' | translate }}</h2>
+    @let estv = service.estv.status();
+    <dl class="lk-facts">
+      <dt>{{ 'admin.overview.estvYears' | translate }}</dt>
+      <dd>
+        @for (y of estv?.years ?? []; track y.year) {
+        <span class="me-2 tabular-nums">{{ y.year }}</span>
+        } @empty { – }
+      </dd>
+      <dt>{{ 'admin.overview.estvChecked' | translate }}</dt>
+      <dd>
+        @if (estv?.lastCheckAt; as at) { {{ at | lkDate: 'dateTime' }} } @else {
+        – }
+      </dd>
+    </dl>
+    <button
+      hlmBtn
+      variant="outline"
+      size="sm"
+      type="button"
+      class="mt-3"
+      [disabled]="service.estv.isBusy()"
+      (click)="service.updateEstv()"
+    >
+      {{ 'admin.overview.estvUpdate' | translate }}
+    </button>
+  </section>
+</div>
+<p class="text-muted-foreground mt-4 text-sm">
+  {{ 'admin.privacyNote' | translate }}
+</p>
+}

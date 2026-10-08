@@ -123,6 +123,8 @@ export const Topics = {
     `project.changedSinceSent:${projectId}`,
   syncConflict: () => 'desktop.syncConflict',
   setupIncomplete: () => 'setup.incomplete',
+  /** A platform admin hid my library entry (moderation); params: name, reason. */
+  libraryHidden: (libraryId: string) => `library.hidden:${libraryId}`,
   taskDone: (label: string, projectId: string | null) =>
     `task.done:${label}${projectId ? `:${projectId}` : ''}`,
   taskFailed: (label: string, projectId: string | null) =>
@@ -151,6 +153,7 @@ export const TITLE_BASES = [
   'project.changedSinceSent',
   'desktop.syncConflict',
   'setup.incomplete',
+  'library.hidden',
   'task.done',
   'task.failed',
 ] as const;

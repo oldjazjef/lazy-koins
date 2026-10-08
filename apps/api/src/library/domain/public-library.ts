@@ -4,6 +4,7 @@ import {
   type SourceFile,
 } from '@lazykoins/engine';
 import {
+  isVisible,
   type LibraryMapping,
   type LibrarySort,
   ratingAverage,
@@ -155,7 +156,7 @@ export function matchEntries(
     sheets: [{ name: 'Sheet1', rows: [headers] }],
   };
   return entries
-    .filter((entry) => entry.deletedAt === null)
+    .filter(isVisible)
     .map((entry) => ({
       entry,
       confidence: mappingConfidence(headerOnly(entry.spec), file),

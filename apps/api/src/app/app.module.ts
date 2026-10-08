@@ -8,6 +8,7 @@ import {
   throttlerOptions,
 } from '../common/throttling/throttling';
 import { AccessTokenGuard } from '../auth/access-token.guard';
+import { AdminModule } from '../admin/admin.module';
 import { AiModule } from '../ai/ai.module';
 import { AssistantModule } from '../assistant/assistant.module';
 import { McpModule } from '../mcp/mcp.module';
@@ -63,6 +64,7 @@ import { AppController } from './app.controller';
     FilesModule,
     MappingsModule,
     LibraryModule,
+    AdminModule,
     SuggestionsModule,
     SettingsModule,
     CalculationModule,

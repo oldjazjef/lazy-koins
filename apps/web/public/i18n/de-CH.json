@@ -69,7 +69,12 @@
     "toggleSidebar": "Seitenleiste ein- oder ausblenden",
     "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen",
     "files": "Dateien",
-    "transactions": "Transaktionen"
+    "transactions": "Transaktionen",
+    "admin": "Administration",
+    "adminOverview": "Übersicht",
+    "adminUsers": "Benutzer",
+    "adminLibrary": "Bibliothek moderieren",
+    "adminAudit": "Protokoll"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -2080,6 +2085,9 @@
       },
       "files": {
         "readingConflict": "Datei wurde in Projekten unterschiedlich gelesen: {{name}}"
+      },
+      "library": {
+        "hidden": "Dein Bibliothekseintrag «{{name}}» wurde ausgeblendet: {{reason}}"
       }
     },
     "reason": {
@@ -2165,7 +2173,8 @@
     "mappingImport": "Mappings werden hochgeladen",
     "libraryBulkPublish": "Mappings werden veröffentlicht",
     "coin": "Coin für {{asset}} wird gespeichert",
-    "transactionAi": "AI analysiert Transaktionen"
+    "transactionAi": "AI analysiert Transaktionen",
+    "adminDeleteUser": "Konto wird gelöscht"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2962,7 +2971,12 @@
       "nothingToReview": "Es gibt keine Transaktion zu prüfen",
       "noMapping": "Diese Transaktion wird nicht mit einem Mapping gelesen",
       "badAnswer": "Die Antwort der AI war nicht verwendbar",
-      "eTaxNeedsChf": "Den E-Steuerauszug gibt es nur für Projekte in CHF."
+      "eTaxNeedsChf": "Den E-Steuerauszug gibt es nur für Projekte in CHF.",
+      "accountBlocked": "Dieses Konto ist gesperrt.",
+      "adminOnly": "Nur für die Administration.",
+      "adminSelf": "Das geht nicht für dein eigenes Konto.",
+      "adminTarget": "Entziehe zuerst die Admin-Rolle.",
+      "confirmationMismatch": "Die eingegebene E-Mail-Adresse stimmt nicht."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -3391,5 +3405,161 @@
     "consent": "Ich bin einverstanden, dass dieser Auszug an meinen AI-Anbieter gesendet wird (gilt auch für spätere AI-Anfragen, widerrufbar unter Einstellungen › AI).",
     "run": "Analysieren",
     "done": "{{count}} Vorschläge erhalten – sie sind als «Von AI vorgeschlagen» markiert."
+  },
+  "blocked": {
+    "title": "Konto gesperrt",
+    "text": "Dein Konto wurde von der Administration gesperrt. Wende dich an die Betreiber von lazy-koins, wenn du Fragen dazu hast.",
+    "signOut": "Abmelden"
+  },
+  "admin": {
+    "loadFailed": "Konnte nicht geladen werden.",
+    "reason": "Begründung",
+    "shownOf": "{{shown}} von {{total}} angezeigt – grenze die Suche ein.",
+    "privacyNote": "Die Administration sieht nur Konten und Zählwerte – nie Projekte, Dateien, Transaktionen oder Einstellungen von Benutzern.",
+    "overview": {
+      "title": "Administration",
+      "subtitle": "Zustand der Plattform",
+      "accounts": "Konten",
+      "users": "Benutzer",
+      "activeUsers": "Aktiv (30 Tage)",
+      "blockedUsers": "Gesperrt",
+      "admins": "Admins",
+      "toUsers": "Benutzer verwalten",
+      "data": "Daten",
+      "projects": "Projekte",
+      "storedFiles": "Dateien",
+      "database": "Datenbank",
+      "version": "Version",
+      "library": "Bibliothek",
+      "libraryEntries": "Öffentliche Einträge",
+      "hiddenEntries": "Ausgeblendet",
+      "toLibrary": "Bibliothek moderieren",
+      "estv": "ESTV-Kursliste",
+      "estvYears": "Gespeicherte Jahre",
+      "estvChecked": "Zuletzt geprüft",
+      "estvUpdate": "Jetzt aktualisieren"
+    },
+    "users": {
+      "title": "Benutzer",
+      "subtitle": "Konten sperren, Admin-Rolle vergeben, Konten löschen",
+      "search": "Suche (E-Mail oder Name)",
+      "filter": "Anzeigen",
+      "filters": {
+        "all": "Alle",
+        "blocked": "Gesperrte",
+        "admins": "Admins"
+      },
+      "empty": "Keine Benutzer gefunden.",
+      "account": "Konto",
+      "status": "Status",
+      "projects": "Projekte",
+      "storage": "Speicher",
+      "lastSeen": "Zuletzt aktiv",
+      "filesCount": "{{count}} Dateien",
+      "created": "seit {{date}}",
+      "blockedBecause": "Gesperrt: {{reason}}",
+      "badges": {
+        "admin": "Admin",
+        "blocked": "Gesperrt",
+        "active": "Aktiv"
+      },
+      "actions": {
+        "block": "Sperren",
+        "unblock": "Entsperren",
+        "grant": "Zum Admin machen",
+        "revoke": "Admin-Rolle entziehen",
+        "delete": "Konto löschen"
+      },
+      "failed": "Die Änderung ist fehlgeschlagen.",
+      "deleted": "Konto gelöscht.",
+      "dialogs": {
+        "block": {
+          "title": "Konto sperren",
+          "body": "{{email}} kann die App nicht mehr verwenden, bis das Konto entsperrt wird. Die Daten bleiben erhalten.",
+          "action": "Sperren"
+        },
+        "unblock": {
+          "title": "Konto entsperren",
+          "body": "{{email}} kann die App wieder verwenden.",
+          "action": "Entsperren"
+        },
+        "grant": {
+          "title": "Zum Admin machen",
+          "body": "{{email}} erhält Zugriff auf die Administration (Konten, Bibliothek, Protokoll).",
+          "action": "Admin-Rolle vergeben"
+        },
+        "revoke": {
+          "title": "Admin-Rolle entziehen",
+          "body": "{{email}} verliert den Zugriff auf die Administration.",
+          "action": "Rolle entziehen"
+        },
+        "delete": {
+          "title": "Konto löschen",
+          "body": "Das Konto {{email}} wird mit allen Projekten, Dateien, Mappings, Wallets und Einstellungen endgültig gelöscht. Das lässt sich nicht rückgängig machen.",
+          "confirm": "Zur Bestätigung {{email}} eingeben",
+          "action": "Endgültig löschen"
+        }
+      }
+    },
+    "library": {
+      "title": "Bibliothek moderieren",
+      "subtitle": "Öffentliche Mappings ausblenden oder wieder anzeigen",
+      "search": "Suche (Name, Plattform, Pseudonym, E-Mail)",
+      "filter": "Anzeigen",
+      "filters": {
+        "all": "Alle",
+        "visible": "Sichtbare",
+        "hidden": "Ausgeblendete"
+      },
+      "empty": "Keine Einträge gefunden.",
+      "entry": "Eintrag",
+      "author": "Autor",
+      "taken": "Übernommen",
+      "status": "Status",
+      "hiddenBecause": "Ausgeblendet: {{reason}}",
+      "badges": {
+        "hidden": "Ausgeblendet",
+        "visible": "Sichtbar"
+      },
+      "actions": {
+        "hide": "Ausblenden",
+        "unhide": "Wieder anzeigen"
+      },
+      "failed": "Die Änderung ist fehlgeschlagen.",
+      "dialogs": {
+        "hide": {
+          "title": "Eintrag ausblenden",
+          "body": "«{{name}}» verschwindet aus der Bibliothek. Der Autor wird mit der Begründung benachrichtigt; bereits übernommene Kopien bleiben erhalten.",
+          "action": "Ausblenden"
+        },
+        "unhide": {
+          "title": "Wieder anzeigen",
+          "body": "«{{name}}» ist wieder in der Bibliothek zu finden.",
+          "action": "Wieder anzeigen"
+        }
+      }
+    },
+    "audit": {
+      "title": "Protokoll",
+      "subtitle": "Jede Aktion der Administration, neueste zuerst",
+      "empty": "Noch keine Aktionen.",
+      "when": "Zeitpunkt",
+      "action": "Aktion",
+      "target": "Betroffen",
+      "actor": "Durch",
+      "actions": {
+        "user": {
+          "block": "Gesperrt",
+          "unblock": "Entsperrt",
+          "grantAdmin": "Admin-Rolle vergeben",
+          "revokeAdmin": "Admin-Rolle entzogen",
+          "delete": "Konto gelöscht"
+        },
+        "library": {
+          "hide": "Eintrag ausgeblendet",
+          "unhide": "Eintrag angezeigt"
+        }
+      }
+    }
   }
 }

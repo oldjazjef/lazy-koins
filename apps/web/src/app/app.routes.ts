@@ -1,5 +1,6 @@
 import type { Route } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { adminGuard } from './core/admin/admin-access.service';
 import { setupGuard } from './core/setup/setup-state.service';
 
 export const appRoutes: Route[] = [
@@ -8,6 +9,11 @@ export const appRoutes: Route[] = [
     path: 'login',
     canActivate: [guestGuard],
     loadChildren: () => import('./features/login/login.routes'),
+  },
+  {
+    // A platform admin blocked the account (403 accountBlocked): no app, only sign-out.
+    path: 'blocked',
+    loadChildren: () => import('./features/blocked/blocked.routes'),
   },
   {
     // Everything behind sign-in lives under /app, inside the shell with the header.
@@ -59,6 +65,12 @@ export const appRoutes: Route[] = [
       {
         path: 'settings',
         loadChildren: () => import('./features/settings/settings.routes'),
+      },
+      {
+        // The management pages: platform admins on the web only.
+        path: 'admin',
+        canMatch: [adminGuard],
+        loadChildren: () => import('./features/admin/admin.routes'),
       },
       {
         path: 'setup',

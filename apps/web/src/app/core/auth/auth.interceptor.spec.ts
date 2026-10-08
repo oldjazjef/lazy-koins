@@ -8,7 +8,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
@@ -56,5 +56,22 @@ describe('authInterceptor', () => {
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush({});
     await done;
+  });
+
+  it('shows /blocked when the API says the account is blocked', async () => {
+    const navigate = vi
+      .spyOn(TestBed.inject(Router), 'navigate')
+      .mockResolvedValue(true);
+    await TestBed.inject(AuthService).ready;
+    const done = firstValueFrom(TestBed.inject(HttpClient).get('/api/me'));
+    await settle();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/me')
+      .flush(
+        { code: 'accountBlocked' },
+        { status: 403, statusText: 'Forbidden' },
+      );
+    await expect(done).rejects.toBeTruthy();
+    expect(navigate).toHaveBeenCalledWith(['/blocked']);
   });
 });

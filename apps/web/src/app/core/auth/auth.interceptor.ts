@@ -11,7 +11,8 @@ import { AuthService } from './auth.service';
 /**
  * Attaches the bearer token to requests for our API — and only those, so a token never reaches
  * a third-party host (or the i18n files). A 401 from the API means the session is gone: sign
- * out locally and go to the login page.
+ * out locally and go to the login page. A 403 `accountBlocked` means a platform admin blocked
+ * the account: the app shows `/blocked` (every request would answer the same).
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   if (!isApiRequest(request.url)) return next(request);
@@ -34,6 +35,13 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
         auth.isSignedIn()
       ) {
         void auth.signOut().then(() => router.navigate(['/login']));
+      }
+      if (
+        error instanceof HttpErrorResponse &&
+        error.status === 403 &&
+        (error.error as { code?: unknown } | null)?.code === 'accountBlocked'
+      ) {
+        void router.navigate(['/blocked']);
       }
       return throwError(() => error);
     }),

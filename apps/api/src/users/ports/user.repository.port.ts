@@ -19,4 +19,10 @@ export abstract class UserRepositoryPort {
     identity: VerifiedIdentity,
     displayName: string,
   ): Promise<User>;
+
+  /** Makes the user a platform admin (bootstrap from `PLATFORM_ADMIN_EMAILS`). */
+  abstract grantPlatformAdmin(id: string): Promise<void>;
+
+  /** Records the user's last authenticated request. */
+  abstract touchLastSeen(id: string, atIso: string): Promise<void>;
 }

@@ -54,6 +54,12 @@ const RULES: readonly (readonly [
     }),
   ],
   [/^projects\/import-package$/, () => ({ scope: 'projects' })],
+  // Platform admin: accounts, the admin role, library moderation (the library lists follow).
+  [
+    /^admin\/library\/[^/]+\/(hide|unhide)$/,
+    () => ({ scope: ['admin', 'mappings'] }),
+  ],
+  [/^admin\//, () => ({ scope: 'admin' })],
   // F5.7a: a file (de)activated — the project's files, hints, result status and the dashboard
   // follow; its "ohne Mapping"/"Zeilenfehler" notifications are resolved or raised again.
   [

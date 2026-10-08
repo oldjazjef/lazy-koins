@@ -200,6 +200,25 @@ export class Env {
    */
   @IsIn(['true', 'false'])
   LIBRARY_PUBLIC = 'true';
+
+  /**
+   * Platform admins (the management pages): comma-separated e-mail addresses. Granted — and kept
+   * — on the first request of an account with that address **verified** by the identity
+   * provider; admins then grant/revoke the role in the app. Ignored with `AUTH_MODE=local`.
+   */
+  @IsString()
+  PLATFORM_ADMIN_EMAILS = '';
+}
+
+/** The bootstrap admin addresses, lower case. */
+export function platformAdminEmails(
+  env: Pick<Env, 'PLATFORM_ADMIN_EMAILS'>,
+): ReadonlySet<string> {
+  return new Set(
+    env.PLATFORM_ADMIN_EMAILS.split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e !== ''),
+  );
 }
 
 /** Whether AI base URLs may name private or loopback hosts (see `AI_ALLOW_PRIVATE_URLS`). */

@@ -17,7 +17,20 @@ describe('main navigation', () => {
     ]);
     // Desktop without a linked web library: Mappings is a plain link without a menu.
     expect(mappings(false)?.children).toBeUndefined();
-    expect(navItemsFor(false)).toHaveLength(NAV_ITEMS.length);
+    // Everything but "Administration" (admins only).
+    expect(navItemsFor(false)).toHaveLength(NAV_ITEMS.length - 1);
+  });
+
+  it('shows "Administration" with its pages to platform admins only', () => {
+    const admin = (isAdmin: boolean) =>
+      navItemsFor(true, isAdmin).find((item) => item.path === '/app/admin');
+    expect(admin(false)).toBeUndefined();
+    expect(admin(true)?.children?.map((child) => child.path)).toEqual([
+      '/app/admin',
+      '/app/admin/users',
+      '/app/admin/library',
+      '/app/admin/audit',
+    ]);
   });
 
   it('marks the most specific sub-item as current', () => {
