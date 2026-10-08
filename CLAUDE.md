@@ -169,6 +169,7 @@ apps/api/                   # NestJS API — the web app's backend AND the deskt
     carryover/              #   F4.4a follow-up project, F4.4 take-over, ProjectBundle (one transaction)
     packages/               #   F10.8/F10.9: .lkproj.zip / account package (fflate), manifest + verification
     mail/                   #   F11.10/F10.6a: mailer + template settings, compose/send, send log
+    transactions/           #   F9.5–F9.12: global transaction list (ledger), global edits, AI suggestions
     tools/                  #   F11.14/F11.16: the ONE tool layer — registry, executor (policy + audit), definitions/
     assistant/              #   F11.14/F11.15: chat conversations, ChatEngine (tool loop, proposals), prompt
     mcp/                    #   F11.16: /api/mcp (SDK, stateless), PATs, MCP settings + audit endpoints
@@ -1163,34 +1164,73 @@ symbol, contract? }`; `COIN_PROVIDERS` = `coingecko`, `coinmarketcap` (F7.4b); a
   fallback after Binance and the picker's suggestion.
 
 **Transaktionen** (user request 07.10.2026: „eine Ansicht, wo man alle Transaktionen sieht und
-wie sie zur Steuerrechnung zählen … Einträge deaktivieren mit Begründung“) — engine
-`calculation/treatments.ts`: `bookingTreatments(input, result)` = every booking (imported and
-manual) newest first with its **treatment** (`BOOKING_TREATMENTS`: `income` (value), `oneOff`,
-`balance` (decides a ledger position at 31.12.), `checkOnly` (account valued from a statement or
-manual balance), `transfer`, `spam`, `unknown`, `afterYear`, `excluded`), the figure ids it feeds,
-the imported kind of a reclassified booking and the correction id + reason. **Deactivating** is
-the correction type **`exclude_booking`** `{ bookingId }` (F9.4: data, reason required,
-undo/redo, the file untouched; `applyCorrections` drops the booking, `targetMissing` when it is
-gone or excluded twice; the dashboard dates it by the booking, the follow-up project carries it
-like a reclassification; migration `20261009120000_exclude_booking_correction` redefines
-`correction` only to widen its type CHECK). API `GET /projects/:id/transactions?q&treatment&
-platform&offset&limit` (`ListTransactionsHandler`: computed from the **live** input with the
-same `calculate`, never stored — right even while the snapshot is stale; `counts` per treatment
-with the treatment filter aside, ≤ 200 per page). Web: tab **Transaktionen**
-(`calculation/components/project-transactions`, its own service provided by the component,
-**server-side** paging through a `Pagination` adapter for `lk-paginator`): search (debounced),
-platform, treatment chips with counts, legend, row actions In der Rechnung anzeigen (drill-down)
-· Umklassieren (prefilled corrections form) · Deaktivieren (dialog, reason required) / Wieder
-aktivieren (undo) — the last three hidden on a closed project and for manual bookings (undo their
-correction). The corrections form does not offer `exclude_booking` (`FORM_CORRECTION_TYPES`).
-**Mit AI beheben** (user request 07.10.2026): row action "Mit AI beheben" and the card's "Mit AI
-prüfen" call `ChatService.startWith(question)` — the sidebar opens on a new chat and the
-question (booking id, file + row, kind, raw type, treatment; or a review of the whole list) is
-sent at once when the assistant is ready and consent is settled, else it waits in the input.
-Tools: `list_transactions` (read, area `results`) and `exclude_booking` (write → a proposal,
-area `corrections`); the default prompt tells the model to look at neighbours (duplicates,
-counter-bookings) and propose `reclassify_booking` / `exclude_booking` / `create_correction`.
-Nothing changes without "Ausführen".
+wie sie zur Steuerrechnung zählen“; extended by F9.5–F9.12, 08.10.2026: „Änderungen gelten
+global – eine Wahrheit pro Transaktion“) — engine `calculation/treatments.ts`:
+`bookingTreatments(input, result)` = every booking newest first with its **treatment**
+(`BOOKING_TREATMENTS`: `income`, `oneOff`, `balance`, `checkOnly`, `transfer`, `spam`, `unknown`,
+`afterYear`, `excluded`) and the figure ids it feeds.
+
+- **Global edits (F9.8)** — engine `transactions/edits.ts`: a transaction has a **stable key**
+  (`transactionKeys`): a file booking's id `<SHA-256>:<row>[…]`, a wallet fetch's
+  `wallet:<wallet id>:<network>:<tx hash>:<n>` (stays the same across refetches). An edit
+  (`TransactionChangesSchema`: `kind`, `asset`, `note`, `hidden`, `linkedKey` — a link makes
+  both sides `transfer`, `null` unlinks) is folded per key in creation order and applied by
+  `applyTransactionEdits` **before** the project corrections, in `CalculationInputService.build`
+  and `DashboardInputService.records` alike; hidden bookings leave the input (the project tab
+  lists them as `excluded`). Only edits whose key or link touches a project's file / wallet
+  prefixes enter its input hash (no file read) — an edit makes exactly the affected projects
+  stale. Migration `20261010110000_transaction_edits`: `transaction_edit` (owner FK cascade,
+  `tx_key` ≤ 300, `changes` JSON object, reason ≤ 1000, source `user|ai|migrated`, status
+  `active|undone|superseded`, `decided_at` unless active, `origin`) and `transaction_suggestion`
+  (one per owner + key, kind CHECK, confidence 0–100, status `open|accepted|dismissed`).
+  **F9.11**: every project correction `reclassify`/`exclude_booking` became an edit (same id,
+  reason, time; the newest project wins per transaction, the others `superseded` with their
+  project as `origin`; undone ones `undone`) and was deleted from the projects. The API refuses
+  new ones (400 `useTransactionEdit`); the corrections form no longer offers them. The engine
+  still applies them (older packages): the package import turns them into edits.
+- **API** (`apps/api/src/transactions/`): `TransactionLedgerService.ledger(userId)` = every
+  readable file of mine (F5.21, also in no project) read again, keyed, deduped by key (the
+  newest wallet fetch wins), edits applied, the projects using each file, **`lockedBy`** = the
+  closed ones (F9.9), the value in the newest project's tax currency with the dashboard's rates
+  (`dashboardRates` + user cache). `GET /api/transactions` (from/to, platform, account, asset,
+  kind, `changed`, `review` = unknown or an open AI suggestion, `walletId`, `q`, ≤ 200 per page),
+  `GET …/detail?key=` (original row `raw`, history incl. links pointing at it), `POST
+…/edits {keys ≤ 500, changes, reason}` (one edit per key; unknown key 404, a link joins exactly
+  one other, locked → 409 `transactionLocked` + `projects`), `POST …/edits/:id/undo|redo`
+  (also a superseded one), F9.10 `POST …/ai/payload {keys}` (exactly what is sent: refs `t1…`
+  and counter-booking candidates `c1…`, no keys/file names/hashes/notes; `consentGiven`) →
+  `POST …/ai/suggest {keys, consent}` (gate as every AI call, one repair round, stored as
+  suggestions — nothing changes) → `POST …/suggestions/accept|dismiss {ids}` (accept = edits with
+  source `ai`), `POST …/mapping-rule {key, kind}` (the platform type → kind as the first kind
+  rule of the mapping that read it, via `UpdateMappingCommand`; files keep their reading until
+  re-applied). Project tab: `GET /projects/:id/transactions?scope=year|all` (default the tax
+  year; `all` adds earlier bookings that decide a balance, F9.6) with `key`, `status`,
+  `hidden`, `linkedKey`, `editReason` per row. Packages (F10.8) carry the project's active edits
+  (`data/transaction-edits.json`, file keys only); the import adds them to the importer's.
+- **Tools** (F9.12, `tools/definitions/transaction.tools.ts`, registered when the service is
+  there): `search_transactions`, `get_transaction` (read), `edit_transactions`,
+  `reclassify_booking`, `exclude_booking` (all global edits by `key`, write → proposal),
+  `undo_transaction_edit`; `create_correction` refuses reclassify/exclude. The isolation suite
+  attacks each with a wallet key only A has (B's ledger: 404) and shows B its own transaction
+  for a key both have (same bytes).
+- **Web**: **Transaktionen** in the main navigation (`features/transactions`, `/app/transactions`,
+  `?key=` opens a detail): filters (date range, platform, account, asset, kind, "nur unbekannt",
+  "nur geänderte", search), server-side paging, selection on the page + bulk bar (edit, hide, AI,
+  accept suggestions), row actions (details + history, accept, edit, link, AI, hide/show — hidden
+  while locked). Shared in `shared/transactions/`: `TransactionEditsService` (root, the one
+  client; `lockedProjectsOf`), `lk-transaction-edit-dialog` (kind for many, asset + note for one,
+  hide/show, reason required, locked projects named), `lk-transaction-detail-dialog` (facts,
+  suggestion accept/dismiss, history with undo/redo, original row, "Als Regel ins Mapping"),
+  `lk-transaction-link-dialog` (`counterCandidates`: same asset, opposite sign, another
+  account, ±7 days), `lk-transaction-ai-dialog` (payload shown, consent, AI error panel). The
+  project tab (`calculation/components/project-transactions`) uses the same dialogs and a
+  "frühere Buchungen" toggle; the result tab's "Umklassieren" of an income line opens the edit
+  dialog (`ProjectWorkspaceService.transactionOf`). F9.7: the project Wallets tab shows each
+  wallet's transactions of the tax year (`lk-wallet-year-transactions`, `walletId` filter).
+  DataChanges scope `transactions`; edits/undo/accept/rule = every project.
+- **Mit AI beheben** (chat): row action and "Mit AI prüfen" call `ChatService.startWith(question)`;
+  the default prompt points the model at `search_transactions` / `edit_transactions`. Nothing
+  changes without "Ausführen".
 
 **Statements are for the tax authority** (user rule, 06.10.2026: „die Exporte sollten keine Todos
 drauf haben“): `simple_*` / `detailed_*` show only declared figures and how they were computed —

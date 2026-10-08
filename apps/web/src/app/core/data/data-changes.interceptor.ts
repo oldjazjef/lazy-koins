@@ -12,6 +12,8 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * proposal names its project only in the answer (`AssistantEvents`); asking changes no data.
  */
 const READ_ONLY: readonly RegExp[] = [
+  // F9.10: what the AI would get — nothing is stored.
+  /^transactions\/ai\/payload$/,
   /^projects\/[^/]+\/files\/[^/]+\/mapping-preview$/,
   /^projects\/[^/]+\/files\/[^/]+\/ai\/(mapping|statement)$/,
   /^projects\/[^/]+\/mail\/compose$/,
@@ -99,6 +101,20 @@ const RULES: readonly (readonly [
   [
     /^projects\/([^/]+)\/files(\/.*)?$/,
     (m) => ({ projectId: m[1], scope: 'files' }),
+  ],
+  // F9.8: a global transaction edit (or an accepted AI suggestion) changes every project that
+  // reads the transaction; a mapping rule changes the mapping too (F9.10).
+  [
+    /^transactions\/(edits(\/[^/]+\/(undo|redo))?|suggestions\/accept)$/,
+    () => ({ projectId: EVERY_PROJECT, scope: 'transactions' }),
+  ],
+  [
+    /^transactions\/mapping-rule$/,
+    () => ({ projectId: EVERY_PROJECT, scope: ['mappings', 'transactions'] }),
+  ],
+  [
+    /^transactions\/(ai\/suggest|suggestions\/dismiss)$/,
+    () => ({ scope: 'transactions' }),
   ],
   [/^files$/, () => ({ scope: 'files' })],
   [/^files\/.+$/, () => ({ projectId: EVERY_PROJECT, scope: 'files' })],

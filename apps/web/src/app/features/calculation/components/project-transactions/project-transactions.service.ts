@@ -36,8 +36,8 @@ function readSize(): number {
 /**
  * "Transaktionen": every booking of the project and how it counts in the tax calculation. The
  * API computes it from the live input and pages it (a ledger can have thousands of rows), so the
- * pager here is server-side; deactivating / reactivating a booking is a correction
- * (`exclude_booking`) through the workspace service, which recalculates.
+ * pager here is server-side. Changing a booking is a global transaction edit (F9.8) through the
+ * shared dialogs — DataChanges then refreshes every project that uses it.
  */
 @Injectable()
 export class ProjectTransactionsService {
@@ -48,6 +48,8 @@ export class ProjectTransactionsService {
   readonly query = signal('');
   readonly treatment = signal<BookingTreatment | ''>('');
   readonly platform = signal('');
+  /** F9.6: the tax year, or also earlier bookings that decide a balance at 31.12. */
+  readonly scope = signal<'year' | 'all'>('year');
 
   readonly pageSize = signal(readSize());
   /** Zero-based; back to the first page whenever a filter or the page size changes. */
@@ -56,6 +58,7 @@ export class ProjectTransactionsService {
       this.query(),
       this.treatment(),
       this.platform(),
+      this.scope(),
       this.pageSize(),
       this.workspace.projectId(),
     ],
@@ -73,6 +76,7 @@ export class ProjectTransactionsService {
         ...(this.query().trim() ? { q: this.query().trim() } : {}),
         ...(this.treatment() ? { treatment: this.treatment() } : {}),
         ...(this.platform() ? { platform: this.platform() } : {}),
+        ...(this.scope() === 'all' ? { scope: 'all' } : {}),
       },
     };
   });
@@ -134,28 +138,6 @@ export class ProjectTransactionsService {
       reveal: () => false,
     };
   })();
-
-  /** Leaves the booking out of the calculation, with the reason (a correction, undoable). */
-  exclude(row: TransactionRow, reason: string): Promise<void> {
-    return this.workspace.createCorrection({
-      data: { type: 'exclude_booking', bookingId: row.id },
-      reason,
-    });
-  }
-
-  /** Takes an excluded booking back in: undoes its correction. */
-  async reactivate(row: TransactionRow): Promise<void> {
-    if (row.treatment !== 'excluded' || !row.correctionId) return;
-    await this.workspace.setUndoneById(row.correctionId, true);
-  }
-
-  /** Opens the corrections tab with a reclassification of this booking prefilled (F9.2). */
-  reclassify(row: TransactionRow): void {
-    this.workspace.startCorrection({
-      type: 'reclassify',
-      values: { bookingId: row.id, kind: row.kind },
-    });
-  }
 
   showFigure(figureId: string, title: string): void {
     void this.workspace.showRecords(figureId, title);

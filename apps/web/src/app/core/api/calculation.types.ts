@@ -251,10 +251,12 @@ export const CORRECTION_TYPES = [
   'exclude_booking',
 ] as const;
 export type CorrectionType = (typeof CORRECTION_TYPES)[number];
-/** What the corrections form offers — an exclusion is made in the Transaktionen tab. */
+/**
+ * What the corrections form offers. Reclassifying and hiding a booking are global transaction
+ * edits (F9.8, F9.11) — made in the Transaktionen tab or page, never as a project correction.
+ */
 export const FORM_CORRECTION_TYPES = [
   'price_override',
-  'reclassify',
   'manual_booking',
   'manual_holding',
 ] as const satisfies readonly CorrectionType[];
@@ -665,7 +667,17 @@ export interface TransactionRow {
   correctionReason: string | null;
   projectFileId: string | null;
   fileName: string | null;
+  /** F9.8: the stable transaction key (global edits); null for a manual booking. */
+  key: string | null;
+  status: TransactionStatus;
+  hidden: boolean;
+  linkedKey: string | null;
+  /** The reason of the latest global edit. */
+  editReason: string | null;
 }
+
+/** F9.5: original / changed by a global edit / an open AI suggestion (F9.10). */
+export type TransactionStatus = 'original' | 'changed' | 'aiSuggested';
 
 export interface TransactionsView {
   taxYear: number;

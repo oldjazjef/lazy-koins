@@ -104,6 +104,7 @@ async function setup(answer: (r: AiCompletionRequest) => unknown = () => ({})) {
       model: 'fake',
     }),
     call: <T>(work: () => Promise<T>) => work(),
+    settingsOf: async () => ({ consentAt: null }),
   } as unknown as AiGate;
   const commands = {
     execute: (command: unknown) =>
@@ -134,7 +135,7 @@ async function setup(answer: (r: AiCompletionRequest) => unknown = () => ({})) {
         new SetTransactionEditUndoneCommand(user, editId, undone),
       ),
     payload: (keys: string[]) =>
-      new TransactionAiPayloadHandler(ledger).execute(
+      new TransactionAiPayloadHandler(ledger, gate).execute(
         new TransactionAiPayloadQuery('anna', keys),
       ),
     suggest: (keys: string[]) =>
@@ -310,6 +311,7 @@ describe('global transactions (F9.5–F9.10)', () => {
     });
     const preview = await t.payload([]);
     expect(preview.count).toBe(1);
+    expect(preview.consentGiven).toBe(false);
     expect(preview.payload.transactions[0]).toMatchObject({
       ref: 't1',
       asset: 'ETH',

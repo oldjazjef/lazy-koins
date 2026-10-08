@@ -27,6 +27,8 @@ export const DATA_SCOPES = [
   'notifications',
   // F5.21: my files (the "Dateien" page) — uploads, readings, selections, deletions.
   'files',
+  // F9.5: the global transactions (edits, AI suggestions).
+  'transactions',
 ] as const;
 export type DataScope = (typeof DATA_SCOPES)[number];
 

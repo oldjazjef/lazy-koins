@@ -1,0 +1,108 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal>
+    @if (request(); as current) {
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ 'txEdit.title.' + current.mode | translate: { count:
+        current.keys.length } }}
+      </h3>
+      <p hlmDialogDescription>{{ 'txEdit.globalHint' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      <div class="flex flex-col gap-4">
+        @if (current.mode === 'edit') {
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="tx-edit-kind"
+            >{{ 'txEdit.kind' | translate }}</label
+          >
+          <select
+            hlmInput
+            id="tx-edit-kind"
+            [ngModel]="kind()"
+            (ngModelChange)="kind.set($event)"
+          >
+            @if (current.keys.length > 1) {
+            <option value="">{{ 'txEdit.unchanged' | translate }}</option>
+            } @for (option of kinds; track option) {
+            <option [value]="option">
+              {{ 'bookings.kind.' + option | translate }}
+            </option>
+            }
+          </select>
+        </div>
+        @if (current.keys.length === 1) {
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="tx-edit-asset"
+            >{{ 'txEdit.asset' | translate }}</label
+          >
+          <input
+            hlmInput
+            id="tx-edit-asset"
+            maxlength="40"
+            [ngModel]="asset()"
+            (ngModelChange)="asset.set($event)"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="tx-edit-note"
+            >{{ 'txEdit.note' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="tx-edit-note"
+            rows="2"
+            class="w-full"
+            [attr.maxlength]="noteMax"
+            [ngModel]="note()"
+            (ngModelChange)="note.set($event)"
+          ></textarea>
+        </div>
+        } }
+        <div class="flex flex-col gap-2">
+          <label hlmLabel for="tx-edit-reason"
+            >{{ 'txEdit.reason' | translate }}</label
+          >
+          <textarea
+            hlmTextarea
+            id="tx-edit-reason"
+            rows="3"
+            class="w-full"
+            [attr.maxlength]="reasonMax"
+            [attr.aria-invalid]="reasonMissing()"
+            [placeholder]="'txEdit.reasonPlaceholder' | translate"
+            [ngModel]="reason()"
+            (ngModelChange)="reason.set($event); reasonMissing.set(false)"
+          ></textarea>
+          @if (reasonMissing()) {
+          <p class="text-destructive text-sm" role="alert">
+            {{ 'txEdit.reasonRequired' | translate }}
+          </p>
+          }
+        </div>
+        <p class="text-muted-foreground text-sm">
+          {{ 'txEdit.undoHint' | translate }}
+        </p>
+        @if (locked().length > 0) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'txEdit.locked' | translate: { projects: locked().join(', ') } }}
+        </p>
+        }
+      </div>
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [variant]="current.mode === 'hide' ? 'destructive' : 'default'"
+        [disabled]="edits.isBusy()"
+        (click)="save()"
+      >
+        {{ 'txEdit.save.' + current.mode | translate }}
+      </button>
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

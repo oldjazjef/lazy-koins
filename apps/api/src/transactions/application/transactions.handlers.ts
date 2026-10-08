@@ -550,6 +550,8 @@ export interface TransactionAiPayloadView {
   /** Exactly what is sent (F5.14). */
   readonly payload: AiReviewPayload;
   readonly count: number;
+  /** The AI consent is stored already (else the first request needs `consent: true`). */
+  readonly consentGiven: boolean;
 }
 
 async function chooseForReview(
@@ -591,14 +593,22 @@ export class TransactionAiPayloadHandler implements IQueryHandler<
   TransactionAiPayloadQuery,
   TransactionAiPayloadView
 > {
-  constructor(private readonly ledgers: TransactionLedgerService) {}
+  constructor(
+    private readonly ledgers: TransactionLedgerService,
+    private readonly gate: AiGate,
+  ) {}
 
   async execute({
     userId,
     keys,
   }: TransactionAiPayloadQuery): Promise<TransactionAiPayloadView> {
     const { payload } = await chooseForReview(this.ledgers, userId, keys);
-    return { payload, count: payload.transactions.length };
+    const settings = await this.gate.settingsOf(userId);
+    return {
+      payload,
+      count: payload.transactions.length,
+      consentGiven: settings.consentAt !== null,
+    };
   }
 }
 

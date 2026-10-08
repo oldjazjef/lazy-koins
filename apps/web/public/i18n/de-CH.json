@@ -68,7 +68,8 @@
     "myMappings": "Meine Mappings",
     "toggleSidebar": "Seitenleiste ein- oder ausblenden",
     "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen",
-    "files": "Dateien"
+    "files": "Dateien",
+    "transactions": "Transaktionen"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -1118,7 +1119,7 @@
   },
   "transactions": {
     "title": "Transaktionen",
-    "subtitle": "Alle Buchungen des Projekts und wie sie in die Steuerrechnung eingehen. Einzelne Einträge kannst du mit Begründung deaktivieren – die Originaldatei bleibt unverändert.",
+    "subtitle": "Die Buchungen des Steuerjahres und wie sie in die Steuerrechnung eingehen. Änderungen gelten global – in jedem Projekt, das die Transaktion verwendet; die Originaldatei bleibt unverändert.",
     "search": "Suchen",
     "searchPlaceholder": "Asset, Plattform, Konto, Art, Datei …",
     "platform": "Plattform",
@@ -1185,7 +1186,8 @@
       "reviewHint": "Der Assistent sieht sich nicht klassierte, doppelte und auffällige Buchungen an und schlägt Korrekturen vor – du bestätigst jede einzeln.",
       "review": "Prüfe die Transaktionen dieses Projekts auf Fehler: nicht klassierte Buchungen, Duplikate (gleiche Zeit, Menge und Asset), Überträge zwischen eigenen Konten, die als Ein- oder Auszahlung gelten, und Erträge, die keine sind. Erkläre kurz, was du findest, und schlage für jede falsche Buchung eine Korrektur vor (umklassieren, deaktivieren mit Begründung oder eine fehlende Buchung erfassen).",
       "fix": "Prüfe diese Buchung und behebe sie, falls sie falsch ist: {{quantity}} {{asset}} am {{timestamp}} auf {{platform}} / {{account}}, Art «{{kind}}» (Original-Typ «{{rawType}}»), {{origin}}, Buchungs-ID {{id}}. Steuerlich zurzeit: {{treatment}}. Sieh dir auch die Nachbarbuchungen an und schlage die passende Korrektur vor (umklassieren, deaktivieren mit Begründung oder eine fehlende Buchung erfassen) – oder sag, dass sie stimmt."
-    }
+    },
+    "showEarlier": "Frühere Buchungen einblenden, die den Bestand per 31.12. bestimmen"
   },
   "records": {
     "title": "Zugrunde liegende Buchungen",
@@ -1828,6 +1830,13 @@
       "remove": "Entfernen",
       "added": "Saldo erfasst.",
       "removed": "Saldo entfernt."
+    },
+    "year": {
+      "title": "Transaktionen {{year}} ({{count}})",
+      "empty": "Keine Transaktionen in diesem Jahr (noch nicht abgerufen?).",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "page": "Seite {{page}} von {{pages}}"
     }
   },
   "hints": {
@@ -2117,7 +2126,8 @@
     "suggestionTake": "Vorgeschlagenes Mapping übernehmen",
     "mappingImport": "Mappings werden hochgeladen",
     "libraryBulkPublish": "Mappings werden veröffentlicht",
-    "coin": "Coin für {{asset}} wird gespeichert"
+    "coin": "Coin für {{asset}} wird gespeichert",
+    "transactionAi": "AI analysiert Transaktionen"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2906,7 +2916,14 @@
       "unknownCoin": "Diesen Coin kennt der Kursanbieter nicht.",
       "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar.",
       "noKey": "Für diesen Anbieter ist kein Schlüssel gespeichert – trage ihn unter Einstellungen › Kurse ein.",
-      "pdfUnavailable": "PDFs können auf diesem Server gerade nicht erstellt werden (kein Browser für den Druck). Excel geht weiterhin."
+      "pdfUnavailable": "PDFs können auf diesem Server gerade nicht erstellt werden (kein Browser für den Druck). Excel geht weiterhin.",
+      "transactionLocked": "Ein abgeschlossenes Projekt verwendet die Transaktion – zum Ändern das Projekt wieder öffnen",
+      "useTransactionEdit": "Umklassieren und Ausblenden sind Änderungen an der Transaktion (Transaktionen), keine Projekt-Korrektur",
+      "reasonRequired": "Bitte gib eine Begründung an",
+      "invalidChanges": "Die Änderung ist ungültig",
+      "nothingToReview": "Es gibt keine Transaktion zu prüfen",
+      "noMapping": "Diese Transaktion wird nicht mit einem Mapping gelesen",
+      "badAnswer": "Die Antwort der AI war nicht verwendbar"
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -3202,5 +3219,138 @@
     "deleteFailed": "Datei konnte nicht gelöscht werden",
     "added": "Datei zum Projekt hinzugefügt",
     "addFailed": "Datei konnte nicht hinzugefügt werden"
+  },
+  "ledger": {
+    "title": "Transaktionen",
+    "subtitle": "Alle Transaktionen aus allen deinen Dateien und Wallets. Änderungen gelten in jedem Projekt, das die Transaktion verwendet – mit Begründung und rückgängig machbar.",
+    "aiAll": "Unbekannte mit AI analysieren",
+    "period": "Zeitraum",
+    "year": "Jahr {{year}}",
+    "search": "Suchen",
+    "searchPlaceholder": "Asset, Referenz, Notiz, Typ …",
+    "platform": "Plattform / Wallet",
+    "account": "Konto",
+    "asset": "Asset",
+    "all": "Alle",
+    "onlyReview": "Nur unbekannt / zu prüfen",
+    "onlyChanged": "Nur geänderte",
+    "reset": "Filter zurücksetzen",
+    "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden",
+    "selected": "{{count}} ausgewählt",
+    "selectionLocked": "Die Auswahl enthält gesperrte Transaktionen (abgeschlossenes Projekt).",
+    "acceptSelected": "{{count}} AI-Vorschläge übernehmen",
+    "clearSelection": "Auswahl aufheben",
+    "empty": "Noch keine Transaktionen. Lade unter «Dateien» Exporte deiner Plattformen hoch.",
+    "noMatch": "Keine Transaktion passt zum Filter.",
+    "toFiles": "Zu den Dateien",
+    "loadFailed": "Die Transaktionen konnten nicht geladen werden.",
+    "selectAll": "Alle auf dieser Seite auswählen",
+    "select": "{{asset}} auswählen",
+    "value": "Wert {{currency}}",
+    "status": "Status",
+    "locked": "Gesperrt",
+    "lockedTitle": "Ein abgeschlossenes Projekt verwendet diese Transaktion",
+    "hidden": "Ausgeblendet",
+    "suggested": "AI: {{kind}} ({{confidence}} %)",
+    "statusValue": {
+      "original": "Original",
+      "changed": "Geändert",
+      "aiSuggested": "Von AI vorgeschlagen"
+    },
+    "actions": {
+      "detail": "Details und Verlauf",
+      "accept": "AI-Vorschlag übernehmen",
+      "ai": "Mit AI analysieren"
+    }
+  },
+  "txEdit": {
+    "title": {
+      "edit": "{{count}} Transaktion(en) bearbeiten",
+      "hide": "{{count}} Transaktion(en) ausblenden",
+      "show": "Transaktion wieder einblenden"
+    },
+    "globalHint": "Gilt in jedem Projekt, das die Transaktion verwendet. Die Originaldatei bleibt unverändert.",
+    "kind": "Art",
+    "unchanged": "Unverändert",
+    "asset": "Asset",
+    "note": "Notiz",
+    "reason": "Begründung",
+    "reasonPlaceholder": "z. B. Umbuchung auf eigenes Konto, doppelt importiert, Staking-Ertrag",
+    "reasonRequired": "Bitte gib eine Begründung an.",
+    "undoHint": "Jede Änderung wird mit Datum und Begründung gespeichert und lässt sich rückgängig machen. Betroffene Projekte müssen neu berechnet werden.",
+    "locked": "Nicht möglich: abgeschlossene Projekte verwenden die Transaktion ({{projects}}). Zum Ändern zuerst wieder öffnen.",
+    "lockedHint": "Gesperrt: {{projects}} ist abgeschlossen – zum Ändern entsperren.",
+    "save": {
+      "edit": "Bearbeiten",
+      "hide": "Ausblenden",
+      "show": "Wieder einblenden"
+    },
+    "saved": "Transaktionen geändert",
+    "saveFailed": "Die Änderung konnte nicht gespeichert werden",
+    "undoDone": "Änderung rückgängig gemacht bzw. wiederhergestellt",
+    "undoFailed": "Das ging nicht",
+    "suggestionsDecided": "AI-Vorschläge entschieden",
+    "suggestionsFailed": "Die AI-Vorschläge konnten nicht übernommen werden",
+    "ruleAdded": "Regel ins Mapping übernommen – bei Bedarf das Mapping erneut anwenden",
+    "ruleFailed": "Die Regel konnte nicht übernommen werden",
+    "history": {
+      "hidden": "Ausgeblendet",
+      "shown": "Wieder eingeblendet",
+      "linked": "Mit Gegenbuchung verknüpft",
+      "unlinked": "Verknüpfung aufgehoben"
+    }
+  },
+  "txDetail": {
+    "title": "Transaktion",
+    "when": "Zeitpunkt (UTC)",
+    "where": "Plattform · Konto",
+    "original": "ursprünglich {{value}}",
+    "amount": "Menge",
+    "value": "Wert",
+    "rawType": "Typ der Plattform",
+    "group": "Referenz",
+    "source": "Quelle",
+    "projects": "Projekte",
+    "noProject": "In keinem Projekt",
+    "linkedWith": "Verknüpft mit {{quantity}} {{asset}} auf {{platform}} am {{date}} (beide gelten als Übertrag).",
+    "suggestion": "AI-Vorschlag: {{kind}} ({{confidence}} % sicher)",
+    "accept": "Übernehmen",
+    "dismiss": "Verwerfen",
+    "history": "Änderungsverlauf",
+    "noHistory": "Noch keine Änderung.",
+    "status": {
+      "active": "Aktiv",
+      "undone": "Rückgängig",
+      "superseded": "Überholt"
+    },
+    "fromProject": "aus {{project}}",
+    "undo": "Rückgängig",
+    "redo": "Wiederherstellen",
+    "raw": "Originalzeile der Datei",
+    "loadFailed": "Die Transaktion konnte nicht geladen werden.",
+    "rule": "Als Regel ins Mapping",
+    "link": "Mit Gegenbuchung verknüpfen",
+    "by": {
+      "user": "Von dir",
+      "ai": "AI-Vorschlag",
+      "migrated": "Aus Projekt-Korrektur"
+    }
+  },
+  "txLink": {
+    "title": "Mit Gegenbuchung verknüpfen",
+    "body": "{{quantity}} {{asset}} auf {{platform}} ist eine Verschiebung zwischen deinen eigenen Konten. Wähle die Gegenbuchung – beide gelten dann als Übertrag.",
+    "none": "Keine passende Gegenbuchung gefunden (gleiches Asset, umgekehrtes Vorzeichen, anderes Konto, ±7 Tage).",
+    "choose": "Gegenbuchung",
+    "reasonPlaceholder": "z. B. Auszahlung auf mein Ledger",
+    "save": "Verknüpfen"
+  },
+  "txAi": {
+    "title": "Mit AI analysieren",
+    "hint": "Die AI schlägt pro Transaktion eine Art mit Begründung und Sicherheit vor. Es ändert sich nichts, bis du die Vorschläge übernimmst.",
+    "count": "{{count}} Transaktion(en) werden geprüft.",
+    "sentHint": "Genau diese Daten werden an deinen AI-Anbieter gesendet – ohne Dateinamen, Adressen oder Transaktions-IDs:",
+    "consent": "Ich bin einverstanden, dass dieser Auszug an meinen AI-Anbieter gesendet wird (gilt auch für spätere AI-Anfragen, widerrufbar unter Einstellungen › AI).",
+    "run": "Analysieren",
+    "done": "{{count}} Vorschläge erhalten – sie sind als «Von AI vorgeschlagen» markiert."
   }
 }

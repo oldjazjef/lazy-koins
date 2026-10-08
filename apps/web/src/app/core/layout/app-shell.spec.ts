@@ -126,6 +126,7 @@ describe('AppShell', () => {
       '/app/dashboard',
       '/app/projects',
       '/app/files',
+      '/app/transactions',
       '/app/mappings',
       '/app/wallets',
     ]);
@@ -205,6 +206,7 @@ describe('AppShell', () => {
       '/app/dashboard',
       '/app/projects',
       '/app/files',
+      '/app/transactions',
       '/app/mappings',
       '/app/wallets',
     ]);

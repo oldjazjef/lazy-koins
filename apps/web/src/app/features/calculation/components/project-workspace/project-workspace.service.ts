@@ -24,6 +24,10 @@ import {
   type StoredRate,
 } from '../../../../core/api/calculation.types';
 import type { DataExportFilter } from '../../../../core/api/dashboard.types';
+import type {
+  TransactionRow,
+  TransactionsView,
+} from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
@@ -49,8 +53,7 @@ export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 
 /** A correction started from a figure (F9: "aus einer Position/Buchung erfassen"). */
 export interface CorrectionDraft {
-  readonly type:
-    'price_override' | 'reclassify' | 'manual_booking' | 'manual_holding';
+  readonly type: 'price_override' | 'manual_booking' | 'manual_holding';
   readonly values: Readonly<Record<string, string>>;
 }
 
@@ -537,6 +540,21 @@ export class ProjectWorkspaceService {
   }
 
   /** Opens the corrections tab with a prefilled form. */
+  /**
+   * F9.8: a booking of the result (its id) as a transaction to edit globally — its stable key
+   * and current values, from the project's transaction list.
+   */
+  async transactionOf(bookingId: string): Promise<TransactionRow | undefined> {
+    const id = this.projectId();
+    if (!id) return undefined;
+    const view = await firstValueFrom(
+      this.http.get<TransactionsView>(apiUrl(`/projects/${id}/transactions`), {
+        params: { q: bookingId, scope: 'all', limit: 200 },
+      }),
+    );
+    return view.rows.find((row) => row.id === bookingId && row.key !== null);
+  }
+
   startCorrection(draft: CorrectionDraft): void {
     this.draft.set(draft);
     this.tab.set('corrections');

@@ -40,6 +40,11 @@ const row = (over: Partial<TransactionRow> = {}): TransactionRow => ({
   correctionReason: null,
   projectFileId: 'pf1',
   fileName: 'buchungen.csv',
+  key: 'f:2',
+  status: 'original',
+  hidden: false,
+  linkedKey: null,
+  editReason: null,
   ...over,
 });
 
@@ -113,28 +118,34 @@ describe('transactionActions (the row menu)', () => {
       .filter((a) => !a.hidden)
       .map((a) => a.id);
 
-  it('offers deactivate, reclassify and the figure for a counted booking', () => {
+  it('offers details, reclassify, link, hide and the figure for a counted booking', () => {
     expect(visible(row())).toEqual([
+      'detail',
       'aiFix',
       'figure',
       'reclassify',
+      'link',
       'exclude',
     ]);
   });
 
-  it('offers "activate again" for a deactivated booking, nothing that changes on a closed project', () => {
-    const excluded = row({
+  it('offers "show again" for a hidden booking, nothing that changes on a closed project', () => {
+    const hidden = row({
       treatment: 'excluded',
-      correctionId: 'c1',
+      hidden: true,
+      status: 'changed',
       figureIds: [],
     });
-    expect(visible(excluded)).toEqual(['aiFix', 'reactivate']);
-    expect(visible(excluded, true)).toEqual([]);
-    expect(visible(row(), true)).toEqual(['figure']);
+    expect(visible(hidden)).toEqual(['detail', 'aiFix', 'reactivate']);
+    expect(visible(hidden, true)).toEqual(['detail']);
+    expect(visible(row(), true)).toEqual(['detail', 'figure']);
   });
 
-  it('never deactivates a manual booking (undo its correction instead)', () => {
-    expect(visible(row({ manual: true }))).toEqual(['aiFix', 'figure']);
+  it('never edits a manual booking (it is a correction: no key)', () => {
+    expect(visible(row({ manual: true, key: null }))).toEqual([
+      'aiFix',
+      'figure',
+    ]);
   });
 });
 
@@ -176,44 +187,15 @@ describe('ProjectTransactionsService', () => {
     await settle();
   });
 
-  it('deactivates with the reason as an exclude_booking correction, then recalculates', async () => {
+  it('asks for earlier bookings only on request (F9.6)', async () => {
     const { service, http } = await setup();
     await settle();
-    transactionsRequest(http).flush(page([row()]));
+    expect(transactionsRequest(http).request.params.get('scope')).toBeNull();
+    service.scope.set('all');
     await settle();
-
-    const done = service.exclude(row(), 'Doppelt importiert');
+    const all = transactionsRequest(http);
+    expect(all.request.params.get('scope')).toBe('all');
+    all.flush(page([]));
     await settle();
-    const created = http.expectOne('/api/projects/p1/corrections');
-    expect(created.request.body).toEqual({
-      data: { type: 'exclude_booking', bookingId: 'f:2' },
-      reason: 'Doppelt importiert',
-    });
-    created.flush({ id: 'c1' });
-    await settle();
-    http.expectOne('/api/projects/p1/calculate').flush(result);
-    await done;
-    await settle();
-    // Every change refetches what is on screen.
-    for (const r of http.match(() => true))
-      r.flush(r.request.url.endsWith('/transactions') ? page([]) : result);
-  });
-
-  it('activates a deactivated booking again by undoing its correction', async () => {
-    const { service, http } = await setup();
-    await settle();
-    transactionsRequest(http).flush(page([]));
-    await settle();
-    const done = service.reactivate(
-      row({ treatment: 'excluded', correctionId: 'c1' }),
-    );
-    await settle();
-    http.expectOne('/api/projects/p1/corrections/c1/undo').flush({ id: 'c1' });
-    await settle();
-    http.expectOne('/api/projects/p1/calculate').flush(result);
-    await done;
-    await settle();
-    for (const r of http.match(() => true))
-      r.flush(r.request.url.endsWith('/transactions') ? page([]) : result);
   });
 });

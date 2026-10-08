@@ -1,0 +1,48 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'txAi.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'txAi.hint' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (payload(); as p) {
+      <div class="flex flex-col gap-3">
+        <p class="text-sm">
+          {{ 'txAi.count' | translate: { count: p.count } }}
+        </p>
+        <p class="text-muted-foreground text-sm">
+          {{ 'txAi.sentHint' | translate }}
+        </p>
+        <pre
+          class="lk-panel max-h-80 overflow-auto px-3 py-2 text-xs break-all whitespace-pre-wrap"
+        >
+{{ json() }}</pre>
+        @if (!p.consentGiven) {
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            [checked]="consent()"
+            (change)="consent.set(!consent())"
+          />
+          <span>{{ 'txAi.consent' | translate }}</span>
+        </label>
+        } @if (runError(); as error) {
+        <lk-ai-error-panel [error]="error" [collapsible]="true" />
+        }
+      </div>
+      } @else if (loadError(); as error) {
+      <lk-ai-error-panel [error]="error" />
+      } @else {
+      <hlm-skeleton class="h-48 w-full" />
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button hlmBtn type="button" [disabled]="!canRun()" (click)="run()">
+        {{ 'txAi.run' | translate }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

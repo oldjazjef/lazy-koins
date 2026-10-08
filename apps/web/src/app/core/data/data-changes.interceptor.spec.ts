@@ -45,6 +45,34 @@ describe('changeOf — URL/method → scope and project', () => {
       `/api/projects/${P}/files/f1/active`,
       { projectId: P, scope: ['notifications', 'files'] },
     ],
+    // F9.8–F9.10: global transaction edits change every project that reads them.
+    [
+      'POST',
+      '/api/transactions/edits',
+      { projectId: null, scope: 'transactions' },
+    ],
+    [
+      'POST',
+      '/api/transactions/edits/e1/undo',
+      { projectId: null, scope: 'transactions' },
+    ],
+    [
+      'POST',
+      '/api/transactions/suggestions/accept',
+      { projectId: null, scope: 'transactions' },
+    ],
+    [
+      'POST',
+      '/api/transactions/mapping-rule',
+      { projectId: null, scope: ['mappings', 'transactions'] },
+    ],
+    ['POST', '/api/transactions/ai/suggest', { scope: 'transactions' }],
+    [
+      'POST',
+      '/api/transactions/suggestions/dismiss',
+      { scope: 'transactions' },
+    ],
+    ['POST', '/api/transactions/ai/payload', null],
     // F5.21: my files.
     ['POST', '/api/files', { scope: 'files' }],
     ['PATCH', '/api/files/f1', { projectId: null, scope: 'files' }],
