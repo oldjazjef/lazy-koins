@@ -58,12 +58,23 @@ export class SetupStateService {
   }
 }
 
+/** Pages open while the wizard is not finished: the wizard itself and the guide (F11.21). */
+const OPEN_DURING_SETUP = ['/app/setup', '/app/help'];
+
 /**
  * F11.0s: while the wizard is not finished, every page of /app opens the wizard instead (skipped
- * optional steps count as finished). If the API cannot be reached the app opens normally.
+ * optional steps count as finished) — except the help. If the API cannot be reached the app opens
+ * normally.
  */
 export const setupGuard: CanActivateChildFn = async (_route, state) => {
-  if (state.url.startsWith('/app/setup')) return true;
+  const path = state.url.split(/[?#]/)[0] ?? '';
+  if (
+    OPEN_DURING_SETUP.some(
+      (open) => path === open || path.startsWith(`${open}/`),
+    )
+  ) {
+    return true;
+  }
   const setup = inject(SetupStateService);
   const router = inject(Router);
   const view = await setup.load();

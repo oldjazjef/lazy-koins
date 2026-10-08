@@ -35,6 +35,7 @@ import {
   DateRangePicker,
 } from '../../../../shared/components/date-range-picker';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { HelpLink } from '../../../help/components/help-link';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { Paginator } from '../../../../shared/components/paginator';
 import {
@@ -122,6 +123,7 @@ function isoDay(date: Date): string {
     ChfPipe,
     QuantityPipe,
     PageHeader,
+    HelpLink,
     EmptyState,
     Paginator,
     RowActions,

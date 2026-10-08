@@ -530,6 +530,30 @@
   .lk-facts dd {
     @apply font-medium;
   }
+
+  /* Hilfe (F11.21): the table of contents, the "keine Steuerberatung" note, a jumped-to step. */
+  .lk-help-toc-link {
+    @apply text-muted-foreground hover:bg-muted hover:text-foreground flex items-start gap-2 rounded-md px-2 py-1.5 text-sm outline-hidden focus-visible:ring-2;
+  }
+
+  .lk-help-toc-link[aria-current] {
+    @apply bg-muted text-foreground font-medium;
+  }
+
+  .lk-help-toc-number {
+    @apply bg-muted text-muted-foreground inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs tabular-nums;
+  }
+
+  .lk-help-note {
+    @apply flex items-start gap-2 rounded-lg border px-4 py-3 text-sm;
+    background-color: color-mix(in oklab, var(--primary) 6%, transparent);
+    border-color: color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+
+  /* An outline, not a ring: the card's own ring utility would win over a component class. */
+  .lk-help-highlight {
+    @apply outline-primary outline-2 outline-offset-2;
+  }
 }
 
 @layer components {

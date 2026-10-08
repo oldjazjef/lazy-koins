@@ -46,6 +46,7 @@ import { NotificationCentreService } from '../notification-centre/notification-c
 import { ThemeService } from '../theme/theme.service';
 import { AppVersionService } from '../version/app-version.service';
 import {
+  HELP_NAV_ITEM,
   isNavActive,
   isNavRowActive,
   NAV_ICONS,
@@ -104,6 +105,7 @@ export class AppShell {
     navItemsFor(this.library.available(), this.admin.isAdmin()),
   );
   protected readonly userItems = USER_MENU_ITEMS;
+  protected readonly help = HELP_NAV_ITEM;
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
   protected readonly version = inject(AppVersionService);

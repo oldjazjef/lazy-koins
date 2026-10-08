@@ -32,6 +32,7 @@ import type {
   UserFile,
 } from '../../../../core/api/api.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { HelpLink } from '../../../help/components/help-link';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { paginate, Paginator } from '../../../../shared/components/paginator';
 import {
@@ -95,6 +96,7 @@ export function myFileActions(file: UserFile): RowAction<FileAction>[] {
     LkDatePipe,
     NumberPipe,
     PageHeader,
+    HelpLink,
     EmptyState,
     Paginator,
     RowActions,

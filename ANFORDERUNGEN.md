@@ -651,6 +651,21 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
   Fehlercode, Ursache) mit einem Hinweis, was zu prüfen ist, und „Details kopieren“. Der
   API-Schlüssel erscheint nie in einer Meldung oder einem Log.
 
+- **F11.21 Hilfe** (Wunsch 10.2026: „Menüpunkt für Hilfe, wo Schritt für Schritt beschrieben
+  wird, wie das Tool funktioniert“): Menüpunkt **„Hilfe“** in der Seitenleiste direkt über dem
+  Benutzermenü, auch während der Einrichtung erreichbar (der Assistent verlinkt sie; von der
+  Hilfe führt „Einrichtung fortsetzen“ zurück). Eine Anleitung in einfacher Sprache, Schritt für
+  Schritt in der Reihenfolge der Arbeit: Einrichtung, Projekt, Dateien und Mappings, Wallets,
+  Kurse, Transaktionen, Hinweise/Prüfungen, Korrekturen, Berechnung und Ergebnis, Exporte, an
+  den Treuhänder senden, Folgeprojekt, Dashboard, AI-Assistent und MCP, Desktop/Web und
+  Datenschutz – je Schritt wozu, wo in der App, nummerierte Schritte, Tipps und „Öffnen“ zur
+  passenden Seite; dazu häufige Fragen und der Hinweis „keine Steuerberatung“. Inhaltsverzeichnis
+  (breit links, schmal aufklappbar), Suche über alle Texte, „Schritt N von M“, Direktlinks
+  `/app/help#<abschnitt>` (springen und markieren), Deutsch und Englisch, hell/dunkel, ab 375 px.
+  Was nur für die Web- oder die Desktop-App gilt, erscheint nur dort und ist markiert. Ein „?“
+  in den Seitenköpfen (Projekt je Reiter, Dateien, Transaktionen) öffnet den passenden Schritt.
+  Ändert sich eine Funktion, wird die Hilfe mit angepasst.
+
 ## 12. Abnahme
 
 - **A1** Mit den echten Daten (lokal in `private/`, Sollwerte in `private/golden.json`) ergibt das Projekt 2025 dieselben Werte wie die manuelle Auswertung (±0.05 CHF); der Kraken-Saldo per 31.12.2025 stimmt exakt mit dem Kontoauszug überein.

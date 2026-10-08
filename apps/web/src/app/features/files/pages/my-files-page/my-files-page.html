@@ -2,6 +2,7 @@
   [title]="'myFiles.title' | translate"
   [subtitle]="'myFiles.subtitle' | translate"
 >
+  <lk-help-link [section]="'files'" />
   <button hlmBtn type="button" (click)="filePicker.click()">
     <ng-icon name="lucideUpload" size="16" aria-hidden="true" />
     {{ 'myFiles.upload' | translate }}

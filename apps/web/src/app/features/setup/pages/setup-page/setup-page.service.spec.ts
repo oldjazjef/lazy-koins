@@ -242,7 +242,11 @@ describe('setupGuard (F11.0s)', () => {
       setupGuard({} as never, { url } as never),
     ) as Promise<unknown>;
     await settle();
-    if (url.startsWith('/app/setup')) return result;
+    // Pages open during the wizard never ask the API.
+    if (/^\/app\/(setup|help)(?=$|[/?#])/.test(url)) {
+      http.expectNone('/api/setup');
+      return result;
+    }
     const request = http.expectOne('/api/setup');
     if (answer === 'error') {
       request.flush(null, { status: 500, statusText: 'Error' });
@@ -263,6 +267,11 @@ describe('setupGuard (F11.0s)', () => {
     );
     TestBed.resetTestingModule();
     expect(await guard('/app/setup?step=ai', view())).toBe(true);
+    // F11.21: the guide stays open during the wizard (its link from the wizard).
+    TestBed.resetTestingModule();
+    expect(await guard('/app/help#setup', view())).toBe(true);
+    TestBed.resetTestingModule();
+    expect(String(await guard('/app/helpers', view()))).toBe('/app/setup');
     TestBed.resetTestingModule();
     expect(await guard('/app/dashboard', 'error')).toBe(true);
   });
