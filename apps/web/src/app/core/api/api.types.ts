@@ -15,6 +15,8 @@ export interface Me {
   displayName: string;
   signInProvider: string;
   createdAt: string;
+  /** May use the management pages (`/app/admin`). */
+  isPlatformAdmin: boolean;
 }
 
 /** F4.1: in Arbeit / geprüft / abgeschlossen. */

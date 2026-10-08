@@ -35,6 +35,8 @@ services:
       - API_DOCS=${API_DOCS:-}
       # F5.18: the public, read-only mapping library for desktop apps; `false` switches it off.
       - LIBRARY_PUBLIC=${LIBRARY_PUBLIC:-true}
+      # Comma-separated verified e-mails that become platform admins (/app/admin).
+      - PLATFORM_ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS:-}
     volumes:
       # The database (/data/lazykoins.db, uploaded files included) and its backup copy.
       # Deleting the volume deletes the data.

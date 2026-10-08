@@ -17,6 +17,7 @@ function toUser(row: UserRow): User {
     signInProvider: row.signInProvider,
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt),
+    isPlatformAdmin: row.isPlatformAdmin,
   };
 }
 
@@ -36,9 +37,21 @@ export class UserPrismaRepository extends UserRepositoryPort {
   ): Promise<PrincipalRecord | undefined> {
     const row = await this.prisma.user.findUnique({
       where: { identityUid: uid },
-      select: { id: true },
+      select: {
+        id: true,
+        isPlatformAdmin: true,
+        blockedAt: true,
+        lastSeenAt: true,
+      },
     });
-    return row ?? undefined;
+    return row
+      ? {
+          id: row.id,
+          isPlatformAdmin: row.isPlatformAdmin,
+          blockedAt: row.blockedAt ? toIsoString(row.blockedAt) : null,
+          lastSeenAt: row.lastSeenAt ? toIsoString(row.lastSeenAt) : null,
+        }
+      : undefined;
   }
 
   async upsertFromIdentity(
@@ -55,5 +68,20 @@ export class UserPrismaRepository extends UserRepositoryPort {
       create: { identityUid: identity.uid, displayName, ...providerFields },
     });
     return toUser(row);
+  }
+
+  async grantPlatformAdmin(id: string): Promise<void> {
+    await this.prisma.user.updateMany({
+      where: { id },
+      data: { isPlatformAdmin: true },
+    });
+  }
+
+  async touchLastSeen(id: string, atIso: string): Promise<void> {
+    // updateMany: a row deleted meanwhile is no error.
+    await this.prisma.user.updateMany({
+      where: { id },
+      data: { lastSeenAt: new Date(atIso) },
+    });
   }
 }

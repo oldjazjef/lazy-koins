@@ -1,5 +1,10 @@
 // @vitest-environment node
 // Reads source and message files from disk; no DOM involved.
+import {
+  ADMIN_ACTIONS,
+  ADMIN_LIBRARY_FILTERS,
+  ADMIN_USER_FILTERS,
+} from '../api/admin.types';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -174,6 +179,20 @@ const DYNAMIC_KEYS = [
     (block) => `library.bulk.block.${block}`,
   ),
   ...WORKSPACE_TABS.map((tab) => `workspace.tabs.${tab}`),
+  // The management pages (platform admins).
+  ...ADMIN_ACTIONS.map((action) => `admin.audit.actions.${action}`),
+  ...ADMIN_USER_FILTERS.map((filter) => `admin.users.filters.${filter}`),
+  ...ADMIN_LIBRARY_FILTERS.map((filter) => `admin.library.filters.${filter}`),
+  ...['block', 'unblock', 'grant', 'revoke', 'delete'].flatMap((kind) =>
+    ['title', 'body', 'action'].map(
+      (part) => `admin.users.dialogs.${kind}.${part}`,
+    ),
+  ),
+  ...['hide', 'unhide'].flatMap((kind) =>
+    ['title', 'body', 'action'].map(
+      (part) => `admin.library.dialogs.${kind}.${part}`,
+    ),
+  ),
   ...KPI_KINDS.map((kind) => `dashboard.kpi.${kind}`),
   ...HOLDING_STATUSES.map((status) => `dashboard.holdings.status.${status}`),
   ...CARRYOVER_KINDS.map((kind) => `projects.carryover.kind.${kind}`),

@@ -172,6 +172,11 @@ describe('changeOf — URL/method → scope and project', () => {
       '/api/projects/p1/rates/coin',
       { projectId: null, scope: ['rates', 'settings'] },
     ],
+    // Platform admin: the admin pages; hiding a library entry also changes the library.
+    ['POST', '/api/admin/users/u1/block', { scope: 'admin' }],
+    ['PUT', '/api/admin/users/u1/admin', { scope: 'admin' }],
+    ['DELETE', '/api/admin/users/u1', { scope: 'admin' }],
+    ['POST', '/api/admin/library/l1/hide', { scope: ['admin', 'mappings'] }],
     ['POST', '/api/settings/library/test', null],
     ['POST', '/api/library', null],
     ['PUT', '/api/library/l1/rating', null],

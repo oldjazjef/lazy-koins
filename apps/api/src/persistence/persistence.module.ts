@@ -12,6 +12,8 @@ import { HintStateRepositoryPort } from '../files/ports/hint-state.repository.po
 import { ProjectFileRepositoryPort } from '../files/ports/project-file.repository.port';
 import { ImportMappingRepositoryPort } from '../mappings/ports/import-mapping.repository.port';
 import { LibraryRepositoryPort } from '../library/ports/library.repository.port';
+import { AdminRepositoryPort } from '../admin/ports/admin.repository.port';
+import { AdminPrismaRepository } from './prisma/repositories/admin.prisma.repository';
 import { RemoteLibrarySettingsRepositoryPort } from '../library/ports/remote-library-settings.repository.port';
 import {
   MailLogRepositoryPort,
@@ -107,6 +109,7 @@ import {
       useClass: ImportMappingPrismaRepository,
     },
     { provide: LibraryRepositoryPort, useClass: LibraryPrismaRepository },
+    { provide: AdminRepositoryPort, useClass: AdminPrismaRepository },
     {
       provide: RemoteLibrarySettingsRepositoryPort,
       useClass: RemoteLibrarySettingsPrismaRepository,
@@ -190,6 +193,7 @@ import {
     ProjectFileRepositoryPort,
     ImportMappingRepositoryPort,
     LibraryRepositoryPort,
+    AdminRepositoryPort,
     RemoteLibrarySettingsRepositoryPort,
     UserSettingsRepositoryPort,
     ProjectRateRepositoryPort,

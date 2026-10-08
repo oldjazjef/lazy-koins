@@ -10,11 +10,17 @@ export interface User {
   readonly signInProvider: string;
   readonly createdAt: string;
   readonly updatedAt: string;
+  /** May use the management pages (`/api/admin/*`). */
+  readonly isPlatformAdmin: boolean;
 }
 
 /** What the auth guard needs about the account behind a token, on every request. */
 export interface PrincipalRecord {
   readonly id: string;
+  readonly isPlatformAdmin?: boolean;
+  /** Blocked by an admin (ISO) — every request answers 403 `accountBlocked`. */
+  readonly blockedAt?: string | null;
+  readonly lastSeenAt?: string | null;
 }
 
 /** The claims a verified identity token carries — the input for creating or refreshing a user. */

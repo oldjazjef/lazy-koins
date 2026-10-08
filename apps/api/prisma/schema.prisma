@@ -58,6 +58,13 @@ model User {
   signInProvider String   @map("sign_in_provider")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
+  /// Platform admin (the management pages, /api/admin/*). CHECK in the migration.
+  isPlatformAdmin Boolean   @default(false) @map("is_platform_admin")
+  /// Blocked by an admin: every request answers 403 `accountBlocked`.
+  blockedAt       DateTime? @map("blocked_at")
+  blockedReason   String?   @map("blocked_reason")
+  /// Last authenticated request (written at most every 15 minutes).
+  lastSeenAt      DateTime? @map("last_seen_at")
 
   projects      Project[]
   storedFiles   StoredFile[]
@@ -229,6 +236,9 @@ model LibraryMapping {
   publishedAt     DateTime  @default(now()) @map("published_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
+  /// Hidden by a platform admin (moderation): gone for everyone, the author is notified.
+  hiddenAt        DateTime? @map("hidden_at")
+  hiddenReason    String?   @map("hidden_reason")
 
   author  User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
   ratings LibraryRating[]
@@ -1049,4 +1059,22 @@ model RemoteLibrarySettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("remote_library_settings")
+}
+
+/// Admin actions (append-only): who did what to which user / library entry, and why.
+model AdminAudit {
+  id          String   @id @default(uuid(7))
+  /// No FK: the entry outlives the admin's account.
+  actorId     String   @map("actor_id")
+  actorEmail  String   @map("actor_email")
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String   @map("target_id")
+  /// What the target was called then (e-mail / entry name) — the target may be gone.
+  targetLabel String   @map("target_label")
+  reason      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("admin_audit")
 }
