@@ -22,6 +22,7 @@ import { HlmCardImports } from '@lazykoins/ui/card';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import type { SetupStepId } from '../../../../core/api/setup.types';
 import { EmptyState } from '../../../../shared/components/empty-state';
+import { HelpLink } from '../../../help/components/help-link';
 import { PageHeader } from '../../../../shared/components/page-header';
 import { SetupStepComponent } from '../../components/setup-step';
 import { AdvisorStep } from '../../components/steps/advisor-step';
@@ -47,6 +48,7 @@ import { SetupPageService } from './setup-page.service';
     NgIcon,
     TranslatePipe,
     PageHeader,
+    HelpLink,
     EmptyState,
     ProfileStep,
     AdvisorStep,

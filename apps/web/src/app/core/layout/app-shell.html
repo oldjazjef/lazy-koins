@@ -102,6 +102,21 @@
 
     <div hlmSidebarFooter>
       <ul hlmSidebarMenu>
+        <!-- F11.21: "Hilfe" right above the user menu — also during the setup wizard. -->
+        <li hlmSidebarMenuItem>
+          @let helpActive = isActive(help);
+          <a
+            hlmSidebarMenuButton
+            data-help-nav
+            [routerLink]="help.path"
+            [isActive]="helpActive"
+            [attr.aria-current]="helpActive ? 'page' : null"
+            [tooltip]="help.labelKey | translate"
+          >
+            <ng-icon [name]="help.icon" aria-hidden="true" />
+            <span>{{ help.labelKey | translate }}</span>
+          </a>
+        </li>
         <li hlmSidebarMenuItem>
           <button
             hlmSidebarMenuButton

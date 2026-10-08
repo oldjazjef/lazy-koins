@@ -74,7 +74,8 @@
     "adminOverview": "Overview",
     "adminUsers": "Users",
     "adminLibrary": "Moderate library",
-    "adminAudit": "Audit log"
+    "adminAudit": "Audit log",
+    "help": "Help"
   },
   "login": {
     "tagline": "Crypto tax statement for one tax year: wealth at 31.12. and income.",
@@ -3558,6 +3559,354 @@
         "library": {
           "hide": "Entry hidden",
           "unhide": "Entry shown"
+        }
+      }
+    }
+  },
+  "help": {
+    "title": "Help",
+    "subtitle": "Step by step: how to work with lazy-koins",
+    "intro": {
+      "title": "How lazy-koins works",
+      "body": "lazy-koins turns the exports of your crypto exchanges and wallets into the tax documents of one tax year: your wealth at 31.12. and your income, as a simple and a detailed statement. The path: set up once, create one project per tax year, add files and wallets, fetch rates, check, calculate and export.",
+      "noAdvice": "lazy-koins is not tax advice. Check the results yourself or have them checked by a professional, for example your tax advisor (Treuhänder)."
+    },
+    "toc": {
+      "title": "Contents",
+      "show": "Show contents",
+      "hide": "Hide contents"
+    },
+    "search": {
+      "label": "Search the help",
+      "placeholder": "e.g. mapping, rate, PIN",
+      "results": "{{count}} of {{total}} sections",
+      "none": "Nothing found. Try another word.",
+      "clear": "Clear search"
+    },
+    "stepOf": "Step {{number}} of {{total}}",
+    "whereLabel": "Where:",
+    "stepsTitle": "How to do it",
+    "tipsTitle": "Tips",
+    "open": "Open: {{target}}",
+    "only": {
+      "web": "Web app only",
+      "desktop": "Desktop app only"
+    },
+    "context": "Help for this area",
+    "setupBanner": {
+      "text": "The setup is not finished yet.",
+      "action": "Continue setup",
+      "wizard": "Help with the setup"
+    },
+    "links": {
+      "setup": "Setup",
+      "profile": "Profile",
+      "settings": "Settings",
+      "projects": "Projects",
+      "projectsNew": "New project",
+      "files": "Files",
+      "mappings": "Mappings",
+      "library": "Library",
+      "wallets": "Wallets",
+      "walletsNew": "Add wallet",
+      "settingsWallets": "Settings › Wallets",
+      "settingsRates": "Settings › Rates",
+      "settingsAi": "Settings › AI plugin",
+      "settingsMcp": "Settings › MCP",
+      "settingsMail": "Settings › Mail",
+      "settingsStorage": "Settings › Storage location",
+      "settingsSystem": "Settings › System",
+      "transactions": "Transactions",
+      "dashboard": "Dashboard",
+      "notifications": "Notifications"
+    },
+    "sections": {
+      "setup": {
+        "title": "Setup",
+        "purpose": "On the first start, a wizard takes you through everything lazy-koins needs to work. Only the profile and, in the desktop app, the PIN are required; you can skip everything else and catch up later.",
+        "where": "The setup wizard on the first start; afterwards Profile (user menu at the bottom left) and Settings.",
+        "steps": {
+          "profile": "Profile: enter your name and canton of residence and choose the language, number and date format. Name and canton appear on the statements.",
+          "advisor": "Tax advisor (Treuhänder): name and e-mail address, in case someone helps you with your tax return.",
+          "ai": "AI plugin: enter provider, address, model and key and test the connection. Without AI everything keeps working; you then write mappings by hand.",
+          "rates": "Rates: switch on online rate lookups, optionally add a CoinGecko key and choose the price providers and their order.",
+          "wallets": "Wallets & networks: enter and test an Etherscan key (one for all EVM chains) and a Helius key (Solana). Bitcoin and Cardano need no key.",
+          "mail": "Mail: set up a mailer (SMTP) and send yourself a test mail. Without a mailer you copy the mail text yourself.",
+          "storage": "Data folder: choose the folder for the database and the original files, a sync folder works too.",
+          "pin": "PIN: 4 to 8 digits, entered twice. Required in the desktop app, optional in the web app.",
+          "summary": "Summary: see what is still missing and what that means, then “Start app” or “Create first project”."
+        },
+        "tips": {
+          "later": "Everything stays changeable later: the profile in the user menu, keys and providers under Settings.",
+          "again": "You can run the wizard again under Settings › System › “Run setup again”.",
+          "keys": "Keys and passwords are stored encrypted and never shown again – only their last characters."
+        }
+      },
+      "project": {
+        "title": "Create a project",
+        "purpose": "A project is one tax year, e.g. Taxes 2025. In it you select files and wallets, check and calculate – and finally create the statements.",
+        "where": "Projects in the main navigation.",
+        "steps": {
+          "open": "Open Projects and choose “New project”.",
+          "facts": "Enter a name and the tax year and choose the country and canton.",
+          "currency": "Choose the tax currency – CHF in Switzerland. Wealth and income are valued in it; the ESTV rate list (Kursliste) applies to CHF only.",
+          "create": "Choose “Create project”. The project opens on its General tab.",
+          "status": "On the General tab you set the status: in progress, reviewed or closed. A closed project is read-only; “Reopen” unlocks it after a confirmation."
+        },
+        "tips": {
+          "tabs": "The tabs of a project: General · Files · Hints · Wallets · Rates · Transactions · Result · Checks · Corrections · Exports.",
+          "currencyChange": "If you change the tax currency later, the app asks first, and the result has to be recalculated."
+        }
+      },
+      "files": {
+        "title": "Files and mappings",
+        "purpose": "The exports of your exchanges and wallets (CSV, XLSX, PDF) are the basis. Files belong to you, not to a project: you upload them once, and each project selects the ones it uses. Every table is read through the standard format or a mapping.",
+        "where": "Files and Mappings in the main navigation; in a project the Files tab.",
+        "steps": {
+          "upload": "Upload your exports under Files with “Upload files” or drag them onto the drop zone. Duplicates are detected.",
+          "template": "If you have no suitable export, enter the bookings in the template in the standard format (project Files tab: Excel, or CSV for bookings or holdings) and upload it.",
+          "suggestion": "If a table is not recognised, the app shows a suggestion with a preview – from your mappings, the bundled standard mappings or the library. “Take” assigns it with one click.",
+          "noMatch": "If nothing fits, “Create with AI” writes a mapping, or “New mapping” opens the editor with a template from the file. A mapping that almost fits can be changed with “Adapt as a template”.",
+          "select": "On the project Files tab, “Select files” decides which files count. The ones whose period touches the tax year are preselected.",
+          "pdf": "A PDF statement is evidence. “Read with AI” takes its holdings over as a file of their own.",
+          "deactivate": "If a file should not count in a project, choose “Deactivate” in its row (with an optional note). It stays stored and can be activated again."
+        },
+        "tips": {
+          "mappings": "A mapping applies to all your projects: a new file with the same layout is recognised automatically from then on – without AI. Under Mappings you view, edit, download, upload and share them.",
+          "library": "The library holds mappings of other users. “Take” creates your own copy; you share your own mappings with “Publish to the library” – only after a privacy review.",
+          "libraryDesktop": "The desktop app has no library of its own, but it can read the library of a lazy-koins server under Settings › Library.",
+          "remove": "“Remove from project” only takes a file out of the project. You delete it under Files – not while a closed project uses it.",
+          "guide": "Which exports you need and where to find them is shown by “Which files do I need?” on the project Files tab."
+        }
+      },
+      "wallets": {
+        "title": "Wallets",
+        "purpose": "For your wallet addresses, lazy-koins fetches movements and income straight from the network. You only enter the public address – never a seed phrase or a private key.",
+        "where": "Wallets in the main navigation; in a project the Wallets tab.",
+        "steps": {
+          "add": "Under Wallets choose “Add wallet” and enter a label, the public address (for Bitcoin also an xpub, ypub or zpub), networks and notes.",
+          "check": "“Check networks” shows on which networks the address has ever been used.",
+          "fetch": "“Fetch” loads the movements. Spam tokens are detected and hidden; “not spam” brings a token back.",
+          "project": "On the project Wallets tab you include the wallet with “Add wallet”. It becomes derived files in the standard format.",
+          "manual": "For networks without automatic fetching (e.g. Cosmos, the balance on Cardano and Polkadot), use “Add balance” in the project for the balance at a date, with a PDF receipt."
+        },
+        "tips": {
+          "secret": "If you enter a seed phrase or a private key by mistake, the app refuses it and stores nothing.",
+          "keys": "Keys for Etherscan, Helius and other services go under Settings › Wallets, each with a test."
+        }
+      },
+      "rates": {
+        "title": "Rates",
+        "purpose": "To value your assets, lazy-koins needs rates: tax values at 31.12. from the ESTV rate list (Kursliste), daily prices for income and ECB exchange rates. Every rate keeps its source.",
+        "where": "In a project the Rates tab; providers and keys under Settings › Rates.",
+        "steps": {
+          "providers": "Under Settings › Rates choose the price providers and their order (default: Binance, then CoinGecko) and test them.",
+          "refresh": "On the project Rates tab choose “Refresh rates”. The app fetches exchange rates, applies the ESTV rate list (Kursliste) and asks the providers in order for each asset.",
+          "estv": "When there is a newer version of the ESTV rate list (Kursliste), apply it with “Apply new version”.",
+          "source": "“Price source per asset” shows where each price comes from. If one is wrong, choose “Wrong price? Choose coin” and search for the right coin.",
+          "ambiguous": "If a ticker stands for several coins (e.g. OPN), the app fetches no price until you have chosen the coin. For a mere warning, “Looks right” is enough.",
+          "override": "If a price is missing or you want your own value, set it with “Override” for a date, e.g. 31.12."
+        },
+        "tips": {
+          "offline": "Without online rate lookups the app only works with stored and manually entered rates; the rate list can also be read with “Import ESTV rate list (Kursliste)”.",
+          "coinGlobal": "A chosen coin applies to every project and the dashboard. Affected projects are then out of date and need a recalculation."
+        }
+      },
+      "transactions": {
+        "title": "Transactions",
+        "purpose": "A transaction is a booking from a file or a wallet fetch. Here you see how each one counts and correct it. Changes are global – in every project that uses the transaction.",
+        "where": "Transactions in the main navigation (all of them); in a project the Transactions tab (the tax year only).",
+        "steps": {
+          "filter": "Filter by period, platform, account, asset and kind. “Only unknown / to review” shows what still needs to be classified.",
+          "detail": "Clicking a row opens the details: the original row of the file, the value and the change history.",
+          "edit": "“Edit” changes the kind, asset or note – for one or several selected transactions, always with a reason.",
+          "link": "Connect internal transfers with “Link with counter-booking”; both sides then count as a transfer.",
+          "ai": "“Review with AI” suggests a kind with a reason for each transaction. You accept suggestions one by one or together – nothing changes before that.",
+          "hide": "“Hide” takes a transaction out of the calculation, e.g. spam. Every change can be undone in the history."
+        },
+        "tips": {
+          "locked": "Transactions of a closed project are locked. To change them, reopen the project.",
+          "rule": "“Add as mapping rule” puts a classification into the mapping so future files are read the same way.",
+          "stale": "After a change the affected projects are out of date – recalculate them."
+        }
+      },
+      "checks": {
+        "title": "Hints, checks and open items",
+        "purpose": "Before you export, lazy-koins shows you what is missing or does not add up. Hints are about the files, checks and open items about the calculated result.",
+        "where": "In a project the Hints and Checks tabs.",
+        "steps": {
+          "hints": "Open the Hints tab. It lists e.g. “Missing file”, “Gap at the end” or “Unrecognised file” – with instructions on where to find the export.",
+          "solve": "Solve a hint right in its row, e.g. with “Upload file”, “Assign mapping” or “Enter holding manually”.",
+          "dismiss": "If everything is fine, choose “Mark as OK” (with a note) or “Ignore”. The status stays after a recalculation.",
+          "checks": "After the calculation, the Checks tab shows a light per check, e.g. whether the ledger balance matches the statement or whether positions lack a price.",
+          "openItems": "“Open items” lists each item with its estimated impact. Tick off the ones you settled and add a note; “Show bookings” leads to the bookings behind it."
+        },
+        "tips": {
+          "comparison": "If there is a project for the previous year, the checks compare wealth, income and positions with it.",
+          "internal": "Open items never appear on the statements for the tax authority, only in the internal review report."
+        }
+      },
+      "corrections": {
+        "title": "Corrections",
+        "purpose": "Corrections never change the original files. They are laid over the data that was read – each with a reason and before/after, and can be undone at any time.",
+        "where": "In a project the Corrections tab; many also straight from the result and the hints.",
+        "steps": {
+          "new": "On the Corrections tab, under “New correction”, choose the type: “Override rate”, “Manual booking” or “Manual holding”.",
+          "fill": "Fill in the fields, give a reason and choose “Record correction”. The result is recalculated.",
+          "history": "The history lists every correction with before/after; “Undo” and “Reapply” switch it off and on again.",
+          "fromResult": "It is quicker from the result: “Override rate”, “Enter quantity” or “Reclassify” on the row concerned."
+        },
+        "tips": {
+          "reclassify": "To reclassify or hide a booking, use Transactions – the change then applies in every project.",
+          "manualHolding": "If a statement at 31.12. is missing, enter the holding as a “Manual holding” with its date and receipt."
+        }
+      },
+      "result": {
+        "title": "Calculate and result",
+        "purpose": "The calculation gives the tax value at 31.12. and the income of the year. Every figure can be traced back to the row in the original file.",
+        "where": "In a project the Result tab.",
+        "steps": {
+          "calculate": "Choose “Recalculate”. The same data always gives the same result.",
+          "stale": "If something changed since the last calculation (a file, rate, correction or transaction), “Data changed – recalculate” appears at the top. Then recalculate.",
+          "read": "Read the wealth per platform/wallet, the income per category, the earn gap (difference method) and the one-off events.",
+          "drill": "Click an amount: you see the bookings behind it with the source file and row.",
+          "missing": "Positions without a price are marked and not in the total – fetch the price on the Rates tab or override it."
+        },
+        "tips": {
+          "auto": "The app never recalculates silently in the background. A statement recalculates first when the data is out of date.",
+          "previous": "The project for the previous year provides the opening balance for the checks."
+        }
+      },
+      "exports": {
+        "title": "Exports",
+        "purpose": "This is where the documents for your tax return are made. Statements for the tax authority only contain what is declared – no open items and no check notes.",
+        "where": "In a project the Exports tab.",
+        "steps": {
+          "statement": "Under “Create statement” create the simple and the detailed statement, each as PDF or Excel.",
+          "documents": "Under “Further tax documents” choose the securities list (Wertschriftenverzeichnis), the income and receipts list, the transactions and holdings evidence or the e-tax statement with their formats and create several at once.",
+          "internal": "The internal review report with checks, open items and positions without a price has a card of its own – it is for you only.",
+          "openItems": "If there are still open items, the app asks first: “Go to checks” takes you there, “Create anyway” creates the statement.",
+          "download": "Every statement you create stays stored with its date and can be downloaded at any time."
+        },
+        "tips": {
+          "etax": "Cantonal tax software can read the e-tax statement eCH-0196 (XML and PDF with barcodes); it exists for projects in CHF only.",
+          "data": "In the Data card you export bookings and holdings in the standard format (CSV or Excel), filtered if you like – the file can be imported again.",
+          "package": "“Download project package” saves the whole project as a ZIP, e.g. to move it to the desktop app."
+        }
+      },
+      "advisor": {
+        "title": "Send to your tax advisor (Treuhänder)",
+        "purpose": "Send the statements to your tax advisor (Treuhänder) straight from the app – or record that you handed them over another way.",
+        "where": "In a project the Exports tab, card “To tax advisor”.",
+        "steps": {
+          "prepare": "Add the name and e-mail of your tax advisor in the profile and, to send directly, a mailer under Settings › Mail.",
+          "open": "Choose “Send to tax advisor”. Recipient, subject and text come from the template and can still be changed.",
+          "attach": "Choose the attachments. The newest statement of each kind is preselected, the internal review report never is.",
+          "confirm": "Choose “Continue to review”, check everything and then “Send now”. Every mail is logged in the project.",
+          "mark": "If you handed the documents over by post or in person, choose “Mark as sent” with the date, the way and a note."
+        },
+        "tips": {
+          "noMailer": "Without a mailer you copy the text or open it with “Open in mail app” (without attachments).",
+          "changed": "If you change data or create new statements afterwards, the project shows “changed since it was sent”.",
+          "template": "You adjust the subject and text of the template under Settings › Mail."
+        }
+      },
+      "followUp": {
+        "title": "Follow-up project for the next year",
+        "purpose": "You do not start from scratch for the next tax year: the follow-up project takes over what still applies.",
+        "where": "In a project, “Create follow-up project” at the top right.",
+        "steps": {
+          "open": "Open the project of the previous year and choose “Create follow-up project”.",
+          "facts": "Check the name, year (previous year + 1), country and canton.",
+          "choose": "Choose what to take over: files (preselected when their period reaches into the new year), wallets, corrections that apply beyond the year, open items and notes.",
+          "create": "Choose “Create follow-up project” at the bottom. The previous project stays as it is; the new one shows what was taken over from where."
+        },
+        "tips": {
+          "files": "Files that are taken over are linked, not copied.",
+          "takeOver": "To bring in single files from another project, use “Take over from another project” on the project Files tab."
+        }
+      },
+      "dashboard": {
+        "title": "Dashboard and notifications",
+        "purpose": "The dashboard shows your whole crypto wealth across all projects – from the same data and rates as the tax calculation.",
+        "where": "Dashboard in the main navigation (the start page); the bell at the top right.",
+        "steps": {
+          "period": "Choose the period, e.g. “Current year”, “Last 12 months” or a tax year.",
+          "read": "Read the total value and its history, deposits, withdrawals, income, costs and fees and the allocation by asset. Clicking a figure shows the bookings behind it.",
+          "holdings": "The Holdings table shows quantity, price and market value per asset, expanded by platform if you like.",
+          "rates": "If prices are missing, fetch them with “Refresh rates”. A missing price never counts as 0; it is marked.",
+          "bell": "The bell at the top right reports e.g. failed rate lookups, files without a mapping or new open items – each with a direct action."
+        },
+        "tips": {
+          "currency": "Projects in different tax currencies are never added up; choose the currency at the top of the dashboard.",
+          "notifications": "All notifications with filters are on the Notifications page (via the bell)."
+        }
+      },
+      "assistant": {
+        "title": "AI assistant and MCP",
+        "purpose": "The assistant in the chat answers questions about your data, finds causes and suggests changes. Through MCP, external AI clients such as Claude Desktop can use the functions of the app too.",
+        "where": "The assistant at the top right (robot icon); Settings › AI plugin and Settings › MCP.",
+        "steps": {
+          "enable": "First set up the AI plugin – in the setup or under Settings › AI plugin.",
+          "open": "Open the assistant at the top right and accept the privacy notice the first time.",
+          "ask": "Ask e.g. ‘Why is the price for FLR missing?’. Answers contain links down to the booking.",
+          "confirm": "The assistant shows every change as a proposal with before/after first; it only runs after “Run”.",
+          "mcp": "For external clients, switch the server on under Settings › MCP, choose the areas you allow and create an access token. The page shows the configuration for common clients.",
+          "mcpDesktop": "In the desktop app you connect Claude Desktop through the stdio entry that the MCP page shows ready to copy."
+        },
+        "tips": {
+          "prompt": "Under Settings › AI plugin you adjust the assistant's instructions; the safety rules always apply.",
+          "data": "Only what the question needs is sent. Closed projects stay read-only for the assistant as well."
+        }
+      },
+      "privacy": {
+        "title": "Desktop app, web app and your data",
+        "purpose": "lazy-koins comes as a web app (several users, with sign-in) and as a desktop app for macOS and Windows (one user, no sign-in, data only on your computer) – with the same features.",
+        "where": "Profile (user menu), Settings › System and, in the desktop app, Settings › Storage location.",
+        "steps": {
+          "package": "Move a project as a project package: “Download project package” on the Exports tab, then “Import project” under Projects in the other app.",
+          "account": "In the profile, “Download all data” gives you all your data as an account package (without API keys); “Import account package” reads it back in.",
+          "storage": "Under Settings › Storage location you choose the data folder, also a sync folder of OneDrive, Google Drive or Proton Drive. The app then restarts.",
+          "pin": "With a PIN (Profile › PIN lock) the app locks when it opens and after a break; “Lock now” in the user menu locks it at once."
+        },
+        "tips": {
+          "privacy": "Only your account sees your data. Only what you trigger goes online: rate lookups (can be switched off), wallet fetches and – after consent and with a preview – AI requests.",
+          "sync": "Do not work on two devices at the same time with the same sync folder; the app warns about conflicts.",
+          "library": "The desktop app can read the mapping library of a server (Settings › Library); only the header row and the file name of a file leave the device for it.",
+          "web": "In the web app you sign in with e-mail and password or with Google; you sign out in the user menu."
+        }
+      }
+    },
+    "faq": {
+      "title": "Frequent questions and problems",
+      "items": {
+        "notRecognised": {
+          "question": "My file is not recognised.",
+          "answer": "On the project Files tab the file shows a mapping suggestion with “Take”. Without a suggestion, “Create with AI” or “New mapping” helps. A PDF is evidence – you get its holdings with “Read with AI”. Or you enter the data in the template in the standard format."
+        },
+        "missingFile": {
+          "question": "The app reports a missing file.",
+          "answer": "The Hints tab explains which export is missing and where you find it. If nothing is really missing, e.g. because the account is no longer used, choose “Mark as OK” with a note."
+        },
+        "wrongRate": {
+          "question": "A price is wrong or missing.",
+          "answer": "On the project Rates tab, “Price source per asset” shows the source. If it names the wrong coin, choose “Wrong price? Choose coin”. If a price is missing, choose “Refresh rates” or set it with “Override”. With online rate lookups switched off, no new prices arrive."
+        },
+        "stale": {
+          "question": "The result is out of date.",
+          "answer": "Something changed since the last calculation – a file, a rate, a correction, a transaction or a wallet. Choose “Recalculate” in the project."
+        },
+        "keyMissing": {
+          "question": "A key is missing or refused.",
+          "answer": "Add or replace it under Settings (Rates, Wallets, AI plugin or Mail) and check it with the test next to it. Stored keys are never shown – if in doubt, enter it again."
+        },
+        "readOnly": {
+          "question": "I cannot change anything.",
+          "answer": "The project is closed and therefore read-only; the transactions it uses are locked too. Open it again with “Reopen” on the General tab."
+        },
+        "pin": {
+          "question": "I forgot my PIN.",
+          "answer": "Choose “Forgot PIN?” on the lock screen. In the web app you set a new one after signing in again. In the desktop app it is reset; all stored keys are deleted, and you enter them again."
         }
       }
     }

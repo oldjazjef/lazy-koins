@@ -11,6 +11,7 @@
     [changedSince]="service.sent.value().changes.length > 0"
   />
   }
+  <lk-help-link [section]="helpSection()" />
   <a hlmBtn variant="outline" routerLink="follow-up">
     {{ 'projects.followUp.open' | translate }}
   </a>

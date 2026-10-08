@@ -218,8 +218,29 @@ describe('AppShell', () => {
   it('hides the navigation until the setup wizard is finished (F11.0s)', async () => {
     const { el } = await setup({ setupIncomplete: true });
     expect(el.querySelector('[data-main-nav]')).toBeNull();
-    // The user menu stays reachable (sign out).
+    // The user menu stays reachable (sign out), and so does the help (F11.21).
     expect(el.querySelector('[data-user-menu]')).not.toBeNull();
+    expect(
+      el
+        .querySelector('[hlmSidebarFooter] a[data-help-nav]')
+        ?.getAttribute('href'),
+    ).toBe('/app/help');
+  });
+
+  it('has "Hilfe" right above the user menu, marked while it is open (F11.21)', async () => {
+    const { el } = await setup({ url: '/app/help#files' });
+    const help = el.querySelector('[hlmSidebarFooter] a[data-help-nav]');
+    expect(help?.getAttribute('href')).toBe('/app/help');
+    expect(help?.textContent).toContain('nav.help');
+    expect(help?.getAttribute('aria-current')).toBe('page');
+    // The footer lists it before the user menu.
+    const footerItems = [
+      ...el.querySelectorAll('[hlmSidebarFooter] [hlmSidebarMenuItem]'),
+    ];
+    expect(footerItems[0]?.querySelector('[data-help-nav]')).not.toBeNull();
+    expect(footerItems[1]?.querySelector('[data-user-menu]')).not.toBeNull();
+    // Not part of the main list.
+    expect(links(el)).not.toContain('/app/help');
   });
 
   it('shows the version next to the name and the address in the user menu', async () => {

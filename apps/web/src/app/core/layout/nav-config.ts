@@ -1,5 +1,6 @@
 import {
   lucideArrowLeftRight,
+  lucideCircleHelp,
   lucideFileJson,
   lucideFiles,
   lucideFolderOpen,
@@ -113,6 +114,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
   },
 ];
 
+/**
+ * "Hilfe" (F11.21): the last entry of the sidebar, in its footer right above the user menu — so it
+ * stays reachable while the setup wizard hides the main navigation (F11.0s).
+ */
+export const HELP_NAV_ITEM: NavItem = {
+  path: '/app/help',
+  labelKey: 'nav.help',
+  icon: 'lucideCircleHelp',
+};
+
 /** The user menu in the sidebar's footer (ANFORDERUNGEN §11): Profil and Einstellungen. */
 export const USER_MENU_ITEMS: readonly NavItem[] = [
   {
@@ -147,6 +158,7 @@ export function navItemsFor(
 
 export const NAV_ICONS = {
   lucideArrowLeftRight,
+  lucideCircleHelp,
   lucideScrollText,
   lucideShieldCheck,
   lucideUsers,

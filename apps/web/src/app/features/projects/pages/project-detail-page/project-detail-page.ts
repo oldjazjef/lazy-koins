@@ -35,6 +35,8 @@ import {
 import { ProjectWorkspaceTabs } from '../../../calculation/components/project-workspace/project-workspace-tabs';
 import { ProjectWorkspaceService } from '../../../calculation/components/project-workspace/project-workspace.service';
 import { PageHeader } from '../../../../shared/components/page-header';
+import { HelpLink } from '../../../help/components/help-link';
+import { HELP_SECTION_FOR_TAB } from '../../../help/help-content';
 import { zodValidator } from '../../../../shared/forms/zod-validator';
 import { ProjectSentBadge } from '../../components/project-sent-badge';
 import { ProjectStatusBadge } from '../../components/project-status-badge';
@@ -62,6 +64,7 @@ type Confirm = 'reopen' | 'delete' | 'currency';
 @Component({
   selector: 'lk-project-detail-page',
   imports: [
+    HelpLink,
     LkDatePipe,
     ReactiveFormsModule,
     RouterLink,
@@ -88,6 +91,10 @@ type Confirm = 'reopen' | 'delete' | 'currency';
 export class ProjectDetailPage {
   protected readonly service = inject(ProjectDetailPageService);
   protected readonly workspace = inject(ProjectWorkspaceService);
+  /** F11.21: the "?" in the header opens the guide at the open tab's step. */
+  protected readonly helpSection = computed(
+    () => HELP_SECTION_FOR_TAB[this.workspace.tab()],
+  );
   protected readonly statuses = PROJECT_STATUSES;
 
   /** Route param `:id` — no default, absent params bind as `undefined` (see CLAUDE.md). */
