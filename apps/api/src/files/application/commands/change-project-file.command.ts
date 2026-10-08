@@ -13,6 +13,7 @@ import {
   assertOpen,
   loadOwnProjectFile,
   orUnreadable,
+  projectsReading,
   readableOf,
 } from '../file-access';
 import { FileAnalysisService } from '../file-analysis.service';
@@ -64,6 +65,8 @@ export class ChangeProjectFileHandler implements ICommandHandler<
       projectFileId,
     );
     assertOpen(project);
+    // F5.21: the reading is the file's — every project using it follows; none may be closed.
+    const using = await projectsReading(this.projects, this.files, file.fileId);
 
     let next;
     if (assignment.mode === 'evidenceOnly') {
@@ -91,8 +94,11 @@ export class ChangeProjectFileHandler implements ICommandHandler<
     }
     const updated = await this.files.updateAnalysis(file.id, next);
     if (!updated) throw new NotFoundException('No such file in this project');
-    // A file that got its mapping resolves its "Datei ohne Mapping" by itself (F11.11).
-    await this.projectNotifications?.filesChanged(userId, project.id);
+    // A file that got its mapping resolves its "Datei ohne Mapping" by itself (F11.11) — in
+    // every project that selects it.
+    for (const user of using) {
+      await this.projectNotifications?.filesChanged(userId, user.id);
+    }
     return updated;
   }
 }

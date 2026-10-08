@@ -138,11 +138,33 @@ model StoredFile {
   /// The name of the first upload; the download uses it.
   originalName String   @map("original_name")
   createdAt    DateTime @default(now()) @map("created_at")
+  /// F5.21: how the file is read is global — one reading per file, every project that selects it
+  /// uses it. standard | mapped | needs_mapping | evidence_only. CHECK in the migration.
+  status       String   @default("needs_mapping")
+  /// `standard-v1` or `mapping:<id>` — the importer that read it; null otherwise.
+  importerId   String?  @map("importer_id")
+  mappingId    String?  @map("mapping_id")
+  /// The platform(s) the records name, comma-separated in order of appearance (F5.25: the
+  /// mapping's platform for a read file without records).
+  platform     String?
+  /// ISO dates over bookings and balances (F5.5, over several years).
+  periodFrom   String?  @map("period_from")
+  periodTo     String?  @map("period_to")
+  bookingCount Int      @default(0) @map("booking_count")
+  holdingCount Int      @default(0) @map("holding_count")
+  errorCount   Int      @default(0) @map("error_count")
+  /// JSON array of coverage entries per platform/account (F5.8).
+  coverage     String   @default("[]")
+  /// Where the bytes came from (F5.21): `uploaded`, `derived_from:<stored file id>` (a standard
+  /// CSV the AI read from a PDF) or `wallet:<wallet id>` (a wallet fetch). CHECK in the migration.
+  source       String   @default("uploaded")
 
-  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  mapping      ImportMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
   projectFiles ProjectFile[]
 
   @@unique([ownerId, sha256])
+  @@index([mappingId])
   @@map("stored_file")
 }
 
@@ -172,7 +194,7 @@ model ImportMapping {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   owner User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  files ProjectFile[]
+  files StoredFile[]
 
   @@index([ownerId])
   @@index([ownerId, libraryId])
@@ -236,24 +258,9 @@ model ProjectFile {
   projectId    String   @map("project_id")
   fileId       String   @map("file_id")
   displayName  String   @map("display_name")
-  /// standard | mapped | needs_mapping | evidence_only. CHECK in the migration.
-  status       String
-  /// `standard-v1` or `mapping:<id>` — the importer that read it; null otherwise.
-  importerId   String?  @map("importer_id")
-  mappingId    String?  @map("mapping_id")
-  /// The platform(s) the records name, comma-separated in order of appearance.
-  platform     String?
-  /// ISO dates over bookings and balances (F5.5).
-  periodFrom   String?  @map("period_from")
-  periodTo     String?  @map("period_to")
-  bookingCount Int      @default(0) @map("booking_count")
-  holdingCount Int      @default(0) @map("holding_count")
-  errorCount   Int      @default(0) @map("error_count")
-  /// JSON array of coverage entries per platform/account (F5.8).
-  coverage     String   @default("[]")
-  /// `uploaded`, `from_project:<id>` when the bytes were already in another project (F4.4), or
-  /// `derived_from:<project file id>` for a standard-format file the AI converted from a PDF, or
-  /// `wallet:<wallet id>` for the standard-format records a wallet fetch derived (F6.3).
+  /// How the file came into THIS project (F5.5 "Herkunft"): `uploaded`, `selected` (F5.22, picked
+  /// from the global files), `from_project:<id>` (F4.4), `derived_from:<project file id>` or
+  /// `wallet:<wallet id>`. The reading itself is the stored file's (F5.21).
   origin       String   @default("uploaded")
   addedAt      DateTime @default(now()) @map("added_at")
   /// F5.7a: set = deactivated in THIS project — ignored by calculation, dashboard, hints,
@@ -262,15 +269,13 @@ model ProjectFile {
   /// Optional reason for the deactivation (≤ 500, only with `disabled_at`). CHECK in the migration.
   disabledNote String?   @map("disabled_note")
 
-  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  file    StoredFile     @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  mapping ImportMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    StoredFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   walletEvidence WalletManualBalance[]
 
   @@unique([projectId, fileId])
   @@index([fileId])
-  @@index([mappingId])
   @@map("project_file")
 }
 

@@ -68,18 +68,19 @@ async function setup() {
           mediaType: 'text/csv',
           kind: 'csv',
           originalName: displayName,
+          source: 'uploaded',
+          analysis: mappingId
+            ? {
+                ...NOT_ANALYSED,
+                status: 'mapped',
+                importerId: `mapping:${mappingId}`,
+                mappingId,
+              }
+            : NOT_ANALYSED,
         },
       },
       displayName,
       origin: 'uploaded',
-      analysis: mappingId
-        ? {
-            ...NOT_ANALYSED,
-            status: 'mapped',
-            importerId: `mapping:${mappingId}`,
-            mappingId,
-          }
-        : NOT_ANALYSED,
     });
     if (!('created' in result)) throw new Error('expected a new entry');
     return result.created;

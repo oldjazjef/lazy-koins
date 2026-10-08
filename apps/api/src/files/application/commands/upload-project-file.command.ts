@@ -26,7 +26,10 @@ import {
   sniffFileKind,
   UPLOADED,
 } from '../../domain/project-file';
-import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
+import {
+  type AddProjectFileInput,
+  ProjectFileRepositoryPort,
+} from '../../ports/project-file.repository.port';
 import { assertOpen, orUnreadable } from '../file-access';
 import { FileAnalysisService } from '../file-analysis.service';
 
@@ -131,9 +134,10 @@ export class UploadProjectFileHandler implements ICommandHandler<
 }
 
 /**
- * Stores the bytes (or reuses the owner's stored copy), reads them with the engine and adds them
- * to the project — shared by the upload and by files the AI derives from a PDF (`origin` then
- * names the source). Same bytes already in this project → `DuplicateFileException`.
+ * Stores the bytes with their reading (or reuses the owner's stored copy, which keeps its
+ * reading — F5.21) and adds them to the project — shared by the upload, files the AI derives from
+ * a PDF and wallet fetches (`origin` / `source` then name where they came from). Same bytes
+ * already in this project → `DuplicateFileException`.
  */
 export async function storeInProject(
   files: ProjectFileRepositoryPort,
@@ -145,6 +149,8 @@ export async function storeInProject(
     readonly kind: FileKind;
     readonly bytes: Uint8Array;
     readonly origin?: string;
+    /** The stored file's `source` when it is new (default `uploaded`). */
+    readonly source?: string;
   },
 ): Promise<ProjectFile> {
   const { userId, projectId, displayName, kind, bytes } = input;
@@ -155,9 +161,27 @@ export async function storeInProject(
     if (existing) throw new DuplicateFileException(existing);
   }
 
-  const fileAnalysis = await orUnreadable(() =>
-    analysis.analyse(userId, { sha256, name: displayName, kind, bytes }),
-  );
+  // F5.21: a file the owner already has keeps its reading; only new bytes are read here.
+  const target: AddProjectFileInput['stored'] = stored
+    ? { existingId: stored.id }
+    : {
+        create: {
+          sha256,
+          bytes,
+          mediaType: MEDIA_TYPES[kind],
+          kind,
+          originalName: displayName,
+          analysis: await orUnreadable(() =>
+            analysis.analyse(userId, {
+              sha256,
+              name: displayName,
+              kind,
+              bytes,
+            }),
+          ),
+          source: input.source ?? UPLOADED,
+        },
+      };
   const otherProject =
     stored && input.origin === undefined
       ? await files.firstOtherProjectUsing(stored.id, projectId)
@@ -166,22 +190,11 @@ export async function storeInProject(
   const result = await files.add({
     ownerId: userId,
     projectId,
-    stored: stored
-      ? { existingId: stored.id }
-      : {
-          create: {
-            sha256,
-            bytes,
-            mediaType: MEDIA_TYPES[kind],
-            kind,
-            originalName: displayName,
-          },
-        },
+    stored: target,
     displayName,
     origin:
       input.origin ??
       (otherProject ? `${FROM_PROJECT}${otherProject}` : UPLOADED),
-    analysis: fileAnalysis,
   });
   if ('duplicate' in result) throw new DuplicateFileException(result.duplicate);
   return result.created;

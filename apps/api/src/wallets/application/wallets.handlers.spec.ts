@@ -286,7 +286,9 @@ describe('wallets (F6.1, F6.3, F6.4, F6.6) with the fake chains', () => {
     ).toBe(1);
     const [file] = walletFiles(t, wallet.id);
     expect(file?.displayName).toBe('Ledger.wallet-buchungen.csv');
-    expect(file?.analysis.status).toBe('standard');
+    expect(t.files.stored.get(file?.fileId ?? '')?.analysis.status).toBe(
+      'standard',
+    );
 
     const view = await t.calculate.execute(
       new CalculateProjectCommand('anna', t.project.id),

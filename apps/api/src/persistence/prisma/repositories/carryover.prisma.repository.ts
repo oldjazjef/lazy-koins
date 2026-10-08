@@ -175,6 +175,10 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
             Number(b.derivedFromKey !== undefined),
         );
         for (const file of ordered) {
+          const mappingId = file.mappingKey
+            ? need(mappingIds, file.mappingKey, 'mapping')
+            : null;
+          const analysis = file.analysis;
           let storedId: string;
           if ('existingId' in file.stored) storedId = file.stored.existingId;
           else {
@@ -187,6 +191,8 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
               },
               select: { id: true },
             });
+            // F5.21: a file the owner already has keeps its reading; a new one takes the
+            // bundle's (with the bundle's mapping).
             if (existing) storedId = existing.id;
             else {
               const create = file.stored.create;
@@ -200,6 +206,21 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
                     mediaType: create.mediaType,
                     kind: create.kind,
                     originalName: create.originalName,
+                    status:
+                      analysis.status === 'mapped' && !mappingId
+                        ? 'needs_mapping'
+                        : analysis.status,
+                    importerId: mappingId
+                      ? `mapping:${mappingId}`
+                      : analysis.importerId,
+                    mappingId: analysis.status === 'mapped' ? mappingId : null,
+                    platform: analysis.platform,
+                    periodFrom: analysis.period?.from ?? null,
+                    periodTo: analysis.period?.to ?? null,
+                    bookingCount: analysis.bookingCount,
+                    holdingCount: analysis.holdingCount,
+                    errorCount: analysis.errorCount,
+                    coverage: JSON.stringify(analysis.coverage),
                   },
                   select: { id: true },
                 })
@@ -215,10 +236,6 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
             fileIds.set(file.key, already.id);
             continue;
           }
-          const mappingId = file.mappingKey
-            ? need(mappingIds, file.mappingKey, 'mapping')
-            : null;
-          const analysis = file.analysis;
           const row = await tx.projectFile.create({
             data: {
               projectId,
@@ -227,21 +244,6 @@ export class ProjectBundlePrismaRepository extends ProjectBundleRepositoryPort {
               origin: file.derivedFromKey
                 ? `${DERIVED_FROM}${need(fileIds, file.derivedFromKey, 'file')}`
                 : file.origin,
-              status:
-                analysis.status === 'mapped' && !mappingId
-                  ? 'needs_mapping'
-                  : analysis.status,
-              importerId: mappingId
-                ? `mapping:${mappingId}`
-                : analysis.importerId,
-              mappingId: analysis.status === 'mapped' ? mappingId : null,
-              platform: analysis.platform,
-              periodFrom: analysis.period?.from ?? null,
-              periodTo: analysis.period?.to ?? null,
-              bookingCount: analysis.bookingCount,
-              holdingCount: analysis.holdingCount,
-              errorCount: analysis.errorCount,
-              coverage: JSON.stringify(analysis.coverage),
               // F5.7a: a package keeps a file deactivated; carry-over links active.
               disabledAt: file.deactivation
                 ? new Date(file.deactivation.at)

@@ -352,11 +352,12 @@ describe('mail_log and project_sent_state', () => {
           mediaType: 'text/csv',
           kind: 'csv',
           originalName: 'x.csv',
+          source: 'uploaded',
+          analysis: NOT_ANALYSED,
         },
       },
       displayName: 'x.csv',
       origin: 'uploaded',
-      analysis: NOT_ANALYSED,
     });
 
     const facts = await sent.changeFacts([project.id, quiet.id]);

@@ -85,8 +85,8 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
   }
 
   /**
-   * Deletes the project with its file entries, and — in the same transaction — every stored file
-   * of the owner that no project references any more (F5.7).
+   * Deletes the project with its file entries. The user's files stay (F5.23: they are global and
+   * only deleted in the files area).
    */
   async delete(id: string): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
@@ -97,9 +97,6 @@ export class ProjectPrismaRepository extends ProjectRepositoryPort {
       if (!project) return false;
       await tx.projectFile.deleteMany({ where: { projectId: id } });
       await tx.project.delete({ where: { id } });
-      await tx.storedFile.deleteMany({
-        where: { ownerId: project.ownerId, projectFiles: { none: {} } },
-      });
       return true;
     });
   }
