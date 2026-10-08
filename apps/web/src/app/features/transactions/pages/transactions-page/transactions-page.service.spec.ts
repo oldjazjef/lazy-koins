@@ -183,7 +183,7 @@ describe('global edits (F9.8, F9.9)', () => {
 });
 
 describe('row menu and counter-bookings', () => {
-  it('hides every change while a closed project locks the transaction', () => {
+  it('hides every change while a closed project locks the transaction — the AI review stays', () => {
     const visible = (t: Transaction) =>
       ledgerActions(t)
         .filter((a) => !a.hidden)
@@ -203,7 +203,9 @@ describe('row menu and counter-bookings', () => {
           ],
         }),
       ),
-    ).toEqual(['detail']);
+      // User request 08.10.2026: single transactions can be reviewed with AI, also locked ones
+      // (it only suggests; accepting stays refused).
+    ).toEqual(['detail', 'ai']);
   });
 
   it('finds counter-bookings: same asset, opposite sign, another account, ±7 days, nearest first', () => {

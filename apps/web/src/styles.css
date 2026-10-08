@@ -258,6 +258,41 @@
   }
 
   /*
+   * Fill-page mode (user rule, 08.10.2026: "Die Tabelle soll den Rest der Seite an Höhe einnehmen
+   * und das einzige Element sein, das scrollt"): a page whose host has `lk-fill-page` fills the
+   * content area and only its `lk-fill-scroll` region scrolls (table head stays visible). On small
+   * or low screens the whole page scrolls as everywhere else, so nothing is cut off.
+   */
+  @media (min-width: 48rem) and (min-height: 40rem) {
+    .lk-scroll-area:has(.lk-fill-page) {
+      overflow-y: hidden;
+    }
+
+    .lk-scroll-area:has(.lk-fill-page) .lk-scroll-content,
+    .lk-scroll-area:has(.lk-fill-page) .lk-page-column {
+      @apply flex min-h-0 flex-col;
+    }
+
+    .lk-fill-page {
+      @apply flex min-h-0 flex-1 flex-col;
+    }
+
+    .lk-fill-page > * {
+      @apply shrink-0;
+    }
+
+    .lk-fill-page > .lk-fill-scroll {
+      @apply min-h-48 shrink overflow-auto;
+      flex-grow: 1;
+      flex-basis: 0%;
+    }
+
+    .lk-fill-scroll thead th {
+      @apply bg-card sticky top-0 z-10;
+    }
+  }
+
+  /*
    * Fixed-layout tables: a header never runs into the next column — it is cut with "…" (the full
    * text stays readable in the column's cells and via the tooltip pattern in cells).
    */
