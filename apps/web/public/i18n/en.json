@@ -1559,7 +1559,9 @@
       "income_list_pdf": "Income and receipts list (PDF)",
       "income_list_xlsx": "Income and receipts list (Excel)",
       "evidence_pdf": "Transactions and holdings evidence (PDF)",
-      "evidence_xlsx": "Transactions and holdings evidence (Excel)"
+      "evidence_xlsx": "Transactions and holdings evidence (Excel)",
+      "etax_pdf": "E-tax statement eCH-0196 (PDF)",
+      "etax_xml": "E-tax statement eCH-0196 (XML)"
     },
     "fields": {
       "createdAt": "Created",
@@ -1605,7 +1607,8 @@
       "format": {
         "pdf": "PDF",
         "xlsx": "Excel",
-        "csv": "CSV"
+        "csv": "CSV",
+        "xml": "XML"
       },
       "securities": {
         "title": "Statement of securities",
@@ -1618,6 +1621,11 @@
       "evidence": {
         "title": "Transactions and holdings evidence",
         "description": "Every transaction of the year with its changes and reason, holdings at 31 December with price, source and evidence – for questions from the tax office."
+      },
+      "etax": {
+        "title": "E-tax statement (eCH-0196)",
+        "description": "Securities list after the Swiss standard eCH-0196 (version 2.2) for import into the cantonal tax software: the PDF with barcode sheets to scan or enclose, the XML for a direct import. Cryptocurrencies are mapped as currencies without ISIN; the limitations are listed in the document.",
+        "needsChf": "Only for projects in CHF: the standard has tax values in francs only."
       }
     }
   },
@@ -2953,7 +2961,8 @@
       "invalidChanges": "The change is not valid",
       "nothingToReview": "There is no transaction to review",
       "noMapping": "This transaction is not read with a mapping",
-      "badAnswer": "The AI answer could not be used"
+      "badAnswer": "The AI answer could not be used",
+      "eTaxNeedsChf": "The e-tax statement is only available for projects in CHF."
     },
     "status": {
       "unreachable": "The server cannot be reached.",

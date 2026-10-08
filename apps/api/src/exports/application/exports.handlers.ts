@@ -14,6 +14,7 @@ import {
 import {
   CORRECTION_SOURCE_PREFIX,
   countryRules,
+  parseDecimal,
   isCorrectionRecord,
   missingFileHints,
   rulesInLanguage,
@@ -32,6 +33,11 @@ import {
 import { projectTransactionRows } from '../../calculation/application/transactions.handlers';
 import { TransactionEditRepositoryPort } from '../../transactions/ports/transaction-edit.repository.port';
 import { originWalletId } from '../../wallets/domain/wallet';
+import { ESTV_SYMBOL_ALIASES } from '../../rates/domain/estv';
+import { RATE_ALIASES } from '../../rates/domain/project-rate';
+import { EstvKurslisteRepositoryPort } from '../../rates/ports/estv.port';
+import { eTaxPdfHtml, eTaxXml } from './e-tax/e-tax-document';
+import { type ETaxData, eTaxClientNumber } from './e-tax/e-tax-statement';
 import { readsRecords } from '../../files/domain/project-file';
 import { HintStateRepositoryPort } from '../../files/ports/hint-state.repository.port';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
@@ -97,7 +103,53 @@ export class ExportDataService {
     private readonly hintStates: HintStateRepositoryPort,
     private readonly corrections: CorrectionRepositoryPort,
     private readonly transactionEdits: TransactionEditRepositoryPort,
+    @Optional() private readonly estv?: EstvKurslisteRepositoryPort,
   ) {}
+
+  /**
+   * F10.10: the pseudonymous customer number and, per asset valued from the ESTV Kursliste, the
+   * entry's name and valor number (same ticker or alias and the same value as applied, F7.4a).
+   */
+  async eTax(project: Project, snapshot: Snapshot): Promise<ETaxData> {
+    const estvPositions = snapshot.result.positions.filter(
+      (p) => p.status === 'ok' && p.priceOrigin === 'estv' && p.priceChf,
+    );
+    const list =
+      estvPositions.length > 0 && this.estv
+        ? (await this.estv.listRates(project.taxYear)).filter(
+            (r) => r.kind !== 'fx',
+          )
+        : [];
+    const titles: Record<string, { name: string; valorNumber: string | null }> =
+      {};
+    for (const position of estvPositions) {
+      const asset = position.asset.toUpperCase();
+      const symbols = new Set(
+        [
+          asset,
+          ...(ESTV_SYMBOL_ALIASES[asset] ?? []),
+          ...(RATE_ALIASES[asset] ?? []),
+        ].map((s) => s.toUpperCase()),
+      );
+      const price = parseDecimal(position.priceChf ?? '0');
+      const fitting = list.filter(
+        (r) =>
+          symbols.has(r.symbol.toUpperCase()) &&
+          parseDecimal(r.value).equals(price),
+      );
+      const distinct = new Set(
+        fitting.map((r) => `${r.valorNumber ?? ''}|${r.name}`),
+      );
+      const [first] = fitting;
+      if (first && distinct.size === 1) {
+        titles[position.asset] = {
+          name: first.name,
+          valorNumber: first.valorNumber,
+        };
+      }
+    }
+    return { clientNumber: eTaxClientNumber(project.id), titles };
+  }
 
   /**
    * F10.11–F10.13: where every record comes from (file + row, a wallet's tx, a correction), what
@@ -282,6 +334,9 @@ const DOCUMENT_KINDS: ReadonlySet<ExportKind> = new Set([
   'evidence_xlsx',
 ]);
 
+/** F10.10: the E-Steuerauszug (CHF only). */
+const ETAX_KINDS: ReadonlySet<ExportKind> = new Set(['etax_pdf', 'etax_xml']);
+
 const PDF_HTML: Readonly<
   Record<Extract<ExportKind, `${string}_pdf`>, (data: ExportData) => string>
 > = {
@@ -291,6 +346,7 @@ const PDF_HTML: Readonly<
   securities_pdf: securitiesHtml,
   income_list_pdf: incomeListHtml,
   evidence_pdf: evidenceHtml,
+  etax_pdf: eTaxPdfHtml,
 };
 
 const VARIANTS: Readonly<Record<ExportKind, ExportVariant>> = {
@@ -305,6 +361,8 @@ const VARIANTS: Readonly<Record<ExportKind, ExportVariant>> = {
   income_list_xlsx: 'ertragsliste',
   evidence_pdf: 'nachweis',
   evidence_xlsx: 'nachweis',
+  etax_pdf: 'e-steuerauszug',
+  etax_xml: 'e-steuerauszug',
   internal_report_pdf: 'pruefbericht-intern',
   internal_report_xlsx: 'pruefbericht-intern',
 };
@@ -364,6 +422,12 @@ export class CreateExportHandler implements ICommandHandler<
     kind: ExportKind,
   ): Promise<ProjectExportMeta> {
     const snapshot = await this.data.currentSnapshot(userId, project);
+    if (ETAX_KINDS.has(kind) && snapshot.result.currency !== 'CHF') {
+      throw conflict(
+        'eTaxNeedsChf',
+        'The E-Steuerauszug (eCH-0196) is in CHF: the project has another tax currency',
+      );
+    }
     const base = await this.data.build(
       userId,
       project,
@@ -372,7 +436,9 @@ export class CreateExportHandler implements ICommandHandler<
     );
     const data: ExportData = DOCUMENT_KINDS.has(kind)
       ? { ...base, documents: await this.data.documents(project, snapshot) }
-      : base;
+      : ETAX_KINDS.has(kind)
+        ? { ...base, eTax: await this.data.eTax(project, snapshot) }
+        : base;
     const bytes = await this.render(kind, data);
     return this.exports.create(project.id, {
       kind,
@@ -397,6 +463,8 @@ export class CreateExportHandler implements ICommandHandler<
         return incomeListWorkbook(data);
       case 'evidence_xlsx':
         return evidenceWorkbook(data);
+      case 'etax_xml':
+        return new TextEncoder().encode(eTaxXml(data));
       case 'simple_xlsx':
         return simpleWorkbook(data);
       case 'detailed_xlsx':
@@ -409,6 +477,7 @@ export class CreateExportHandler implements ICommandHandler<
       case 'securities_pdf':
       case 'income_list_pdf':
       case 'evidence_pdf':
+      case 'etax_pdf':
         try {
           return await this.pdf.render(PDF_HTML[kind](data));
         } catch (error) {

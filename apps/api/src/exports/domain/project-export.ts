@@ -13,7 +13,9 @@
  * - income_list: Ertrags- und Belegliste — every taxable inflow with price, value and origin,
  *   sums per category and asset, the Earn gap explained — PDF and Excel;
  * - evidence: Transaktions- und Bestandesnachweis — the year's transactions with their changes,
- *   the balances at 31.12. with price, source and evidence — PDF and Excel.
+ *   the balances at 31.12. with price, source and evidence — PDF and Excel;
+ * - etax: E-Steuerauszug after eCH-0196 2.2 (F10.10) — the XML for the cantonal tax software and
+ *   the PDF with readable pages and the PDF417 barcode sheets that carry the same XML.
  *
  * Internal (F10.2a): the check report (lights, open items with ticks and notes, positions without
  * price, Earn-gap warnings, missing-file hints) — for the user and the Treuhänder, never attached
@@ -31,6 +33,8 @@ export const STATEMENT_KINDS = [
   'income_list_xlsx',
   'evidence_pdf',
   'evidence_xlsx',
+  'etax_pdf',
+  'etax_xml',
 ] as const;
 export const INTERNAL_KINDS = [
   'internal_report_pdf',
@@ -48,18 +52,27 @@ export const XLSX_MEDIA_TYPE =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 export const PDF_MEDIA_TYPE = 'application/pdf';
 export const CSV_MEDIA_TYPE = 'text/csv; charset=utf-8';
-
-export function mediaTypeOf(kind: ExportKind): string {
-  return kind.endsWith('_pdf')
-    ? PDF_MEDIA_TYPE
-    : kind.endsWith('_csv')
-      ? CSV_MEDIA_TYPE
-      : XLSX_MEDIA_TYPE;
-}
+export const XML_MEDIA_TYPE = 'application/xml';
 
 /** The file extension of a kind. */
-export function extensionOf(kind: ExportKind): 'pdf' | 'xlsx' | 'csv' {
-  return kind.endsWith('_pdf') ? 'pdf' : kind.endsWith('_csv') ? 'csv' : 'xlsx';
+export function extensionOf(kind: ExportKind): 'pdf' | 'xlsx' | 'csv' | 'xml' {
+  return kind.endsWith('_pdf')
+    ? 'pdf'
+    : kind.endsWith('_csv')
+      ? 'csv'
+      : kind.endsWith('_xml')
+        ? 'xml'
+        : 'xlsx';
+}
+
+export function mediaTypeOf(kind: ExportKind): string {
+  const media = {
+    pdf: PDF_MEDIA_TYPE,
+    csv: CSV_MEDIA_TYPE,
+    xml: XML_MEDIA_TYPE,
+    xlsx: XLSX_MEDIA_TYPE,
+  } as const;
+  return media[extensionOf(kind)];
 }
 
 export interface ProjectExportMeta {

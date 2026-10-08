@@ -1274,6 +1274,22 @@ fetch / manual with its receipt) and the year's transactions via `projectTransac
   `ProjectWorkspaceService.requestExports(kinds)` (asks once while open items exist, then one
   after the other). Tool `create_export` takes the new kinds.
 
+**E-Steuerauszug eCH-0196 (F10.10, research + decisions in `docs/ECH-0196.md`)** — kinds
+`etax_xml` (`application/xml`) and `etax_pdf` in `STATEMENT_KINDS` (migration
+`20261010130000_e_tax_statement` widens the kind CHECK again), CHF projects only (409
+`eTaxNeedsChf`; the web card is disabled with a note). Version **2.2.0** (namespace
+`…/eCH-0196/2`, `minorVersion="22"`). `exports/application/e-tax/`: `e-tax-statement.ts` (pure
+model + XML: one depot per platform/account, one security per asset, `securityCategory="CURRNOTE"`
+without ISIN, `CURRNOTE.CURRENCY` for fiat, Kursliste name + valor via `ExportDataService.eTax()`
+(same ticker/alias and same value), `taxValue` only for a holding > 0 with `kursliste`/`undefined`
+flags, income as payments with `grossRevenueB`, Earn gap on 31.12., no `stock`, totals rounded
+once (< 100 → 3, else 2 decimals, half up); institution = lazy-koins (no LEI/UID), id
+`CH00000<LK+12 hex><year>123101`), `pdf417.ts` (Macro PDF417 port of pdf417-py, MIT;
+`pdf417-patterns.ts` generated), `code128.ts`, `png.ts`, `e-tax-html.ts` (readable pages with
+page barcode 197, then barcode sheets 196 with ≤ 6 segments of 13 × 35 at EC 4, 450 bytes each,
+ZLIB). Tests: XSD validation with `xmllint-wasm` against `e-tax/schema/` (the official XSDs, local
+imports) and a read-back of the barcode images (`e-tax/testing/barcode-reader.ts`).
+
 ## Price sources (F7.4b)
 
 User request (07.10.2026): CoinMarketCap as a selectable price provider, plus other **free**

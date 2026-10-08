@@ -84,6 +84,7 @@ export interface ExportTexts {
     readonly wertschriften: string;
     readonly ertragsliste: string;
     readonly nachweis: string;
+    readonly 'e-steuerauszug': string;
   };
 
   // --- column titles ---
@@ -213,6 +214,37 @@ export interface ExportTexts {
       readonly hiddenNote: string;
       readonly none: string;
     };
+  };
+
+  // --- E-Steuerauszug (F10.10) ---
+  readonly eTax: {
+    readonly title: (taxYear: number) => string;
+    readonly intro: string;
+    readonly client: string;
+    readonly canton: string;
+    readonly statementId: string;
+    readonly maker: string;
+    readonly makerValue: string;
+    readonly depot: string;
+    readonly pos: string;
+    readonly name: string;
+    readonly valor: string;
+    readonly quantity: string;
+    readonly price: string;
+    readonly taxValue: string;
+    readonly revenueB: string;
+    readonly payments: string;
+    readonly totalTaxValue: string;
+    readonly totalRevenueA: string;
+    readonly totalRevenueB: string;
+    readonly totalWithholding: string;
+    readonly undefinedValue: string;
+    readonly undefinedNote: string;
+    readonly earnGap: string;
+    readonly limitationsTitle: string;
+    readonly limitations: readonly string[];
+    readonly barcodeSheet: (sheet: number, sheets: number) => string;
+    readonly barcodeNote: string;
   };
 
   // --- internal report (F10.2a) ---

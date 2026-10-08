@@ -557,7 +557,8 @@ export const STATEMENT_KINDS = [
 ] as const;
 /**
  * F10.11–F10.13: the further tax documents, each in its formats — Wertschriftenverzeichnis,
- * Ertrags- und Belegliste, Transaktions- und Bestandesnachweis. Same rules as the statements.
+ * Ertrags- und Belegliste, Transaktions- und Bestandesnachweis; F10.10 the E-Steuerauszug.
+ * Same rules as the statements.
  */
 export const TAX_DOCUMENTS = [
   {
@@ -566,6 +567,8 @@ export const TAX_DOCUMENTS = [
   },
   { id: 'income_list', kinds: ['income_list_pdf', 'income_list_xlsx'] },
   { id: 'evidence', kinds: ['evidence_pdf', 'evidence_xlsx'] },
+  /** F10.10: E-Steuerauszug after eCH-0196 2.2 — PDF with barcodes and the XML; CHF only. */
+  { id: 'etax', kinds: ['etax_pdf', 'etax_xml'] },
 ] as const;
 export type TaxDocument = (typeof TAX_DOCUMENTS)[number];
 export const DOCUMENT_KINDS = TAX_DOCUMENTS.flatMap((d) => d.kinds);

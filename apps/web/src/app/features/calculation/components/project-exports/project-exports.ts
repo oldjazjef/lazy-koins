@@ -94,7 +94,12 @@ export class ProjectExports {
     });
   }
 
-  /** The format part of a kind (`pdf`, `xlsx`, `csv`) for its label. */
+  /** F10.10: the E-Steuerauszug exists in CHF only (the API answers 409 `eTaxNeedsChf`). */
+  protected unavailable(id: string): boolean {
+    return id === 'etax' && this.service.currency() !== 'CHF';
+  }
+
+  /** The format part of a kind (`pdf`, `xlsx`, `csv`, `xml`) for its label. */
   protected formatOf(kind: ExportKind): string {
     return kind.slice(kind.lastIndexOf('_') + 1);
   }

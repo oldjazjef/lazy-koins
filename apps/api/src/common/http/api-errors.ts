@@ -20,7 +20,9 @@ export type ConflictCode =
   /** A provider that needs the user's key has none stored (price sources: CoinMarketCap). */
   | 'noKey'
   /** F9.9: a closed project uses the transaction — reopen it to change it. */
-  | 'transactionLocked';
+  | 'transactionLocked'
+  /** F10.10: the E-Steuerauszug is in CHF — a project in another tax currency has none. */
+  | 'eTaxNeedsChf';
 
 /** A 409 with a code: `{ statusCode, error, message, code }`. */
 export function conflict(

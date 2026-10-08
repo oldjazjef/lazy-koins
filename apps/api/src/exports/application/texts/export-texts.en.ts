@@ -121,6 +121,7 @@ export const EN_EXPORT_TEXTS: ExportTexts = {
     wertschriften: 'securities',
     ertragsliste: 'income-list',
     nachweis: 'evidence',
+    'e-steuerauszug': 'e-tax-statement',
   },
 
   col: {
@@ -226,6 +227,45 @@ export const EN_EXPORT_TEXTS: ExportTexts = {
       'Every figure can be traced back to its booking in the original file.',
       `Created with lazy-koins ${m.appVersion}.`,
     ];
+  },
+
+  eTax: {
+    title: (taxYear) => `E-tax statement ${taxYear} (eCH-0196)`,
+    intro:
+      'Securities list of the cryptocurrencies and crypto income in the eCH-0196 format (version 2.2) for import into the cantonal tax software. The complete data is in the barcode at the end of the document.',
+    client: 'Client',
+    canton: 'Canton, tax year',
+    statementId: 'Document ID',
+    maker: 'Made with',
+    makerValue: 'lazy-koins, by the taxpayer from their own exports',
+    depot: 'Depot',
+    pos: 'Pos.',
+    name: 'Name',
+    valor: 'Valor',
+    quantity: 'Holding 31.12.',
+    price: 'Price CHF',
+    taxValue: 'Tax value CHF',
+    revenueB: 'Income B CHF',
+    payments: 'Inflows',
+    totalTaxValue: 'Total tax value CHF',
+    totalRevenueA: 'Total gross income A (with withholding tax) CHF',
+    totalRevenueB: 'Total gross income B (without withholding tax) CHF',
+    totalWithholding: 'Total withholding tax claim CHF',
+    undefinedValue: 'undefined',
+    undefinedNote:
+      'Without a price: tax value or income marked as "undefined" and counted as 0 in the total.',
+    earnGap: 'Earn gap (difference method)',
+    limitationsTitle: 'How the standard is used',
+    limitations: [
+      'Not a statement of a financial institution: no clearing number (00000), LEI or UID; the platforms are listed as depots.',
+      'eCH-0196 has no category of its own for cryptocurrencies: category "currency notes" (CURRNOTE) as in the ESTV price list (Kursliste), no ISIN; valor number and name from the Kursliste, else the ticker; domicile CH, currency CHF.',
+      'No stock mutations: the holding at 31.12. is in the tax value, the movements in the transaction and holdings evidence.',
+      'Income without withholding tax claim (category B), no foreign withholding taxes (DA-1).',
+      'Tokens recognised as spam and negative balances are not included.',
+    ],
+    barcodeSheet: (sheet, sheets) => `Barcode sheet ${sheet} of ${sheets}`,
+    barcodeNote:
+      'PDF417 Structured Append (eCH-0196 annex 2): the complete e-tax statement for import into the tax software.',
   },
 
   documents: {

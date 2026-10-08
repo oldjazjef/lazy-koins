@@ -118,6 +118,7 @@ export const DE_CH_EXPORT_TEXTS: ExportTexts = {
     wertschriften: 'wertschriftenverzeichnis',
     ertragsliste: 'ertragsliste',
     nachweis: 'nachweis',
+    'e-steuerauszug': 'e-steuerauszug',
   },
 
   col: {
@@ -223,6 +224,46 @@ export const DE_CH_EXPORT_TEXTS: ExportTexts = {
       'Jede Zahl ist bis zur Buchung in der Originaldatei rückverfolgbar.',
       `Erstellt mit lazy-koins ${m.appVersion}.`,
     ];
+  },
+
+  eTax: {
+    title: (taxYear) => `E-Steuerauszug ${taxYear} (eCH-0196)`,
+    intro:
+      'Wertschriftenliste der Kryptowährungen und Krypto-Erträge im Format eCH-0196 (Version 2.2) zum Import in die kantonale Steuersoftware. Die Daten stehen vollständig im Barcode am Ende des Dokuments.',
+    client: 'Kunde',
+    canton: 'Kanton, Steuerjahr',
+    statementId: 'Dokument-ID',
+    maker: 'Erstellt mit',
+    makerValue:
+      'lazy-koins, von der steuerpflichtigen Person aus den eigenen Exporten erstellt',
+    depot: 'Depot',
+    pos: 'Pos.',
+    name: 'Bezeichnung',
+    valor: 'Valor',
+    quantity: 'Bestand 31.12.',
+    price: 'Kurs CHF',
+    taxValue: 'Steuerwert CHF',
+    revenueB: 'Ertrag B CHF',
+    payments: 'Zuflüsse',
+    totalTaxValue: 'Total Steuerwert CHF',
+    totalRevenueA: 'Total Bruttoertrag A (mit Verrechnungssteuer) CHF',
+    totalRevenueB: 'Total Bruttoertrag B (ohne Verrechnungssteuer) CHF',
+    totalWithholding: 'Total Verrechnungssteueranspruch CHF',
+    undefinedValue: 'undefiniert',
+    undefinedNote:
+      'Ohne Kurs: Steuerwert bzw. Ertrag als «undefiniert» gekennzeichnet und mit 0 im Total.',
+    earnGap: 'Earn-Lücke (Differenzmethode)',
+    limitationsTitle: 'Abbildung im Standard',
+    limitations: [
+      'Kein Steuerauszug eines Finanzinstituts: ohne Clearing-Nummer (00000), LEI oder UID; die Plattformen sind als Depots aufgeführt.',
+      'Kryptowährungen sieht eCH-0196 nicht eigens vor: Titelkategorie «Devisen/Noten» (CURRNOTE) wie in der ESTV-Kursliste, ohne ISIN; Valorennummer und Bezeichnung aus der Kursliste, sonst das Kürzel; Domizil CH, Währung CHF.',
+      'Ohne Bestandesmutationen: der Bestand per 31.12. steht im Steuerwert, die Bewegungen im Transaktions- und Bestandesnachweis.',
+      'Erträge ohne Verrechnungssteueranspruch (Rubrik B), ohne ausländische Quellensteuern (DA-1).',
+      'Als Spam erkannte Token und negative Bestände sind nicht enthalten.',
+    ],
+    barcodeSheet: (sheet, sheets) => `Barcode-Blatt ${sheet} von ${sheets}`,
+    barcodeNote:
+      'PDF417 Structured Append (eCH-0196 Beilage 2): der vollständige E-Steuerauszug für den Import in die Steuersoftware.',
   },
 
   documents: {

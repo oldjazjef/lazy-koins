@@ -57,6 +57,7 @@ export const API_ERROR_CODES = [
   'pdfUnavailable',
   // F9.8–F9.11: global transaction edits.
   'transactionLocked',
+  'eTaxNeedsChf',
   'useTransactionEdit',
   'reasonRequired',
   'invalidChanges',

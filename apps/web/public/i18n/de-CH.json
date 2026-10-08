@@ -1559,7 +1559,9 @@
       "income_list_pdf": "Ertrags- und Belegliste (PDF)",
       "income_list_xlsx": "Ertrags- und Belegliste (Excel)",
       "evidence_pdf": "Transaktions- und Bestandesnachweis (PDF)",
-      "evidence_xlsx": "Transaktions- und Bestandesnachweis (Excel)"
+      "evidence_xlsx": "Transaktions- und Bestandesnachweis (Excel)",
+      "etax_pdf": "E-Steuerauszug eCH-0196 (PDF)",
+      "etax_xml": "E-Steuerauszug eCH-0196 (XML)"
     },
     "fields": {
       "createdAt": "Erstellt",
@@ -1605,7 +1607,8 @@
       "format": {
         "pdf": "PDF",
         "xlsx": "Excel",
-        "csv": "CSV"
+        "csv": "CSV",
+        "xml": "XML"
       },
       "securities": {
         "title": "Wertschriftenverzeichnis",
@@ -1618,6 +1621,11 @@
       "evidence": {
         "title": "Transaktions- und Bestandesnachweis",
         "description": "Alle Transaktionen des Jahres mit Änderungen und Begründung, Bestände per 31.12. mit Kurs, Quelle und Nachweis – für Rückfragen des Steueramts."
+      },
+      "etax": {
+        "title": "E-Steuerauszug (eCH-0196)",
+        "description": "Wertschriftenliste nach dem Schweizer Standard eCH-0196 (Version 2.2) zum Import in die kantonale Steuersoftware: das PDF mit Barcode-Blättern zum Einlesen oder Beilegen, das XML für den direkten Import. Kryptowährungen sind als Devisen ohne ISIN abgebildet, die Einschränkungen stehen im Dokument.",
+        "needsChf": "Nur für Projekte in CHF: der Standard kennt Steuerwerte nur in Franken."
       }
     }
   },
@@ -2953,7 +2961,8 @@
       "invalidChanges": "Die Änderung ist ungültig",
       "nothingToReview": "Es gibt keine Transaktion zu prüfen",
       "noMapping": "Diese Transaktion wird nicht mit einem Mapping gelesen",
-      "badAnswer": "Die Antwort der AI war nicht verwendbar"
+      "badAnswer": "Die Antwort der AI war nicht verwendbar",
+      "eTaxNeedsChf": "Den E-Steuerauszug gibt es nur für Projekte in CHF."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",

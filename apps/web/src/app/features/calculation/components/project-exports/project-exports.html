@@ -29,7 +29,7 @@
     <p hlmCardDescription>{{ 'exports.documents.hint' | translate }}</p>
   </div>
   <div hlmCardContent class="flex flex-col gap-4">
-    <div class="grid gap-4 md:grid-cols-3">
+    <div class="grid gap-4 md:grid-cols-2">
       @for (doc of documents; track doc.id) {
       <div class="lk-panel flex flex-col gap-2 px-4 py-3">
         <h4 class="font-medium">
@@ -38,6 +38,11 @@
         <p class="text-muted-foreground flex-1 text-sm">
           {{ 'exports.documents.' + doc.id + '.description' | translate }}
         </p>
+        @if (unavailable(doc.id)) {
+        <p class="text-muted-foreground text-sm">
+          {{ 'exports.documents.etax.needsChf' | translate }}
+        </p>
+        }
         <div
           class="flex flex-wrap gap-3 text-sm"
           role="group"
@@ -48,6 +53,7 @@
             <input
               type="checkbox"
               [checked]="chosen().has(kind)"
+              [disabled]="unavailable(doc.id)"
               (change)="toggleKind(kind)"
             />
             {{ 'exports.documents.format.' + formatOf(kind) | translate }}

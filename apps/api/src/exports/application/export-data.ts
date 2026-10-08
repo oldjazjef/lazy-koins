@@ -6,6 +6,7 @@ import type {
 import type { Locale } from '../../common/i18n/locale';
 import type { StoredResult } from '../../calculation/domain/calculation';
 import type { TransactionRow } from '../../calculation/application/transactions.handlers';
+import type { ETaxData } from './e-tax/e-tax-statement';
 import { type DocumentFormat, EXPORT_TEXTS } from './export-texts';
 
 /** Everything a document shows — assembled once, rendered as Excel, HTML/PDF or mail text. */
@@ -40,6 +41,8 @@ export interface ExportData {
   readonly hints: readonly MissingFileHint[];
   /** F10.11–F10.13 only. */
   readonly documents?: DocumentData;
+  /** F10.10 only. */
+  readonly eTax?: ETaxData;
 }
 
 export type ExportVariant =
@@ -48,7 +51,8 @@ export type ExportVariant =
   | 'pruefbericht-intern'
   | 'wertschriften'
   | 'ertragsliste'
-  | 'nachweis';
+  | 'nachweis'
+  | 'e-steuerauszug';
 
 /** F7.5: where a record of the result comes from — the file and row, or a wallet's tx. */
 export interface RecordOrigin {
@@ -89,7 +93,7 @@ export function exportFileName(
   data: Pick<ExportData, 'projectName' | 'createdAt'> &
     Partial<Pick<ExportData, 'locale'>>,
   variant: ExportVariant,
-  extension: 'pdf' | 'xlsx' | 'csv',
+  extension: 'pdf' | 'xlsx' | 'csv' | 'xml',
 ): string {
   const base =
     data.projectName
