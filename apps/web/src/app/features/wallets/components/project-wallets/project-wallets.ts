@@ -29,6 +29,7 @@ import {
 import { Truncate } from '../../../../shared/components/truncate';
 import { QuantityPipe } from '../../../../shared/format/number-format';
 import { NetworkStatus } from '../network-status';
+import { WalletYearTransactions } from '../wallet-year-transactions';
 import { ProjectWalletsService } from './project-wallets.service';
 
 /** The manual-balance form of one wallet (F6.5). */
@@ -62,6 +63,7 @@ const EMPTY_DRAFT: BalanceDraft = {
     QuantityPipe,
     EmptyState,
     NetworkStatus,
+    WalletYearTransactions,
     RowActions,
     Truncate,
     ...HlmButtonImports,

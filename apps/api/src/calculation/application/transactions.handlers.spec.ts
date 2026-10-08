@@ -1,10 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { calculationSetup } from '../testing/calculation-fixture';
-import {
-  CalculateProjectCommand,
-  CreateCorrectionCommand,
-  SetCorrectionUndoneCommand,
-} from './calculation.handlers';
+import { CalculateProjectCommand } from './calculation.handlers';
 import { ListTransactionsQuery } from './transactions.handlers';
 
 describe('ListTransactionsHandler (Transaktionen)', () => {
@@ -55,20 +51,21 @@ describe('ListTransactionsHandler (Transaktionen)', () => {
     expect((await query({ limit: 10_000 })).limit).toBe(200);
   });
 
-  it('a deactivated booking stays listed with its reason, leaves the result, and comes back on undo', async () => {
+  it('a hidden transaction (global edit) stays listed with its reason, leaves the result, and comes back on undo (F9.8)', async () => {
     const t = await calculationSetup();
     const before = await t.transactions.execute(
       new ListTransactionsQuery('anna', t.project.id),
     );
     const staking = before.rows.find((r) => r.kind === 'income_staking');
-    const correction = await t.createCorrection.execute(
-      new CreateCorrectionCommand(
-        'anna',
-        t.project.id,
-        { type: 'exclude_booking', bookingId: staking?.id ?? '' },
-        'Doppelt importiert',
-      ),
-    );
+    expect(staking).toMatchObject({ key: staking?.id, status: 'original' });
+    const [edit] = await t.transactionEdits.add('anna', [
+      {
+        key: staking?.key ?? '',
+        changes: { hidden: true },
+        reason: 'Doppelt importiert',
+        source: 'user',
+      },
+    ]);
     const result = await t.calculate.execute(
       new CalculateProjectCommand('anna', t.project.id),
     );
@@ -82,20 +79,38 @@ describe('ListTransactionsHandler (Transaktionen)', () => {
       expect.objectContaining({
         id: staking?.id,
         treatment: 'excluded',
-        correctionId: correction.id,
-        correctionReason: 'Doppelt importiert',
+        status: 'changed',
+        hidden: true,
+        editReason: 'Doppelt importiert',
       }),
     ]);
 
-    await t.undo.execute(
-      new SetCorrectionUndoneCommand('anna', t.project.id, correction.id, true),
-    );
+    await t.transactionEdits.setStatus(edit?.id ?? '', 'undone');
     const restored = await t.transactions.execute(
       new ListTransactionsQuery('anna', t.project.id),
     );
     expect(restored.rows.find((r) => r.id === staking?.id)?.treatment).toBe(
       'income',
     );
+  });
+
+  it('shows the tax year by default; earlier bookings that decide a balance on request (F9.6)', async () => {
+    const t = await calculationSetup();
+    await t.addFile(
+      'alt.csv',
+      [
+        'Zeitpunkt,Plattform,Konto,Art,Asset,Menge,Gebühr,Gebühr-Asset,Preis CHF,Preis USD,Referenz,Notiz',
+        '2024-06-01T10:00:00Z,ledger,main,deposit,ETH,2,,,,,,',
+      ].join('\n'),
+    );
+    const year = await t.transactions.execute(
+      new ListTransactionsQuery('anna', t.project.id),
+    );
+    expect(year.rows.some((r) => r.timestamp.startsWith('2024'))).toBe(false);
+    const all = await t.transactions.execute(
+      new ListTransactionsQuery('anna', t.project.id, { scope: 'all' }),
+    );
+    expect(all.rows.some((r) => r.timestamp.startsWith('2024'))).toBe(true);
   });
 
   it("someone else's project is a 404", async () => {

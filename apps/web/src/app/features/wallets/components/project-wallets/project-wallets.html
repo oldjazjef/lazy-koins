@@ -109,6 +109,11 @@ service.overview.value();
     </div>
     <div hlmCardContent class="flex flex-col gap-4">
       <lk-network-status [wallet]="wallet" />
+      <!-- F9.7: only the transactions of the tax year here -->
+      <lk-wallet-year-transactions
+        [walletId]="wallet.id"
+        [yearEnd]="overview.yearEnd"
+      />
 
       @if (entry.files.length > 0) {
       <p class="text-sm">

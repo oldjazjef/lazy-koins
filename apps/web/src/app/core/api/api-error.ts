@@ -55,6 +55,15 @@ export const API_ERROR_CODES = [
   'noKey',
   // F10: PDF exports need Chromium on the server (503).
   'pdfUnavailable',
+  // F9.8–F9.11: global transaction edits.
+  'transactionLocked',
+  'eTaxNeedsChf',
+  'useTransactionEdit',
+  'reasonRequired',
+  'invalidChanges',
+  'nothingToReview',
+  'noMapping',
+  'badAnswer',
 ] as const;
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 

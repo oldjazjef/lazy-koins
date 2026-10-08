@@ -1,3 +1,7 @@
+import {
+  TransactionEditDialog,
+  type TransactionEditRequest,
+} from '../../../../shared/transactions/transaction-edit-dialog';
 import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import {
   ChangeDetectionStrategy,
@@ -45,6 +49,7 @@ import {
     ChfPipe,
     QuantityPipe,
     EmptyState,
+    TransactionEditDialog,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
@@ -61,6 +66,8 @@ export class ProjectResult {
   readonly closed = input(false);
 
   protected readonly openPlatform = signal<string | null>(null);
+  /** F9.8: the global edit dialog (reclassify an income line). */
+  protected readonly editRequest = signal<TransactionEditRequest | null>(null);
   protected readonly openCategory = signal<string | null>(null);
 
   protected readonly result = computed(() =>
@@ -142,7 +149,7 @@ export class ProjectResult {
   }
 
   protected lineAction(action: 'reclassify' | 'price', line: IncomeLine): void {
-    if (action === 'reclassify') this.reclassify(line);
+    if (action === 'reclassify') void this.reclassify(line);
     else this.overrideIncomePrice(line);
   }
 
@@ -199,10 +206,18 @@ export class ProjectResult {
     });
   }
 
-  protected reclassify(line: IncomeLine): void {
-    this.service.startCorrection({
-      type: 'reclassify',
-      values: { bookingId: line.bookingId, kind: 'transfer' },
+  /** F9.8: reclassifying an income booking is a global transaction edit. */
+  protected async reclassify(line: IncomeLine): Promise<void> {
+    const row = await this.service
+      .transactionOf(line.bookingId)
+      .catch(() => undefined);
+    if (!row?.key) return;
+    this.editRequest.set({
+      keys: [row.key],
+      mode: 'edit',
+      kind: 'transfer',
+      asset: row.asset,
+      note: row.note,
     });
   }
 

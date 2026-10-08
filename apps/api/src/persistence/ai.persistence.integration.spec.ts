@@ -143,11 +143,12 @@ describe('project_file after the AI migration', () => {
           mediaType: 'application/pdf',
           kind: 'pdf',
           originalName: 's.pdf',
+          source: 'uploaded',
+          analysis: { ...NOT_ANALYSED, status: 'evidence_only' },
         },
       },
       displayName: 's.pdf',
       origin: 'uploaded',
-      analysis: { ...NOT_ANALYSED, status: 'evidence_only' },
     });
     if (!('created' in pdf)) throw new Error('expected a new entry');
 
@@ -162,11 +163,12 @@ describe('project_file after the AI migration', () => {
           mediaType: 'text/csv',
           kind: 'csv',
           originalName: 's.bestaende.csv',
+          source: 'uploaded',
+          analysis: NOT_ANALYSED,
         },
       },
       displayName: 's.bestaende.csv',
       origin: `derived_from:${pdf.created.id}`,
-      analysis: NOT_ANALYSED,
     });
     expect('created' in derived && derived.created.origin).toBe(
       `derived_from:${pdf.created.id}`,
@@ -178,8 +180,6 @@ describe('project_file after the AI migration', () => {
         project_id: project.id,
         file_id: pdf.created.fileId,
         display_name: 'x.csv',
-        status: 'standard',
-        coverage: '[]',
         origin: 'uploaded',
         added_at: toSqliteTimestamp(new Date()),
         ...columns,
@@ -193,10 +193,6 @@ describe('project_file after the AI migration', () => {
     for (const bad of [
       { origin: 'derived_from:' },
       { origin: 'derived' },
-      { status: 'mapped' },
-      { booking_count: -1 },
-      { period_from: '2025-12-31', period_to: '2025-01-01' },
-      { coverage: 'nope' },
       { display_name: ' ' },
     ]) {
       await expect(entry(bad)).rejects.toThrow(/CHECK constraint failed/);

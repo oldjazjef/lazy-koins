@@ -1,5 +1,7 @@
 import {
+  lucideArrowLeftRight,
   lucideFileJson,
+  lucideFiles,
   lucideFolderOpen,
   lucideLayoutDashboard,
   lucideLibraryBig,
@@ -38,6 +40,16 @@ export const NAV_ITEMS: readonly NavItem[] = [
     path: '/app/projects',
     labelKey: 'nav.projects',
     icon: 'lucideFolderOpen',
+  },
+  {
+    path: '/app/files',
+    labelKey: 'nav.files',
+    icon: 'lucideFiles',
+  },
+  {
+    path: '/app/transactions',
+    labelKey: 'nav.transactions',
+    icon: 'lucideArrowLeftRight',
   },
   {
     path: '/app/mappings',
@@ -93,7 +105,9 @@ export function navItemsFor(libraryAvailable: boolean): readonly NavItem[] {
 }
 
 export const NAV_ICONS = {
+  lucideArrowLeftRight,
   lucideFileJson,
+  lucideFiles,
   lucideFolderOpen,
   lucideLayoutDashboard,
   lucideLibraryBig,

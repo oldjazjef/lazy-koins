@@ -11,10 +11,12 @@ import type {
   ProjectFile,
   StoredFileContent,
   StoredFileMeta,
+  UserFile,
 } from '../../../files/domain/project-file';
 import {
   type AddProjectFileInput,
   type MappingUse,
+  type NewStoredFile,
   ProjectFileRepositoryPort,
 } from '../../../files/ports/project-file.repository.port';
 import { toIsoString } from '../mappers/scalar.mapper';
@@ -22,6 +24,8 @@ import { PrismaService } from '../prisma.service';
 
 type MetaRow = Omit<StoredFileRow, 'bytes'>;
 type EntryRow = ProjectFileRow & { file: MetaRow };
+type UsageRow = Pick<ProjectFileRow, 'id' | 'projectId' | 'disabledAt'>;
+type UserFileRow = MetaRow & { projectFiles: UsageRow[] };
 
 /** Every stored-file column but the BLOB — listings never load the bytes. */
 const META = {
@@ -33,9 +37,28 @@ const META = {
   kind: true,
   originalName: true,
   createdAt: true,
+  status: true,
+  importerId: true,
+  mappingId: true,
+  platform: true,
+  periodFrom: true,
+  periodTo: true,
+  bookingCount: true,
+  holdingCount: true,
+  errorCount: true,
+  coverage: true,
+  source: true,
 } as const;
 
 const WITH_META = { file: { select: META } } as const;
+
+const WITH_USAGES = {
+  ...META,
+  projectFiles: {
+    select: { id: true, projectId: true, disabledAt: true },
+    orderBy: [{ addedAt: 'asc' }, { id: 'asc' }],
+  },
+} satisfies Prisma.StoredFileSelect;
 
 function toMeta(row: MetaRow): StoredFileMeta {
   return {
@@ -55,17 +78,9 @@ function parseCoverage(text: string): CoverageEntry[] {
   return Array.isArray(value) ? (value as CoverageEntry[]) : [];
 }
 
-function toProjectFile(row: EntryRow): ProjectFile {
+function toAnalysis(row: MetaRow): FileAnalysis {
   return {
-    id: row.id,
-    projectId: row.projectId,
-    fileId: row.fileId,
-    sha256: row.file.sha256,
-    kind: row.file.kind as FileKind,
-    size: row.file.size,
-    mediaType: row.file.mediaType,
-    displayName: row.displayName,
-    status: row.status as ProjectFile['status'],
+    status: row.status as FileAnalysis['status'],
     importerId: row.importerId,
     mappingId: row.mappingId,
     platform: row.platform,
@@ -77,10 +92,37 @@ function toProjectFile(row: EntryRow): ProjectFile {
     holdingCount: row.holdingCount,
     errorCount: row.errorCount,
     coverage: parseCoverage(row.coverage),
+  };
+}
+
+function toProjectFile(row: EntryRow): ProjectFile {
+  return {
+    ...toAnalysis(row.file),
+    id: row.id,
+    projectId: row.projectId,
+    fileId: row.fileId,
+    sha256: row.file.sha256,
+    kind: row.file.kind as FileKind,
+    size: row.file.size,
+    mediaType: row.file.mediaType,
+    displayName: row.displayName,
     origin: row.origin,
     addedAt: toIsoString(row.addedAt),
     disabledAt: row.disabledAt ? toIsoString(row.disabledAt) : null,
     disabledNote: row.disabledAt ? row.disabledNote : null,
+  };
+}
+
+function toUserFile(row: UserFileRow): UserFile {
+  return {
+    ...toMeta(row),
+    ...toAnalysis(row),
+    source: row.source,
+    usages: row.projectFiles.map((usage) => ({
+      projectFileId: usage.id,
+      projectId: usage.projectId,
+      active: usage.disabledAt === null,
+    })),
   };
 }
 
@@ -96,6 +138,20 @@ function analysisColumns(analysis: FileAnalysis) {
     holdingCount: analysis.holdingCount,
     errorCount: analysis.errorCount,
     coverage: JSON.stringify(analysis.coverage),
+  };
+}
+
+function storedColumns(ownerId: string, file: NewStoredFile) {
+  return {
+    ownerId,
+    sha256: file.sha256,
+    bytes: new Uint8Array(file.bytes),
+    size: file.bytes.length,
+    mediaType: file.mediaType,
+    kind: file.kind,
+    originalName: file.originalName,
+    source: file.source,
+    ...analysisColumns(file.analysis),
   };
 }
 
@@ -172,7 +228,7 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
 
   async listByMapping(mappingId: string): Promise<ProjectFile[]> {
     const rows = await this.prisma.projectFile.findMany({
-      where: { mappingId },
+      where: { file: { mappingId } },
       include: WITH_META,
       orderBy: [{ addedAt: 'asc' }, { id: 'asc' }],
     });
@@ -181,22 +237,31 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
 
   async countByMappings(mappingIds: readonly string[]): Promise<MappingUse[]> {
     if (mappingIds.length === 0) return [];
-    const groups = await this.prisma.projectFile.groupBy({
-      by: ['mappingId', 'projectId'],
-      where: { mappingId: { in: [...mappingIds] } },
-      _count: { _all: true },
-      orderBy: [{ mappingId: 'asc' }, { projectId: 'asc' }],
+    const rows = await this.prisma.projectFile.findMany({
+      where: { file: { mappingId: { in: [...mappingIds] } } },
+      select: { projectId: true, file: { select: { mappingId: true } } },
     });
-    return groups.flatMap((group) =>
-      group.mappingId
-        ? [
-            {
-              mappingId: group.mappingId,
-              projectId: group.projectId,
-              files: group._count._all,
-            },
-          ]
-        : [],
+    const counts = new Map<string, MappingUse>();
+    for (const row of rows) {
+      const mappingId = row.file.mappingId;
+      if (!mappingId) continue;
+      const key = `${mappingId}|${row.projectId}`;
+      counts.set(key, {
+        mappingId,
+        projectId: row.projectId,
+        files: (counts.get(key)?.files ?? 0) + 1,
+      });
+    }
+    return [...counts.values()].sort((a, b) =>
+      a.mappingId === b.mappingId
+        ? a.projectId < b.projectId
+          ? -1
+          : a.projectId > b.projectId
+            ? 1
+            : 0
+        : a.mappingId < b.mappingId
+          ? -1
+          : 1,
     );
   }
 
@@ -221,15 +286,7 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
             ? input.stored.existingId
             : (
                 await tx.storedFile.create({
-                  data: {
-                    ownerId: input.ownerId,
-                    sha256: input.stored.create.sha256,
-                    bytes: new Uint8Array(input.stored.create.bytes),
-                    size: input.stored.create.bytes.length,
-                    mediaType: input.stored.create.mediaType,
-                    kind: input.stored.create.kind,
-                    originalName: input.stored.create.originalName,
-                  },
+                  data: storedColumns(input.ownerId, input.stored.create),
                   select: { id: true },
                 })
               ).id;
@@ -239,7 +296,6 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
             fileId,
             displayName: input.displayName,
             origin: input.origin,
-            ...analysisColumns(input.analysis),
           },
           include: WITH_META,
         });
@@ -268,11 +324,16 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
     id: string,
     analysis: FileAnalysis,
   ): Promise<ProjectFile | undefined> {
-    const { count } = await this.prisma.projectFile.updateMany({
+    const entry = await this.prisma.projectFile.findUnique({
       where: { id },
+      select: { fileId: true },
+    });
+    if (!entry) return undefined;
+    await this.prisma.storedFile.updateMany({
+      where: { id: entry.fileId },
       data: analysisColumns(analysis),
     });
-    return count === 0 ? undefined : this.findById(id);
+    return this.findById(id);
   }
 
   async setDeactivation(
@@ -288,20 +349,79 @@ export class ProjectFilePrismaRepository extends ProjectFileRepositoryPort {
     return count === 0 ? undefined : this.findById(id);
   }
 
-  async remove(
-    id: string,
-  ): Promise<{ storedFileDeleted: boolean } | undefined> {
-    return this.prisma.$transaction(async (tx) => {
-      const entry = await tx.projectFile.findUnique({
-        where: { id },
-        select: { fileId: true },
-      });
-      if (!entry) return undefined;
-      await tx.projectFile.delete({ where: { id } });
-      const { count } = await tx.storedFile.deleteMany({
-        where: { id: entry.fileId, projectFiles: { none: {} } },
-      });
-      return { storedFileDeleted: count > 0 };
+  async remove(id: string): Promise<boolean> {
+    const { count } = await this.prisma.projectFile.deleteMany({
+      where: { id },
     });
+    return count > 0;
+  }
+
+  async listByOwner(ownerId: string): Promise<UserFile[]> {
+    const rows = await this.prisma.storedFile.findMany({
+      where: { ownerId },
+      select: WITH_USAGES,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    return rows.map(toUserFile);
+  }
+
+  async findStored(id: string): Promise<UserFile | undefined> {
+    const row = await this.prisma.storedFile.findUnique({
+      where: { id },
+      select: WITH_USAGES,
+    });
+    return row ? toUserFile(row) : undefined;
+  }
+
+  async listStoredByMapping(mappingId: string): Promise<UserFile[]> {
+    const rows = await this.prisma.storedFile.findMany({
+      where: { mappingId },
+      select: WITH_USAGES,
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map(toUserFile);
+  }
+
+  async addStored(
+    ownerId: string,
+    file: NewStoredFile,
+  ): Promise<{ created: UserFile } | { duplicate: UserFile }> {
+    const existing = await this.findStoredBySha(ownerId, file.sha256);
+    if (existing) {
+      const found = await this.findStored(existing.id);
+      if (found) return { duplicate: found };
+    }
+    try {
+      const row = await this.prisma.storedFile.create({
+        data: storedColumns(ownerId, file),
+        select: WITH_USAGES,
+      });
+      return { created: toUserFile(row) };
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      const raced = await this.findStoredBySha(ownerId, file.sha256);
+      const found = raced ? await this.findStored(raced.id) : undefined;
+      if (!found) throw error;
+      return { duplicate: found };
+    }
+  }
+
+  async updateStoredAnalysis(
+    id: string,
+    analysis: FileAnalysis,
+  ): Promise<UserFile | undefined> {
+    const { count } = await this.prisma.storedFile.updateMany({
+      where: { id },
+      data: analysisColumns(analysis),
+    });
+    return count === 0 ? undefined : this.findStored(id);
+  }
+
+  async deleteStored(id: string): Promise<boolean> {
+    // The project entries go with it (ON DELETE CASCADE), in the same statement.
+    const { count } = await this.prisma.storedFile.deleteMany({
+      where: { id },
+    });
+    return count > 0;
   }
 }

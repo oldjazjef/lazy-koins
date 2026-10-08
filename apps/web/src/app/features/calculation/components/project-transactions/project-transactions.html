@@ -55,6 +55,15 @@
       </div>
     </div>
 
+    <label class="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        [checked]="service.scope() === 'all'"
+        (change)="service.scope.set(service.scope() === 'all' ? 'year' : 'all')"
+      />
+      {{ 'transactions.showEarlier' | translate }}
+    </label>
+
     <!-- The treatments as filter chips, with how many bookings each has -->
     <div
       class="flex flex-wrap gap-2"
@@ -214,9 +223,13 @@
                 >
                 }
               </span>
-              } @if (row.treatment === 'excluded' && row.correctionReason) {
-              @let because = 'transactions.reason' | translate: { reason:
-              row.correctionReason };
+              } @if (row.status !== 'original') {
+              <span class="text-muted-foreground block text-xs"
+                >{{ 'ledger.statusValue.' + row.status | translate }}</span
+              >
+              } @if (row.treatment === 'excluded' && (row.editReason ??
+              row.correctionReason)) { @let because = 'transactions.reason' |
+              translate: { reason: row.editReason ?? row.correctionReason };
               <span class="block text-xs" [lkTruncate]="because"
                 >{{ because }}</span
               >
@@ -244,59 +257,19 @@
   </div>
 </section>
 
-<!-- Deactivate one booking: the reason is required (it is stored with the correction) -->
-<hlm-dialog
-  [state]="excluding() ? 'open' : 'closed'"
-  (stateChanged)="dialogChanged($event)"
->
-  <hlm-dialog-content *hlmDialogPortal>
-    @if (excluding(); as row) {
-    <hlm-dialog-header>
-      <h3 hlmDialogTitle>{{ 'transactions.exclude.title' | translate }}</h3>
-      <p hlmDialogDescription>
-        {{ 'transactions.exclude.body' | translate: { asset: row.asset,
-        quantity: signed(row.quantity), platform: row.platform } }}
-      </p>
-    </hlm-dialog-header>
-    <div class="lk-dialog-body">
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium" for="tx-exclude-reason"
-          >{{ 'transactions.exclude.reason' | translate }}</label
-        >
-        <textarea
-          hlmTextarea
-          id="tx-exclude-reason"
-          rows="3"
-          class="w-full"
-          [attr.maxlength]="reasonMax"
-          [attr.aria-invalid]="reasonMissing()"
-          [placeholder]="'transactions.exclude.reasonPlaceholder' | translate"
-          [value]="reason()"
-          (input)="reason.set($any($event.target).value); reasonMissing.set(false)"
-        ></textarea>
-        @if (reasonMissing()) {
-        <p class="text-destructive text-sm">
-          {{ 'transactions.exclude.reasonRequired' | translate }}
-        </p>
-        }
-        <p class="text-muted-foreground text-xs">
-          {{ 'transactions.exclude.hint' | translate }}
-        </p>
-      </div>
-    </div>
-    <hlm-dialog-footer>
-      <button hlmBtn variant="outline" type="button" hlmDialogClose>
-        {{ 'common.cancel' | translate }}
-      </button>
-      <button
-        hlmBtn
-        variant="destructive"
-        type="button"
-        (click)="confirmExclude()"
-      >
-        {{ 'transactions.actions.exclude' | translate }}
-      </button>
-    </hlm-dialog-footer>
-    }
-  </hlm-dialog-content>
-</hlm-dialog>
+<!-- F9.8: changes are global edits (every project that uses the transaction) -->
+<lk-transaction-detail-dialog
+  [key]="detailKey()"
+  [currency]="service.currency()"
+  (closed)="detailKey.set(null)"
+  (edit)="openEdit($event)"
+  (link)="openLink($event)"
+/>
+<lk-transaction-edit-dialog
+  [request]="editRequest()"
+  (closed)="editRequest.set(null)"
+/>
+<lk-transaction-link-dialog
+  [transaction]="linking()"
+  (closed)="linking.set(null)"
+/>

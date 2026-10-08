@@ -4,7 +4,7 @@ import { ImportMappingRepositoryPort } from '../../../mappings/ports/import-mapp
 import { ProjectNotifications } from '../../../notifications/application/project-notifications.service';
 import { ProjectRepositoryPort } from '../../../projects/ports/project.repository.port';
 import { ProjectFileRepositoryPort } from '../../ports/project-file.repository.port';
-import { orUnreadable, readableOf } from '../file-access';
+import { orUnreadable } from '../file-access';
 import { FileAnalysisService } from '../file-analysis.service';
 
 export class ReapplyMappingCommand {
@@ -16,11 +16,14 @@ export class ReapplyMappingCommand {
 
 export interface ReapplyResult {
   readonly reapplied: number;
-  /** Files in closed projects stay as they were (F4.5). */
+  /** Files a closed project uses stay as they were (F4.5) — counted per file. */
   readonly skippedClosed: number;
 }
 
-/** After a mapping was edited and the user confirmed: reads every file it maps again. */
+/**
+ * After a mapping was edited and the user confirmed: reads every file it maps again — once per
+ * file (F5.21: the reading is the file's), every project selecting it follows.
+ */
 @CommandHandler(ReapplyMappingCommand)
 export class ReapplyMappingHandler implements ICommandHandler<
   ReapplyMappingCommand,
@@ -45,27 +48,40 @@ export class ReapplyMappingHandler implements ICommandHandler<
     let reapplied = 0;
     let skippedClosed = 0;
     const statusOf = new Map<string, string>();
-    for (const file of await this.files.listByMapping(mappingId)) {
-      let status = statusOf.get(file.projectId);
-      if (status === undefined) {
-        status = (await this.projects.findById(file.projectId))?.status ?? '';
-        statusOf.set(file.projectId, status);
+    const touched = new Set<string>();
+    for (const file of await this.files.listStoredByMapping(mappingId)) {
+      const projectIds = [...new Set(file.usages.map((u) => u.projectId))];
+      for (const projectId of projectIds) {
+        if (!statusOf.has(projectId)) {
+          statusOf.set(
+            projectId,
+            (await this.projects.findById(projectId))?.status ?? '',
+          );
+        }
       }
-      if (status === 'closed') {
+      if (projectIds.some((id) => statusOf.get(id) === 'closed')) {
         skippedClosed += 1;
         continue;
       }
-      const { readable } = await readableOf(this.files, file);
+      const content = await this.files.readContent(file.id);
+      if (!content) continue;
       const next = await orUnreadable(() =>
-        this.analysis.withMapping(readable, mapping),
+        this.analysis.withMapping(
+          {
+            sha256: content.sha256,
+            name: file.originalName,
+            kind: content.kind,
+            bytes: content.bytes,
+          },
+          mapping,
+        ),
       );
-      await this.files.updateAnalysis(file.id, next);
+      await this.files.updateStoredAnalysis(file.id, next);
       reapplied += 1;
+      for (const id of projectIds) touched.add(id);
     }
-    for (const [projectId, status] of statusOf) {
-      if (status !== 'closed') {
-        await this.projectNotifications?.filesChanged(userId, projectId);
-      }
+    for (const projectId of touched) {
+      await this.projectNotifications?.filesChanged(userId, projectId);
     }
     return { reapplied, skippedClosed };
   }

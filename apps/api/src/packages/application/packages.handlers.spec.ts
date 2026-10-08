@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   BadRequestException,
   UnprocessableEntityException,
@@ -44,6 +45,7 @@ async function setup() {
     t.carryovers,
     t.bundles,
     t.analysis,
+    t.transactionEdits,
   );
   const settings = new InMemoryUserSettingsRepository();
   const users = {
@@ -199,6 +201,75 @@ describe('project package (F10.8)', () => {
       new CalculateProjectCommand('bob', imported.projectId),
     );
     expect(again.result?.totals.wealthChf).toBe(wealth);
+  });
+
+  it('carries the global edits of its transactions; older reclassify corrections become edits (F9.8, F9.11)', async () => {
+    const t = await setup();
+    const key = `${t.bookingsFile.sha256}::5`;
+    await t.transactionEdits.add('anna', [
+      {
+        key,
+        changes: { kind: 'transfer' },
+        reason: 'Umbuchung',
+        source: 'user',
+      },
+      // Another file's transaction stays at home.
+      { key: 'ff:1', changes: { kind: 'spam' }, reason: 'x', source: 'user' },
+    ]);
+    const file = await t.exportPackage.execute(
+      new ExportProjectPackageQuery('anna', t.project.id, NOW),
+    );
+    await t.importPackage.execute(
+      new ImportProjectPackageCommand('bob', file.bytes),
+    );
+    expect(
+      (await t.transactionEdits.listByOwner('bob')).map((e) => [
+        e.key,
+        e.changes,
+        e.reason,
+      ]),
+    ).toEqual([[key, { kind: 'transfer' }, 'Umbuchung']]);
+
+    // An older package: no edits file, a reclassify correction instead.
+    const entries = unzipSync(file.bytes);
+    const legacy = strToU8(
+      JSON.stringify([
+        {
+          key: 'c-old',
+          data: { type: 'reclassify', bookingId: key, kind: 'income_airdrop' },
+          reason: 'Airdrop',
+          createdAt: NOW,
+          undoneAt: null,
+        },
+      ]),
+    );
+    const manifest = JSON.parse(
+      strFromU8(entries['manifest.json'] as Uint8Array),
+    ) as { entries: { path: string; sha256: string; size: number }[] };
+    manifest.entries = manifest.entries
+      .filter((e) => e.path !== 'data/transaction-edits.json')
+      .map((e) =>
+        e.path === 'data/corrections.json'
+          ? {
+              ...e,
+              sha256: createHash('sha256').update(legacy).digest('hex'),
+              size: legacy.length,
+            }
+          : e,
+      );
+    const { 'data/transaction-edits.json': _gone, ...rest } = entries;
+    const older = zipSync({
+      ...rest,
+      'data/corrections.json': legacy,
+      'manifest.json': strToU8(JSON.stringify(manifest)),
+    });
+    const old = await t.importPackage.execute(
+      new ImportProjectPackageCommand('carl', older),
+    );
+    expect(await t.corrections.listByProject(old.projectId)).toEqual([]);
+    expect(
+      (await t.transactionEdits.listByOwner('carl')).map((e) => e.changes),
+    ).toEqual([{ kind: 'income_airdrop' }]);
   });
 
   it('imports twice into the same account: no second blob, the name gets a suffix', async () => {

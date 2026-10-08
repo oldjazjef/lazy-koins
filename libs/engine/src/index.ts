@@ -36,3 +36,4 @@ export * from './wallets/wallet-records';
 export * from './calculation/records';
 export * from './standard/standard-export';
 export * from './dashboard/dashboard';
+export * from './transactions/edits';

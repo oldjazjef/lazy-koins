@@ -10,6 +10,8 @@ import {
 import {
   lucideCircleCheck,
   lucideCircleOff,
+  lucideEye,
+  lucideLink2,
   lucideListTree,
   lucideSparkles,
   lucideTags,
@@ -20,11 +22,16 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { HlmBadgeImports } from '@lazykoins/ui/badge';
 import { HlmButtonImports } from '@lazykoins/ui/button';
 import { HlmCardImports } from '@lazykoins/ui/card';
-import { HlmDialogImports } from '@lazykoins/ui/dialog';
 import { HlmInputImports } from '@lazykoins/ui/input';
 import { HlmSkeletonImports } from '@lazykoins/ui/skeleton';
 import { HlmTableImports } from '@lazykoins/ui/table';
-import { HlmTextareaImports } from '@lazykoins/ui/textarea';
+import type { Transaction } from '../../../../core/api/transactions.types';
+import { TransactionDetailDialog } from '../../../../shared/transactions/transaction-detail-dialog';
+import {
+  TransactionEditDialog,
+  type TransactionEditRequest,
+} from '../../../../shared/transactions/transaction-edit-dialog';
+import { TransactionLinkDialog } from '../../../../shared/transactions/transaction-link-dialog';
 import {
   BOOKING_TREATMENTS,
   type BookingTreatment,
@@ -39,13 +46,18 @@ import {
 import { Truncate } from '../../../../shared/components/truncate';
 import { LkDatePipe } from '../../../../shared/format/date.pipe';
 import { ChfPipe, QuantityPipe } from '../../../../shared/format/number-format';
+import { TransactionEditsService } from '../../../../shared/transactions/transaction-edits.service';
 import { ProjectTransactionsService } from './project-transactions.service';
 
 type TransactionAction =
-  'aiFix' | 'exclude' | 'reactivate' | 'reclassify' | 'figure';
+  | 'aiFix'
+  | 'detail'
+  | 'exclude'
+  | 'reactivate'
+  | 'reclassify'
+  | 'link'
+  | 'figure';
 
-/** The longest reason the API takes for a correction. */
-export const EXCLUDE_REASON_MAX = 1000;
 const SEARCH_DEBOUNCE_MS = 300;
 
 /** Badge look per treatment: what counts stands out, what does not is quiet. */
@@ -63,13 +75,24 @@ const BADGE: Readonly<
   excluded: 'outline',
 };
 
-/** The row menu: deactivate (with a reason) or take back in, reclassify, show the figure. */
+/**
+ * The row menu: details and history, reclassify / link / hide / show again (global edits, F9.8),
+ * show the figure, ask the assistant. A manual booking is a correction (no key) — changed in
+ * the corrections tab.
+ */
 export function transactionActions(
   row: TransactionRow,
   closed: boolean,
 ): RowAction<TransactionAction>[] {
   const excluded = row.treatment === 'excluded';
+  const editable = !closed && row.key !== null;
   return [
+    {
+      id: 'detail',
+      labelKey: 'ledger.actions.detail',
+      icon: lucideEye,
+      hidden: row.key === null,
+    },
     {
       id: 'aiFix',
       labelKey: 'transactions.actions.aiFix',
@@ -86,20 +109,26 @@ export function transactionActions(
       id: 'reclassify',
       labelKey: 'transactions.actions.reclassify',
       icon: lucideTags,
-      hidden: closed || excluded || row.manual,
+      hidden: !editable || excluded,
+    },
+    {
+      id: 'link',
+      labelKey: 'txDetail.link',
+      icon: lucideLink2,
+      hidden: !editable || excluded,
     },
     {
       id: 'reactivate',
       labelKey: 'transactions.actions.reactivate',
       icon: lucideCircleCheck,
-      hidden: closed || !excluded || !row.correctionId,
+      hidden: !editable || !row.hidden,
     },
     {
       id: 'exclude',
       labelKey: 'transactions.actions.exclude',
       icon: lucideCircleOff,
       danger: true,
-      hidden: closed || excluded || row.manual,
+      hidden: !editable || excluded,
     },
   ];
 }
@@ -122,14 +151,15 @@ export function transactionActions(
     Paginator,
     RowActions,
     Truncate,
+    TransactionDetailDialog,
+    TransactionEditDialog,
+    TransactionLinkDialog,
     ...HlmBadgeImports,
     ...HlmButtonImports,
     ...HlmCardImports,
-    ...HlmDialogImports,
     ...HlmInputImports,
     ...HlmSkeletonImports,
     ...HlmTableImports,
-    ...HlmTextareaImports,
   ],
   providers: [ProjectTransactionsService, provideIcons({ lucideSparkles })],
   templateUrl: './project-transactions.html',
@@ -139,9 +169,9 @@ export class ProjectTransactions {
   protected readonly service = inject(ProjectTransactionsService);
   private readonly translate = inject(TranslateService);
   private readonly chat = inject(ChatService);
+  private readonly edits = inject(TransactionEditsService);
   protected readonly treatments = BOOKING_TREATMENTS;
   protected readonly badge = BADGE;
-  protected readonly reasonMax = EXCLUDE_REASON_MAX;
 
   readonly closed = input(false);
 
@@ -149,10 +179,10 @@ export class ProjectTransactions {
   protected readonly search = signal('');
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** The booking being deactivated, and the reason typed for it. */
-  protected readonly excluding = signal<TransactionRow | null>(null);
-  protected readonly reason = signal('');
-  protected readonly reasonMissing = signal(false);
+  /** F9.8: the shared dialogs (detail + history, edit, link). */
+  protected readonly detailKey = signal<string | null>(null);
+  protected readonly editRequest = signal<TransactionEditRequest | null>(null);
+  protected readonly linking = signal<Transaction | null>(null);
 
   /** One action list per row (not a new array per change detection). */
   protected readonly actions = computed(() => {
@@ -190,16 +220,21 @@ export class ProjectTransactions {
       case 'aiFix':
         void this.chat.startWith(this.aiQuestion(row));
         break;
+      case 'detail':
+        if (row.key) this.detailKey.set(row.key);
+        break;
       case 'exclude':
-        this.reason.set('');
-        this.reasonMissing.set(false);
-        this.excluding.set(row);
+        this.editRequest.set(this.request(row, 'hide'));
         break;
       case 'reactivate':
-        void this.service.reactivate(row).catch(() => undefined);
+        this.editRequest.set(this.request(row, 'show'));
         break;
       case 'reclassify':
-        this.service.reclassify(row);
+        this.editRequest.set(this.request(row, 'edit'));
+        break;
+      case 'link':
+        // The link dialog needs the global view of the transaction: the detail has it.
+        if (row.key) void this.linkFrom(row.key);
         break;
       case 'figure': {
         const figureId = row.figureIds[0];
@@ -245,22 +280,35 @@ export class ProjectTransactions {
     });
   }
 
-  protected confirmExclude(): void {
-    const row = this.excluding();
-    const reason = this.reason().trim();
-    if (!row) return;
-    if (!reason) {
-      this.reasonMissing.set(true);
-      return;
-    }
-    this.excluding.set(null);
-    void this.service
-      .exclude(row, reason.slice(0, EXCLUDE_REASON_MAX))
-      .catch(() => undefined);
+  private request(
+    row: TransactionRow,
+    mode: TransactionEditRequest['mode'],
+  ): TransactionEditRequest {
+    return {
+      keys: row.key ? [row.key] : [],
+      mode,
+      kind: row.kind,
+      asset: row.asset,
+      note: row.note,
+    };
   }
 
-  protected dialogChanged(state: 'open' | 'closed'): void {
-    if (state === 'closed') this.excluding.set(null);
+  private async linkFrom(key: string): Promise<void> {
+    try {
+      this.linking.set((await this.edits.detail(key)).transaction);
+    } catch {
+      // Nothing to link: the detail could not be loaded.
+    }
+  }
+
+  protected openEdit(request: TransactionEditRequest): void {
+    this.detailKey.set(null);
+    this.editRequest.set(request);
+  }
+
+  protected openLink(t: Transaction): void {
+    this.detailKey.set(null);
+    this.linking.set(t);
   }
 
   /** `+0.5` / `-0.1`: the sign shows the direction. */

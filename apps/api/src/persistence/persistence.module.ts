@@ -1,3 +1,5 @@
+import { TransactionEditRepositoryPort } from '../transactions/ports/transaction-edit.repository.port';
+import { TransactionEditPrismaRepository } from './prisma/repositories/transaction-edit.prisma.repository';
 import { Global, Module } from '@nestjs/common';
 import {
   CalculationSnapshotRepositoryPort,
@@ -128,6 +130,10 @@ import {
     },
     { provide: CorrectionRepositoryPort, useClass: CorrectionPrismaRepository },
     {
+      provide: TransactionEditRepositoryPort,
+      useClass: TransactionEditPrismaRepository,
+    },
+    {
       provide: OpenItemStateRepositoryPort,
       useClass: OpenItemStatePrismaRepository,
     },
@@ -191,6 +197,7 @@ import {
     CoinMarketRepositoryPort,
     CalculationSnapshotRepositoryPort,
     CorrectionRepositoryPort,
+    TransactionEditRepositoryPort,
     OpenItemStateRepositoryPort,
     ProjectExportRepositoryPort,
     AiSettingsRepositoryPort,

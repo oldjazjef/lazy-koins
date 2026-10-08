@@ -24,6 +24,10 @@ import {
   type StoredRate,
 } from '../../../../core/api/calculation.types';
 import type { DataExportFilter } from '../../../../core/api/dashboard.types';
+import type {
+  TransactionRow,
+  TransactionsView,
+} from '../../../../core/api/calculation.types';
 import { NotificationService } from '../../../../core/notifications/notification.service';
 import { EstvService } from '../../../../shared/estv/estv.service';
 import { fileNameFrom, saveBlob } from '../../../../shared/files/save-blob';
@@ -49,14 +53,14 @@ export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 
 /** A correction started from a figure (F9: "aus einer Position/Buchung erfassen"). */
 export interface CorrectionDraft {
-  readonly type:
-    'price_override' | 'reclassify' | 'manual_booking' | 'manual_holding';
+  readonly type: 'price_override' | 'manual_booking' | 'manual_holding';
   readonly values: Readonly<Record<string, string>>;
 }
 
 /** A statement waiting for the user's "create anyway" while open items exist (F10.2a). */
 export interface PendingExport {
-  readonly kind: ExportKind;
+  /** One statement, or several documents created together (F10.14). */
+  readonly kinds: readonly ExportKind[];
   readonly openItems: number;
 }
 
@@ -469,21 +473,31 @@ export class ProjectWorkspaceService {
    * internal report is created at once — it is where the open items are.
    */
   async requestExport(kind: ExportKind): Promise<void> {
-    if (!isInternalKind(kind)) {
+    await this.requestExports([kind]);
+  }
+
+  /** F10.14: several documents at once — asked once, then created one after the other. */
+  async requestExports(kinds: readonly ExportKind[]): Promise<void> {
+    if (kinds.length === 0) return;
+    if (kinds.some((kind) => !isInternalKind(kind))) {
       const openItems = await this.openItemCount();
       if (openItems > 0) {
-        this.pendingExport.set({ kind, openItems });
+        this.pendingExport.set({ kinds, openItems });
         return;
       }
     }
-    await this.createExport(kind);
+    await this.createExports(kinds);
   }
 
   async confirmExport(): Promise<void> {
     const pending = this.pendingExport();
     if (!pending) return;
     this.pendingExport.set(null);
-    await this.createExport(pending.kind);
+    await this.createExports(pending.kinds);
+  }
+
+  private async createExports(kinds: readonly ExportKind[]): Promise<void> {
+    for (const kind of kinds) await this.createExport(kind);
   }
 
   cancelExport(): void {
@@ -537,6 +551,21 @@ export class ProjectWorkspaceService {
   }
 
   /** Opens the corrections tab with a prefilled form. */
+  /**
+   * F9.8: a booking of the result (its id) as a transaction to edit globally — its stable key
+   * and current values, from the project's transaction list.
+   */
+  async transactionOf(bookingId: string): Promise<TransactionRow | undefined> {
+    const id = this.projectId();
+    if (!id) return undefined;
+    const view = await firstValueFrom(
+      this.http.get<TransactionsView>(apiUrl(`/projects/${id}/transactions`), {
+        params: { q: bookingId, scope: 'all', limit: 200 },
+      }),
+    );
+    return view.rows.find((row) => row.id === bookingId && row.key !== null);
+  }
+
   startCorrection(draft: CorrectionDraft): void {
     this.draft.set(draft);
     this.tab.set('corrections');

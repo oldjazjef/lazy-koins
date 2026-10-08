@@ -22,6 +22,60 @@
   </div>
 </section>
 
+<!-- F10.11–F10.14: further tax documents, several formats at once -->
+<section hlmCard class="mb-6">
+  <div hlmCardHeader>
+    <h3 hlmCardTitle>{{ 'exports.documents.title' | translate }}</h3>
+    <p hlmCardDescription>{{ 'exports.documents.hint' | translate }}</p>
+  </div>
+  <div hlmCardContent class="flex flex-col gap-4">
+    <div class="grid gap-4 md:grid-cols-2">
+      @for (doc of documents; track doc.id) {
+      <div class="lk-panel flex flex-col gap-2 px-4 py-3">
+        <h4 class="font-medium">
+          {{ 'exports.documents.' + doc.id + '.title' | translate }}
+        </h4>
+        <p class="text-muted-foreground flex-1 text-sm">
+          {{ 'exports.documents.' + doc.id + '.description' | translate }}
+        </p>
+        @if (unavailable(doc.id)) {
+        <p class="text-muted-foreground text-sm">
+          {{ 'exports.documents.etax.needsChf' | translate }}
+        </p>
+        }
+        <div
+          class="flex flex-wrap gap-3 text-sm"
+          role="group"
+          [attr.aria-label]="'exports.documents.formats' | translate"
+        >
+          @for (kind of doc.kinds; track kind) {
+          <label class="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              [checked]="chosen().has(kind)"
+              [disabled]="unavailable(doc.id)"
+              (change)="toggleKind(kind)"
+            />
+            {{ 'exports.documents.format.' + formatOf(kind) | translate }}
+          </label>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    <div class="flex justify-end">
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="chosen().size === 0 || service.isBusy()"
+        (click)="createChosen()"
+      >
+        {{ 'exports.documents.create' | translate: { count: chosen().size } }}
+      </button>
+    </div>
+  </div>
+</section>
+
 <!-- F10.2a: the internal check report, never for the tax authority -->
 <section hlmCard class="mb-6">
   <div hlmCardHeader>

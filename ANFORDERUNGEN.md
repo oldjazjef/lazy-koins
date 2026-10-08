@@ -80,9 +80,9 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
 - **F5.2** Dateien werden über das Standardformat (F5.9) oder ein passendes Mapping (F5.11) erkannt – keine plattformspezifischen Parser im Code. Die Exporte von mindestens Kraken (Ledger, Kontoauszug), Binance (Transaktions-, Ein- und Auszahlungshistorie, Account Statement), Bitfinex (Ledger), Bittrex (Transaction/Order History) und Revolut (Krypto-Kontoauszug) müssen so einlesbar sein. Ohne passendes Mapping: Mapping per AI (F5.13) oder manuell erstellen, oder als „nur Beleg“ markieren.
 - **F5.3** Originaldateien bleiben unverändert erhalten und sind jederzeit herunterladbar.
 - **F5.4** Doppelte Uploads werden erkannt und abgelehnt bzw. verknüpft.
-- **F5.5** Dateiübersicht gruppiert nach Plattform/Wallet mit Typ, erkanntem Zeitraum, Anzahl Buchungen, Upload-Datum und Herkunft (neu / aus Projekt X).
+- **F5.5** Dateiübersicht gruppiert nach Plattform/Wallet mit Typ, erkanntem Zeitraum, Anzahl Buchungen, Upload-Datum und Herkunft (neu / aus Projekt X). _Ab 08.10.2026: global im Bereich Dateien, siehe F5.21–F5.25._
 - **F5.6** Vorschau einer Datei (Tabelle bzw. PDF-Seiten).
-- **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt.
+- **F5.7** Datei aus Projekt entfernen; endgültig gelöscht wird sie erst, wenn kein Projekt sie mehr nutzt. _Ab 08.10.2026: siehe F5.23._
 - **F5.7a Datei deaktivieren** (Wunsch 09.10.2026: „Ich möchte Dateien deaktivieren können, somit
   werden sie bei Rechnung / Neuberechnung ignoriert.“): Eine Datei lässt sich pro Projekt
   deaktivieren (optional mit Notiz) und wieder aktivieren. Deaktiviert bleibt sie gespeichert,
@@ -115,6 +115,48 @@ lazy-koins erstellt aus Exporten von Krypto-Börsen und Wallets die Steuerunterl
     fehlen) und es braucht keinen Auszug per 31.12. — der Hinweis erklärt das.
   - Mit den Prüfungen (F8.1/F8.2) verknüpft, nicht doppelt: Dateiprobleme stehen nur bei den
     Hinweisen; offene Punkte verlinken auf die Hinweise ihrer Plattform und umgekehrt.
+
+## 5b. Dateien global, Projekte wählen aus (Wunsch 08.10.2026)
+
+> „Wir sollten den Dateibereich aus dem Projekt lösen, genau wie die Wallets, da die Dateien ja
+> teilweise über mehrere Jahre gehen, also nicht nur im Projekt gescoped sind. In den Projekten
+> wählen wir lediglich die entsprechenden Dateien aus.“
+
+Ersetzt das bisherige Modell „Datei gehört zu einem Projekt“ (F5.5, F5.7, F5.7a, F4.4 werden
+entsprechend angepasst). Vorbild ist die Trennung bei den Wallets (F6: Wallet global,
+Projekt bindet Wallets ein).
+
+- **F5.21 Dateien als eigener Bereich**: Menüpunkt **„Dateien“** im Hauptmenü (neben Mappings
+  und Wallets). Hier werden alle Dateien eines Benutzers hochgeladen, gelesen und verwaltet –
+  unabhängig von Projekten: Upload (F5.1), Erkennung/Mapping-Zuordnung inkl. Vorschlag (F5.2,
+  F5.19), Vorschau (F5.6), Duplikaterkennung (F5.4, pro Benutzer), Zeilenfehler, Herkunft
+  (hochgeladen / aus Wallet-Abruf / abgeleitet aus PDF). Übersicht gruppiert nach Plattform mit
+  Typ, erkanntem **Zeitraum** (von–bis, über Jahre hinweg), Anzahl Buchungen/Bestände, Upload-
+  Datum und **„Verwendet in“** (Projekte). Mapping-Zuordnung und Lesestatus gelten für die Datei,
+  nicht pro Projekt.
+- **F5.22 Projekt wählt Dateien aus**: Der Dateien-Tab im Projekt zeigt die ausgewählten
+  Dateien und bietet **„Dateien auswählen“**: Liste aller Dateien des Benutzers; vorgeschlagen
+  (vorausgewählt) sind die, deren Zeitraum das Steuerjahr berührt oder die Bestände per
+  31.12. des Jahres enthalten; Filter nach Plattform und Zeitraum. Hochladen direkt aus dem
+  Projekt bleibt möglich (die Datei landet im globalen Bereich und ist gleich ausgewählt).
+  Ein Projekt verwendet von einer ausgewählten Datei automatisch nur, was es braucht
+  (Buchungen bis 31.12. des Jahres für Bestände, Buchungen des Jahres für Ertrag) – die Datei
+  muss dafür nicht aufgeteilt werden.
+- **F5.23 Entfernen und Löschen**: Im Projekt „Aus Projekt entfernen“ (die Datei bleibt global
+  erhalten). Im Bereich Dateien „Löschen“ nur, wenn kein **abgeschlossenes** Projekt sie verwendet;
+  sonst wird angezeigt, welche Projekte sie nutzen. Deaktivieren (F5.7a) bleibt pro Projekt.
+- **F5.24 Umstellung bestehender Daten**: Bestehende Projektdateien werden in den globalen
+  Bereich überführt, ohne dass sich ein Ergebnis ändert: dieselbe gespeicherte Datei (SHA-256)
+  in mehreren Projekten wird **eine** globale Datei; jedes Projekt behält seine Auswahl und den
+  Deaktiviert-Zustand. Unterscheiden sich Mapping-Zuordnungen derselben Datei zwischen Projekten,
+  gewinnt die des neusten Projekts und die App meldet die Abweichung einmalig (Hinweis).
+  Projekt-Pakete (F10.8) und Folgeprojekt/Übernahme (F4.4/F4.4a) arbeiten danach mit der
+  Auswahl statt mit Kopien.
+- **F5.25 Fehler (08.10.2026)**: Dateien, die mit einem Mapping gelesen wurden, aber **0
+  Buchungen und 0 Bestände** enthalten (z. B. leere Bittrex-Order-Historien einzelner Jahre),
+  erscheinen heute unter „Ohne Plattform (Belege und noch nicht gelesene Dateien)“. Richtig:
+  Gruppierung nach der **Plattform des Mappings**, Status „Gelesen – leer“ (Info, kein Fehler),
+  Zeitraum „–“. Leere Dateien zählen bei den Hinweisen (F5.8) nicht als Abdeckung.
 
 ## 5a. Standardformat, Mappings und AI-Umwandlung
 
@@ -278,9 +320,60 @@ als abgeleitete Datei im Standardformat Teil des Projekts.
 ## 9. Korrekturen
 
 - **F9.1** Kurs einer Position überschreiben.
-- **F9.2** Buchung umklassieren: Ertrag / kein Ertrag / Spam / Verlust / Transfer.
+- **F9.2** Buchung umklassieren: Ertrag / kein Ertrag / Spam / Verlust / Transfer. _Ab 08.10.2026 global an der Transaktion, siehe F9.8/F9.11._
 - **F9.3** Manuelle Position oder Buchung erfassen (z. B. Hardfork, Verlust, vergessene Plattform).
 - **F9.4** Jede Korrektur mit Begründung, Datum, Vorher/Nachher; Verlauf einsehbar; rückgängig machbar.
+
+## 9a. Transaktionen (Wunsch 08.10.2026)
+
+> „Es soll einen globalen Menüpunkt Transaktionen geben und einen im Projekt. Im globalen alle
+> Transaktionen, im Projekt nur die vom gewählten Projekt-Zeitrahmen. Auch in den Projekt-Wallets
+> sollen jeweils nur Transaktionen für dieses Jahr angezeigt werden. Transaktionen soll man
+> bearbeiten können → Tag wechseln etc., mit AI analysieren lassen etc.“
+> Entscheid 08.10.2026: Änderungen gelten **global** (eine Wahrheit pro Transaktion).
+
+Eine **Transaktion** ist eine Buchung im Standardformat (F5.9), gelesen aus einer Datei (über
+Mapping) oder aus einem Wallet-Abruf, mit Herkunft Datei + Zeile (F7.5).
+
+- **F9.5 Globale Transaktionsliste**: Menüpunkt **„Transaktionen“** im Hauptmenü: alle
+  Transaktionen aller Dateien und Wallets des Benutzers. Tabelle (Tabellenregeln der App:
+  abschneiden mit Tooltip, Aktionen-Menü, Paginierung) mit Zeitpunkt, Plattform/Wallet, Konto,
+  Art (Tag), Asset, Menge (mit Vorzeichen), Gebühr, Wert in Steuerwährung zum Zeitpunkt (wo ein
+  Kurs vorliegt), Referenz/Trade-Gruppe, Quelle (Datei + Zeile bzw. Wallet + Tx-Hash) und
+  Status (original / geändert / von AI vorgeschlagen). Filter: Zeitraum (Datumsbereich-Auswahl),
+  Plattform/Wallet, Konto, Asset, Art, nur geänderte, nur „unbekannt“/zu prüfen; Suche über
+  Asset, Referenz, Notiz. Klick → Detail mit Originalzeile der Datei und Änderungsverlauf.
+- **F9.6 Transaktionen im Projekt**: Reiter **„Transaktionen“** im Projekt: dieselbe Liste,
+  fest gefiltert auf das Steuerjahr des Projekts (01.01.–31.12.) und auf die ausgewählten,
+  aktiven Dateien und eingebundenen Wallets des Projekts. Optional einblendbar: Buchungen vor dem
+  Jahr, soweit sie den Bestand per 31.12. bestimmen.
+- **F9.7 Wallet-Transaktionen im Projekt**: Im Projekt-Reiter Wallets zeigt jedes Wallet nur die
+  Transaktionen des Steuerjahres (global im Bereich Wallets weiterhin alle).
+- **F9.8 Bearbeiten (global)**: Pro Transaktion: Art/Tag ändern (geschlossene Liste der
+  Buchungsarten, z. B. Ertrag Staking / Zinsen / Airdrop, Transfer, Trade, Gebühr, Spam,
+  Verlust), Notiz, als intern verschoben mit Gegenbuchung verknüpfen, Asset-Zuordnung
+  korrigieren, ausblenden (= Spam/ignoriert). Mehrfachauswahl für Massenänderungen (z. B. „alle
+  Binance ‚Simple Earn Flexible Interest‘ → Ertrag Zinsen“). Jede Änderung mit Begründung,
+  Datum, Vorher/Nachher, rückgängig machbar (F9.4). Änderungen hängen an der Transaktion
+  (stabile Kennung aus Datei-SHA-256 + Zeile bzw. Wallet + Tx-Hash) und gelten in **jedem**
+  Projekt, das die Transaktion verwendet; betroffene Projekte werden „veraltet“ (Neu berechnen).
+  Die Originaldateien bleiben unverändert (F5.3).
+- **F9.9 Abgeschlossene Jahre**: Transaktionen, die in einem **abgeschlossenen** Projekt
+  verwendet werden, sind gesperrt (Hinweis „Projekt X ist abgeschlossen – zum Ändern entsperren“).
+- **F9.10 Mit AI analysieren**: Für eine Auswahl (oder alle „unbekannt“/zu prüfen) schlägt das
+  AI-Plugin (F5.13/F5.14: gleiche Zustimmung, vorher sichtbar, was gesendet wird – nur die
+  nötigen Felder, keine Adressen/IDs, die nicht nötig sind) pro Transaktion eine Art mit
+  Begründung und Sicherheit vor, z. B. Ertrag vs. Transfer, mögliche Gegenbuchung, Spam. Die
+  Vorschläge erscheinen als Status „von AI vorgeschlagen“ und werden erst mit Bestätigung
+  (einzeln oder gesammelt) übernommen. Gleiche Muster (Plattform + Originaltyp) lassen sich als
+  Regel ins Mapping übernehmen, damit künftige Dateien gleich gelesen werden.
+- **F9.11 Umstellung bestehender Korrekturen**: Bestehende Projekt-Korrekturen „Buchung
+  umklassieren“ (F9.2) werden zu globalen Transaktions-Änderungen; Korrekturen, die sich
+  zwischen Projekten widersprechen, gewinnt die des neusten Projekts, die übrigen werden im
+  Verlauf vermerkt. Kursüberschreibungen und manuelle Bestände/Buchungen (F9.1, F9.3) bleiben
+  Projekt-Korrekturen.
+- **F9.12 Chat/MCP**: Transaktionen suchen, anzeigen und (als Vorschlag zur Bestätigung)
+  ändern über die bestehende Tool-Schicht (F11.14/F11.16), strikt auf den Benutzer begrenzt.
 
 ## 10. Exporte
 
@@ -298,6 +391,39 @@ als abgeleitete Datei im Standardformat Teil des Projekts.
   und Vorschau; der interne Prüfbericht (F10.2a) ist nie vorausgewählt. Senden erst nach ausdrücklicher Bestätigung. Jede gesendete Mail wird im Projekt
   protokolliert (Datum, Empfänger, Betreff, Anhänge, Status/Fehler), ohne Passwörter. Ohne
   eingerichteten Mailer bleibt es beim Text zum Kopieren und einem `mailto:`-Link (ohne Anhänge).
+
+### Weitere steuerrelevante Dokumente (Wunsch 08.10.2026)
+
+> „Biete mehrere steuerrelevante Dokumente für den Export an, dafür gibt es ja Standards.“
+> Gewählt 08.10.2026: alle vier unten. Für alle gilt der Grundsatz oben (keine offenen Punkte),
+> F10.3–F10.5, Steuerwährung (F4.1a) und Kopfzeile (F10.4).
+
+- **F10.10 E-Steuerauszug nach eCH-0196**: Export im Schweizer Standard für elektronische
+  Steuerauszüge (XML gemäss eCH-0196, aktuelle Version zuerst abklären), damit die kantonale
+  Steuersoftware die Werte importieren kann, plus PDF-Darstellung mit den im Standard
+  vorgesehenen Barcodes. Vor der Umsetzung prüfen und dokumentieren: welche Version, wie
+  Kryptowährungen abgebildet werden (Wertschriften ohne ISIN/Valor: Bezeichnung, Ticker,
+  ESTV-Kursliste-Wert), welche Pflichtfelder (Institut/Kunde) für eine Privatperson als
+  Ersteller sinnvoll belegt werden, welche Kantone den Import unterstützen. Was der Standard nicht
+  sauber abbildet, wird als Einschränkung im Export und in der Doku genannt; validiert gegen das
+  offizielle XSD.
+- **F10.11 Wertschriftenverzeichnis**: Aufbau wie das Formular „Wertschriften- und
+  Guthabenverzeichnis“ (Bezeichnungen je Kanton, F10.3): eine Zeile je Asset bzw. Plattform/Wallet
+  mit Bestand (Menge), Steuerwert per 31.12. (Kurs, Quelle, ESTV wo vorhanden), Ertrag des Jahres
+  (mit/ohne Verrechnungssteuer – bei Krypto ohne), Summen. Als PDF zum Beilegen und als
+  CSV/Excel zum Übertragen in die Steuersoftware.
+- **F10.12 Ertrags- und Belegliste**: alle steuerbaren Erträge des Jahres (Staking, Zinsen/Earn,
+  Airdrops, Launchpool, Lending, Hardforks) je Zufluss mit Datum, Plattform/Wallet, Asset, Menge,
+  Kurs am Zuflusstag mit Quelle, Wert in Steuerwährung und Herkunft (Datei + Zeile bzw. Tx-Hash);
+  Summen je Kategorie und Asset; Earn-Lücke (Differenzmethode) separat erläutert. PDF und Excel.
+- **F10.13 Transaktions- und Bestandesnachweis**: (a) alle Transaktionen des Jahres (F9.6) mit
+  Art, Menge, Gebühr, Wert und Herkunft, inkl. vorgenommener Änderungen (Vorher/Nachher,
+  Begründung, F9.8); (b) Bestände per 31.12. je Plattform/Konto/Wallet und Asset mit Kurs,
+  Kursquelle und Nachweis (Kontoauszug / Ledger / Wallet-Abruf / manuell mit Beleg). Als Nachweis
+  bei Rückfragen des Steueramts. PDF und Excel (Excel mit Formeln wie F10.2).
+- **F10.14 Auswahl im Tab Exporte**: Die Dokumente erscheinen als Karten mit Beschreibung und
+  Format-Wahl; mehrere lassen sich auf einmal erstellen; sie werden wie die Auszüge gespeichert
+  (F10.5) und können der Mail an den Treuhänder angehängt werden (F10.6a).
 
 ### Datenexport
 
@@ -532,4 +658,4 @@ realisierte/unrealisierte Gewinne (Kapitalgewinne sind nicht im Umfang).
 
 ## Nicht im Umfang (vorerst)
 
-Kapitalgewinnberechnung und andere Länder als CH · direkte Börsen-APIs · E-Steuerauszug eCH-0196 · Mobile App.
+Kapitalgewinnberechnung und andere Länder als CH · direkte Börsen-APIs · Mobile App. (Der E-Steuerauszug eCH-0196 ist seit 08.10.2026 im Umfang, F10.10.)

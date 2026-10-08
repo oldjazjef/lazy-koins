@@ -63,6 +63,7 @@ export class AddDerivedFileHandler implements ICommandHandler<
       kind: 'csv',
       bytes,
       origin: `${DERIVED_FROM}${source.id}`,
+      source: `${DERIVED_FROM}${source.fileId}`,
     });
     await this.projectNotifications?.filesChanged(userId, project.id);
     return stored;

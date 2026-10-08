@@ -6,11 +6,15 @@ import {
 } from '@lazykoins/engine';
 
 /**
- * Files of a project (F5). Hand-written domain types — never a re-export of a Prisma model.
+ * Files (F5). Hand-written domain types — never a re-export of a Prisma model.
  *
- * - **stored file**: the original bytes, content-addressed by SHA-256 per owner (F5.3, F5.4).
- * - **project file**: a stored file in one project, with how it was read: in the standard format
- *   directly, through a mapping spec, not yet (needs a mapping), or kept as evidence only.
+ * - **stored file** (= the user's file, F5.21): the original bytes, content-addressed by SHA-256
+ *   per owner (F5.3, F5.4), and **how it is read** — in the standard format directly, through a
+ *   mapping spec, not yet (needs a mapping), or kept as evidence only. One reading per file,
+ *   whatever project uses it.
+ * - **project file**: the selection of a stored file in one project (F5.22) — its name there,
+ *   how it came in, and whether it is deactivated there (F5.7a). Its analysis fields are the
+ *   stored file's.
  */
 
 /** Mirrored by a CHECK in the migration. */
@@ -32,6 +36,8 @@ export const MEDIA_TYPES: Readonly<Record<FileKind, string>> = {
 };
 
 export const UPLOADED = 'uploaded';
+/** F5.22: picked from the user's files in "Dateien auswählen". */
+export const SELECTED = 'selected';
 export const FROM_PROJECT = 'from_project:';
 /** A standard-format file the AI converted from another file of the project (a PDF statement). */
 export const DERIVED_FROM = 'derived_from:';
@@ -102,6 +108,24 @@ export interface ProjectFile extends FileAnalysis {
   readonly disabledAt: string | null;
   /** Optional reason for the deactivation (≤ `FILE_NOTE_MAX`); null when active. */
   readonly disabledNote: string | null;
+}
+
+/** F5.21: one project that selects a stored file. */
+export interface FileUsage {
+  readonly projectFileId: string;
+  readonly projectId: string;
+  /** Not deactivated in that project (F5.7a). */
+  readonly active: boolean;
+}
+
+/**
+ * F5.21: a file of the user, independent of projects — its bytes' facts, how it is read and
+ * which projects select it. `source`: `uploaded`, `derived_from:<stored file id>` (read from a
+ * PDF by the AI) or `wallet:<wallet id>` (a wallet fetch).
+ */
+export interface UserFile extends StoredFileMeta, FileAnalysis {
+  readonly source: string;
+  readonly usages: readonly FileUsage[];
 }
 
 /** F5.7a: the longest deactivation note (mirrored by a CHECK in the migration). */

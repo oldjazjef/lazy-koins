@@ -56,6 +56,8 @@ async function exportData(
     t.inputs,
     calculation,
     new InMemoryHintStateRepository(),
+    t.corrections,
+    t.transactionEdits,
   );
   const snapshot = await service.currentSnapshot('anna', t.project);
   const data = await service.build(

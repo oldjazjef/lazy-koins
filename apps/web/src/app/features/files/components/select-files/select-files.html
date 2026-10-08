@@ -1,0 +1,117 @@
+<button
+  hlmBtn
+  variant="outline"
+  size="sm"
+  type="button"
+  [disabled]="disabled()"
+  (click)="show()"
+>
+  {{ 'files.select.open' | translate }}
+</button>
+
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-3xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'files.select.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'files.select.hint' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (service.candidates(); as candidates) { @if (candidates.length === 0)
+      {
+      <p class="text-muted-foreground text-sm">
+        {{ 'files.select.empty' | translate }}
+      </p>
+      } @else {
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          hlmInput
+          id="select-files-search"
+          type="search"
+          class="min-w-48 flex-1"
+          [attr.aria-label]="'files.select.search' | translate"
+          [placeholder]="'files.select.search' | translate"
+          [ngModel]="service.search()"
+          (ngModelChange)="service.search.set($event)"
+        />
+        <label class="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            [checked]="service.onlySuggested()"
+            (change)="service.onlySuggested.set(!service.onlySuggested())"
+          />
+          {{ 'files.select.onlySuggested' | translate }}
+        </label>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="service.setVisible(true)"
+        >
+          {{ 'projects.followUp.all' | translate }}
+        </button>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          (click)="service.setVisible(false)"
+        >
+          {{ 'projects.followUp.none' | translate }}
+        </button>
+      </div>
+      @for (group of groups(service.visible()); track group.platform) {
+      <fieldset class="flex flex-col gap-1">
+        <legend class="text-muted-foreground text-xs font-medium">
+          {{ group.platform ?? ('projects.followUp.noPlatform' | translate) }}
+        </legend>
+        @for (file of group.files; track file.id) {
+        <label
+          class="hover:bg-muted flex min-w-0 items-center gap-3 rounded-md px-2 py-1 text-sm"
+        >
+          <input
+            type="checkbox"
+            [disabled]="file.selected"
+            [checked]="file.selected || service.selected().has(file.id)"
+            (change)="service.toggle(file.id)"
+          />
+          <span class="min-w-0 flex-1" [lkTruncate]="file.name"
+            >{{ file.name }}</span
+          >
+          @if (file.suggested && !file.selected) {
+          <span hlmBadge variant="secondary" class="shrink-0"
+            >{{ 'files.select.suggested' | translate }}</span
+          >
+          }
+          <span class="text-muted-foreground shrink-0 text-xs tabular-nums">
+            @if (file.selected) { {{ 'files.select.already' | translate }} }
+            @else if (file.period) { {{ file.period.from | lkDate }} – {{
+            file.period.to | lkDate }} }
+          </span>
+        </label>
+        }
+      </fieldset>
+      } @empty {
+      <p class="text-muted-foreground text-sm">
+        {{ 'files.select.noMatch' | translate }}
+      </p>
+      } } } @else {
+      <hlm-skeleton class="h-40 w-full" />
+      }
+    </div>
+    <hlm-dialog-footer>
+      <button hlmBtn variant="outline" type="button" hlmDialogClose>
+        {{ 'common.cancel' | translate }}
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="service.selected().size === 0 || service.isBusy()"
+        (click)="confirm()"
+      >
+        {{ 'files.select.confirm' | translate: { count: service.selected().size
+        } }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

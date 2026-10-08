@@ -125,6 +125,8 @@ describe('AppShell', () => {
     expect(links(el)).toEqual([
       '/app/dashboard',
       '/app/projects',
+      '/app/files',
+      '/app/transactions',
       '/app/mappings',
       '/app/wallets',
     ]);
@@ -203,6 +205,8 @@ describe('AppShell', () => {
     expect(links(el)).toEqual([
       '/app/dashboard',
       '/app/projects',
+      '/app/files',
+      '/app/transactions',
       '/app/mappings',
       '/app/wallets',
     ]);

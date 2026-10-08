@@ -251,10 +251,12 @@ export const CORRECTION_TYPES = [
   'exclude_booking',
 ] as const;
 export type CorrectionType = (typeof CORRECTION_TYPES)[number];
-/** What the corrections form offers — an exclusion is made in the Transaktionen tab. */
+/**
+ * What the corrections form offers. Reclassifying and hiding a booking are global transaction
+ * edits (F9.8, F9.11) — made in the Transaktionen tab or page, never as a project correction.
+ */
 export const FORM_CORRECTION_TYPES = [
   'price_override',
-  'reclassify',
   'manual_booking',
   'manual_holding',
 ] as const satisfies readonly CorrectionType[];
@@ -553,13 +555,37 @@ export const STATEMENT_KINDS = [
   'detailed_pdf',
   'detailed_xlsx',
 ] as const;
+/**
+ * F10.11–F10.13: the further tax documents, each in its formats — Wertschriftenverzeichnis,
+ * Ertrags- und Belegliste, Transaktions- und Bestandesnachweis; F10.10 the E-Steuerauszug.
+ * Same rules as the statements.
+ */
+export const TAX_DOCUMENTS = [
+  {
+    id: 'securities',
+    kinds: ['securities_pdf', 'securities_xlsx', 'securities_csv'],
+  },
+  { id: 'income_list', kinds: ['income_list_pdf', 'income_list_xlsx'] },
+  { id: 'evidence', kinds: ['evidence_pdf', 'evidence_xlsx'] },
+  /** F10.10: E-Steuerauszug after eCH-0196 2.2 — PDF with barcodes and the XML; CHF only. */
+  { id: 'etax', kinds: ['etax_pdf', 'etax_xml'] },
+] as const;
+export type TaxDocument = (typeof TAX_DOCUMENTS)[number];
+export const DOCUMENT_KINDS = TAX_DOCUMENTS.flatMap((d) => d.kinds);
 /** The internal check report (F10.2a) — kept apart, never attached to the Treuhänder mail by default. */
 export const INTERNAL_KINDS = [
   'internal_report_pdf',
   'internal_report_xlsx',
 ] as const;
-export const EXPORT_KINDS = [...STATEMENT_KINDS, ...INTERNAL_KINDS] as const;
-export type ExportKind = (typeof EXPORT_KINDS)[number];
+export type ExportKind =
+  | (typeof STATEMENT_KINDS)[number]
+  | TaxDocument['kinds'][number]
+  | (typeof INTERNAL_KINDS)[number];
+export const EXPORT_KINDS: readonly ExportKind[] = [
+  ...STATEMENT_KINDS,
+  ...DOCUMENT_KINDS,
+  ...INTERNAL_KINDS,
+];
 
 export function isInternalKind(kind: ExportKind): boolean {
   return (INTERNAL_KINDS as readonly string[]).includes(kind);
@@ -665,7 +691,17 @@ export interface TransactionRow {
   correctionReason: string | null;
   projectFileId: string | null;
   fileName: string | null;
+  /** F9.8: the stable transaction key (global edits); null for a manual booking. */
+  key: string | null;
+  status: TransactionStatus;
+  hidden: boolean;
+  linkedKey: string | null;
+  /** The reason of the latest global edit. */
+  editReason: string | null;
 }
+
+/** F9.5: original / changed by a global edit / an open AI suggestion (F9.10). */
+export type TransactionStatus = 'original' | 'changed' | 'aiSuggested';
 
 export interface TransactionsView {
   taxYear: number;

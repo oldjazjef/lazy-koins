@@ -4,8 +4,11 @@ import {
   applyMapping,
   type Booking,
   type CalculationInput,
+  applyTransactionEdits,
   type Correction,
   countryRules,
+  type EditedBookings,
+  fileKeyPrefix,
   type CountryRules,
   ENGINE_VERSION,
   type Holding,
@@ -13,19 +16,29 @@ import {
   preferFetchedSources,
   type PreviousYear,
   type RateEntry,
+  transactionKeys,
+  walletKeyPrefix,
   type WalletState,
   withTaxCurrency,
 } from '@lazykoins/engine';
+import {
+  engineEdits,
+  type StoredTransactionEdit,
+} from '../../transactions/domain/transaction-edit';
+import { TransactionEditRepositoryPort } from '../../transactions/ports/transaction-edit.repository.port';
+import { originWalletId as walletIdOf } from '../../wallets/domain/wallet';
 import { walletStates } from '../../wallets/domain/wallet-states';
 import { WalletRepositoryPort } from '../../wallets/ports/wallet.repository.port';
 import { readableOf } from '../../files/application/file-access';
 import {
+  type ReadableFile,
   SourceFileReader,
   UnreadableFileError,
 } from '../../files/application/source-file-reader';
 import {
   type ProjectFile,
   readsRecords,
+  type UserFile,
 } from '../../files/domain/project-file';
 import { ProjectFileRepositoryPort } from '../../files/ports/project-file.repository.port';
 import type { ImportMapping } from '../../mappings/domain/import-mapping';
@@ -58,6 +71,12 @@ export interface AssembledInput {
   readonly inputHash: string;
   /** Project files that could not be read this time (counted, never their content). */
   readonly unreadable: number;
+  /**
+   * F9.8: what the global transaction edits did (the input's bookings are already edited;
+   * hidden ones are left out) and every imported booking's stable key (booking id → key).
+   */
+  readonly edits: EditedBookings;
+  readonly keys: ReadonlyMap<string, string>;
 }
 
 interface Sources {
@@ -71,6 +90,8 @@ interface Sources {
   readonly wallets: readonly WalletState[];
   /** F7.4: tickers of several coins without a chosen coin (open item, no by-ticker price). */
   readonly ambiguousAssets: readonly string[];
+  /** F9.8: the owner's active global edits that touch this project's files (key or link). */
+  readonly edits: readonly StoredTransactionEdit[];
 }
 
 function compareText(a: string, b: string): number {
@@ -101,6 +122,7 @@ export class CalculationInputService {
     private readonly reader: SourceFileReader,
     private readonly wallets: WalletRepositoryPort,
     private readonly settings: UserSettingsRepositoryPort,
+    private readonly transactionEdits: TransactionEditRepositoryPort,
     /** F7.4: the deployment-wide market list (shared tickers); absent in older specs. */
     @Optional() private readonly market?: CoinMarketRepositoryPort,
   ) {}
@@ -128,20 +150,34 @@ export class CalculationInputService {
   async build(project: Project): Promise<AssembledInput> {
     const rules = projectRules(project);
     const sources = await this.sources(project);
-    const bookings: Booking[] = [];
+    const imported: Booking[] = [];
     const holdings: Holding[] = [];
+    const keys = new Map<string, string>();
     let unreadable = 0;
     for (const file of sources.files) {
       try {
         const records = await this.recordsOf(file, sources.mappings);
         if (!records) continue;
-        bookings.push(...records.bookings);
+        imported.push(...records.bookings);
         holdings.push(...records.holdings);
+        for (const [id, key] of transactionKeys(
+          records.bookings,
+          walletIdOf(file.origin) ?? null,
+        )) {
+          keys.set(id, key);
+        }
       } catch (error) {
         if (!(error instanceof UnreadableFileError)) throw error;
         unreadable += 1;
       }
     }
+    // F9.8: the global edits on top of the imported bookings (before the project corrections).
+    const edits = applyTransactionEdits(
+      imported,
+      (b) => keys.get(b.id) ?? b.id,
+      engineEdits(sources.edits),
+    );
+    const bookings = [...edits.bookings];
     this.logger.log(
       `project ${project.id}: ${bookings.length} bookings, ${holdings.length} balances from ${sources.files.length} files (${unreadable} unreadable)`,
     );
@@ -172,6 +208,8 @@ export class CalculationInputService {
       })),
       inputHash: hashOf(project, sources),
       unreadable,
+      edits,
+      keys,
     };
   }
 
@@ -227,6 +265,17 @@ export class CalculationInputService {
     );
     const corrections = await this.corrections.listByProject(project.id);
     const { previous, ref } = await this.previousYear(project);
+    // F9.8: only the edits of this project's transactions (by key prefix — no file is read), so
+    // an edit elsewhere leaves this snapshot current.
+    const prefixes = files.map((f) => {
+      const walletId = walletIdOf(f.origin);
+      return walletId ? walletKeyPrefix(walletId) : fileKeyPrefix(f.sha256);
+    });
+    const touches = (key: string | null | undefined) =>
+      !!key && prefixes.some((prefix) => key.startsWith(prefix));
+    const edits = (await this.transactionEdits.listByOwner(project.ownerId))
+      .filter((e) => e.status === 'active')
+      .filter((e) => touches(e.key) || touches(e.changes.linkedKey));
     return {
       files,
       mappings,
@@ -236,6 +285,7 @@ export class CalculationInputService {
       previousRef: ref,
       wallets: await this.walletStates(project),
       ambiguousAssets: ambiguousSymbols(choices, marketAmbiguous),
+      edits,
     };
   }
 
@@ -300,6 +350,37 @@ export class CalculationInputService {
     { bookings: readonly Booking[]; holdings: readonly Holding[] } | undefined
   > {
     const { readable } = await readableOf(this.files, file);
+    return this.read(readable, file, mappings);
+  }
+
+  /** F9.5: the same for a file of the user, independent of projects (F5.21). */
+  async recordsOfStored(
+    file: Pick<UserFile, 'id' | 'originalName' | 'status' | 'mappingId'>,
+    mappings: ReadonlyMap<string, ImportMapping>,
+  ): Promise<
+    { bookings: readonly Booking[]; holdings: readonly Holding[] } | undefined
+  > {
+    const content = await this.files.readContent(file.id);
+    if (!content) return undefined;
+    return this.read(
+      {
+        sha256: content.sha256,
+        name: file.originalName,
+        kind: content.kind,
+        bytes: content.bytes,
+      },
+      file,
+      mappings,
+    );
+  }
+
+  private async read(
+    readable: ReadableFile,
+    file: Pick<ProjectFile, 'status' | 'mappingId'>,
+    mappings: ReadonlyMap<string, ImportMapping>,
+  ): Promise<
+    { bookings: readonly Booking[]; holdings: readonly Holding[] } | undefined
+  > {
     if (file.status === 'standard') {
       return parseStandardFile(await this.reader.read(readable));
     }
@@ -353,6 +434,8 @@ function hashOf(project: Project, sources: Sources): string {
     wallets: sources.wallets,
     // F7.4: choosing a coin for an ambiguous ticker settles its open item.
     ambiguous: sources.ambiguousAssets,
+    // F9.8: a global edit of one of the project's transactions makes it stale.
+    edits: sources.edits.map((e) => [e.id, e.createdAt, e.key, e.changes]),
   };
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }

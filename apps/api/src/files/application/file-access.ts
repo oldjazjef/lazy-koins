@@ -2,7 +2,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { projectClosed } from '../../common/http/api-errors';
+import { conflict, projectClosed } from '../../common/http/api-errors';
 import { loadOwnProject } from '../../projects/application/project-access';
 import type { Project } from '../../projects/domain/project';
 import type { ProjectRepositoryPort } from '../../projects/ports/project.repository.port';
@@ -55,6 +55,39 @@ export async function readableOf(
       bytes: content.bytes,
     },
   };
+}
+
+/**
+ * F5.21: how a file is read is the same in every project that selects it. A closed project's
+ * figures must not change (F4.5), so a file it uses keeps its reading: 409 `usedByClosedProject`
+ * with the closed projects. Returns every project that uses the file (to notify them after).
+ */
+export async function projectsReading(
+  projects: ProjectRepositoryPort,
+  files: ProjectFileRepositoryPort,
+  storedFileId: string,
+): Promise<Project[]> {
+  const stored = await files.findStored(storedFileId);
+  const using: Project[] = [];
+  for (const usage of stored?.usages ?? []) {
+    const project = await projects.findById(usage.projectId);
+    if (project && !using.some((p) => p.id === project.id)) using.push(project);
+  }
+  const closed = using.filter((p) => p.status === 'closed');
+  if (closed.length > 0) {
+    throw conflict(
+      'usedByClosedProject',
+      'A closed project uses this file: reopen it first, then change how the file is read',
+      {
+        projects: closed.map((p) => ({
+          id: p.id,
+          name: p.name,
+          taxYear: p.taxYear,
+        })),
+      },
+    );
+  }
+  return using;
 }
 
 /** Maps the reader's "cannot unpack" to a 422 the user can act on. */

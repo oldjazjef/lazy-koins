@@ -1,0 +1,76 @@
+<section class="flex flex-col gap-2">
+  @if (view.hasValue()) { @let data = view.value();
+  <h4 class="text-sm font-medium">
+    {{ 'wallets.year.title' | translate: { year: year(), count: data.total } }}
+  </h4>
+  @if (data.total === 0) {
+  <p class="text-muted-foreground text-sm">
+    {{ 'wallets.year.empty' | translate }}
+  </p>
+  } @else {
+  <div hlmTableContainer class="lk-panel">
+    <table hlmTable class="table-fixed">
+      <colgroup>
+        <col class="w-36" />
+        <col />
+        <col class="w-40" />
+        <col class="hidden w-28 md:table-column" />
+      </colgroup>
+      <tbody hlmTBody>
+        @for (t of data.rows; track t.key) {
+        <tr hlmTr [class.text-muted-foreground]="t.hidden">
+          <td hlmTd class="tabular-nums">
+            {{ t.timestamp | lkDate: 'dateTime' : 'UTC' }}
+          </td>
+          <td hlmTd class="max-w-0 tabular-nums">
+            <span class="block truncate"
+              >{{ t.quantity | lkQuantity }} {{ t.asset }} · {{ t.accountId
+              }}</span
+            >
+          </td>
+          <td hlmTd>
+            <span
+              hlmBadge
+              [variant]="t.kind === 'unknown' ? 'destructive' : 'secondary'"
+              >{{ 'bookings.kind.' + t.kind | translate }}</span
+            >
+          </td>
+          <td hlmTd class="hidden text-right tabular-nums md:table-cell">
+            {{ t.value === null ? '–' : (t.value | lkChf: data.currency) }}
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (pages() > 1) {
+  <div class="flex items-center justify-end gap-2 text-sm">
+    <button
+      hlmBtn
+      variant="ghost"
+      size="sm"
+      type="button"
+      [disabled]="page() === 0"
+      (click)="move(-1)"
+    >
+      {{ 'wallets.year.previous' | translate }}
+    </button>
+    <span class="tabular-nums"
+      >{{ 'wallets.year.page' | translate: { page: page() + 1, pages: pages() }
+      }}</span
+    >
+    <button
+      hlmBtn
+      variant="ghost"
+      size="sm"
+      type="button"
+      [disabled]="page() + 1 >= pages()"
+      (click)="move(1)"
+    >
+      {{ 'wallets.year.next' | translate }}
+    </button>
+  </div>
+  } } } @else if (view.isLoading()) {
+  <hlm-skeleton class="h-16 w-full" />
+  }
+</section>

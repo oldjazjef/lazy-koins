@@ -8,6 +8,7 @@ import { mappingTools } from '../definitions/mapping.tools';
 import { projectTools } from '../definitions/project.tools';
 import { rateTools } from '../definitions/rate.tools';
 import { settingsTools } from '../definitions/settings.tools';
+import { transactionTools } from '../definitions/transaction.tools';
 import { walletTools } from '../definitions/wallet.tools';
 import {
   type AnyTool,
@@ -27,6 +28,7 @@ export function buildTools(services: ToolServices): AnyTool[] {
     ...(services.library ? libraryTools(services.library) : []),
     ...rateTools(services),
     ...calculationTools(services),
+    ...(services.transactions ? transactionTools(services.transactions) : []),
     ...exportTools(services),
     ...walletTools(services),
     ...settingsTools(services),

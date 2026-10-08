@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
+  applyTransactionEdits,
   type Booking,
   type Correction,
   type CountryRules,
@@ -13,8 +14,13 @@ import {
   preferFetchedSources,
   type ProjectCorrection,
   type RateEntry,
+  type TransactionEdit,
+  transactionKeys,
   withTaxCurrency,
 } from '@lazykoins/engine';
+import { engineEdits } from '../../transactions/domain/transaction-edit';
+import { TransactionEditRepositoryPort } from '../../transactions/ports/transaction-edit.repository.port';
+import { originWalletId } from '../../wallets/domain/wallet';
 import { CalculationInputService } from '../../calculation/application/calculation-input.service';
 import { CorrectionRepositoryPort } from '../../calculation/ports/calculation.repository.port';
 import { UnreadableFileError } from '../../files/application/source-file-reader';
@@ -73,6 +79,8 @@ export interface DashboardSources {
   readonly marketAmbiguous: readonly string[];
   /** Price sources phase 2: the user's provider order — it ranks the fetched series per day. */
   readonly sourceOrder: readonly string[];
+  /** F9.8: the user's active global transaction edits (one truth, every project). */
+  readonly edits: readonly TransactionEdit[];
 }
 
 export interface DashboardRecords {
@@ -113,6 +121,7 @@ export class DashboardInputService {
     private readonly userRates: UserRateRepositoryPort,
     private readonly inputs: CalculationInputService,
     private readonly settings: UserSettingsRepositoryPort,
+    private readonly transactionEdits: TransactionEditRepositoryPort,
     /** F7.4: the deployment-wide market list (shared tickers); absent in older specs. */
     @Optional() private readonly market?: CoinMarketRepositoryPort,
   ) {}
@@ -225,6 +234,7 @@ export class DashboardInputService {
       coinChoices,
       marketAmbiguous: [...marketAmbiguous.keys()].sort(compareText),
       sourceOrder,
+      edits: engineEdits(await this.transactionEdits.listByOwner(userId)),
     };
   }
 
@@ -277,6 +287,7 @@ export class DashboardInputService {
         .sort(compareText),
       ambiguous: sources.marketAmbiguous,
       sourceOrder: sources.sourceOrder,
+      edits: sources.edits.map((e) => [e.id, e.createdAt, e.key, e.changes]),
     };
     return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
   }
@@ -288,16 +299,23 @@ export class DashboardInputService {
       (newest ? countryRules(newest.country) : undefined) ?? chRules,
       sources.currency,
     );
-    const bookings: Booking[] = [];
+    const imported: Booking[] = [];
     const holdings: Holding[] = [];
+    const keys = new Map<string, string>();
     const fileRefs = new Map<string, DashboardFileRef>();
     let unreadable = 0;
     for (const file of sources.files) {
       try {
         const records = await this.inputs.recordsOf(file, sources.mappings);
         if (!records) continue;
-        bookings.push(...records.bookings);
+        imported.push(...records.bookings);
         holdings.push(...records.holdings);
+        for (const [id, key] of transactionKeys(
+          records.bookings,
+          originWalletId(file.origin) ?? null,
+        )) {
+          keys.set(id, key);
+        }
         fileRefs.set(file.sha256, {
           projectId: file.projectId,
           projectFileId: file.id,
@@ -308,6 +326,12 @@ export class DashboardInputService {
         unreadable += 1;
       }
     }
+    // F9.8: the global edits apply here exactly as in every project.
+    const bookings = applyTransactionEdits(
+      imported,
+      (b) => keys.get(b.id) ?? b.id,
+      sources.edits,
+    ).bookings;
     const projects = sources.projects.map((p) => ({
       id: p.id,
       taxYear: p.taxYear,

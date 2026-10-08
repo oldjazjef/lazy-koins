@@ -577,3 +577,8 @@
 } @else {
 <hlm-skeleton class="h-64 w-full" />
 }
+
+<lk-transaction-edit-dialog
+  [request]="editRequest()"
+  (closed)="editRequest.set(null)"
+/>

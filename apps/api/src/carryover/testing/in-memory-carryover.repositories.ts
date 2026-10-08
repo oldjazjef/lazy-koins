@@ -99,19 +99,25 @@ export class InMemoryProjectBundleRepository extends ProjectBundleRepositoryPort
         if (existing) stored = { existingId: existing.id };
       }
       const mappingId = f.mappingKey ? mappingIds.get(f.mappingKey) : null;
+      const analysis = {
+        ...f.analysis,
+        status:
+          f.analysis.status === 'mapped' && !mappingId
+            ? ('needs_mapping' as const)
+            : f.analysis.status,
+        mappingId: f.analysis.status === 'mapped' ? (mappingId ?? null) : null,
+      };
       const result = await r.files.add({
         ownerId,
         projectId,
-        stored,
+        stored:
+          'create' in stored
+            ? { create: { ...stored.create, analysis, source: 'uploaded' } }
+            : stored,
         displayName: f.displayName,
         origin: f.derivedFromKey
           ? `${DERIVED_FROM}${fileIds.get(f.derivedFromKey)}`
           : f.origin,
-        analysis: {
-          ...f.analysis,
-          mappingId:
-            f.analysis.status === 'mapped' ? (mappingId ?? null) : null,
-        },
       });
       if ('created' in result && f.deactivation) {
         await r.files.setDeactivation(result.created.id, f.deactivation);

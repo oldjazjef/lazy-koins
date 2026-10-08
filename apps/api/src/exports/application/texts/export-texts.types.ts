@@ -1,4 +1,5 @@
 import type {
+  BookingKind,
   CheckKind,
   Light,
   MissingFileHint,
@@ -80,6 +81,10 @@ export interface ExportTexts {
     readonly einfach: string;
     readonly ausfuehrlich: string;
     readonly 'pruefbericht-intern': string;
+    readonly wertschriften: string;
+    readonly ertragsliste: string;
+    readonly nachweis: string;
+    readonly 'e-steuerauszug': string;
   };
 
   // --- column titles ---
@@ -160,6 +165,87 @@ export interface ExportTexts {
   readonly hintsTitle: string;
   readonly colourLegend: string;
   readonly methodLines: (m: MethodContext) => readonly string[];
+
+  // --- further tax documents (F10.11–F10.13) ---
+  readonly documents: {
+    /** Where a record comes from: `<file>, Zeile <n>` / `Tx <hash>`. */
+    readonly origin: (file: string, row: number) => string;
+    readonly originTx: (hash: string) => string;
+    readonly manualRecord: string;
+    readonly securities: {
+      readonly title: (taxYear: number) => string;
+      readonly sheet: string;
+      readonly intro: string;
+      readonly incomeWith: (currency: string) => string;
+      readonly incomeWithout: (currency: string) => string;
+      readonly withholdingNote: string;
+      readonly totals: string;
+      readonly noHolding: string;
+    };
+    readonly incomeList: {
+      readonly title: (taxYear: number) => string;
+      readonly lines: string;
+      readonly linesSheet: string;
+      readonly byCategory: string;
+      readonly byAsset: string;
+      readonly summarySheet: string;
+      readonly origin: string;
+      readonly none: string;
+    };
+    readonly evidence: {
+      readonly title: (taxYear: number) => string;
+      readonly transactions: (taxYear: number) => string;
+      readonly transactionsSheet: string;
+      readonly holdings: (taxYear: number) => string;
+      readonly holdingsSheet: string;
+      readonly treatment: string;
+      readonly change: string;
+      readonly changeText: (before: string, after: string) => string;
+      readonly reason: string;
+      readonly evidence: string;
+      readonly treatments: Readonly<Record<string, string>>;
+      readonly kinds: Readonly<Record<BookingKind, string>>;
+      readonly evidenceKinds: {
+        readonly statement: (files: string) => string;
+        readonly ledger: (bookings: number) => string;
+        readonly wallet: (files: string) => string;
+        readonly manual: (note: string) => string;
+      };
+      readonly hiddenNote: string;
+      readonly none: string;
+    };
+  };
+
+  // --- E-Steuerauszug (F10.10) ---
+  readonly eTax: {
+    readonly title: (taxYear: number) => string;
+    readonly intro: string;
+    readonly client: string;
+    readonly canton: string;
+    readonly statementId: string;
+    readonly maker: string;
+    readonly makerValue: string;
+    readonly depot: string;
+    readonly pos: string;
+    readonly name: string;
+    readonly valor: string;
+    readonly quantity: string;
+    readonly price: string;
+    readonly taxValue: string;
+    readonly revenueB: string;
+    readonly payments: string;
+    readonly totalTaxValue: string;
+    readonly totalRevenueA: string;
+    readonly totalRevenueB: string;
+    readonly totalWithholding: string;
+    readonly undefinedValue: string;
+    readonly undefinedNote: string;
+    readonly earnGap: string;
+    readonly limitationsTitle: string;
+    readonly limitations: readonly string[];
+    readonly barcodeSheet: (sheet: number, sheets: number) => string;
+    readonly barcodeNote: string;
+  };
 
   // --- internal report (F10.2a) ---
   readonly internal: {

@@ -67,7 +67,9 @@
     "library": "Bibliothek",
     "myMappings": "Meine Mappings",
     "toggleSidebar": "Seitenleiste ein- oder ausblenden",
-    "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen"
+    "toggleSection": "{{section}}: Unterpunkte ein- oder ausklappen",
+    "files": "Dateien",
+    "transactions": "Transaktionen"
   },
   "login": {
     "tagline": "Krypto-Steuerauszug für ein Steuerjahr: Vermögen per 31.12. und Ertrag.",
@@ -274,8 +276,8 @@
     "size": "{{kind}} · {{kb}} kB",
     "records": "{{bookings}} Buchungen · {{holdings}} Bestände",
     "rowErrorCount": "{{count}} Zeilen mit Fehlern",
-    "removeTitle": "Datei entfernen?",
-    "removeBody": "«{{name}}» wird aus diesem Projekt entfernt. Endgültig gelöscht wird die Datei erst, wenn kein Projekt sie mehr verwendet.",
+    "removeTitle": "Aus Projekt entfernen?",
+    "removeBody": "«{{name}}» wird nur aus diesem Projekt entfernt. Die Datei bleibt unter «Dateien» erhalten; löschen kannst du sie dort.",
     "upload": {
       "drop": "Dateien hierher ziehen (CSV, XLSX, PDF) – mehrere gleichzeitig möglich.",
       "pick": "Dateien auswählen",
@@ -329,7 +331,9 @@
       "standard": "Standardformat",
       "mapped": "Gelesen mit Mapping",
       "needs_mapping": "Mapping fehlt",
-      "evidence_only": "Nur Beleg"
+      "evidence_only": "Nur Beleg",
+      "readEmpty": "Gelesen – leer",
+      "readEmptyHint": "Die Datei wurde mit ihrem Mapping gelesen, enthält aber keine Buchungen und keine Bestände (z. B. eine leere Jahres-Historie). Sie zählt nicht als Abdeckung."
     },
     "origin": {
       "fromProject": "aus Projekt «{{name}}»",
@@ -343,7 +347,7 @@
       "preview": "Vorschau",
       "download": "Herunterladen",
       "assign": "Zuordnen",
-      "remove": "Entfernen",
+      "remove": "Aus Projekt entfernen",
       "aiMapping": "Mapping mit AI erstellen",
       "aiStatement": "Mit AI auslesen",
       "deactivate": "Deaktivieren",
@@ -460,6 +464,21 @@
         "revolut": "Revolut: Krypto → Kontoauszug (Excel oder CSV) für das ganze Steuerjahr; dazu der Krypto-Steuerbericht, falls angeboten."
       },
       "unknown": "Eine Plattform wird nicht erkannt? Dann hilft ein Mapping («Mit AI erstellen» oder von Hand) – oder du trägst die Buchungen in die Vorlage im Standardformat ein."
+    },
+    "select": {
+      "open": "Dateien auswählen",
+      "title": "Dateien auswählen",
+      "hint": "Deine Dateien aus «Dateien». Vorausgewählt sind die, die das Steuerjahr betreffen oder Bestände per 31.12. enthalten.",
+      "empty": "Du hast noch keine Dateien. Lade sie hier oder unter «Dateien» hoch.",
+      "search": "Name oder Plattform",
+      "onlySuggested": "Nur passende",
+      "suggested": "passt zum Jahr",
+      "already": "bereits im Projekt",
+      "noMatch": "Keine Datei passt zur Suche.",
+      "confirm": "{{count}} hinzufügen",
+      "done": "{{count}} Datei(en) hinzugefügt",
+      "failed": "Dateien konnten nicht hinzugefügt werden",
+      "loadFailed": "Dateien konnten nicht geladen werden"
     }
   },
   "mappings": {
@@ -1100,7 +1119,7 @@
   },
   "transactions": {
     "title": "Transaktionen",
-    "subtitle": "Alle Buchungen des Projekts und wie sie in die Steuerrechnung eingehen. Einzelne Einträge kannst du mit Begründung deaktivieren – die Originaldatei bleibt unverändert.",
+    "subtitle": "Die Buchungen des Steuerjahres und wie sie in die Steuerrechnung eingehen. Änderungen gelten global – in jedem Projekt, das die Transaktion verwendet; die Originaldatei bleibt unverändert.",
     "search": "Suchen",
     "searchPlaceholder": "Asset, Plattform, Konto, Art, Datei …",
     "platform": "Plattform",
@@ -1167,7 +1186,8 @@
       "reviewHint": "Der Assistent sieht sich nicht klassierte, doppelte und auffällige Buchungen an und schlägt Korrekturen vor – du bestätigst jede einzeln.",
       "review": "Prüfe die Transaktionen dieses Projekts auf Fehler: nicht klassierte Buchungen, Duplikate (gleiche Zeit, Menge und Asset), Überträge zwischen eigenen Konten, die als Ein- oder Auszahlung gelten, und Erträge, die keine sind. Erkläre kurz, was du findest, und schlage für jede falsche Buchung eine Korrektur vor (umklassieren, deaktivieren mit Begründung oder eine fehlende Buchung erfassen).",
       "fix": "Prüfe diese Buchung und behebe sie, falls sie falsch ist: {{quantity}} {{asset}} am {{timestamp}} auf {{platform}} / {{account}}, Art «{{kind}}» (Original-Typ «{{rawType}}»), {{origin}}, Buchungs-ID {{id}}. Steuerlich zurzeit: {{treatment}}. Sieh dir auch die Nachbarbuchungen an und schlage die passende Korrektur vor (umklassieren, deaktivieren mit Begründung oder eine fehlende Buchung erfassen) – oder sag, dass sie stimmt."
-    }
+    },
+    "showEarlier": "Frühere Buchungen einblenden, die den Bestand per 31.12. bestimmen"
   },
   "records": {
     "title": "Zugrunde liegende Buchungen",
@@ -1532,7 +1552,16 @@
       "detailed_pdf": "Ausführlich (PDF)",
       "detailed_xlsx": "Ausführlich (Excel)",
       "internal_report_pdf": "Prüfbericht intern (PDF)",
-      "internal_report_xlsx": "Prüfbericht intern (Excel)"
+      "internal_report_xlsx": "Prüfbericht intern (Excel)",
+      "securities_pdf": "Wertschriftenverzeichnis (PDF)",
+      "securities_xlsx": "Wertschriftenverzeichnis (Excel)",
+      "securities_csv": "Wertschriftenverzeichnis (CSV)",
+      "income_list_pdf": "Ertrags- und Belegliste (PDF)",
+      "income_list_xlsx": "Ertrags- und Belegliste (Excel)",
+      "evidence_pdf": "Transaktions- und Bestandesnachweis (PDF)",
+      "evidence_xlsx": "Transaktions- und Bestandesnachweis (Excel)",
+      "etax_pdf": "E-Steuerauszug eCH-0196 (PDF)",
+      "etax_xml": "E-Steuerauszug eCH-0196 (XML)"
     },
     "fields": {
       "createdAt": "Erstellt",
@@ -1569,6 +1598,35 @@
       "packageHint": "Das Projekt-Paket (.lkproj.zip) enthält Originaldateien, Mappings, Korrekturen mit Verlauf, Kurse, Prüf-Notizen und die erstellten Auszüge – zum Import in die Web- oder Desktop-App.",
       "failed": "Der Datenexport ist fehlgeschlagen",
       "packageFailed": "Das Projekt-Paket konnte nicht erstellt werden"
+    },
+    "documents": {
+      "title": "Weitere Steuerdokumente",
+      "hint": "Dokumente nach gängigem Aufbau – wie die Auszüge ohne offene Punkte, gespeichert und an die Mail an den Treuhänder anhängbar. Wähle die Formate und erstelle mehrere auf einmal.",
+      "formats": "Formate",
+      "create": "Ausgewählte erstellen ({{count}})",
+      "format": {
+        "pdf": "PDF",
+        "xlsx": "Excel",
+        "csv": "CSV",
+        "xml": "XML"
+      },
+      "securities": {
+        "title": "Wertschriftenverzeichnis",
+        "description": "Je Asset und Plattform/Wallet: Menge, Steuerwert per 31.12. (Kurs, Quelle) und Ertrag des Jahres (ohne Verrechnungssteuer), mit Summen. CSV zum Übertragen in die Steuersoftware."
+      },
+      "income_list": {
+        "title": "Ertrags- und Belegliste",
+        "description": "Jeder steuerbare Zufluss mit Datum, Kurs, Wert und Herkunft (Datei + Zeile bzw. Tx); Summen je Kategorie und Asset, Earn-Lücke erläutert."
+      },
+      "evidence": {
+        "title": "Transaktions- und Bestandesnachweis",
+        "description": "Alle Transaktionen des Jahres mit Änderungen und Begründung, Bestände per 31.12. mit Kurs, Quelle und Nachweis – für Rückfragen des Steueramts."
+      },
+      "etax": {
+        "title": "E-Steuerauszug (eCH-0196)",
+        "description": "Wertschriftenliste nach dem Schweizer Standard eCH-0196 (Version 2.2) zum Import in die kantonale Steuersoftware: das PDF mit Barcode-Blättern zum Einlesen oder Beilegen, das XML für den direkten Import. Kryptowährungen sind als Devisen ohne ISIN abgebildet, die Einschränkungen stehen im Dokument.",
+        "needsChf": "Nur für Projekte in CHF: der Standard kennt Steuerwerte nur in Franken."
+      }
     }
   },
   "profile": {
@@ -1810,6 +1868,13 @@
       "remove": "Entfernen",
       "added": "Saldo erfasst.",
       "removed": "Saldo entfernt."
+    },
+    "year": {
+      "title": "Transaktionen {{year}} ({{count}})",
+      "empty": "Keine Transaktionen in diesem Jahr (noch nicht abgerufen?).",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "page": "Seite {{page}} von {{pages}}"
     }
   },
   "hints": {
@@ -1958,7 +2023,8 @@
       "toRates": "Zu den Kursen",
       "toExports": "Zu den Auszügen",
       "toStorage": "Speicherort prüfen",
-      "toSetup": "Einrichten"
+      "toSetup": "Einrichten",
+      "toGlobalFiles": "Zu den Dateien"
     },
     "title": {
       "rates": {
@@ -2011,6 +2077,9 @@
       },
       "setup": {
         "incomplete": "Einrichtung unvollständig: {{count}} Punkt(e) fehlen noch (z. B. Schlüssel oder Mailer)"
+      },
+      "files": {
+        "readingConflict": "Datei wurde in Projekten unterschiedlich gelesen: {{name}}"
       }
     },
     "reason": {
@@ -2095,7 +2164,8 @@
     "suggestionTake": "Vorgeschlagenes Mapping übernehmen",
     "mappingImport": "Mappings werden hochgeladen",
     "libraryBulkPublish": "Mappings werden veröffentlicht",
-    "coin": "Coin für {{asset}} wird gespeichert"
+    "coin": "Coin für {{asset}} wird gespeichert",
+    "transactionAi": "AI analysiert Transaktionen"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2666,7 +2736,10 @@
         "stars": "Sterne",
         "privacyFindings": "Persönlich wirkende Werte",
         "pseudonym": "Anzeigename",
-        "active": "Aktiv"
+        "active": "Aktiv",
+        "asset": "Asset",
+        "hidden": "Ausgeblendet",
+        "link": "Gegenbuchung"
       },
       "value": {
         "noPrice": "kein Kurs",
@@ -2684,7 +2757,8 @@
       "deleteLibraryMapping": "Mapping «{{name}}» aus der Bibliothek entfernen",
       "deactivateFile": "Datei «{{file}}» deaktivieren (wird bei der Berechnung ignoriert)",
       "activateFile": "Datei «{{file}}» wieder aktivieren",
-      "excludeBooking": "Buchung {{booking}} deaktivieren"
+      "excludeBooking": "Buchung {{booking}} deaktivieren",
+      "editTransactions": "{{count}} Transaktion(en) ändern (gilt in jedem Projekt)"
     },
     "event": {
       "executed": "Ausgeführt: {{title}}",
@@ -2880,7 +2954,15 @@
       "unknownCoin": "Diesen Coin kennt der Kursanbieter nicht.",
       "coinProviderFailed": "Der Kursanbieter ist gerade nicht erreichbar.",
       "noKey": "Für diesen Anbieter ist kein Schlüssel gespeichert – trage ihn unter Einstellungen › Kurse ein.",
-      "pdfUnavailable": "PDFs können auf diesem Server gerade nicht erstellt werden (kein Browser für den Druck). Excel geht weiterhin."
+      "pdfUnavailable": "PDFs können auf diesem Server gerade nicht erstellt werden (kein Browser für den Druck). Excel geht weiterhin.",
+      "transactionLocked": "Ein abgeschlossenes Projekt verwendet die Transaktion – zum Ändern das Projekt wieder öffnen",
+      "useTransactionEdit": "Umklassieren und Ausblenden sind Änderungen an der Transaktion (Transaktionen), keine Projekt-Korrektur",
+      "reasonRequired": "Bitte gib eine Begründung an",
+      "invalidChanges": "Die Änderung ist ungültig",
+      "nothingToReview": "Es gibt keine Transaktion zu prüfen",
+      "noMapping": "Diese Transaktion wird nicht mit einem Mapping gelesen",
+      "badAnswer": "Die Antwort der AI war nicht verwendbar",
+      "eTaxNeedsChf": "Den E-Steuerauszug gibt es nur für Projekte in CHF."
     },
     "status": {
       "unreachable": "Der Server ist nicht erreichbar.",
@@ -3133,5 +3215,181 @@
     "removeFailed": "Zuordnung konnte nicht entfernt werden",
     "chosen": "Coin gespeichert, Kurse neu abgerufen",
     "dismissed": "Hinweis ausgeblendet"
+  },
+  "myFiles": {
+    "title": "Dateien",
+    "subtitle": "Alle deine Dateien, unabhängig von Projekten – nach Plattform gruppiert. Wie eine Datei gelesen wird, gilt für jedes Projekt, das sie verwendet.",
+    "upload": "Dateien hochladen",
+    "drop": "Dateien hierher ziehen (CSV, XLSX, PDF)",
+    "empty": "Noch keine Dateien. Lade Exporte deiner Plattformen hoch und wähle sie danach in deinen Projekten aus.",
+    "noMatch": "Keine Datei passt zur Suche.",
+    "search": "Suchen",
+    "searchPlaceholder": "Name, Plattform, Mapping oder Projekt",
+    "platform": "Plattform",
+    "allPlatforms": "Alle Plattformen",
+    "usedIn": "Verwendet in",
+    "usedInCount": "In {{count}} Projekt(en) verwendet",
+    "unused": "In keinem Projekt",
+    "source": {
+      "uploaded": "hochgeladen",
+      "derived": "aus PDF abgeleitet",
+      "wallet": "aus Wallet"
+    },
+    "actions": {
+      "add": "Zu Projekt hinzufügen",
+      "delete": "Löschen"
+    },
+    "assign": {
+      "body": "Die Zuordnung gilt für jedes Projekt, das diese Datei verwendet."
+    },
+    "add": {
+      "title": "Zu Projekt hinzufügen",
+      "body": "«{{name}}» wird im gewählten Projekt verwendet.",
+      "project": "Projekt",
+      "none": "Kein offenes Projekt ohne diese Datei."
+    },
+    "delete": {
+      "title": "Datei löschen?",
+      "body": "«{{name}}» wird endgültig gelöscht – auch aus allen Projekten, die sie verwenden.",
+      "usedIn": "Verwendet in:"
+    },
+    "blocked": "Nicht möglich: abgeschlossene Projekte verwenden die Datei ({{projects}}). Öffne sie zuerst wieder.",
+    "deleted": "Datei gelöscht",
+    "deleteFailed": "Datei konnte nicht gelöscht werden",
+    "added": "Datei zum Projekt hinzugefügt",
+    "addFailed": "Datei konnte nicht hinzugefügt werden"
+  },
+  "ledger": {
+    "title": "Transaktionen",
+    "subtitle": "Alle Transaktionen aus allen deinen Dateien und Wallets. Änderungen gelten in jedem Projekt, das die Transaktion verwendet – mit Begründung und rückgängig machbar.",
+    "aiAll": "Unbekannte mit AI analysieren",
+    "period": "Zeitraum",
+    "year": "Jahr {{year}}",
+    "search": "Suchen",
+    "searchPlaceholder": "Asset, Referenz, Notiz, Typ …",
+    "platform": "Plattform / Wallet",
+    "account": "Konto",
+    "asset": "Asset",
+    "all": "Alle",
+    "onlyReview": "Nur unbekannt / zu prüfen",
+    "onlyChanged": "Nur geänderte",
+    "reset": "Filter zurücksetzen",
+    "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden",
+    "selected": "{{count}} ausgewählt",
+    "selectionLocked": "Die Auswahl enthält gesperrte Transaktionen (abgeschlossenes Projekt).",
+    "acceptSelected": "{{count}} AI-Vorschläge übernehmen",
+    "clearSelection": "Auswahl aufheben",
+    "empty": "Noch keine Transaktionen. Lade unter «Dateien» Exporte deiner Plattformen hoch.",
+    "noMatch": "Keine Transaktion passt zum Filter.",
+    "toFiles": "Zu den Dateien",
+    "loadFailed": "Die Transaktionen konnten nicht geladen werden.",
+    "selectAll": "Alle auf dieser Seite auswählen",
+    "select": "{{asset}} auswählen",
+    "value": "Wert {{currency}}",
+    "status": "Status",
+    "locked": "Gesperrt",
+    "lockedTitle": "Ein abgeschlossenes Projekt verwendet diese Transaktion",
+    "hidden": "Ausgeblendet",
+    "suggested": "AI: {{kind}} ({{confidence}} %)",
+    "statusValue": {
+      "original": "Original",
+      "changed": "Geändert",
+      "aiSuggested": "Von AI vorgeschlagen"
+    },
+    "actions": {
+      "detail": "Details und Verlauf",
+      "accept": "AI-Vorschlag übernehmen",
+      "ai": "Mit AI analysieren"
+    }
+  },
+  "txEdit": {
+    "title": {
+      "edit": "{{count}} Transaktion(en) bearbeiten",
+      "hide": "{{count}} Transaktion(en) ausblenden",
+      "show": "Transaktion wieder einblenden"
+    },
+    "globalHint": "Gilt in jedem Projekt, das die Transaktion verwendet. Die Originaldatei bleibt unverändert.",
+    "kind": "Art",
+    "unchanged": "Unverändert",
+    "asset": "Asset",
+    "note": "Notiz",
+    "reason": "Begründung",
+    "reasonPlaceholder": "z. B. Umbuchung auf eigenes Konto, doppelt importiert, Staking-Ertrag",
+    "reasonRequired": "Bitte gib eine Begründung an.",
+    "undoHint": "Jede Änderung wird mit Datum und Begründung gespeichert und lässt sich rückgängig machen. Betroffene Projekte müssen neu berechnet werden.",
+    "locked": "Nicht möglich: abgeschlossene Projekte verwenden die Transaktion ({{projects}}). Zum Ändern zuerst wieder öffnen.",
+    "lockedHint": "Gesperrt: {{projects}} ist abgeschlossen – zum Ändern entsperren.",
+    "save": {
+      "edit": "Bearbeiten",
+      "hide": "Ausblenden",
+      "show": "Wieder einblenden"
+    },
+    "saved": "Transaktionen geändert",
+    "saveFailed": "Die Änderung konnte nicht gespeichert werden",
+    "undoDone": "Änderung rückgängig gemacht bzw. wiederhergestellt",
+    "undoFailed": "Das ging nicht",
+    "suggestionsDecided": "AI-Vorschläge entschieden",
+    "suggestionsFailed": "Die AI-Vorschläge konnten nicht übernommen werden",
+    "ruleAdded": "Regel ins Mapping übernommen – bei Bedarf das Mapping erneut anwenden",
+    "ruleFailed": "Die Regel konnte nicht übernommen werden",
+    "history": {
+      "hidden": "Ausgeblendet",
+      "shown": "Wieder eingeblendet",
+      "linked": "Mit Gegenbuchung verknüpft",
+      "unlinked": "Verknüpfung aufgehoben"
+    }
+  },
+  "txDetail": {
+    "title": "Transaktion",
+    "when": "Zeitpunkt (UTC)",
+    "where": "Plattform · Konto",
+    "original": "ursprünglich {{value}}",
+    "amount": "Menge",
+    "value": "Wert",
+    "rawType": "Typ der Plattform",
+    "group": "Referenz",
+    "source": "Quelle",
+    "projects": "Projekte",
+    "noProject": "In keinem Projekt",
+    "linkedWith": "Verknüpft mit {{quantity}} {{asset}} auf {{platform}} am {{date}} (beide gelten als Übertrag).",
+    "suggestion": "AI-Vorschlag: {{kind}} ({{confidence}} % sicher)",
+    "accept": "Übernehmen",
+    "dismiss": "Verwerfen",
+    "history": "Änderungsverlauf",
+    "noHistory": "Noch keine Änderung.",
+    "status": {
+      "active": "Aktiv",
+      "undone": "Rückgängig",
+      "superseded": "Überholt"
+    },
+    "fromProject": "aus {{project}}",
+    "undo": "Rückgängig",
+    "redo": "Wiederherstellen",
+    "raw": "Originalzeile der Datei",
+    "loadFailed": "Die Transaktion konnte nicht geladen werden.",
+    "rule": "Als Regel ins Mapping",
+    "link": "Mit Gegenbuchung verknüpfen",
+    "by": {
+      "user": "Von dir",
+      "ai": "AI-Vorschlag",
+      "migrated": "Aus Projekt-Korrektur"
+    }
+  },
+  "txLink": {
+    "title": "Mit Gegenbuchung verknüpfen",
+    "body": "{{quantity}} {{asset}} auf {{platform}} ist eine Verschiebung zwischen deinen eigenen Konten. Wähle die Gegenbuchung – beide gelten dann als Übertrag.",
+    "none": "Keine passende Gegenbuchung gefunden (gleiches Asset, umgekehrtes Vorzeichen, anderes Konto, ±7 Tage).",
+    "choose": "Gegenbuchung",
+    "reasonPlaceholder": "z. B. Auszahlung auf mein Ledger",
+    "save": "Verknüpfen"
+  },
+  "txAi": {
+    "title": "Mit AI analysieren",
+    "hint": "Die AI schlägt pro Transaktion eine Art mit Begründung und Sicherheit vor. Es ändert sich nichts, bis du die Vorschläge übernimmst.",
+    "count": "{{count}} Transaktion(en) werden geprüft.",
+    "sentHint": "Genau diese Daten werden an deinen AI-Anbieter gesendet – ohne Dateinamen, Adressen oder Transaktions-IDs:",
+    "consent": "Ich bin einverstanden, dass dieser Auszug an meinen AI-Anbieter gesendet wird (gilt auch für spätere AI-Anfragen, widerrufbar unter Einstellungen › AI).",
+    "run": "Analysieren",
+    "done": "{{count}} Vorschläge erhalten – sie sind als «Von AI vorgeschlagen» markiert."
   }
 }

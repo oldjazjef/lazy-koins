@@ -1,3 +1,5 @@
+import { TransactionsModule } from '../transactions/transactions.module';
+import { TransactionsService } from '../transactions/transactions.service';
 import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
 import { AiGate } from '../ai/application/ai-gate';
@@ -41,6 +43,7 @@ import { ToolRegistry } from './application/tool-registry';
     SettingsModule,
     MailModule,
     AiModule,
+    TransactionsModule,
   ],
   providers: [
     {
@@ -57,6 +60,7 @@ import { ToolRegistry } from './application/tool-registry';
         MailService,
         AiGate,
         LibraryService,
+        TransactionsService,
       ],
       useFactory: (
         projects: ProjectsService,
@@ -70,6 +74,7 @@ import { ToolRegistry } from './application/tool-registry';
         mail: MailService,
         ai: AiGate,
         library: LibraryService,
+        transactions: TransactionsService,
       ) =>
         ToolRegistry.over({
           projects,
@@ -83,6 +88,7 @@ import { ToolRegistry } from './application/tool-registry';
           mail,
           ai,
           library,
+          transactions,
         }),
     },
     ToolExecutor,

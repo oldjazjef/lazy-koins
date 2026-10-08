@@ -1,0 +1,238 @@
+<hlm-dialog [state]="state()" (stateChanged)="changed($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-4xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>{{ 'txDetail.title' | translate }}</h3>
+      <p hlmDialogDescription>{{ 'txEdit.globalHint' | translate }}</p>
+    </hlm-dialog-header>
+    <div class="lk-dialog-body">
+      @if (detail(); as d) { @let t = d.transaction;
+      <div class="flex flex-col gap-5">
+        <dl class="lk-facts">
+          <dt>{{ 'txDetail.when' | translate }}</dt>
+          <dd>{{ t.timestamp | lkDate: 'dateTime' : 'UTC' }}</dd>
+          <dt>{{ 'txDetail.where' | translate }}</dt>
+          <dd>{{ t.platform }} · {{ t.accountId }}</dd>
+          <dt>{{ 'txEdit.kind' | translate }}</dt>
+          <dd>
+            {{ 'bookings.kind.' + t.kind | translate }} @if (t.originalKind) {
+            <span class="text-muted-foreground text-xs"
+              >({{ 'txDetail.original' | translate: { value: ('bookings.kind.' +
+              t.originalKind | translate) } }})</span
+            >
+            }
+          </dd>
+          <dt>{{ 'txDetail.amount' | translate }}</dt>
+          <dd class="tabular-nums">
+            {{ t.quantity | lkQuantity }} {{ t.asset }} @if (t.originalAsset) {
+            <span class="text-muted-foreground text-xs"
+              >({{ 'txDetail.original' | translate: { value: t.originalAsset }
+              }})</span
+            >
+            } @if (t.fee) {
+            <span class="text-muted-foreground block text-xs"
+              >{{ 'transactions.fee' | translate: { fee: (t.fee | lkQuantity),
+              asset: t.feeAsset } }}</span
+            >
+            }
+          </dd>
+          <dt>{{ 'txDetail.value' | translate }}</dt>
+          <dd class="tabular-nums">
+            {{ t.value === null ? ('transactions.noPrice' | translate) :
+            (t.value | lkChf: currency()) }}
+          </dd>
+          <dt>{{ 'txDetail.rawType' | translate }}</dt>
+          <dd>{{ t.rawType || '–' }}</dd>
+          @if (t.group) {
+          <dt>{{ 'txDetail.group' | translate }}</dt>
+          <dd class="max-w-0 min-w-0">
+            <span class="font-mono text-xs" [lkTruncate]="t.group"
+              >{{ t.group }}</span
+            >
+          </dd>
+          } @if (t.note) {
+          <dt>{{ 'txEdit.note' | translate }}</dt>
+          <dd>{{ t.note }}</dd>
+          }
+          <dt>{{ 'txDetail.source' | translate }}</dt>
+          <dd>
+            {{ 'transactions.origin' | translate: { file: t.source.fileName,
+            row: t.source.row } }}
+          </dd>
+          <dt>{{ 'txDetail.projects' | translate }}</dt>
+          <dd>
+            @for (p of t.projects; track p.projectId) {
+            <a
+              class="mr-3 hover:underline"
+              [routerLink]="['/app/projects', p.projectId]"
+              [queryParams]="{ tab: 'transactions' }"
+              >{{ p.name }} ({{ p.taxYear }})</a
+            >
+            } @empty { {{ 'txDetail.noProject' | translate }} }
+          </dd>
+        </dl>
+        @if (t.lockedBy.length > 0) {
+        <p class="lk-panel px-4 py-3 text-sm" role="note">
+          {{ 'txEdit.lockedHint' | translate: { projects: names(t.lockedBy) } }}
+        </p>
+        } @if (d.linked; as linked) {
+        <p class="text-sm">
+          {{ 'txDetail.linkedWith' | translate: { quantity: (linked.quantity |
+          lkQuantity), asset: linked.asset, platform: linked.platform, date:
+          (linked.timestamp | lkDate) } }}
+        </p>
+        } @if (t.suggestion; as s) {
+        <section class="lk-panel flex flex-col gap-2 px-4 py-3">
+          <h4 class="font-medium">
+            {{ 'txDetail.suggestion' | translate: { kind: ('bookings.kind.' +
+            s.kind | translate), confidence: s.confidence } }}
+          </h4>
+          <p class="text-muted-foreground text-sm">{{ s.reason }}</p>
+          @if (t.lockedBy.length === 0) {
+          <div class="flex flex-wrap gap-2">
+            <button
+              hlmBtn
+              size="sm"
+              type="button"
+              [disabled]="edits.isBusy()"
+              (click)="decide(true)"
+            >
+              {{ 'txDetail.accept' | translate }}
+            </button>
+            <button
+              hlmBtn
+              size="sm"
+              variant="outline"
+              type="button"
+              [disabled]="edits.isBusy()"
+              (click)="decide(false)"
+            >
+              {{ 'txDetail.dismiss' | translate }}
+            </button>
+          </div>
+          }
+        </section>
+        } @if (locked().length > 0) {
+        <p class="text-destructive text-sm" role="alert">
+          {{ 'txEdit.locked' | translate: { projects: locked().join(', ') } }}
+        </p>
+        }
+
+        <section class="flex flex-col gap-2">
+          <h4 class="font-medium">{{ 'txDetail.history' | translate }}</h4>
+          @for (h of d.history; track h.id) {
+          <div class="lk-panel flex flex-col gap-1 px-4 py-3 text-sm">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="tabular-nums"
+                >{{ h.createdAt | lkDate: 'dateTime' }}</span
+              >
+              <span hlmBadge variant="outline"
+                >{{ 'txDetail.by.' + h.source | translate }}</span
+              >
+              <span
+                hlmBadge
+                [variant]="h.status === 'active' ? 'secondary' : 'outline'"
+                >{{ 'txDetail.status.' + h.status | translate }}</span
+              >
+              @if (h.origin) {
+              <span class="text-muted-foreground text-xs"
+                >{{ 'txDetail.fromProject' | translate: { project: h.origin }
+                }}</span
+              >
+              } @if (t.lockedBy.length === 0) {
+              <button
+                hlmBtn
+                variant="ghost"
+                size="sm"
+                type="button"
+                class="ml-auto"
+                [disabled]="edits.isBusy()"
+                (click)="undo(h)"
+              >
+                {{ (h.status === 'active' ? 'txDetail.undo' : 'txDetail.redo') |
+                translate }}
+              </button>
+              }
+            </div>
+            <ul class="text-muted-foreground text-xs">
+              @for (line of changeLines(h.changes); track line.key) {
+              <li>
+                {{ line.key | translate }}@if (line.value !== null) {: {{
+                line.kind ? ('bookings.kind.' + line.value | translate) :
+                line.value }} }
+              </li>
+              }
+            </ul>
+            <p>{{ 'transactions.reason' | translate: { reason: h.reason } }}</p>
+          </div>
+          } @empty {
+          <p class="text-muted-foreground text-sm">
+            {{ 'txDetail.noHistory' | translate }}
+          </p>
+          }
+        </section>
+
+        @if (d.raw; as raw) {
+        <section class="flex flex-col gap-2">
+          <h4 class="font-medium">{{ 'txDetail.raw' | translate }}</h4>
+          <div hlmTableContainer class="lk-panel">
+            <table hlmTable class="table-fixed">
+              <colgroup>
+                <col class="w-48" />
+                <col />
+              </colgroup>
+              <tbody hlmTBody>
+                @for (entry of rawEntries(raw); track entry[0]) {
+                <tr hlmTr>
+                  <th hlmTh class="max-w-0">
+                    <span [lkTruncate]="entry[0]">{{ entry[0] }}</span>
+                  </th>
+                  <td hlmTd class="max-w-0 font-mono text-xs">
+                    <span [lkTruncate]="entry[1]">{{ entry[1] }}</span>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+        }
+      </div>
+      } @else if (failed()) {
+      <p class="text-destructive text-sm">
+        {{ 'txDetail.loadFailed' | translate }}
+      </p>
+      } @else {
+      <hlm-skeleton class="h-64 w-full" />
+      }
+    </div>
+    @if (detail(); as d) { @let t = d.transaction;
+    <hlm-dialog-footer class="flex-wrap">
+      @if (t.lockedBy.length === 0) {
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="rule(t)"
+        [disabled]="edits.isBusy()"
+      >
+        {{ 'txDetail.rule' | translate }}
+      </button>
+      <button hlmBtn variant="outline" type="button" (click)="link.emit(t)">
+        {{ 'txDetail.link' | translate }}
+      </button>
+      <button
+        hlmBtn
+        variant="outline"
+        type="button"
+        (click)="edit.emit(request(t, t.hidden ? 'show' : 'hide'))"
+      >
+        {{ (t.hidden ? 'txEdit.save.show' : 'txEdit.save.hide') | translate }}
+      </button>
+      <button hlmBtn type="button" (click)="edit.emit(request(t, 'edit'))">
+        {{ 'txEdit.save.edit' | translate }}
+      </button>
+      }
+    </hlm-dialog-footer>
+    }
+  </hlm-dialog-content>
+</hlm-dialog>

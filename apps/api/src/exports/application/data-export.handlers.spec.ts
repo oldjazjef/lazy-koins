@@ -1,5 +1,4 @@
 import ExcelJS from 'exceljs';
-import { CreateCorrectionCommand } from '../../calculation/application/calculation.handlers';
 import { calculationSetup } from '../../calculation/testing/calculation-fixture';
 import { FileAnalysisService } from '../../files/application/file-analysis.service';
 import {
@@ -22,18 +21,15 @@ async function setup() {
 describe('data export (F10.7)', () => {
   it('writes bookings as standard CSV with the applied correction, price and origin', async () => {
     const t = await setup();
-    await t.createCorrection.execute(
-      new CreateCorrectionCommand(
-        'anna',
-        t.project.id,
-        {
-          type: 'reclassify',
-          bookingId: `${t.bookingsFile.sha256}::6`,
-          kind: 'income_airdrop',
-        },
-        'Airdrop',
-      ),
-    );
+    // F9.8: a global transaction edit — the export holds the edited booking.
+    await t.transactionEdits.add('anna', [
+      {
+        key: `${t.bookingsFile.sha256}::6`,
+        changes: { kind: 'income_airdrop' },
+        reason: 'Airdrop',
+        source: 'user',
+      },
+    ]);
     const file = await t.dataExport.execute(
       new DataExportQuery('anna', t.project.id, 'csv', 'bookings', {}),
     );
@@ -48,7 +44,6 @@ describe('data export (F10.7)', () => {
     expect(lines[0]).toContain('Kurs CHF verwendet,Kursquelle');
     const airdrop = lines.find((l) => l.includes('ETH'));
     expect(airdrop).toContain('income_airdrop');
-    expect(airdrop).toContain('reclassify');
     expect(airdrop).toContain('buchungen.csv');
   });
 
