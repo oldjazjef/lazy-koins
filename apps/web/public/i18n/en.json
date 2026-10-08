@@ -329,7 +329,9 @@
       "standard": "Standard format",
       "mapped": "Read with mapping",
       "needs_mapping": "Mapping missing",
-      "evidence_only": "Receipt only"
+      "evidence_only": "Receipt only",
+      "readEmpty": "Read – empty",
+      "readEmptyHint": "The file was read with its mapping but contains no bookings and no balances (e.g. an empty year of history). It does not count as coverage."
     },
     "origin": {
       "fromProject": "from project “{{name}}”",

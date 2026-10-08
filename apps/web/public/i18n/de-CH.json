@@ -329,7 +329,9 @@
       "standard": "Standardformat",
       "mapped": "Gelesen mit Mapping",
       "needs_mapping": "Mapping fehlt",
-      "evidence_only": "Nur Beleg"
+      "evidence_only": "Nur Beleg",
+      "readEmpty": "Gelesen – leer",
+      "readEmptyHint": "Die Datei wurde mit ihrem Mapping gelesen, enthält aber keine Buchungen und keine Bestände (z. B. eine leere Jahres-Historie). Sie zählt nicht als Abdeckung."
     },
     "origin": {
       "fromProject": "aus Projekt «{{name}}»",

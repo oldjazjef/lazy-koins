@@ -91,6 +91,17 @@ export const FILE_NOTE_MAX = 500;
  * platform, preview, download, removal, manual assignment and the missing-files hints; below it
  * the mappings the project uses. Owns the section's service; a closed project is read-only.
  */
+/** F5.25: read (standard format or mapping) but without a single booking or balance. */
+export function isReadEmpty(
+  file: Pick<ProjectFile, 'status' | 'bookingCount' | 'holdingCount'>,
+): boolean {
+  return (
+    (file.status === 'standard' || file.status === 'mapped') &&
+    file.bookingCount === 0 &&
+    file.holdingCount === 0
+  );
+}
+
 @Component({
   selector: 'lk-project-files',
   imports: [
@@ -293,6 +304,10 @@ export class ProjectFiles implements OnDestroy {
         this.dialog.set({ kind: 'remove', file });
         return;
     }
+  }
+
+  protected isReadEmpty(file: ProjectFile): boolean {
+    return isReadEmpty(file);
   }
 
   protected statusVariant(

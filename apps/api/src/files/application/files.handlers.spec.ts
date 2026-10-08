@@ -181,6 +181,29 @@ describe('upload (F5.1–F5.4)', () => {
     expect(content.mediaType).toBe('text/csv');
   });
 
+  it("groups a mapped file without records under the mapping's platform (F5.25)", async () => {
+    const t = await setup();
+    await t.createMapping.execute(
+      new CreateMappingCommand('anna', spec('kraken-ledger'), 'copied'),
+    );
+    // Only the header row: an empty year of history.
+    const header = readFileSync(resolve(ENGINE, KRAKEN_CLASSIC), 'utf8').split(
+      /\r?\n/,
+    )[0];
+    const empty = await t.upload(
+      t.p1.id,
+      'ledgers-2019.csv',
+      new TextEncoder().encode(`${header}\n`),
+    );
+    expect(empty).toMatchObject({
+      status: 'mapped',
+      platform: 'kraken',
+      bookingCount: 0,
+      holdingCount: 0,
+      period: null,
+    });
+  });
+
   it('needs a mapping for an unknown layout, and uses a stored one by fingerprint', async () => {
     const t = await setup();
     const unknown = await t.upload(t.p1.id, 'ledgers.csv', fixture(KRAKEN));
